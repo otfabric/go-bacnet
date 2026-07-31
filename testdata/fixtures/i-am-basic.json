@@ -1,0 +1,30 @@
+{
+  "id": "go-bacnet-i-am-basic-001",
+  "source": {
+    "implementation": "go-bacnet",
+    "version": "unreleased",
+    "image_digest": ""
+  },
+  "capture": {
+    "direction": "generated",
+    "transport": "bacnet-ipv4"
+  },
+  "standard": {
+    "base": "ANSI/ASHRAE 135-2024"
+  },
+  "expect": {
+    "semantic_decode_equal": true,
+    "deterministic_reencode_equal": true,
+    "original_bytes_equal": true
+  },
+  "license": {
+    "status": "independently-generated"
+  },
+  "semantic": {
+    "service": "i-am",
+    "device_instance": 1234,
+    "max_apdu": 1476,
+    "segmentation": 3,
+    "vendor_id": 15
+  }
+}

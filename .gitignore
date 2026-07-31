@@ -1,0 +1,24 @@
+# Binaries
+/bin/
+/dist/
+*.exe
+*.test
+/cmd/bacnetctl/bacnetctl
+
+# Coverage
+coverage.out
+coverage.txt
+coverage.html
+
+# Go
+vendor/
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+# Fuzz
+**/testdata/fuzz/*
+!**/testdata/fuzz/

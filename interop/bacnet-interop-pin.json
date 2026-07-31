@@ -1,0 +1,10 @@
+{
+  "ref": "v0.2.0",
+  "release": "https://github.com/otfabric/bacnet-interop/releases/tag/v0.2.0",
+  "images": {
+    "bacnet-stack": "ghcr.io/otfabric/bacnet-interop-bacnet-stack@sha256:54c38126451bcb3fb4014fe11ee90bfb75dead52e2c730005c1bd4af4a0790ec",
+    "bacpypes3": "ghcr.io/otfabric/bacnet-interop-bacpypes3@sha256:3e25e43307653af3b2c5996b6b9d7f595cc3a4171f6b882bc376ec536a51c965",
+    "bacnet4j": "ghcr.io/otfabric/bacnet-interop-bacnet4j@sha256:c56d6c45ddb14f98f5b560b44ba5e1bf8c70f63b919ea457d84770451dd4d936",
+    "bip-router": "ghcr.io/otfabric/bacnet-interop-bip-router@sha256:0326e2defc334c01189b0b8b59b881f3bab3dafc5b915b4826dbc7016c987bd8"
+  }
+}

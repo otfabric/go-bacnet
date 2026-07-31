@@ -1,0 +1,37 @@
+# Horizon 1 client capability profile (machine-readable).
+# Human table: CAPABILITY_MATRIX.md
+
+profile: horizon1_client
+data_link:
+  bacnet_ip_ipv4: required
+  default_udp_port: 47808
+  foreign_device_registration: optional
+  bbmd_forwarded_npdu_receive: required
+  bbmd_server: unsupported
+
+services:
+  who_is: required
+  i_am: required          # receive / observe
+  read_property: required
+  read_property_multiple: required
+  write_property: required
+  subscribe_cov: required
+  subscribe_cov_property: optional
+  write_property_multiple: unsupported
+
+network:
+  routing: required       # DNET/DADR, router discovery as needed
+  who_is_router_to_network: required
+  i_am_router_to_network: required  # receive
+
+segmentation:
+  # Transaction-owned reassembly implemented; keep production-candidate gated on Gate 3 interop evidence.
+  segmented_complex_ack_receive: required
+  segmented_confirmed_request_send: optional
+
+transport:
+  ms_tp_native: unsupported
+  bacnet_ipv6: unsupported
+  bacnet_sc: unsupported
+
+server_device_model: unsupported

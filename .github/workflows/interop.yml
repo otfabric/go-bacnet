@@ -1,0 +1,188 @@
+name: Interop
+run-name: "Interop (${{ github.event_name }}) on ${{ github.ref_name }}"
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # Deterministic evidence against a published bacnet-interop release.
+  peer-interop-pinned:
+    name: Pinned release peers
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout go-bacnet
+        uses: actions/checkout@v7
+
+      - name: Load bacnet-interop pin
+        id: pin
+        run: |
+          set -euo pipefail
+          pin=interop/bacnet-interop-pin.json
+          test -f "$pin"
+          {
+            echo "ref=$(jq -r .ref "$pin")"
+            echo "bacnet_stack=$(jq -r '.images["bacnet-stack"]' "$pin")"
+            echo "bacpypes3=$(jq -r '.images.bacpypes3' "$pin")"
+            echo "bacnet4j=$(jq -r '.images.bacnet4j' "$pin")"
+            echo "bip_router=$(jq -r '.images["bip-router"]' "$pin")"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Checkout bacnet-interop (pinned)
+        uses: actions/checkout@v7
+        with:
+          repository: otfabric/bacnet-interop
+          ref: ${{ steps.pin.outputs.ref }}
+          path: bacnet-interop
+
+      - name: Record repository SHAs
+        run: |
+          set -euo pipefail
+          {
+            echo "lane=pinned"
+            echo "go-bacnet=${GITHUB_SHA}"
+            echo "bacnet-interop=$(git -C bacnet-interop rev-parse HEAD)"
+            echo "bacnet-interop-ref=${{ steps.pin.outputs.ref }}"
+            echo "BACNET_STACK_IMAGE=${{ steps.pin.outputs.bacnet_stack }}"
+            echo "BACPYPES3_IMAGE=${{ steps.pin.outputs.bacpypes3 }}"
+            echo "BACNET4J_IMAGE=${{ steps.pin.outputs.bacnet4j }}"
+            echo "BIP_ROUTER_IMAGE=${{ steps.pin.outputs.bip_router }}"
+          } | tee interop-evidence.txt
+          echo "## Interop evidence (pinned)" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          cat interop-evidence.txt >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: interop-evidence-pinned
+          path: interop-evidence.txt
+          retention-days: 30
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Validate fixtures
+        working-directory: bacnet-interop
+        run: make validate-fixtures
+
+      - name: Pull pinned adapter images
+        env:
+          BACNET_STACK_IMAGE: ${{ steps.pin.outputs.bacnet_stack }}
+          BACPYPES3_IMAGE: ${{ steps.pin.outputs.bacpypes3 }}
+          BACNET4J_IMAGE: ${{ steps.pin.outputs.bacnet4j }}
+          BIP_ROUTER_IMAGE: ${{ steps.pin.outputs.bip_router }}
+        run: |
+          set -euo pipefail
+          docker pull "$BACNET_STACK_IMAGE"
+          docker pull "$BACPYPES3_IMAGE"
+          docker pull "$BACNET4J_IMAGE"
+          docker pull "$BIP_ROUTER_IMAGE"
+
+      - name: Fixture corpus (required)
+        env:
+          BACNET_INTEROP_ROOT: ${{ github.workspace }}/bacnet-interop
+          BACNET_INTEROP_REQUIRED: "1"
+          GOWORK: "off"
+        run: go test ./internal/fixtures/ -count=1
+
+      - name: Interop root unit tests
+        env:
+          GOWORK: "off"
+        run: go test ./interop/ -count=1 -run 'TestResolveInteropRoot'
+
+      - name: Peer assertions (required)
+        env:
+          BACNET_INTEROP_ROOT: ${{ github.workspace }}/bacnet-interop
+          BACNET_INTEROP_REQUIRED: "1"
+          BACNET_STACK_IMAGE: ${{ steps.pin.outputs.bacnet_stack }}
+          BACPYPES3_IMAGE: ${{ steps.pin.outputs.bacpypes3 }}
+          BACNET4J_IMAGE: ${{ steps.pin.outputs.bacnet4j }}
+          BIP_ROUTER_IMAGE: ${{ steps.pin.outputs.bip_router }}
+          GOWORK: "off"
+          CI: "true"
+        run: make interop
+
+  # Detect upcoming breakage against bacnet-interop main (builds adapters from source).
+  peer-interop-main:
+    name: bacnet-interop main compat
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout go-bacnet
+        uses: actions/checkout@v7
+
+      - name: Checkout bacnet-interop (main)
+        uses: actions/checkout@v7
+        with:
+          repository: otfabric/bacnet-interop
+          ref: main
+          path: bacnet-interop
+
+      - name: Record repository SHAs
+        run: |
+          set -euo pipefail
+          {
+            echo "lane=bacnet-interop-main"
+            echo "go-bacnet=${GITHUB_SHA}"
+            echo "bacnet-interop=$(git -C bacnet-interop rev-parse HEAD)"
+          } | tee interop-evidence.txt
+          echo "## Interop evidence (main compat)" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          cat interop-evidence.txt >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: interop-evidence-main
+          path: interop-evidence.txt
+          retention-days: 30
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Validate fixtures
+        working-directory: bacnet-interop
+        run: make validate-fixtures
+
+      - name: Build adapter images from main
+        working-directory: bacnet-interop
+        run: make build
+        env:
+          PLATFORM: linux/amd64
+
+      - name: Fixture corpus (required)
+        env:
+          BACNET_INTEROP_ROOT: ${{ github.workspace }}/bacnet-interop
+          BACNET_INTEROP_REQUIRED: "1"
+          GOWORK: "off"
+        run: go test ./internal/fixtures/ -count=1
+
+      - name: Peer assertions (required)
+        env:
+          BACNET_INTEROP_ROOT: ${{ github.workspace }}/bacnet-interop
+          BACNET_INTEROP_REQUIRED: "1"
+          BACNET_STACK_IMAGE: bacnet-interop-bacnet-stack:local
+          BACPYPES3_IMAGE: bacnet-interop-bacpypes3:local
+          BACNET4J_IMAGE: bacnet-interop-bacnet4j:local
+          BIP_ROUTER_IMAGE: bacnet-interop-bip-router:local
+          GOWORK: "off"
+          CI: "true"
+        run: make interop
