@@ -1,5 +1,67 @@
 # go-bacnet Releases
 
+## v0.1.1
+
+**Date:** 2026-08-01  
+**Previous release:** [v0.1.0](https://github.com/otfabric/go-bacnet/releases/tag/v0.1.0)
+
+### Summary
+
+Hardening and evidence release for release-grade **production-candidate**
+status. Bounded device-observation retention, IPv4-only B/IP endpoint
+validation, strict APDU/NPDU framing, hermetic CI coverage, PR and nightly
+fuzz, and pin to [`bacnet-interop` v0.2.1](https://github.com/otfabric/bacnet-interop/releases/tag/v0.2.1)
+(28 fixtures including service-layer negatives). Requires **Go 1.23+**.
+
+Still not **production-usable** until the
+[real-device gate](docs/REAL_DEVICE_GATE.md) is complete.
+
+### Added
+
+- `WithRegistryOptions` / bounded observation registry (TTL, global cap,
+  per-instance path cap) with eviction diagnostics
+- Window-scoped `Discover` results (`Devices()` remains the full snapshot)
+- Strict APDU/NPDU framing rejections (reserved bits, undefined MaxAPDU,
+  MoreFollows without SEG, invalid windows, global-broadcast DADR, router
+  network lists)
+- `npdu.DecodeNetworkList`
+- CI **library coverage gate** (`make coverage`, hermetic pinned fixtures)
+- CI **PR fuzz** and scheduled **nightly fuzz** (`fuzz-nightly.yml`)
+- APDU/NPDU fuzz targets
+- [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md) — positioning and evidence matrix
+
+### Changed
+
+- Horizon 1 `bip.Endpoint.IsValid` requires IPv4
+- Inbound Distribute-Broadcast-To-Network ignored (client is not a BBMD)
+- Diagnostic callbacks documented as synchronous
+- Confirmed COV ACK-before-admission documented and tested
+- Fixture expected-error helper supports multi-stage (APDU → service) failures
+- Pin file → bacnet-interop `v0.2.1` digests
+- PLAN / README: provisional PC until this tag; competitive positioning noted
+
+### Evidence (Batch 4D)
+
+| Gate | Result | Link |
+|---|---|---|
+| Shared CI (lint, Go 1.23–1.26, **race**) | green on `6256fd2` | [CI run](https://github.com/otfabric/go-bacnet/actions/runs/30705297706) |
+| Library coverage gate (≥90%) | green | same run, job *Library coverage gate* |
+| PR fuzz (15s/target) | green | same run, job *PR fuzz* |
+| Pinned interop `v0.2.1` (run 1) | green | [30705297526](https://github.com/otfabric/go-bacnet/actions/runs/30705297526) |
+| Pinned interop `v0.2.1` (run 2) | green | [30707779897](https://github.com/otfabric/go-bacnet/actions/runs/30707779897) |
+| bacnet-interop main compat | green | both interop runs |
+| Nightly fuzz (5m/target, manual) | green | [30707778922](https://github.com/otfabric/go-bacnet/actions/runs/30707778922) |
+| Local `make test-race` + `make coverage` | 90.2% ≥ 90% | operator workstation, 2026-08-01 |
+
+### Notes
+
+- No public API break intended; additive options and stricter malformed
+  rejection only.
+- Segmented confirmed-request *send*, WPM, server/BBMD-server remain out of
+  scope (see [PLAN.md](PLAN.md) Horizon 2+).
+
+---
+
 ## v0.1.0
 
 **Date:** 2026-08-01  

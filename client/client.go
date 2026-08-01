@@ -71,7 +71,7 @@ func New(opts ...Option) (*Client, error) {
 	c := &Client{
 		cfg:     cfg,
 		tr:      tr,
-		reg:     newRegistry(cfg.diag),
+		reg:     newRegistry(cfg.diag, cfg.clock, cfg.registry),
 		tx:      newTxManager(cfg.maxTransactions, cfg.clock.Now),
 		clock:   cfg.clock,
 		diag:    cfg.diag,
@@ -176,8 +176,16 @@ func (c *Client) handlePacket(pkt InboundPacket) {
 	origin := pkt.ImmediatePeer
 	payload := msg.Payload
 	switch msg.Function {
-	case bvlc.FunctionOriginalUnicastNPDU, bvlc.FunctionOriginalBroadcastNPDU, bvlc.FunctionDistributeBroadcastToNetwork:
+	case bvlc.FunctionOriginalUnicastNPDU, bvlc.FunctionOriginalBroadcastNPDU:
 		// origin == immediate
+	case bvlc.FunctionDistributeBroadcastToNetwork:
+		// DBTN is a BBMD-directed request. Horizon 1 is not a BBMD server.
+		c.diag.Report(diag.Event{
+			Kind:    diag.KindBVLC,
+			Message: "inbound Distribute-Broadcast-To-Network ignored (client is not a BBMD)",
+			Fields:  map[string]any{"from": pkt.ImmediatePeer.String()},
+		})
+		return
 	case bvlc.FunctionForwardedNPDU:
 		// When foreign-device mode is active, only the configured BBMD may forward.
 		if c.fd != nil && !pkt.ImmediatePeer.Equal(c.fd.bbmd) {
@@ -202,6 +210,17 @@ func (c *Client) handlePacket(pkt InboundPacket) {
 		// Unsupported BVLC functions never reach the NPDU layer.
 		return
 	}
+	if !origin.IsValid() {
+		c.diag.Report(diag.Event{
+			Kind:    diag.KindBVLC,
+			Message: "inbound NPDU discarded: non-IPv4 or invalid endpoint",
+			Fields: map[string]any{
+				"origin":    origin.String(),
+				"immediate": pkt.ImmediatePeer.String(),
+			},
+		})
+		return
+	}
 	if len(payload) == 0 {
 		return
 	}
@@ -217,7 +236,16 @@ func (c *Client) handlePacket(pkt InboundPacket) {
 	}
 	if n.Source.MAC().IsZero() && n.Source.Scope() == 0 {
 		// No SADR: derive local station from origin IP MAC (BIP 6-octet).
-		src.bacnetAddress = bipMACAddress(origin)
+		addr, ok := bipMACAddress(origin)
+		if !ok {
+			c.diag.Report(diag.Event{
+				Kind:    diag.KindBVLC,
+				Message: "inbound NPDU discarded: cannot derive IPv4 MAC from endpoint",
+				Fields:  map[string]any{"origin": origin.String()},
+			})
+			return
+		}
+		src.bacnetAddress = addr
 	}
 	if n.NetworkMessage {
 		c.handleNetworkMessage(n, src)
@@ -234,14 +262,14 @@ func (c *Client) handlePacket(pkt InboundPacket) {
 	c.dispatchAPDU(pdu, src, n)
 }
 
-func bipMACAddress(ep bip.Endpoint) bacnet.Address {
+func bipMACAddress(ep bip.Endpoint) (bacnet.Address, bool) {
 	if !ep.IsValid() {
-		return bacnet.Address{}
+		return bacnet.Address{}, false
 	}
 	ip := ep.Addr.Addr().As4()
 	port := ep.Addr.Port()
 	mac := []byte{ip[0], ip[1], ip[2], ip[3], byte(port >> 8), byte(port)}
-	return bacnet.LocalStation(bacnet.MustMAC(mac))
+	return bacnet.LocalStation(bacnet.MustMAC(mac)), true
 }
 
 func (c *Client) dispatchAPDU(pdu apdu.PDU, src packetSource, n npdu.NPDU) {

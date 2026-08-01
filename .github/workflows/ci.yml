@@ -19,3 +19,68 @@ jobs:
       codecov-name: go-bacnet
       go-versions: '["1.23", "1.24", "1.25", "1.26"]'
     secrets: inherit
+
+  # Hermetic library coverage gate (Makefile COVER_PKGS + COVERAGE_MIN).
+  library-coverage:
+    name: Library coverage gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout go-bacnet
+        uses: actions/checkout@v7
+
+      - name: Load bacnet-interop pin
+        id: pin
+        run: |
+          set -euo pipefail
+          pin=interop/bacnet-interop-pin.json
+          test -f "$pin"
+          echo "ref=$(jq -r .ref "$pin")" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout bacnet-interop (pinned fixtures)
+        uses: actions/checkout@v7
+        with:
+          repository: otfabric/bacnet-interop
+          ref: ${{ steps.pin.outputs.ref }}
+          path: bacnet-interop
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      - name: Library coverage gate
+        env:
+          BACNET_INTEROP_ROOT: ${{ github.workspace }}/bacnet-interop
+          BACNET_INTEROP_REQUIRED: "1"
+          GOWORK: "off"
+        run: make coverage
+
+      - name: Upload coverage artifacts
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: library-coverage
+          path: |
+            coverage.out
+            coverage.txt
+          retention-days: 30
+          if-no-files-found: ignore
+
+  # Short fixed-duration fuzz on every PR/push (longer sessions stay local/nightly).
+  fuzz:
+    name: PR fuzz
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout go-bacnet
+        uses: actions/checkout@v7
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      - name: Short fuzz targets
+        env:
+          GOWORK: "off"
+          FUZZTIME: 15s
+        run: make fuzz

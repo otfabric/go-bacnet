@@ -29,6 +29,7 @@ type config struct {
 	maxTransactions   int
 	fd                *ForeignDeviceConfig
 	hopCount          uint8
+	registry          RegistryOptions
 }
 
 // ForeignDeviceConfig registers with a single BBMD.
@@ -45,7 +46,7 @@ type ForeignDeviceConfig struct {
 	TTL  time.Duration
 }
 
-// Diagnostic is a public, non-blocking observability event.
+// Diagnostic is a public observability event.
 type Diagnostic struct {
 	Kind    string
 	Message string
@@ -107,8 +108,11 @@ func withClock(clk clock.Clock) Option {
 	return func(c *config) { c.clock = clk }
 }
 
-// WithDiagnosticFunc registers a non-blocking diagnostic callback.
-// Nil disables diagnostics (silent by default).
+// WithDiagnosticFunc registers a diagnostic callback.
+//
+// Callbacks are invoked synchronously on the receive and timeout paths.
+// They must return promptly and must not panic. Nil disables diagnostics
+// (silent by default).
 func WithDiagnosticFunc(fn func(Diagnostic)) Option {
 	return func(c *config) {
 		if fn == nil {
@@ -119,6 +123,12 @@ func WithDiagnosticFunc(fn func(Diagnostic)) Option {
 			fn(Diagnostic{Kind: string(e.Kind), Message: e.Message, Fields: e.Fields})
 		})
 	}
+}
+
+// WithRegistryOptions configures device-observation retention bounds.
+// Zero fields select package defaults (see RegistryOptions).
+func WithRegistryOptions(opts RegistryOptions) Option {
+	return func(c *config) { c.registry = opts }
 }
 
 // WithTransport injects a Transport (virtual or custom). Skips UDP dial.

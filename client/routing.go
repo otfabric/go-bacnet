@@ -60,11 +60,14 @@ func (r *routerCache) nextHop(network uint16, now time.Time) (bip.Endpoint, bool
 func (c *Client) handleNetworkMessage(n npdu.NPDU, src packetSource) {
 	switch n.NetMsgType {
 	case npdu.NetMsgIAmRouterToNetwork:
-		off := 0
-		for off+2 <= len(n.NetMsgData) {
-			netn := uint16(n.NetMsgData[off])<<8 | uint16(n.NetMsgData[off+1])
-			off += 2
-			c.routers.upsert(netn, src.immediate, src.origin, c.clock.Now())
+		nets, err := npdu.DecodeNetworkList(n.NetMsgData)
+		if err != nil {
+			c.diag.Report(diag.Event{Kind: diag.KindMalformed, Message: err.Error()})
+			return
+		}
+		now := c.clock.Now()
+		for _, netn := range nets {
+			c.routers.upsert(netn, src.immediate, src.origin, now)
 		}
 	case npdu.NetMsgWhoIsRouterToNetwork:
 		// Client does not answer as router.

@@ -37,7 +37,19 @@ Useful individual targets: `make test`, `make test-race`, `make vet`,
 
 ## Releases
 
-Cut releases via **Actions → Release → Run workflow** (see [RELEASE.md](RELEASE.md)).
+[RELEASE.md](RELEASE.md) is **release notes only**: title, then newest
+`## vX.Y.Z` section first. The shared release workflow parses from the top of
+that file — do not put versioning policy or how-to text above the latest tag.
+
+To cut a release:
+
+1. Add/update the `## vX.Y.Z` section at the top of `RELEASE.md` (after the title)
+2. Merge to `main`
+3. Run **Actions → Release → Run workflow** with the bump (`patch` / `minor` /
+   `major`). First tag: use **`minor`** for `v0.1.0`
+4. The workflow tags the module, publishes the GitHub release, and attaches
+   `bacnetctl` binaries
+
 Do not push tags or create GitHub releases locally unless that is explicitly
 requested.
 

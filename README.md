@@ -14,15 +14,15 @@ over IPv4/UDP on port **47808** (`0xBAC0`).
 New to BACnet? Start with [PROTOCOL.md](PROTOCOL.md) for a short primer on
 objects, BVLC/NPDU/APDU layering, discovery, and how those map to this library.
 
-**Status:** early v0.x **production-candidate** — Horizon 1 wire/runtime P0
-closed; three-peer software interop and race/fuzz evidence in place
-([PLAN.md](PLAN.md)). Not **production-usable** until the
+**Status:** early v0.x **production-candidate** — release-grade oracle evidence
+closed ([PLAN.md](PLAN.md) Batch 4D); cut `v0.1.1` via the Release workflow.
+Not **production-usable** until the
 [real-device gate](docs/REAL_DEVICE_GATE.md) (≥2 independent BACnet/IP devices).
 
 | Label | Meaning |
 |-------|---------|
 | **alpha** | Pre-hardening / incomplete evidence |
-| **production-candidate** | Current — P0 wire/runtime closed with reproducible oracle/lab evidence |
+| **production-candidate** | Current — P0 wire/runtime + reproducible pinned multi-peer evidence |
 | **production-usable** | [Real-device gate](docs/REAL_DEVICE_GATE.md) met (≥2 independent BACnet/IP devices) |
 
 Public Address, Value, transaction and subscription APIs may still evolve.
@@ -131,9 +131,11 @@ BACnet/IP peers use `bip.Endpoint` (not a root type).
 | [INTEROP.md](INTEROP.md) | Peer/topology scenarios and `-tags=interop` |
 | [RELEASE.md](RELEASE.md) | Versioning policy and history |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Local checks and import boundaries |
+| [PLAN.md](PLAN.md) | Evidence batches and Horizon 2+ roadmap |
 | [docs/PACKAGE_DESIGN.md](docs/PACKAGE_DESIGN.md) | Package dependency rules |
 | [docs/STANDARD_BASELINE.md](docs/STANDARD_BASELINE.md) | Normative baseline |
 | [docs/CAPABILITY_MATRIX.md](docs/CAPABILITY_MATRIX.md) | Horizon 1 capabilities |
+| [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md) | Peer/device evidence matrix and positioning |
 | [docs/REAL_DEVICE_GATE.md](docs/REAL_DEVICE_GATE.md) | Production-usable evidence bar |
 
 ### License

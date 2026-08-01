@@ -59,9 +59,12 @@ func (c *Client) SendWhoIs(ctx context.Context, dest bip.Endpoint, broadcast boo
 }
 
 // Discover sends a global-broadcast Who-Is and collects I-Am observations
-// until ctx is done. The returned error is typically context.Canceled or
-// context.DeadlineExceeded after a successful collection window; check
-// Devices() for results.
+// until ctx is done. The returned slice contains only observations whose
+// LastSeen is at or after the start of this discovery window. Devices()
+// still returns the full retained registry snapshot.
+//
+// The returned error is typically context.Canceled or context.DeadlineExceeded
+// after a successful collection window.
 //
 // For directed discovery (e.g. Docker published UDP ports), call SendWhoIs
 // with broadcast=false and poll Devices() / registry observations.
@@ -69,6 +72,7 @@ func (c *Client) Discover(ctx context.Context, opts DiscoveryOptions) ([]DeviceO
 	if c.isClosed() {
 		return nil, bacnet.ErrClosed
 	}
+	since := c.clock.Now()
 	port := c.cfg.port
 	if port == 0 {
 		port = bip.DefaultPort
@@ -79,9 +83,9 @@ func (c *Client) Discover(ctx context.Context, opts DiscoveryOptions) ([]DeviceO
 	}
 	select {
 	case <-ctx.Done():
-		return c.reg.Observations(), ctx.Err()
+		return c.reg.ObservationsSince(since), ctx.Err()
 	case <-c.closeCh:
-		return c.reg.Observations(), bacnet.ErrClosed
+		return c.reg.ObservationsSince(since), bacnet.ErrClosed
 	}
 }
 
@@ -107,7 +111,9 @@ func (c *Client) handleUnconfirmed(req *apdu.UnconfirmedRequest, src packetSourc
 			Capabilities:  caps,
 		}
 		if obs.Address.MAC().IsZero() {
-			obs.Address = bipMACAddress(src.origin)
+			if addr, ok := bipMACAddress(src.origin); ok {
+				obs.Address = addr
+			}
 		}
 		c.reg.Upsert(obs)
 	case apdu.ServiceUnconfirmedCOV:

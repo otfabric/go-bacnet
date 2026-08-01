@@ -12,7 +12,9 @@ module; the library owns behavioural tests.
 
 Horizon 1 peers: **bacnet-stack**, **BACpypes3**, and **BACnet4J**. Topology aid:
 **bip-router** (not a peer oracle). Additional oracles may be added later
-without changing ownership.
+without changing ownership — planned Go peers include **worldiety/bacnet**
+(primary modern competitor) and optionally NubeDev for behavioral comparison
+(see [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md) and [PLAN.md](PLAN.md)).
 
 ## Fixtures (Gate 3, no Docker)
 

@@ -421,6 +421,28 @@ func assertReencode(t *testing.T, meta fixtures.Meta, raw []byte, encode func() 
 	}
 }
 
+// layerOrder ranks fixture decode stages for multi-stage operations
+// (e.g. APDU framing then service payload). Unknown layers sort last.
+func layerOrder(layer string) int {
+	switch layer {
+	case "tag", "bvlc":
+		return 1
+	case "npdu":
+		return 2
+	case "apdu":
+		return 3
+	case "service":
+		return 4
+	default:
+		return 99
+	}
+}
+
+// assertExpectedError validates error expectations across multi-stage parsers.
+//
+//	current before expected layer: require err == nil and continue
+//	current equals expected layer: require error and validate category
+//	current after expected layer: fail (expected layer was missed)
 func assertExpectedError(t *testing.T, meta fixtures.Meta, err error, layer string) {
 	t.Helper()
 	if meta.ExpectedError == nil {
@@ -429,11 +451,21 @@ func assertExpectedError(t *testing.T, meta fixtures.Meta, err error, layer stri
 		}
 		return
 	}
+	wantLayer := meta.ExpectedError.Layer
+	switch {
+	case wantLayer != "" && layer != wantLayer && layerOrder(layer) < layerOrder(wantLayer):
+		if err != nil {
+			t.Fatalf("unexpected error at layer %q (want failure at %q): %v", layer, wantLayer, err)
+		}
+		return
+	case wantLayer != "" && layer != wantLayer && layerOrder(layer) > layerOrder(wantLayer):
+		t.Fatalf("missed expected error at layer %q (now at %q, err=%v)", wantLayer, layer, err)
+	case wantLayer != "" && layer != wantLayer:
+		// Same rank, different name (e.g. tag vs bvlc).
+		t.Fatalf("error layer=%q want %q (err=%v)", layer, wantLayer, err)
+	}
 	if err == nil {
 		t.Fatal("expected error")
-	}
-	if meta.ExpectedError.Layer != "" && meta.ExpectedError.Layer != layer {
-		t.Fatalf("error layer=%q want %q (err=%v)", layer, meta.ExpectedError.Layer, err)
 	}
 	switch meta.ExpectedError.Category {
 	case "malformed":

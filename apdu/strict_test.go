@@ -1,0 +1,62 @@
+// SPDX-License-Identifier: MIT
+
+package apdu_test
+
+import (
+	"errors"
+	"testing"
+
+	"github.com/otfabric/go-bacnet"
+	"github.com/otfabric/go-bacnet/apdu"
+)
+
+func TestParseRejectsReservedAndInvalidFraming(t *testing.T) {
+	limits := bacnet.DefaultDecodeLimits()
+	cases := []struct {
+		name string
+		raw  []byte
+	}{
+		{"confirmed reserved low bit", []byte{0x01, 0x05, 0x01, 0x0c}},
+		{"confirmed reserved max-info bit", []byte{0x00, 0x85, 0x01, 0x0c}},
+		{"confirmed undefined MaxAPDU", []byte{0x00, 0x06, 0x01, 0x0c}},
+		{"confirmed MoreFollows without SEG", []byte{0x04, 0x05, 0x01, 0x0c}},
+		{"confirmed zero window", []byte{0x08, 0x05, 0x01, 0x00, 0x00, 0x0c}},
+		{"confirmed window >127", []byte{0x08, 0x05, 0x01, 0x00, 0x80, 0x0c}},
+		{"unconfirmed reserved bits", []byte{0x11, 0x08}},
+		{"simple ACK reserved bits", []byte{0x21, 0x01, 0x0c}},
+		{"complex ACK reserved bits", []byte{0x31, 0x01, 0x0c}},
+		{"complex ACK MoreFollows without SEG", []byte{0x34, 0x01, 0x0c}},
+		{"complex ACK zero window", []byte{0x38, 0x01, 0x00, 0x00, 0x0c}},
+		{"segment ACK reserved bits", []byte{0x44, 0x01, 0x00, 0x01}},
+		{"segment ACK zero window", []byte{0x40, 0x01, 0x00, 0x00}},
+		{"error reserved bits", []byte{0x51, 0x01, 0x0c}},
+		{"reject reserved bits", []byte{0x61, 0x01, 0x01}},
+		{"abort reserved bits", []byte{0x72, 0x01, 0x01}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if _, err := apdu.Parse(tc.raw, limits); !errors.Is(err, bacnet.ErrMalformed) {
+				t.Fatalf("err=%v", err)
+			}
+		})
+	}
+}
+
+func FuzzParseAPDU(f *testing.F) {
+	seeds := [][]byte{
+		{0x02, 0x63, 0x01, 0x0c, 0x0c, 0x00, 0x00, 0x00, 0x01, 0x19, 0x55},
+		{0x10, 0x08},
+		{0x20, 0x01, 0x0f},
+		{0x3c, 0x05, 0x00, 0x01, 0x0c, 0x0c, 0x00, 0x80, 0x00, 0x01},
+		{0x40, 0x05, 0x00, 0x01},
+		{0x50, 0x01, 0x0c, 0x91, 0x02, 0x91, 0x20},
+		{0x60, 0x01, 0x01},
+		{0x71, 0x01, 0x02},
+	}
+	for _, s := range seeds {
+		f.Add(s)
+	}
+	f.Fuzz(func(t *testing.T, data []byte) {
+		_, _ = apdu.Parse(data, bacnet.DefaultDecodeLimits())
+	})
+}

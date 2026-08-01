@@ -79,6 +79,28 @@ func TestNewUDPValidationFailures(t *testing.T) {
 	}
 }
 
+func TestWithRegistryOptionsApplied(t *testing.T) {
+	clk := clock.NewManual(time.Unix(0, 0).UTC())
+	tr := virtual.New(bip.NewEndpoint(netip.MustParseAddrPort("127.0.0.1:47808")), clk, 4)
+	opts := RegistryOptions{
+		MaxObservations:     16,
+		MaxPathsPerInstance: 2,
+		ObservationTTL:      -1,
+	}
+	c, err := New(
+		WithTransport(AdaptVirtual(tr)),
+		withClock(clk),
+		WithRegistryOptions(opts),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = c.Close() }()
+	if c.reg.opts.MaxObservations != 16 || c.reg.opts.MaxPathsPerInstance != 2 || c.reg.opts.ObservationTTL != -1 {
+		t.Fatalf("registry opts %#v", c.reg.opts)
+	}
+}
+
 func TestWithDiagnosticFuncNilUsesDiscard(t *testing.T) {
 	clk := clock.NewManual(time.Unix(0, 0).UTC())
 	tr := virtual.New(bip.NewEndpoint(netip.MustParseAddrPort("127.0.0.1:47808")), clk, 4)

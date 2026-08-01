@@ -5,6 +5,10 @@
 // apdu understands PDU structure, service choice and raw service payload only.
 // It does not decode ReadProperty, Who-Is or COV payload structure.
 //
+// Horizon 1 uses a strict framing decoder: reserved header bits, undefined
+// MaxAPDU codes, MoreFollows without SegmentedMessage, and zero/out-of-range
+// segment windows are rejected as ErrMalformed.
+//
 // apdu is a sibling wire codec: it may import github.com/otfabric/go-bacnet
 // but must not import bvlc or npdu. Payload may alias the input buffer.
 package apdu
@@ -163,6 +167,12 @@ func parseConfirmed(data []byte) (PDU, error) {
 		return PDU{}, fmt.Errorf("%w: confirmed request truncated", bacnet.ErrMalformed)
 	}
 	b0 := data[0]
+	if b0&0x01 != 0 {
+		return PDU{}, fmt.Errorf("%w: confirmed request reserved bit set", bacnet.ErrMalformed)
+	}
+	if data[1]&0x80 != 0 {
+		return PDU{}, fmt.Errorf("%w: confirmed request reserved max-info bit set", bacnet.ErrMalformed)
+	}
 	req := &ConfirmedRequest{
 		SegmentedMessage:          b0&0x08 != 0,
 		MoreFollows:               b0&0x04 != 0,
@@ -171,6 +181,12 @@ func parseConfirmed(data []byte) (PDU, error) {
 		MaxAPDU:                   data[1] & 0x0F,
 		InvokeID:                  data[2],
 	}
+	if err := checkSegmentFlags(req.SegmentedMessage, req.MoreFollows); err != nil {
+		return PDU{}, err
+	}
+	if _, ok := DecodeMaxAPDUSize(MaxAPDUCode(req.MaxAPDU)); !ok {
+		return PDU{}, fmt.Errorf("%w: undefined MaxAPDU code %d", bacnet.ErrMalformed, req.MaxAPDU)
+	}
 	off := 3
 	if req.SegmentedMessage {
 		if len(data) < 6 {
@@ -178,6 +194,9 @@ func parseConfirmed(data []byte) (PDU, error) {
 		}
 		req.SequenceNumber = data[3]
 		req.ProposedWindowSize = data[4]
+		if err := checkWindowSize(req.ProposedWindowSize); err != nil {
+			return PDU{}, err
+		}
 		off = 5
 	}
 	if off >= len(data) {
@@ -192,6 +211,9 @@ func parseUnconfirmed(data []byte) (PDU, error) {
 	if len(data) < 2 {
 		return PDU{}, fmt.Errorf("%w: unconfirmed truncated", bacnet.ErrMalformed)
 	}
+	if data[0]&0x0F != 0 {
+		return PDU{}, fmt.Errorf("%w: unconfirmed reserved bits set", bacnet.ErrMalformed)
+	}
 	return PDU{
 		Type: TypeUnconfirmedRequest,
 		UnconfirmedRequest: &UnconfirmedRequest{
@@ -204,6 +226,9 @@ func parseUnconfirmed(data []byte) (PDU, error) {
 func parseSimpleACK(data []byte) (PDU, error) {
 	if len(data) != 3 {
 		return PDU{}, fmt.Errorf("%w: simple ACK length", bacnet.ErrMalformed)
+	}
+	if data[0]&0x0F != 0 {
+		return PDU{}, fmt.Errorf("%w: simple ACK reserved bits set", bacnet.ErrMalformed)
 	}
 	return PDU{
 		Type: TypeSimpleACK,
@@ -219,10 +244,16 @@ func parseComplexACK(data []byte) (PDU, error) {
 		return PDU{}, fmt.Errorf("%w: complex ACK truncated", bacnet.ErrMalformed)
 	}
 	b0 := data[0]
+	if b0&0x03 != 0 {
+		return PDU{}, fmt.Errorf("%w: complex ACK reserved bits set", bacnet.ErrMalformed)
+	}
 	ack := &ComplexACK{
 		SegmentedMessage: b0&0x08 != 0,
 		MoreFollows:      b0&0x04 != 0,
 		InvokeID:         data[1],
+	}
+	if err := checkSegmentFlags(ack.SegmentedMessage, ack.MoreFollows); err != nil {
+		return PDU{}, err
 	}
 	off := 2
 	if ack.SegmentedMessage {
@@ -231,6 +262,9 @@ func parseComplexACK(data []byte) (PDU, error) {
 		}
 		ack.SequenceNumber = data[2]
 		ack.ProposedWindowSize = data[3]
+		if err := checkWindowSize(ack.ProposedWindowSize); err != nil {
+			return PDU{}, err
+		}
 		off = 4
 	}
 	if off >= len(data) {
@@ -245,6 +279,13 @@ func parseSegmentACK(data []byte) (PDU, error) {
 	if len(data) != 4 {
 		return PDU{}, fmt.Errorf("%w: segment ACK length", bacnet.ErrMalformed)
 	}
+	if data[0]&0x0C != 0 {
+		return PDU{}, fmt.Errorf("%w: segment ACK reserved bits set", bacnet.ErrMalformed)
+	}
+	window := data[3]
+	if err := checkWindowSize(window); err != nil {
+		return PDU{}, err
+	}
 	return PDU{
 		Type: TypeSegmentACK,
 		SegmentACK: &SegmentACK{
@@ -252,7 +293,7 @@ func parseSegmentACK(data []byte) (PDU, error) {
 			Server:           data[0]&0x01 != 0,
 			InvokeID:         data[1],
 			SequenceNumber:   data[2],
-			ActualWindowSize: data[3],
+			ActualWindowSize: window,
 		},
 	}, nil
 }
@@ -260,6 +301,9 @@ func parseSegmentACK(data []byte) (PDU, error) {
 func parseError(data []byte) (PDU, error) {
 	if len(data) < 3 {
 		return PDU{}, fmt.Errorf("%w: error PDU truncated", bacnet.ErrMalformed)
+	}
+	if data[0]&0x0F != 0 {
+		return PDU{}, fmt.Errorf("%w: error PDU reserved bits set", bacnet.ErrMalformed)
 	}
 	return PDU{
 		Type: TypeError,
@@ -275,12 +319,18 @@ func parseReject(data []byte) (PDU, error) {
 	if len(data) != 3 {
 		return PDU{}, fmt.Errorf("%w: reject length", bacnet.ErrMalformed)
 	}
+	if data[0]&0x0F != 0 {
+		return PDU{}, fmt.Errorf("%w: reject reserved bits set", bacnet.ErrMalformed)
+	}
 	return PDU{Type: TypeReject, Reject: &RejectPDU{InvokeID: data[1], Reason: data[2]}}, nil
 }
 
 func parseAbort(data []byte) (PDU, error) {
 	if len(data) != 3 {
 		return PDU{}, fmt.Errorf("%w: abort length", bacnet.ErrMalformed)
+	}
+	if data[0]&0x0E != 0 {
+		return PDU{}, fmt.Errorf("%w: abort reserved bits set", bacnet.ErrMalformed)
 	}
 	return PDU{
 		Type: TypeAbort,
@@ -290,6 +340,20 @@ func parseAbort(data []byte) (PDU, error) {
 			Reason:   data[2],
 		},
 	}, nil
+}
+
+func checkSegmentFlags(segmented, moreFollows bool) error {
+	if moreFollows && !segmented {
+		return fmt.Errorf("%w: MoreFollows without SegmentedMessage", bacnet.ErrMalformed)
+	}
+	return nil
+}
+
+func checkWindowSize(window uint8) error {
+	if window == 0 || window > 127 {
+		return fmt.Errorf("%w: window size %d", bacnet.ErrMalformed, window)
+	}
+	return nil
 }
 
 // AppendConfirmedRequest encodes a confirmed request.

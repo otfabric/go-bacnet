@@ -33,7 +33,7 @@ func TestDeviceCapabilitiesHelpers(t *testing.T) {
 }
 
 func TestRegistryUpsertResolveByInstance(t *testing.T) {
-	reg := newRegistry(diag.Discard{})
+	reg := newRegistry(diag.Discard{}, nil, RegistryOptions{})
 	peer := bip.NewEndpoint(netip.MustParseAddrPort("10.0.0.2:47808"))
 	addr := bacnet.LocalStation(bacnet.MustMAC([]byte{10, 0, 0, 2, 0xBA, 0xC0}))
 
@@ -91,7 +91,7 @@ func TestRegistryIAmViaClientDevices(t *testing.T) {
 }
 
 func TestRegistryCapabilityMergePrecedence(t *testing.T) {
-	reg := newRegistry(diag.Discard{})
+	reg := newRegistry(diag.Discard{}, nil, RegistryOptions{})
 	peer := bip.NewEndpoint(netip.MustParseAddrPort("10.0.0.2:47808"))
 	addr := bacnet.LocalStation(bacnet.MustMAC([]byte{10, 0, 0, 2, 0xBA, 0xC0}))
 	base := DeviceObservation{
@@ -145,7 +145,7 @@ func TestRegistryCapabilityMergePrecedence(t *testing.T) {
 
 func TestRegistryDuplicateInstanceDiagnostic(t *testing.T) {
 	var events []diag.Event
-	reg := newRegistry(diag.Func(func(e diag.Event) { events = append(events, e) }))
+	reg := newRegistry(diag.Func(func(e diag.Event) { events = append(events, e) }), nil, RegistryOptions{})
 	peerA := bip.NewEndpoint(netip.MustParseAddrPort("10.0.0.2:47808"))
 	peerB := bip.NewEndpoint(netip.MustParseAddrPort("10.0.0.3:47808"))
 	addrA := bacnet.LocalStation(bacnet.MustMAC([]byte{10, 0, 0, 2, 0xBA, 0xC0}))
@@ -165,7 +165,7 @@ func TestRegistryDuplicateInstanceDiagnostic(t *testing.T) {
 }
 
 func TestRegistryResolveWithOrigin(t *testing.T) {
-	reg := newRegistry(diag.Discard{})
+	reg := newRegistry(diag.Discard{}, nil, RegistryOptions{})
 	origin := bip.NewEndpoint(netip.MustParseAddrPort("192.168.1.1:47808"))
 	peer := bip.NewEndpoint(netip.MustParseAddrPort("10.0.0.2:47808"))
 	remote := bacnet.RemoteStation(2, bacnet.MustMAC([]byte{10, 0, 0, 2, 0xBA, 0xC0}))

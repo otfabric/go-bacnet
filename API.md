@@ -25,6 +25,13 @@ Rules (enforced by `internal/imports`):
 
 See [docs/PACKAGE_DESIGN.md](docs/PACKAGE_DESIGN.md).
 
+## Framing policy
+
+`apdu.Parse` and `npdu.Parse` are strict: reserved bits, undefined MaxAPDU
+codes, MoreFollows without SegmentedMessage, invalid segment windows, global
+broadcast with non-zero DADR, and malformed router network lists return
+`ErrMalformed`. See [PROTOCOL.md](PROTOCOL.md).
+
 ## Address and MAC
 
 `bacnet.Address` is data-link independent:
@@ -82,6 +89,10 @@ optional origin / MaxAPDU). Discovery populates `Devices()` observations.
 
 - `SendWhoIs(ctx, dest, broadcast, opts)` — directed or broadcast Who-Is.
 - `Discover(ctx, opts)` — local-broadcast Who-Is until `ctx` ends (or client closes).
+  Returns only observations whose `LastSeen` falls in this discovery window;
+  `Devices()` returns the full retained registry snapshot.
+- `WithRegistryOptions` bounds observation retention (global cap, per-instance
+  path cap, TTL; defaults 4096 / 8 / 30m).
 - `DiscoveryOptions.Address` may override the NPDU destination:
   - unset → GlobalBroadcast when `broadcast` is true; no DNET when false
   - `RemoteBroadcast(dnet)` with `broadcast=false` and `dest=router` probes a
@@ -155,8 +166,9 @@ payload through send. See `client.InvokeConfirmed` GoDoc.
 
 ## Diagnostics
 
-`WithDiagnosticFunc(func(Diagnostic))` installs an optional non-blocking
-callback. Nil/omitted is silent. There is no default logger.
+`WithDiagnosticFunc(func(Diagnostic))` installs an optional **synchronous**
+callback on the receive and timeout paths. Callbacks must return promptly and
+must not panic. Nil/omitted is silent. There is no default logger.
 
 ## COV subscription
 
@@ -183,7 +195,10 @@ marks Degraded **without** overwriting Closed, and surfaces `Gap=true` on the
 next successful delivery. Routed COV delivery uses the same path matcher as
 confirmed responses (remote address + expected next hop). Confirmed-notification
 SimpleACKs use a bounded APDU-timeout context; send failures are reported via
-diagnostics.
+diagnostics. Confirmed COV indications are **acknowledged before local
+admission**: a syntactically valid notification with an unknown process ID,
+wrong object, or wrong route still receives SimpleACK and is then discarded
+locally (limits peer retries; not a trust signal).
 
 Client `Close` closes all subscriptions.
 

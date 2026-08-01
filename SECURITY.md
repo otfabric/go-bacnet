@@ -20,6 +20,14 @@ reassembled APDU size). Application-configured hard bounds win over
 peer-advertised maxima. Malformed or hostile inputs should fail with
 `ErrMalformed` / `ErrLimitExceeded` rather than unbounded allocation.
 
+Device observation retention is bounded by `client.RegistryOptions`
+(defaults: 4096 observations, 8 paths per instance, 30-minute TTL). Hostile
+I-Am floods must not grow process memory without bound; eviction is reported
+via diagnostics.
+
+Horizon 1 B/IP endpoints are IPv4-only. Custom transports that inject IPv6
+`ImmediatePeer` values are diagnosed and discarded; they must not panic.
+
 ## Reporting a vulnerability
 
 Report security vulnerabilities **privately** — do not open a public GitHub

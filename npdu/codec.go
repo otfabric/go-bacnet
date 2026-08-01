@@ -2,6 +2,10 @@
 
 // Package npdu implements BACnet Network Layer Protocol Data Units.
 //
+// Horizon 1 uses a strict framing decoder: reserved control bits, global
+// broadcast with non-zero DADR, and odd-length router network lists are
+// rejected as ErrMalformed.
+//
 // npdu is a sibling wire codec: it may import github.com/otfabric/go-bacnet
 // but must not import bvlc or apdu. APDU payload may alias the input buffer.
 package npdu
@@ -21,6 +25,8 @@ const (
 	ControlSourceSpec      = 0x08
 	ControlExpectingReply  = 0x04
 	ControlPriorityMask    = 0x03
+	// ControlReservedBits must be zero on the wire (ASHRAE 135).
+	ControlReservedBits = 0x40 | 0x10
 )
 
 // NetworkMessage types used in Horizon 1.
@@ -65,6 +71,9 @@ func Parse(data []byte, limits bacnet.DecodeLimits) (NPDU, int, error) {
 	if n.Version != Version1 {
 		return NPDU{}, 0, fmt.Errorf("%w: NPDU version %d", bacnet.ErrUnsupported, n.Version)
 	}
+	if n.Control&ControlReservedBits != 0 {
+		return NPDU{}, 0, fmt.Errorf("%w: NPDU reserved control bits set", bacnet.ErrMalformed)
+	}
 	n.NetworkMessage = n.Control&ControlNetworkMessage != 0
 	n.ExpectingReply = n.Control&ControlExpectingReply != 0
 	n.Priority = n.Control & ControlPriorityMask
@@ -97,10 +106,19 @@ func Parse(data []byte, limits bacnet.DecodeLimits) (NPDU, int, error) {
 		off += dlen
 		switch {
 		case dnet == 0xFFFF:
+			if dlen != 0 {
+				return NPDU{}, 0, fmt.Errorf("%w: global broadcast with non-zero DLEN", bacnet.ErrMalformed)
+			}
 			n.Destination = bacnet.GlobalBroadcast()
 		case dlen == 0:
+			if dnet == 0 {
+				return NPDU{}, 0, fmt.Errorf("%w: remote broadcast DNET 0", bacnet.ErrMalformed)
+			}
 			n.Destination = bacnet.RemoteBroadcast(dnet)
 		default:
+			if dnet == 0 {
+				return NPDU{}, 0, fmt.Errorf("%w: remote station DNET 0", bacnet.ErrMalformed)
+			}
 			n.Destination = bacnet.RemoteStation(dnet, mac)
 		}
 		if off >= len(data) {
@@ -146,10 +164,40 @@ func Parse(data []byte, limits bacnet.DecodeLimits) (NPDU, int, error) {
 		n.NetMsgType = data[off]
 		off++
 		n.NetMsgData = data[off:]
+		if err := validateNetworkMessageData(n.NetMsgType, n.NetMsgData); err != nil {
+			return NPDU{}, 0, err
+		}
 		return n, len(data), nil
 	}
 	n.APDU = data[off:]
 	return n, len(data), nil
+}
+
+func validateNetworkMessageData(msgType uint8, data []byte) error {
+	switch msgType {
+	case NetMsgIAmRouterToNetwork, NetMsgRouterAvailableToNetwork, NetMsgRouterBusyToNetwork:
+		if _, err := DecodeNetworkList(data); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// DecodeNetworkList decodes a sequence of 16-bit BACnet network numbers.
+// Length must be even; network number 0 is rejected.
+func DecodeNetworkList(data []byte) ([]uint16, error) {
+	if len(data)%2 != 0 {
+		return nil, fmt.Errorf("%w: odd network list length", bacnet.ErrMalformed)
+	}
+	out := make([]uint16, 0, len(data)/2)
+	for i := 0; i+1 < len(data); i += 2 {
+		netn := uint16(data[i])<<8 | uint16(data[i+1])
+		if netn == 0 {
+			return nil, fmt.Errorf("%w: network number 0 in list", bacnet.ErrMalformed)
+		}
+		out = append(out, netn)
+	}
+	return out, nil
 }
 
 // Append encodes an NPDU. For application messages, set APDU; for network

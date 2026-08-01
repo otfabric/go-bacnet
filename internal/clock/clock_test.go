@@ -10,6 +10,31 @@ import (
 	"github.com/otfabric/go-bacnet/internal/clock"
 )
 
+func TestRealClockBasics(t *testing.T) {
+	var r clock.Real
+	if r.Now().IsZero() {
+		t.Fatal("Real.Now zero")
+	}
+	tm := r.NewTimer(time.Hour)
+	if !tm.Stop() {
+		t.Fatal("Stop active timer")
+	}
+	// Stopped timer: Reset starts it again.
+	if tm.Reset(30 * time.Millisecond) {
+		t.Fatal("Reset on stopped timer should report was-not-active")
+	}
+	select {
+	case <-tm.C():
+	case <-time.After(2 * time.Second):
+		t.Fatal("Reset timer did not fire")
+	}
+	select {
+	case <-r.After(5 * time.Millisecond):
+	case <-time.After(2 * time.Second):
+		t.Fatal("After did not fire")
+	}
+}
+
 func TestManualAdvanceFiresTimer(t *testing.T) {
 	m := clock.NewManual(time.Unix(0, 0).UTC())
 	tm := m.NewTimer(5 * time.Second)

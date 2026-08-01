@@ -114,6 +114,14 @@ Large ComplexACKs may arrive as **segments**. Horizon 1 reassembles segmented
 ComplexACK responses and exchanges SegmentACK as required. Sending segmented
 confirmed requests is out of Horizon 1 scope.
 
+## Framing policy (Horizon 1)
+
+APDU and NPDU parsers are **strict by default**: reserved header bits,
+undefined MaxAPDU codes, MoreFollows without SegmentedMessage, zero or
+out-of-range segment windows, global broadcast with a non-zero DADR, and
+malformed router network lists are rejected as malformed rather than
+normalized away. There is no separate compatibility profile in Horizon 1.
+
 ## What to read next
 
 | Document | When |

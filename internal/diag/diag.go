@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 
-// Package diag defines an optional non-blocking diagnostic sink.
+// Package diag defines an optional diagnostic sink.
+//
+// Report is synchronous: sinks must return promptly and must not panic.
 package diag
 
 import "fmt"
@@ -21,6 +23,8 @@ const (
 	KindForeignDevice     Kind = "foreign_device"
 	KindRouter            Kind = "router"
 	KindCOV               Kind = "cov"
+	KindRegistryEviction  Kind = "registry_eviction"
+	KindBVLC              Kind = "bvlc"
 )
 
 // Event is a diagnostic report.
@@ -30,7 +34,9 @@ type Event struct {
 	Fields  map[string]any
 }
 
-// Sink receives diagnostics. Implementations must not block.
+// Sink receives diagnostics. Report is invoked synchronously on the
+// library receive/timeout path; implementations must return promptly
+// and must not panic.
 type Sink interface {
 	Report(Event)
 }

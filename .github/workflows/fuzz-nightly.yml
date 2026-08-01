@@ -1,0 +1,60 @@
+name: Nightly fuzz
+run-name: "Nightly fuzz (${{ github.event_name }}) on ${{ github.ref_name }}"
+
+on:
+  schedule:
+    # 03:17 UTC — offset from top-of-hour to reduce shared-runner contention.
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fuzz-nightly:
+    name: Nightly fuzz (${{ matrix.target }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: FuzzParseTag
+            pkg: .
+          - target: FuzzParseBVLC
+            pkg: ./bvlc
+          - target: FuzzParseAPDU
+            pkg: ./apdu
+          - target: FuzzParseNPDU
+            pkg: ./npdu
+          - target: FuzzDecodeWhoIs
+            pkg: ./service
+          - target: FuzzDecodeIAm
+            pkg: ./service
+          - target: FuzzDecodeReadProperty
+            pkg: ./service
+    steps:
+      - name: Checkout go-bacnet
+        uses: actions/checkout@v7
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      - name: Fuzz ${{ matrix.target }}
+        env:
+          GOWORK: "off"
+          FUZZTIME: 5m
+        run: |
+          set -euo pipefail
+          go test -run='^$' -fuzz='^${{ matrix.target }}$' -fuzztime="${FUZZTIME}" ${{ matrix.pkg }}
+
+      - name: Upload fuzz corpus / crashers
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: fuzz-${{ matrix.target }}
+          path: |
+            **/testdata/fuzz/**
+          retention-days: 30
+          if-no-files-found: ignore

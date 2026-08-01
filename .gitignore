@@ -22,3 +22,6 @@ vendor/
 # Fuzz
 **/testdata/fuzz/*
 !**/testdata/fuzz/
+
+# Generated coverage profiles
+cover*.out
