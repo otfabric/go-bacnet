@@ -90,6 +90,10 @@ jobs:
           docker pull "$BACPYPES3_IMAGE"
           docker pull "$BACNET4J_IMAGE"
           docker pull "$BIP_ROUTER_IMAGE"
+          # In-network re-exec uses golang:<go.mod major.minor>; pull before tests
+          # so the first routed topology is not racing an image download.
+          go_ver=$(go list -m -f '{{.GoVersion}}' | sed -E 's/^([0-9]+\.[0-9]+).*/\1/')
+          docker pull "golang:${go_ver}"
 
       - name: Fixture corpus (required)
         env:
@@ -167,6 +171,12 @@ jobs:
         run: make build
         env:
           PLATFORM: linux/amd64
+
+      - name: Pull golang re-exec image
+        run: |
+          set -euo pipefail
+          go_ver=$(go list -m -f '{{.GoVersion}}' | sed -E 's/^([0-9]+\.[0-9]+).*/\1/')
+          docker pull "golang:${go_ver}"
 
       - name: Fixture corpus (required)
         env:

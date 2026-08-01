@@ -30,10 +30,17 @@ func resolveInteropRootFrom(modRoot, envRoot string) (string, error) {
 }
 
 func requireInteropFixtures(root string) error {
-	for _, rel := range []string{
-		filepath.Join("fixtures", "device", "device-baseline-v1.json"),
+	required := []string{
 		filepath.Join("fixtures", "manifest.json"),
-	} {
+	}
+	v2 := filepath.Join(root, "fixtures", "device", "device-baseline-v2.json")
+	v1 := filepath.Join(root, "fixtures", "device", "device-baseline-v1.json")
+	if st, err := os.Stat(v2); err != nil || st.IsDir() {
+		if st, err := os.Stat(v1); err != nil || st.IsDir() {
+			return fmt.Errorf("bacnet-interop fixtures incomplete at %s: missing device-baseline-v2.json (or v1)", root)
+		}
+	}
+	for _, rel := range required {
 		p := filepath.Join(root, rel)
 		if st, err := os.Stat(p); err != nil || st.IsDir() {
 			return fmt.Errorf("bacnet-interop fixtures incomplete at %s: missing %s", root, rel)

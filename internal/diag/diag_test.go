@@ -17,6 +17,10 @@ func TestDiscardAndFunc(t *testing.T) {
 	if got.Kind != diag.KindCOV || got.Message != "cov" {
 		t.Fatalf("got %#v", got)
 	}
+	sink.Report(diag.Event{Kind: diag.KindEvent, Message: "event"})
+	if got.Kind != diag.KindEvent {
+		t.Fatalf("got %#v", got)
+	}
 
 	var nilFunc diag.Func
 	nilFunc.Report(diag.Event{Kind: diag.KindRouter, Message: "noop"}) // must not panic

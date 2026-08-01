@@ -1,0 +1,263 @@
+// SPDX-License-Identifier: MIT
+
+package client
+
+import (
+	"context"
+	"fmt"
+	"sync"
+	"time"
+
+	"github.com/otfabric/go-bacnet"
+	"github.com/otfabric/go-bacnet/apdu"
+	"github.com/otfabric/go-bacnet/bip"
+)
+
+// BACnet Segmentation enumeration (I-Am / Device object).
+const (
+	segmentationBoth     uint8 = 0
+	segmentationTransmit uint8 = 1
+	segmentationReceive  uint8 = 2
+	segmentationNone     uint8 = 3
+)
+
+const (
+	confirmedSeg0Overhead = 7 // type, maxInfo, invoke, seq, window, service
+	confirmedSegNOverhead = 6 // type, maxInfo, invoke, seq, window, service
+	// defaultSegmentSendWindow is the proposed window when sending segmented
+	// confirmed requests (BACnet allows 1..127).
+	defaultSegmentSendWindow uint8 = 16
+	// defaultSegmentReceiveWindow ACKs every ComplexACK segment by default.
+	// Larger receive windows deadlock peers that wait for SegmentACK before
+	// sending the next segment (BACpypes3 / BACnet4J).
+	defaultSegmentReceiveWindow uint8 = 1
+)
+
+type segmentSender struct {
+	mu     sync.Mutex
+	active map[uint8]*segSendState
+}
+
+type segSendState struct {
+	invokeID  uint8
+	address   bacnet.Address
+	origin    bip.Endpoint
+	immediate bip.Endpoint
+	ch        chan *apdu.SegmentACK
+}
+
+func newSegmentSender() *segmentSender {
+	return &segmentSender{active: make(map[uint8]*segSendState)}
+}
+
+func (s *segmentSender) register(tx *pendingTx) <-chan *apdu.SegmentACK {
+	st := &segSendState{
+		invokeID:  tx.invokeID,
+		address:   tx.address,
+		origin:    tx.origin,
+		immediate: tx.immediate,
+		ch:        make(chan *apdu.SegmentACK, 128),
+	}
+	s.mu.Lock()
+	s.active[tx.invokeID] = st
+	s.mu.Unlock()
+	return st.ch
+}
+
+func (s *segmentSender) unregister(invokeID uint8) {
+	s.mu.Lock()
+	delete(s.active, invokeID)
+	s.mu.Unlock()
+}
+
+func (s *segmentSender) abortAll() {
+	s.mu.Lock()
+	s.active = make(map[uint8]*segSendState)
+	s.mu.Unlock()
+}
+
+func (s *segmentSender) deliver(ack *apdu.SegmentACK, src packetSource) {
+	if ack == nil {
+		return
+	}
+	s.mu.Lock()
+	st, ok := s.active[ack.InvokeID]
+	s.mu.Unlock()
+	if !ok {
+		return
+	}
+	if !matchTargetSource(Target{
+		Address:  st.address,
+		Endpoint: st.immediate,
+		Origin:   st.origin,
+	}, src) {
+		return
+	}
+	select {
+	case st.ch <- ack:
+	default:
+	}
+}
+
+func (c *Client) peerAcceptsSegmentedRequests(target Target) bool {
+	caps, ok := c.reg.ResolveCapabilities(target)
+	if !ok || !caps.Segmentation.Known {
+		return false
+	}
+	switch caps.Segmentation.Value {
+	case segmentationBoth, segmentationReceive:
+		return true
+	default:
+		return false
+	}
+}
+
+// buildConfirmedSegments splits a confirmed-request payload into segmented APDUs.
+// proposedWindow is encoded in every segment (1..127); callers pass the local
+// send window proposal from Client configuration.
+func buildConfirmedSegments(req apdu.ConfirmedRequest, remoteMax int, proposedWindow uint8) ([][]byte, error) {
+	if proposedWindow == 0 || proposedWindow > 127 {
+		proposedWindow = defaultSegmentSendWindow
+	}
+	firstMax := remoteMax - confirmedSeg0Overhead
+	laterMax := remoteMax - confirmedSegNOverhead
+	if firstMax < 1 || laterMax < 1 {
+		return nil, fmt.Errorf("%w: remote max APDU too small for segmented confirmed request", bacnet.ErrAPDUTooLarge)
+	}
+	payload := req.Payload
+	var out [][]byte
+	off := 0
+	seq := uint8(0)
+	for off < len(payload) || (off == 0 && len(payload) == 0) {
+		max := laterMax
+		if seq == 0 {
+			max = firstMax
+		}
+		end := off + max
+		if end > len(payload) {
+			end = len(payload)
+		}
+		more := end < len(payload)
+		seg := apdu.AppendConfirmedRequest(nil, apdu.ConfirmedRequest{
+			SegmentedMessage:          true,
+			MoreFollows:               more,
+			SegmentedResponseAccepted: req.SegmentedResponseAccepted,
+			MaxSegments:               req.MaxSegments,
+			MaxAPDU:                   req.MaxAPDU,
+			InvokeID:                  req.InvokeID,
+			SequenceNumber:            seq,
+			ProposedWindowSize:        proposedWindow,
+			ServiceChoice:             req.ServiceChoice,
+			Payload:                   payload[off:end],
+		})
+		if len(seg) > remoteMax {
+			return nil, fmt.Errorf("%w: segmented APDU exceeds remote max", bacnet.ErrAPDUTooLarge)
+		}
+		out = append(out, seg)
+		off = end
+		seq++
+		if !more {
+			break
+		}
+		if seq == 0 {
+			// Wrapped after 256 segments — refuse rather than reuse sequence 0.
+			return nil, fmt.Errorf("%w: confirmed request requires more than 256 segments", bacnet.ErrAPDUTooLarge)
+		}
+	}
+	return out, nil
+}
+
+func (c *Client) sendConfirmedSegments(ctx context.Context, target Target, tx *pendingTx, serviceChoice uint8, segments [][]byte, ackCh <-chan *apdu.SegmentACK) error {
+	window := c.cfg.segmentSendWindow
+	if window == 0 || window > 127 {
+		window = defaultSegmentSendWindow
+	}
+	nextToSend := 0
+	highestAcked := -1
+	inFlight := 0
+	nakRounds := 0
+
+	for highestAcked+1 < len(segments) {
+		for inFlight < int(window) && nextToSend < len(segments) {
+			if err := c.sendAPDU(ctx, target.Endpoint, false, target.Address, true, segments[nextToSend]); err != nil {
+				return err
+			}
+			tx.sent = true
+			nextToSend++
+			inFlight++
+		}
+
+		segTimer := c.clock.NewTimer(c.cfg.segmentTimeout)
+		gotProgress := false
+		for !gotProgress {
+			select {
+			case <-ctx.Done():
+				segTimer.Stop()
+				c.sendClientAbort(target, tx.invokeID, abortReasonOther)
+				return wrapOutcomeUnknown(serviceChoice, ctx.Err())
+			case <-c.closeCh:
+				segTimer.Stop()
+				return bacnet.ErrClosed
+			case <-segTimer.C():
+				c.sendClientAbort(target, tx.invokeID, abortReasonTSMTimeout)
+				err := &bacnet.AbortError{InvokeID: tx.invokeID, Server: false, Reason: abortReasonTSMTimeout}
+				return wrapOutcomeUnknown(serviceChoice, err)
+			case ack := <-ackCh:
+				if ack.InvokeID != tx.invokeID {
+					continue
+				}
+				if ack.ActualWindowSize >= 1 && ack.ActualWindowSize <= 127 {
+					window = ack.ActualWindowSize
+				}
+				if ack.NegativeACK {
+					nakRounds++
+					if nakRounds > c.cfg.retryCount+3 {
+						segTimer.Stop()
+						c.sendClientAbort(target, tx.invokeID, abortReasonTSMTimeout)
+						return wrapOutcomeUnknown(serviceChoice, bacnet.ErrTimeout)
+					}
+					// Sequence numbers are mod 256; NAK 255 means restart at 0.
+					nextToSend = int(uint8(ack.SequenceNumber + 1))
+					highestAcked = nextToSend - 1
+					inFlight = 0
+					segTimer.Stop()
+					gotProgress = true
+					continue
+				}
+				acked := int(ack.SequenceNumber)
+				if acked <= highestAcked {
+					// Duplicate ACK for an earlier segment; keep waiting.
+					continue
+				}
+				if acked >= nextToSend {
+					segTimer.Stop()
+					c.sendClientAbort(target, tx.invokeID, abortReasonInvalidAPDU)
+					return bacnet.ErrProtocolViolation
+				}
+				newly := acked - highestAcked
+				highestAcked = acked
+				inFlight -= newly
+				if inFlight < 0 {
+					inFlight = 0
+				}
+				nakRounds = 0
+				segTimer.Stop()
+				gotProgress = true
+			}
+		}
+	}
+	return nil
+}
+
+func (c *Client) sendClientAbort(target Target, invokeID uint8, reason uint8) {
+	bytes := apdu.AppendAbort(nil, apdu.AbortPDU{
+		Server:   false,
+		InvokeID: invokeID,
+		Reason:   reason,
+	})
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	_ = c.sendAPDU(ctx, target.Endpoint, false, target.Address, false, bytes)
+}
+
+const abortReasonOther uint8 = 0

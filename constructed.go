@@ -100,12 +100,86 @@ func AppendContextNull(dst []byte, tagNumber uint8) ([]byte, error) {
 	return appendContextPrimitive(dst, tagNumber, nil)
 }
 
+// AppendContextSigned appends a context-tagged signed integer.
+func AppendContextSigned(dst []byte, tagNumber uint8, v int64) ([]byte, error) {
+	return appendContextPrimitive(dst, tagNumber, encodeSigned(v))
+}
+
+// AppendContextBitString appends a context-tagged bit string.
+func AppendContextBitString(dst []byte, tagNumber uint8, v BitString) ([]byte, error) {
+	raw := append([]byte{v.UnusedBits}, v.Bytes...)
+	return appendContextPrimitive(dst, tagNumber, raw)
+}
+
+// AppendContextCharacterString appends a context-tagged character string.
+func AppendContextCharacterString(dst []byte, tagNumber uint8, v CharacterString) ([]byte, error) {
+	raw := append([]byte{v.Encoding}, v.Value...)
+	return appendContextPrimitive(dst, tagNumber, raw)
+}
+
+// AppendContextTime appends a context-tagged Time (4 octets).
+func AppendContextTime(dst []byte, tagNumber uint8, t Time) ([]byte, error) {
+	return appendContextPrimitive(dst, tagNumber, []byte{t.Hour, t.Minute, t.Second, t.Hundredths})
+}
+
+// ContextTime extracts a Time from a context primitive element.
+func ContextTime(el Element) (Time, error) {
+	if !el.Context || el.Opening || el.Closing || el.Value.Kind == ValueConstructed {
+		return Time{}, fmt.Errorf("%w: not context primitive", ErrMalformed)
+	}
+	if len(el.Value.OctetString) != 4 {
+		return Time{}, fmt.Errorf("%w: context time length", ErrMalformed)
+	}
+	return Time{
+		Hour:       el.Value.OctetString[0],
+		Minute:     el.Value.OctetString[1],
+		Second:     el.Value.OctetString[2],
+		Hundredths: el.Value.OctetString[3],
+	}, nil
+}
+
 // ContextUnsigned extracts an unsigned from a context primitive element.
 func ContextUnsigned(el Element) (uint64, error) {
 	if !el.Context || el.Opening || el.Closing || el.Value.Kind == ValueConstructed {
 		return 0, fmt.Errorf("%w: not context primitive", ErrMalformed)
 	}
 	return decodeUnsigned(el.Value.OctetString)
+}
+
+// ContextSigned extracts a signed integer from a context primitive element.
+func ContextSigned(el Element) (int64, error) {
+	if !el.Context || el.Opening || el.Closing || el.Value.Kind == ValueConstructed {
+		return 0, fmt.Errorf("%w: not context primitive", ErrMalformed)
+	}
+	return decodeSigned(el.Value.OctetString)
+}
+
+// ContextBitString extracts a bit string from a context primitive element.
+func ContextBitString(el Element) (BitString, error) {
+	if !el.Context || el.Opening || el.Closing || el.Value.Kind == ValueConstructed {
+		return BitString{}, fmt.Errorf("%w: not context primitive", ErrMalformed)
+	}
+	if len(el.Value.OctetString) < 1 {
+		return BitString{}, fmt.Errorf("%w: empty context bit string", ErrMalformed)
+	}
+	return BitString{
+		UnusedBits: el.Value.OctetString[0],
+		Bytes:      append([]byte(nil), el.Value.OctetString[1:]...),
+	}, nil
+}
+
+// ContextCharacterString extracts a character string from a context primitive.
+func ContextCharacterString(el Element) (CharacterString, error) {
+	if !el.Context || el.Opening || el.Closing || el.Value.Kind == ValueConstructed {
+		return CharacterString{}, fmt.Errorf("%w: not context primitive", ErrMalformed)
+	}
+	if len(el.Value.OctetString) < 1 {
+		return CharacterString{}, fmt.Errorf("%w: empty context character string", ErrMalformed)
+	}
+	return CharacterString{
+		Encoding: el.Value.OctetString[0],
+		Value:    string(el.Value.OctetString[1:]),
+	}, nil
 }
 
 // ContextObjectID extracts an object identifier from a context primitive.

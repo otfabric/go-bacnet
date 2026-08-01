@@ -45,8 +45,12 @@ response was observed. After the APDU was sent, timeout or context cancellation
 wraps as `*OutcomeUnknownError` for:
 
 - `WriteProperty`
+- `WritePropertyMultiple` (including after any request segment was sent)
 - `SubscribeCOV`
 - `SubscribeCOVProperty` (including cancellation and renewal)
+- `AcknowledgeAlarm`
+- `DeviceCommunicationControl`
+- `ReinitializeDevice`
 
 ```go
 var unknown *bacnet.OutcomeUnknownError
@@ -65,11 +69,19 @@ These represent peer PDUs, not local validation failures:
 | Type | PDU |
 |------|-----|
 | `*ErrorResponse` | Error (invoke ID, service, class, code) |
+| `*service.WritePropertyMultipleError` | WritePropertyMultiple-Error (class/code + first-failed object/property) |
 | `*RejectError` | Reject (invoke ID, reason) |
 | `*AbortError` | Abort (invoke ID, server flag, reason) |
 
+WritePropertyMultiple failures are **not** `*ErrorResponse`: BACnet reports only
+the first failed write. Properties encoded before that attempt may already have
+been applied.
+
 Wire status must stay distinct from `ErrMalformed`, `ErrTimeout`, and
 `ErrClosed`.
+
+`ErrDeviceManagementDisabled` is returned when DeviceCommunicationControl or
+ReinitializeDevice is called without `WithDeviceManagementEnabled`.
 
 ## Context error preservation
 

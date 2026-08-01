@@ -23,6 +23,7 @@ const (
 	KindForeignDevice     Kind = "foreign_device"
 	KindRouter            Kind = "router"
 	KindCOV               Kind = "cov"
+	KindEvent             Kind = "event"
 	KindRegistryEviction  Kind = "registry_eviction"
 	KindBVLC              Kind = "bvlc"
 )

@@ -38,6 +38,10 @@ type Client struct {
 	fd      *fdState
 	subs    *subscriptionManager
 	seg     *segmentReceiver
+	objReg  *objectRegistry
+
+	eventMu      sync.Mutex
+	eventHandler EventNotificationHandler
 }
 
 // New constructs a Client. Prefer WithTransport for tests; otherwise UDP is used.
@@ -69,17 +73,19 @@ func New(opts ...Option) (*Client, error) {
 	}
 
 	c := &Client{
-		cfg:     cfg,
-		tr:      tr,
-		reg:     newRegistry(cfg.diag, cfg.clock, cfg.registry),
-		tx:      newTxManager(cfg.maxTransactions, cfg.clock.Now),
-		clock:   cfg.clock,
-		diag:    cfg.diag,
-		limits:  cfg.limits,
-		closeCh: make(chan struct{}),
-		routers: newRouterCache(),
-		subs:    newSubscriptionManager(cfg.diag),
-		seg:     newSegmentReceiver(cfg.limits, cfg.diag, cfg.clock, cfg.segmentTimeout),
+		cfg:          cfg,
+		tr:           tr,
+		reg:          newRegistry(cfg.diag, cfg.clock, cfg.registry),
+		tx:           newTxManager(cfg.maxTransactions, cfg.clock.Now),
+		clock:        cfg.clock,
+		diag:         cfg.diag,
+		limits:       cfg.limits,
+		closeCh:      make(chan struct{}),
+		routers:      newRouterCache(),
+		subs:         newSubscriptionManager(cfg.diag),
+		seg:          newSegmentReceiver(cfg.limits, cfg.diag, cfg.clock, cfg.segmentTimeout, cfg.segmentReceiveWindow),
+		objReg:       newObjectRegistry(cfg.diag, cfg.clock, cfg.registry),
+		eventHandler: cfg.eventHandler,
 	}
 	if cfg.fd != nil {
 		fd, fdErr := newFDState(*cfg.fd, cfg.clock, cfg.diag)
@@ -279,7 +285,7 @@ func (c *Client) dispatchAPDU(pdu apdu.PDU, src packetSource, n npdu.NPDU) {
 	case apdu.TypeSimpleACK, apdu.TypeComplexACK, apdu.TypeError, apdu.TypeReject, apdu.TypeAbort:
 		c.handleConfirmedResponse(pdu, src)
 	case apdu.TypeSegmentACK:
-		c.seg.handleSegmentACK(pdu.SegmentACK)
+		c.seg.handleSegmentACK(pdu.SegmentACK, src)
 	case apdu.TypeConfirmedRequest:
 		// Client may receive confirmed COV notifications.
 		c.handleConfirmedIndication(pdu.ConfirmedRequest, src)

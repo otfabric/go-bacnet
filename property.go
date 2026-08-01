@@ -24,6 +24,7 @@ const (
 	PropertyDescription       PropertyIdentifier = 28
 	PropertyUnits             PropertyIdentifier = 117
 	PropertyRelinquishDefault PropertyIdentifier = 104
+	PropertyLogBuffer         PropertyIdentifier = 131
 )
 
 // ArrayAll selects all array elements.

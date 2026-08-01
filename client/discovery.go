@@ -116,6 +116,27 @@ func (c *Client) handleUnconfirmed(req *apdu.UnconfirmedRequest, src packetSourc
 			}
 		}
 		c.reg.Upsert(obs)
+	case apdu.ServiceIHave:
+		ih, err := service.DecodeIHave(req.Payload, c.limits)
+		if err != nil {
+			c.diag.Report(diag.Event{Kind: diag.KindMalformed, Message: err.Error()})
+			return
+		}
+		obs := ObjectObservation{
+			DeviceInstance: ih.Device.Instance,
+			Object:         ih.Object,
+			Name:           ih.Name,
+			Address:        src.bacnetAddress,
+			Origin:         src.origin,
+			ImmediatePeer:  src.immediate,
+			LastSeen:       c.clock.Now(),
+		}
+		if obs.Address.MAC().IsZero() {
+			if addr, ok := bipMACAddress(src.origin); ok {
+				obs.Address = addr
+			}
+		}
+		c.objReg.Upsert(obs)
 	case apdu.ServiceUnconfirmedCOV:
 		note, err := service.DecodeCOVNotification(req.Payload, c.limits)
 		if err != nil {
@@ -126,5 +147,12 @@ func (c *Client) handleUnconfirmed(req *apdu.UnconfirmedRequest, src packetSourc
 			Notification: &note,
 			State:        SubscriptionActive,
 		}, note.ProcessIdentifier, src)
+	case apdu.ServiceUnconfirmedEventNotification:
+		note, err := service.DecodeEventNotification(req.Payload, c.limits)
+		if err != nil {
+			c.diag.Report(diag.Event{Kind: diag.KindMalformed, Message: err.Error()})
+			return
+		}
+		c.deliverEventNotification(note, false, src)
 	}
 }

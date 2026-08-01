@@ -5,7 +5,7 @@
 | Status | Requirement |
 |--------|-------------|
 | **alpha** | Pre-hardening / incomplete oracle evidence |
-| **production-candidate** | Release-grade after [PLAN.md](../PLAN.md) Batch **4D** (tag `v0.1.1`). Does **not** require this real-device checklist. |
+| **production-candidate** | Release-grade at `v0.1.1` hardening + `v0.2.0` supervisory-client breadth (see [RELEASE.md](../RELEASE.md)). Does **not** require this real-device checklist. |
 | **production-usable** | Allowed in docs and release notes only after the checklist below is complete. |
 
 **Production-usable** requires successful smoke testing against **≥ 2 real,

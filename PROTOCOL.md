@@ -108,11 +108,15 @@ BACnet/IP also uses:
 - **Routers** — forward NPDUs between BACnet network numbers; this library
   maintains a router cache for routed confirmed traffic.
 
-## Segmentation (Horizon 1)
+## Segmentation
 
-Large ComplexACKs may arrive as **segments**. Horizon 1 reassembles segmented
-ComplexACK responses and exchanges SegmentACK as required. Sending segmented
-confirmed requests is out of Horizon 1 scope.
+Large ComplexACKs may arrive as **segments**. The client reassembles segmented
+ComplexACK responses and exchanges SegmentACK as required (default receive
+window 1). When a confirmed request exceeds the remote max APDU and peer
+evidence shows the device accepts segmented requests (`segmented-both` or
+`segmented-receive`), the client sends windowed segmented confirmed requests
+(default proposed window 16; actual window follows SegmentACK) before waiting
+for the service response.
 
 ## Framing policy (Horizon 1)
 

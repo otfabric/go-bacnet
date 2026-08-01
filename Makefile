@@ -56,13 +56,13 @@ vuln: ## Run govulncheck
 	@echo "Running govulncheck..."
 	@govulncheck $(PKGS)
 
-# Library coverage tests exclude CLI and Docker interop packages.
+# Library coverage tests exclude CLI, examples, and Docker interop packages.
 # The percentage gate also excludes internal/fixtures: corpus tests still run
 # (and cover codecs/client via fixtures_test), but the loader's Root() walk is
 # environment-sensitive (BACNET_INTEROP_ROOT short-circuits) and pulled CI
 # below 90% while local sibling checkouts measured ~90.2%.
-COVER_TEST_PKGS := $(shell go list ./... | grep -v '/cmd/' | grep -v '/interop$$')
-COVER_GATE_PKGS := $(shell go list ./... | grep -v '/cmd/' | grep -v '/interop$$' | grep -v '/internal/fixtures$$')
+COVER_TEST_PKGS := $(shell go list ./... | grep -v '/cmd/' | grep -v '/examples/' | grep -v '/interop$$')
+COVER_GATE_PKGS := $(shell go list ./... | grep -v '/cmd/' | grep -v '/examples/' | grep -v '/interop$$' | grep -v '/internal/fixtures$$')
 COVERAGE_MIN ?= 90
 
 coverage: ## Write coverage.out; fail if library total < COVERAGE_MIN%

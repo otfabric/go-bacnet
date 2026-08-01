@@ -9,6 +9,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"hash/fnv"
 	"io"
 	"net/netip"
 	"os"
@@ -51,14 +52,20 @@ type deviceFixture struct {
 
 func loadDeviceFixture(t *testing.T) deviceFixture {
 	t.Helper()
-	candidates := []string{
-		os.Getenv("BACNET_DEVICE_FIXTURE"),
+	candidates := []string{os.Getenv("BACNET_DEVICE_FIXTURE")}
+	if root := os.Getenv("BACNET_INTEROP_ROOT"); root != "" {
+		candidates = append(candidates,
+			filepath.Join(root, "fixtures", "device", "device-baseline-v2.json"),
+			filepath.Join(root, "fixtures", "device", "device-baseline-v1.json"),
+		)
+	}
+	candidates = append(candidates,
+		filepath.Join("..", "bacnet-interop", "fixtures", "device", "device-baseline-v2.json"),
+		filepath.Join("..", "..", "bacnet-interop", "fixtures", "device", "device-baseline-v2.json"),
+		// Fall back to v1 only when v2 is absent (older checkouts / pinned images).
 		filepath.Join("..", "bacnet-interop", "fixtures", "device", "device-baseline-v1.json"),
 		filepath.Join("..", "..", "bacnet-interop", "fixtures", "device", "device-baseline-v1.json"),
-	}
-	if root := os.Getenv("BACNET_INTEROP_ROOT"); root != "" {
-		candidates = append([]string{filepath.Join(root, "fixtures", "device", "device-baseline-v1.json")}, candidates...)
-	}
+	)
 	for _, p := range candidates {
 		if p == "" {
 			continue
@@ -73,7 +80,7 @@ func loadDeviceFixture(t *testing.T) deviceFixture {
 		}
 		return f
 	}
-	failOrSkip(t, "device-baseline-v1.json not found; set BACNET_INTEROP_ROOT")
+	failOrSkip(t, "device-baseline-v2.json not found; set BACNET_INTEROP_ROOT")
 	return deviceFixture{}
 }
 
@@ -489,12 +496,36 @@ func routedTopologyFromEnv(t *testing.T) *routedTopology {
 	}
 }
 
+// routedSubnetPair returns deterministic, non-overlapping /24s and static host
+// addresses for one routed-topology attempt. Docker's eth0/eth1 order is not
+// stable across create+connect, so the router must bind by address with an
+// explicit BACnet network number rather than assuming eth0=net1.
+func routedSubnetPair(base string, attempt int) (subnetA, gwA, routerA, subnetB, gwB, routerB, deviceB string) {
+	h := fnv.New32a()
+	_, _ = h.Write([]byte(base))
+	v := h.Sum32() ^ uint32(attempt)*0x9e3779b9
+	a := 20 + int(v%200) // 10.20.0.0/24 .. 10.219.0.0/24
+	b := 20 + int((v>>9)%200)
+	if b == a {
+		b = 20 + (b+1)%200
+	}
+	subnetA = fmt.Sprintf("10.%d.0.0/24", a)
+	gwA = fmt.Sprintf("10.%d.0.1", a)
+	routerA = fmt.Sprintf("10.%d.0.2", a)
+	subnetB = fmt.Sprintf("10.%d.0.0/24", b)
+	gwB = fmt.Sprintf("10.%d.0.1", b)
+	routerB = fmt.Sprintf("10.%d.0.2", b)
+	deviceB = fmt.Sprintf("10.%d.0.3", b)
+	return subnetA, gwA, routerA, subnetB, gwB, routerB, deviceB
+}
+
 // startRoutedTopology brings up net A (client+router) and net B (device+router).
 // Assertions always run inside net A so Who-Is-Router local broadcast works on
 // Linux and Docker Desktop alike.
 //
-// Docker Desktop occasionally drops the first UDP flows after network create;
-// the host retries the full topology a few times before failing the test.
+// The bip-router is started with explicit address→network bindings (not eth0/
+// eth1 order). Docker Desktop occasionally drops the first UDP flows after
+// network create; the host retries the full topology a few times before failing.
 func startRoutedTopology(t *testing.T, deviceImage, wantAdapter string, deviceEnv ...string) *routedTopology {
 	t.Helper()
 	if rt := routedTopologyFromEnv(t); rt != nil {
@@ -513,6 +544,7 @@ func startRoutedTopology(t *testing.T, deviceImage, wantAdapter string, deviceEn
 		netB := base + "-b"
 		deviceName := base + "-dev"
 		routerName := base + "-rtr"
+		subnetA, gwA, routerA, subnetB, gwB, routerB, deviceB := routedSubnetPair(base, attempt)
 
 		cleanup := func() {
 			dockerStop(deviceName)
@@ -524,13 +556,20 @@ func startRoutedTopology(t *testing.T, deviceImage, wantAdapter string, deviceEn
 		}
 
 		if err := func() error {
-			for _, net := range []string{netA, netB} {
-				if out, err := exec.Command("docker", "network", "create", net).CombinedOutput(); err != nil {
-					return fmt.Errorf("docker network create %s: %v (%s)", net, err, out)
-				}
+			if out, err := exec.Command("docker", "network", "create",
+				"--subnet", subnetA, "--gateway", gwA, netA,
+			).CombinedOutput(); err != nil {
+				return fmt.Errorf("docker network create %s: %v (%s)", netA, err, out)
+			}
+			if out, err := exec.Command("docker", "network", "create",
+				"--subnet", subnetB, "--gateway", gwB, netB,
+			).CombinedOutput(); err != nil {
+				return fmt.Errorf("docker network create %s: %v (%s)", netB, err, out)
 			}
 
-			devArgs := []string{"run", "-d", "--name", deviceName, "--network", netB}
+			devArgs := []string{"run", "-d", "--name", deviceName,
+				"--network", netB, "--ip", deviceB,
+			}
 			for _, e := range deviceEnv {
 				devArgs = append(devArgs, "-e", e)
 			}
@@ -541,15 +580,25 @@ func startRoutedTopology(t *testing.T, deviceImage, wantAdapter string, deviceEn
 			dev := loadDeviceFixture(t)
 			waitReadyLogs(t, deviceName, wantAdapter, dev.Fixture, cleanup)
 
+			// Bypass entrypoint eth0/eth1 mapping: bind BACnet net 1 to the
+			// client-facing address and net 2 to the device-facing address.
+			port1 := fmt.Sprintf("name=net1,network=%d,addr=%s,port=47808", topologyLocalNet, routerA)
+			port2 := fmt.Sprintf("name=net2,network=%d,addr=%s,port=47808", topologyRemoteNet, routerB)
 			if out, err := exec.Command("docker", "create",
 				"--name", routerName,
 				"--network", netA,
-				"-e", "BACNET_NETWORKS=1,2",
+				"--ip", routerA,
+				"--entrypoint", "python3",
 				routerImage,
+				"/usr/local/bin/bip_router.py",
+				"--port", port1,
+				"--port", port2,
 			).CombinedOutput(); err != nil {
 				return fmt.Errorf("create router: %v (%s)", err, out)
 			}
-			if out, err := exec.Command("docker", "network", "connect", netB, routerName).CombinedOutput(); err != nil {
+			if out, err := exec.Command("docker", "network", "connect",
+				"--ip", routerB, netB, routerName,
+			).CombinedOutput(); err != nil {
 				return fmt.Errorf("connect router to net B: %v (%s)", err, out)
 			}
 			if out, err := exec.Command("docker", "start", routerName).CombinedOutput(); err != nil {
@@ -557,19 +606,21 @@ func startRoutedTopology(t *testing.T, deviceImage, wantAdapter string, deviceEn
 			}
 			waitReadyLogs(t, routerName, "bip-router", "topology-router-v1", cleanup)
 
-			routerIP := containerIPOnNetwork(t, routerName, netA)
-			deviceIP := containerIPOnNetwork(t, deviceName, netB)
 			// Allow startup I-Am-Router broadcasts and docker dataplane to settle
-			// before the in-network client joins (Docker Desktop is especially racy).
+			// before the in-network client joins (Docker Desktop / GHA bridges
+			// occasionally drop the first UDP flows after network create).
 			time.Sleep(500 * time.Millisecond)
 
 			if err := runReexecInNetwork(t, netA, "",
-				"BACNET_INTEROP_ROUTER="+fmt.Sprintf("%s:47808", routerIP),
-				"BACNET_INTEROP_DEVICE_IP="+deviceIP,
+				"BACNET_INTEROP_ROUTER="+fmt.Sprintf("%s:47808", routerA),
+				"BACNET_INTEROP_DEVICE_IP="+deviceB,
 				"BACNET_INTEROP_DEVICE_PORT=47808",
 				fmt.Sprintf("BACNET_INTEROP_REMOTE_NET=%d", topologyRemoteNet),
 			); err != nil {
-				return fmt.Errorf("in-network re-exec: %w", err)
+				devLogs, _ := exec.Command("docker", "logs", "--tail", "40", deviceName).CombinedOutput()
+				rtrLogs, _ := exec.Command("docker", "logs", "--tail", "40", routerName).CombinedOutput()
+				return fmt.Errorf("in-network re-exec: %w\ndevice logs:\n%s\nrouter logs:\n%s",
+					err, devLogs, rtrLogs)
 			}
 			return nil
 		}(); err != nil {

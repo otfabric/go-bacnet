@@ -46,6 +46,15 @@ func analogValueObject(dev deviceFixture) (bacnet.ObjectIdentifier, float32) {
 	return bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeAnalogValue, Instance: inst}, pv
 }
 
+func trendLogObject(dev deviceFixture) (bacnet.ObjectIdentifier, bool) {
+	for _, o := range dev.Objects {
+		if o.Type == "trend-log" {
+			return bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeTrendLog, Instance: o.Instance}, true
+		}
+	}
+	return bacnet.ObjectIdentifier{}, false
+}
+
 func assertErrorUnknownProperty(t *testing.T, err error) {
 	t.Helper()
 	var er *bacnet.ErrorResponse

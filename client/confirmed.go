@@ -12,6 +12,7 @@ import (
 	"github.com/otfabric/go-bacnet/bip"
 	"github.com/otfabric/go-bacnet/internal/clock"
 	"github.com/otfabric/go-bacnet/internal/diag"
+	"github.com/otfabric/go-bacnet/service"
 )
 
 // wrapOutcomeUnknown marks side-effecting confirmed services whose request may
@@ -21,10 +22,18 @@ func wrapOutcomeUnknown(serviceChoice uint8, cause error) error {
 	switch serviceChoice {
 	case apdu.ServiceWriteProperty:
 		op = "WriteProperty"
+	case apdu.ServiceWritePropertyMultiple:
+		op = "WritePropertyMultiple"
 	case apdu.ServiceSubscribeCOV:
 		op = "SubscribeCOV"
 	case apdu.ServiceSubscribeCOVProperty:
 		op = "SubscribeCOVProperty"
+	case apdu.ServiceAcknowledgeAlarm:
+		op = "AcknowledgeAlarm"
+	case apdu.ServiceDeviceCommunicationControl:
+		op = "DeviceCommunicationControl"
+	case apdu.ServiceReinitializeDevice:
+		op = "ReinitializeDevice"
 	default:
 		return cause
 	}
@@ -66,7 +75,7 @@ func (c *Client) confirmedRequestOpts(ctx context.Context, target Target, servic
 	}
 	remoteMax := c.resolveRemoteMaxAPDU(target)
 	maxSegCode := apdu.EncodeMaxSegments(c.limits.MaxSegments)
-	encoded := apdu.AppendConfirmedRequest(nil, apdu.ConfirmedRequest{
+	probe := apdu.AppendConfirmedRequest(nil, apdu.ConfirmedRequest{
 		SegmentedResponseAccepted: opts.segmentedResponseAccepted,
 		MaxSegments:               uint8(maxSegCode),
 		MaxAPDU:                   uint8(localCode),
@@ -74,9 +83,11 @@ func (c *Client) confirmedRequestOpts(ctx context.Context, target Target, servic
 		Payload:                   payload,
 		InvokeID:                  0,
 	})
-	if len(encoded) > int(remoteMax) {
+	needSegments := len(probe) > int(remoteMax)
+	peerSeg := c.peerAcceptsSegmentedRequests(target)
+	if needSegments && !peerSeg {
 		return apdu.PDU{}, &bacnet.APDUTooLargeError{
-			EncodedSize:           len(encoded),
+			EncodedSize:           len(probe),
 			RemoteMax:             int(remoteMax),
 			SegmentationSupported: false,
 		}
@@ -94,7 +105,6 @@ func (c *Client) confirmedRequestOpts(ctx context.Context, target Target, servic
 		ServiceChoice:             serviceChoice,
 		Payload:                   payload,
 	}
-	encoded = apdu.AppendConfirmedRequest(nil, req)
 
 	retries := 0
 	if opts.policy == RetransmitEnabled {
@@ -107,25 +117,74 @@ func (c *Client) confirmedRequestOpts(ctx context.Context, target Target, servic
 		address:     target.Address,
 		origin:      target.Origin,
 		immediate:   target.Endpoint,
-		encodedAPDU: append([]byte(nil), encoded...),
 		retriesLeft: retries,
 		result:      make(chan txResult, 1),
 		timer:       timer,
-		sent:        true,
 		phase:       txAwaitingInitial,
 	}
 	c.tx.register(tx)
 	defer func() {
 		timer.Stop()
 		c.seg.remove(id)
+		if c.seg.send != nil {
+			c.seg.send.unregister(id)
+		}
 	}()
 
-	if err := c.sendAPDU(ctx, target.Endpoint, false, target.Address, true, encoded); err != nil {
-		if c.finishTx(id, txResult{err: err}, 0) {
-			return apdu.PDU{}, err
+	if needSegments {
+		segments, segErr := buildConfirmedSegments(req, int(remoteMax), c.cfg.segmentSendWindow)
+		if segErr != nil {
+			tooLarge := &bacnet.APDUTooLargeError{
+				EncodedSize:           len(probe),
+				RemoteMax:             int(remoteMax),
+				SegmentationSupported: true,
+			}
+			if c.finishTx(id, txResult{err: tooLarge}, 0) {
+				return apdu.PDU{}, tooLarge
+			}
+			res := <-tx.result
+			return res.pdu, res.err
 		}
-		res := <-tx.result
-		return res.pdu, res.err
+		if len(segments) > c.limits.MaxSegments {
+			tooLarge := &bacnet.APDUTooLargeError{
+				EncodedSize:           len(probe),
+				RemoteMax:             int(remoteMax),
+				SegmentationSupported: true,
+			}
+			if c.finishTx(id, txResult{err: tooLarge}, 0) {
+				return apdu.PDU{}, tooLarge
+			}
+			res := <-tx.result
+			return res.pdu, res.err
+		}
+		if !c.tx.enterSendingSegments(id) {
+			res := <-tx.result
+			return res.pdu, res.err
+		}
+		ackCh := c.seg.send.register(tx)
+		if err := c.sendConfirmedSegments(ctx, target, tx, serviceChoice, segments, ackCh); err != nil {
+			if c.finishTx(id, txResult{err: err}, c.cfg.apduTimeout) {
+				return apdu.PDU{}, err
+			}
+			res := <-tx.result
+			return res.pdu, res.err
+		}
+		c.seg.send.unregister(id)
+		if !c.tx.enterAwaitingResponse(id, c.cfg.apduTimeout) {
+			res := <-tx.result
+			return res.pdu, res.err
+		}
+	} else {
+		encoded := apdu.AppendConfirmedRequest(nil, req)
+		tx.encodedAPDU = append([]byte(nil), encoded...)
+		tx.sent = true
+		if err := c.sendAPDU(ctx, target.Endpoint, false, target.Address, true, encoded); err != nil {
+			if c.finishTx(id, txResult{err: err}, 0) {
+				return apdu.PDU{}, err
+			}
+			res := <-tx.result
+			return res.pdu, res.err
+		}
 	}
 
 	for {
@@ -180,6 +239,9 @@ func (c *Client) confirmedRequestOpts(ctx context.Context, target Target, servic
 func (c *Client) finishTx(invokeID uint8, res txResult, quarantine time.Duration) bool {
 	won := c.tx.complete(invokeID, res, quarantine)
 	c.seg.remove(invokeID)
+	if c.seg.send != nil {
+		c.seg.send.unregister(invokeID)
+	}
 	return won
 }
 
@@ -213,11 +275,11 @@ func (c *Client) allocateInvokeID(ctx context.Context) (uint8, error) {
 
 func (c *Client) handleConfirmedResponse(pdu apdu.PDU, src packetSource) {
 	var invokeID uint8
-	var service uint8
+	var svc uint8
 	switch pdu.Type {
 	case apdu.TypeSimpleACK:
 		invokeID = pdu.SimpleACK.InvokeID
-		service = pdu.SimpleACK.ServiceChoice
+		svc = pdu.SimpleACK.ServiceChoice
 	case apdu.TypeComplexACK:
 		if pdu.ComplexACK.SegmentedMessage {
 			full, done, segErr := c.seg.accept(pdu.ComplexACK, src, c)
@@ -231,10 +293,10 @@ func (c *Client) handleConfirmedResponse(pdu apdu.PDU, src packetSource) {
 			pdu = full
 		}
 		invokeID = pdu.ComplexACK.InvokeID
-		service = pdu.ComplexACK.ServiceChoice
+		svc = pdu.ComplexACK.ServiceChoice
 	case apdu.TypeError:
 		invokeID = pdu.Error.InvokeID
-		service = pdu.Error.ServiceChoice
+		svc = pdu.Error.ServiceChoice
 	case apdu.TypeReject:
 		invokeID = pdu.Reject.InvokeID
 	case apdu.TypeAbort:
@@ -252,7 +314,7 @@ func (c *Client) handleConfirmedResponse(pdu apdu.PDU, src packetSource) {
 		c.diag.Report(diag.Event{Kind: diag.KindWrongSource, Message: fmt.Sprintf("invoke %d", invokeID)})
 		return
 	}
-	if tx.service != 0 && service != 0 && tx.service != service && pdu.Type != apdu.TypeReject && pdu.Type != apdu.TypeAbort {
+	if tx.service != 0 && svc != 0 && tx.service != svc && pdu.Type != apdu.TypeReject && pdu.Type != apdu.TypeAbort {
 		c.diag.Report(diag.Event{Kind: diag.KindWrongService, Message: fmt.Sprintf("invoke %d", invokeID)})
 		return
 	}
@@ -260,11 +322,20 @@ func (c *Client) handleConfirmedResponse(pdu apdu.PDU, src packetSource) {
 	var err error
 	switch pdu.Type {
 	case apdu.TypeError:
-		class, code, e := apdu.DecodeErrorClassCode(pdu.Error.Payload, c.limits)
-		if e != nil {
-			err = e
+		if svc == apdu.ServiceWritePropertyMultiple {
+			wpmErr, e := service.DecodeWritePropertyMultipleError(pdu.Error.Payload, c.limits)
+			if e != nil {
+				err = e
+			} else {
+				err = wpmErr
+			}
 		} else {
-			err = &bacnet.ErrorResponse{InvokeID: invokeID, Service: service, Class: class, Code: code}
+			class, code, e := apdu.DecodeErrorClassCode(pdu.Error.Payload, c.limits)
+			if e != nil {
+				err = e
+			} else {
+				err = &bacnet.ErrorResponse{InvokeID: invokeID, Service: svc, Class: class, Code: code}
+			}
 		}
 	case apdu.TypeReject:
 		err = &bacnet.RejectError{InvokeID: invokeID, Reason: pdu.Reject.Reason}
@@ -281,32 +352,43 @@ func (c *Client) handleConfirmedIndication(req *apdu.ConfirmedRequest, src packe
 	if req == nil {
 		return
 	}
-	const confirmedCOVNotification = 1
 	switch req.ServiceChoice {
-	case confirmedCOVNotification:
+	case apdu.ServiceConfirmedCOVNotification:
 		note, err := decodeCOVNotification(req.Payload, c.limits)
 		if err != nil {
 			c.diag.Report(diag.Event{Kind: diag.KindMalformed, Message: err.Error()})
 			return
 		}
-		ack := apdu.AppendSimpleACK(nil, apdu.SimpleACK{InvokeID: req.InvokeID, ServiceChoice: req.ServiceChoice})
-		destAddr := responseDestination(src)
-		ackCtx, cancel := clock.ContextWithTimeout(context.Background(), c.clock, c.cfg.apduTimeout)
-		if err := c.sendAPDU(ackCtx, src.immediate, false, destAddr, false, ack); err != nil {
-			c.diag.Report(diag.Event{
-				Kind:    diag.KindCOV,
-				Message: "confirmed COV SimpleACK send failed",
-				Fields:  map[string]any{"error": err.Error(), "invoke": req.InvokeID},
-			})
-		}
-		cancel()
+		c.sendSimpleACK(req.InvokeID, req.ServiceChoice, src, diag.KindCOV, "confirmed COV SimpleACK send failed")
 		c.subs.deliver(SubscriptionEvent{
 			Notification: note,
 			State:        SubscriptionActive,
 		}, note.ProcessIdentifier, src)
+	case apdu.ServiceConfirmedEventNotification:
+		note, err := service.DecodeEventNotification(req.Payload, c.limits)
+		if err != nil {
+			c.diag.Report(diag.Event{Kind: diag.KindMalformed, Message: err.Error()})
+			return
+		}
+		c.sendSimpleACK(req.InvokeID, req.ServiceChoice, src, diag.KindEvent, "confirmed EventNotification SimpleACK send failed")
+		c.deliverEventNotification(note, true, src)
 	default:
 		c.diag.Report(diag.Event{Kind: diag.KindUnexpectedAPDU, Message: fmt.Sprintf("confirmed service %d", req.ServiceChoice)})
 	}
+}
+
+func (c *Client) sendSimpleACK(invokeID, serviceChoice uint8, src packetSource, kind diag.Kind, failMsg string) {
+	ack := apdu.AppendSimpleACK(nil, apdu.SimpleACK{InvokeID: invokeID, ServiceChoice: serviceChoice})
+	destAddr := responseDestination(src)
+	ackCtx, cancel := clock.ContextWithTimeout(context.Background(), c.clock, c.cfg.apduTimeout)
+	if err := c.sendAPDU(ackCtx, src.immediate, false, destAddr, false, ack); err != nil {
+		c.diag.Report(diag.Event{
+			Kind:    kind,
+			Message: failMsg,
+			Fields:  map[string]any{"error": err.Error(), "invoke": invokeID},
+		})
+	}
+	cancel()
 }
 
 // responseDestination returns the BACnet destination for replies to an indication.

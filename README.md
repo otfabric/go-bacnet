@@ -14,15 +14,17 @@ over IPv4/UDP on port **47808** (`0xBAC0`).
 New to BACnet? Start with [PROTOCOL.md](PROTOCOL.md) for a short primer on
 objects, BVLC/NPDU/APDU layering, discovery, and how those map to this library.
 
-**Status:** early v0.x **production-candidate** — release-grade oracle evidence
-closed ([PLAN.md](PLAN.md) Batch 4D); cut `v0.1.1` via the Release workflow.
-Not **production-usable** until the
+**Status:** early v0.x **production-candidate** — ready to tag as **`v0.2.0`**
+(WritePropertyMultiple, ReadRange, Who-Has, EventNotification, opt-in device
+management, segmented confirmed-request send; green CI + pinned interop on
+[`bacnet-interop` v0.4.1](https://github.com/otfabric/bacnet-interop/releases/tag/v0.4.1);
+see [RELEASE.md](RELEASE.md)). Not **production-usable** until the
 [real-device gate](docs/REAL_DEVICE_GATE.md) (≥2 independent BACnet/IP devices).
 
 | Label | Meaning |
 |-------|---------|
 | **alpha** | Pre-hardening / incomplete evidence |
-| **production-candidate** | Current — P0 wire/runtime + reproducible pinned multi-peer evidence |
+| **production-candidate** | Current — wire/runtime + supervisory client services + reproducible pinned multi-peer evidence |
 | **production-usable** | [Real-device gate](docs/REAL_DEVICE_GATE.md) met (≥2 independent BACnet/IP devices) |
 
 Public Address, Value, transaction and subscription APIs may still evolve.
@@ -41,20 +43,28 @@ Public Address, Value, transaction and subscription APIs may still evolve.
 
 - BACnet/IP over IPv4/UDP (default port 47808 / `0xBAC0`)
 - BVLC, NPDU and APDU codecs
-- Who-Is / I-Am discovery
+- Who-Is / I-Am and Who-Has / I-Have discovery
 - ReadProperty, ReadPropertyMultiple, WriteProperty (priority + NULL relinquish)
+- WritePropertyMultiple (first-failed Error model; outcome-unknown after send)
+- ReadRange (by position / sequence / time)
 - Confirmed-request transactions; segmented ComplexACK receive
+- Segmented confirmed-request send (windowed; when peer Segmentation is both/receive)
 - Routed BACnet networks; BBMD Forwarded-NPDU receive
 - Optional foreign-device registration
 - COV subscribe / notify / renew / cancel
+- EventNotification receive (typed common NotificationParameters); AcknowledgeAlarm; GetEventInformation
+- ReadRange with typed Trend Log `LogRecords` when applicable
+- DeviceCommunicationControl / ReinitializeDevice (explicit opt-in)
 - `bacnetctl` for decode, discover, read and write
+- Runnable H2 examples under `examples/`
 
-**Out of scope (Horizon 1):**
+**Out of scope (Horizon 3+ / later):**
 
+- Convenience / supervisor package (Horizon 3)
 - Native MS/TP, BACnet/IPv6, BACnet/SC
 - Full BBMD server / multi-BBMD failover
 - Full BACnet server / device object model
-- Alarms, schedules, trends, WritePropertyMultiple
+- Schedules; uncommon event-parameter CHOICEs; GetAlarmSummary
 - BTL certification itself
 
 ### Install
@@ -131,10 +141,11 @@ BACnet/IP peers use `bip.Endpoint` (not a root type).
 | [INTEROP.md](INTEROP.md) | Peer/topology scenarios and `-tags=interop` |
 | [RELEASE.md](RELEASE.md) | Versioning policy and history |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Local checks and import boundaries |
-| [PLAN.md](PLAN.md) | Evidence batches and Horizon 2+ roadmap |
+| [PLAN.md](PLAN.md) | Evidence batches and forward plan |
+| [`examples/`](examples/) | Runnable samples (ReadRange, WPM, Who-Has, events) |
 | [docs/PACKAGE_DESIGN.md](docs/PACKAGE_DESIGN.md) | Package dependency rules |
 | [docs/STANDARD_BASELINE.md](docs/STANDARD_BASELINE.md) | Normative baseline |
-| [docs/CAPABILITY_MATRIX.md](docs/CAPABILITY_MATRIX.md) | Horizon 1 capabilities |
+| [docs/CAPABILITY_MATRIX.md](docs/CAPABILITY_MATRIX.md) | Client capability matrix |
 | [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md) | Peer/device evidence matrix and positioning |
 | [docs/REAL_DEVICE_GATE.md](docs/REAL_DEVICE_GATE.md) | Production-usable evidence bar |
 

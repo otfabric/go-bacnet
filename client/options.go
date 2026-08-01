@@ -15,21 +15,25 @@ import (
 type Option func(*config)
 
 type config struct {
-	iface             string
-	localAddr         string // host:port bind
-	port              int
-	limits            bacnet.DecodeLimits
-	advertisedMaxAPDU uint16 // 0 = use limits.MaxAPDUSize
-	clock             clock.Clock
-	diag              diag.Sink
-	transport         Transport
-	apduTimeout       time.Duration
-	retryCount        int
-	segmentTimeout    time.Duration
-	maxTransactions   int
-	fd                *ForeignDeviceConfig
-	hopCount          uint8
-	registry          RegistryOptions
+	iface                   string
+	localAddr               string // host:port bind
+	port                    int
+	limits                  bacnet.DecodeLimits
+	advertisedMaxAPDU       uint16 // 0 = use limits.MaxAPDUSize
+	clock                   clock.Clock
+	diag                    diag.Sink
+	transport               Transport
+	apduTimeout             time.Duration
+	retryCount              int
+	segmentTimeout          time.Duration
+	segmentSendWindow       uint8
+	segmentReceiveWindow    uint8
+	maxTransactions         int
+	fd                      *ForeignDeviceConfig
+	hopCount                uint8
+	registry                RegistryOptions
+	deviceManagementEnabled bool
+	eventHandler            EventNotificationHandler
 }
 
 // ForeignDeviceConfig registers with a single BBMD.
@@ -55,15 +59,30 @@ type Diagnostic struct {
 
 func defaultConfig() config {
 	return config{
-		port:            bip.DefaultPort,
-		limits:          bacnet.DefaultDecodeLimits(),
-		clock:           clock.Real{},
-		diag:            diag.Discard{},
-		apduTimeout:     3 * time.Second,
-		retryCount:      3,
-		segmentTimeout:  2 * time.Second,
-		maxTransactions: 255,
-		hopCount:        255,
+		port:                 bip.DefaultPort,
+		limits:               bacnet.DefaultDecodeLimits(),
+		clock:                clock.Real{},
+		diag:                 diag.Discard{},
+		apduTimeout:          3 * time.Second,
+		retryCount:           3,
+		segmentTimeout:       2 * time.Second,
+		segmentSendWindow:    defaultSegmentSendWindow,
+		segmentReceiveWindow: defaultSegmentReceiveWindow,
+		maxTransactions:      255,
+		hopCount:             255,
+	}
+}
+
+// WithSegmentWindow sets both the send proposed window and the receive actual
+// window (1..127). Prefer this for tests. Production defaults keep receive at 1
+// for peer compatibility while proposing 16 on send; use this option when both
+// directions should share a larger window.
+func WithSegmentWindow(window uint8) Option {
+	return func(c *config) {
+		if window >= 1 && window <= 127 {
+			c.segmentSendWindow = window
+			c.segmentReceiveWindow = window
+		}
 	}
 }
 
@@ -154,4 +173,30 @@ func WithTransactionOptions(apduTimeout time.Duration, retryCount int, segmentTi
 // WithForeignDevice enables foreign-device registration with one BBMD.
 func WithForeignDevice(fd ForeignDeviceConfig) Option {
 	return func(c *config) { c.fd = &fd }
+}
+
+// DeviceManagementConfirm is the exact confirmation string required by
+// WithDeviceManagementEnabled.
+const DeviceManagementConfirm = "I_UNDERSTAND_DEVICE_MANAGEMENT"
+
+// WithDeviceManagementEnabled opts into DeviceCommunicationControl and
+// ReinitializeDevice. confirm must equal DeviceManagementConfirm.
+//
+// These services can disable communication or reboot a peer. Exact-APDU
+// retransmission is disabled and post-send timeout/cancel returns
+// *bacnet.OutcomeUnknownError.
+func WithDeviceManagementEnabled(confirm string) Option {
+	return func(c *config) {
+		c.deviceManagementEnabled = confirm == DeviceManagementConfirm
+	}
+}
+
+// WithEventNotificationHandler registers a handler for inbound
+// Confirmed/Unconfirmed EventNotification PDUs. Confirmed notifications are
+// SimpleACK'd before the handler runs. Nil disables the handler.
+//
+// The handler is invoked synchronously on the receive path and must return
+// promptly without panicking.
+func WithEventNotificationHandler(h EventNotificationHandler) Option {
+	return func(c *config) { c.eventHandler = h }
 }

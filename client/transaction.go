@@ -19,14 +19,16 @@ const (
 	RetransmitDisabled
 )
 
-// DefaultRetransmitPolicy returns Horizon 1 defaults per service.
+// DefaultRetransmitPolicy returns per-service exact-APDU retransmission defaults.
 func DefaultRetransmitPolicy(serviceChoice uint8) RetransmitPolicy {
 	switch serviceChoice {
-	case apdu.ServiceWriteProperty:
+	case apdu.ServiceWriteProperty, apdu.ServiceWritePropertyMultiple:
 		return RetransmitDisabled
-	case apdu.ServiceReadProperty, apdu.ServiceReadPropertyMultiple:
+	case apdu.ServiceReadProperty, apdu.ServiceReadPropertyMultiple, apdu.ServiceReadRange, apdu.ServiceGetEventInformation:
 		return RetransmitEnabled
 	case apdu.ServiceSubscribeCOV, apdu.ServiceSubscribeCOVProperty:
+		return RetransmitDisabled
+	case apdu.ServiceAcknowledgeAlarm, apdu.ServiceDeviceCommunicationControl, apdu.ServiceReinitializeDevice:
 		return RetransmitDisabled
 	default:
 		return RetransmitDisabled
@@ -38,6 +40,7 @@ type txPhase uint8
 const (
 	txAwaitingInitial txPhase = iota
 	txReceivingSegments
+	txSendingSegments
 )
 
 type pendingTx struct {
@@ -153,6 +156,39 @@ func (m *txManager) enterSegmented(invokeID uint8) bool {
 	return true
 }
 
+// enterSendingSegments marks segmented confirmed-request transmission. The
+// APDU timer is stopped; the segment sender owns segment timeouts.
+func (m *txManager) enterSendingSegments(invokeID uint8) bool {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	tx, ok := m.inUse[invokeID]
+	if !ok {
+		return false
+	}
+	tx.phase = txSendingSegments
+	tx.retriesLeft = 0
+	if tx.timer != nil {
+		tx.timer.Stop()
+	}
+	return true
+}
+
+// enterAwaitingResponse resumes waiting for the service response after the
+// last request segment was acknowledged.
+func (m *txManager) enterAwaitingResponse(invokeID uint8, d time.Duration) bool {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	tx, ok := m.inUse[invokeID]
+	if !ok {
+		return false
+	}
+	tx.phase = txAwaitingInitial
+	if tx.timer != nil && d > 0 {
+		tx.timer.Reset(d)
+	}
+	return true
+}
+
 type timeoutAction uint8
 
 const (
@@ -171,7 +207,7 @@ func (m *txManager) onTimeout(invokeID uint8, retransmitAllowed bool) timeoutAct
 	if !ok {
 		return timeoutGone
 	}
-	if tx.phase == txReceivingSegments {
+	if tx.phase == txReceivingSegments || tx.phase == txSendingSegments {
 		return timeoutIgnoreSegmented
 	}
 	if retransmitAllowed && tx.retriesLeft > 0 {

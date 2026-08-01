@@ -145,7 +145,7 @@ func TestSegmentedRejectsWithoutTransaction(t *testing.T) {
 }
 
 func TestNewSegmentReceiverDefaults(t *testing.T) {
-	r := newSegmentReceiver(bacnet.DefaultDecodeLimits(), diag.Discard{}, nil, 0)
+	r := newSegmentReceiver(bacnet.DefaultDecodeLimits(), diag.Discard{}, nil, 0, defaultSegmentReceiveWindow)
 	if r == nil {
 		t.Fatal("nil receiver")
 	}
@@ -154,6 +154,16 @@ func TestNewSegmentReceiverDefaults(t *testing.T) {
 	}
 	if r.segmentTimeout != 2*time.Second {
 		t.Fatalf("segmentTimeout=%v", r.segmentTimeout)
+	}
+	if r.localWindow != 1 {
+		t.Fatalf("localWindow=%d, want 1 (ACK every segment for peer compatibility)", r.localWindow)
+	}
+	if defaultSegmentSendWindow != 16 {
+		t.Fatalf("defaultSegmentSendWindow=%d, want 16", defaultSegmentSendWindow)
+	}
+	cfg := defaultConfig()
+	if cfg.segmentSendWindow != 16 || cfg.segmentReceiveWindow != 1 {
+		t.Fatalf("default windows send=%d receive=%d, want 16/1", cfg.segmentSendWindow, cfg.segmentReceiveWindow)
 	}
 }
 
@@ -270,9 +280,9 @@ func TestSegmentedServiceMismatchAborts(t *testing.T) {
 	}()
 
 	invokeID, _ := waitConfirmedInvokeID(t, env.ClientTr, time.Second)
-	injectSegmentedComplexACK(t, env, invokeID, 0, true, apdu.ServiceReadProperty, []byte("part"))
-	time.Sleep(10 * time.Millisecond)
-	injectSegmentedComplexACK(t, env, invokeID, 1, false, apdu.ServiceReadPropertyMultiple, []byte("tail"))
+	// Service choice is present only on segment 0; a mismatch there is a
+	// protocol violation. Later segments omit service choice on the wire.
+	injectSegmentedComplexACK(t, env, invokeID, 0, true, apdu.ServiceReadPropertyMultiple, []byte("part"))
 	time.Sleep(20 * time.Millisecond)
 
 	err := <-errCh

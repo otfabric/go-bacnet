@@ -92,6 +92,9 @@ func TestSegmentedConfirmedAndComplexACK(t *testing.T) {
 	if !cr.SegmentedMessage || !cr.MoreFollows || cr.SequenceNumber != 3 || cr.ProposedWindowSize != 4 {
 		t.Fatalf("%#v", cr)
 	}
+	if cr.ServiceChoice != apdu.ServiceReadPropertyMultiple || len(cr.Payload) != 1 || cr.Payload[0] != 0xAA {
+		t.Fatalf("service/payload %#v", cr)
+	}
 
 	ack := apdu.AppendComplexACK(nil, apdu.ComplexACK{
 		SegmentedMessage: true, MoreFollows: false, InvokeID: 1,

@@ -236,6 +236,10 @@ func TestWrapOutcomeUnknownSideEffects(t *testing.T) {
 	if !errors.As(err, &unknown) || unknown.Operation != "WriteProperty" {
 		t.Fatalf("WriteProperty wrap: %#v", err)
 	}
+	err = wrapOutcomeUnknown(apdu.ServiceWritePropertyMultiple, cause)
+	if !errors.As(err, &unknown) || unknown.Operation != "WritePropertyMultiple" {
+		t.Fatalf("WritePropertyMultiple wrap: %#v", err)
+	}
 	err = wrapOutcomeUnknown(apdu.ServiceSubscribeCOV, cause)
 	if !errors.As(err, &unknown) || unknown.Operation != "SubscribeCOV" {
 		t.Fatalf("SubscribeCOV wrap: %#v", err)
@@ -243,6 +247,18 @@ func TestWrapOutcomeUnknownSideEffects(t *testing.T) {
 	err = wrapOutcomeUnknown(apdu.ServiceSubscribeCOVProperty, cause)
 	if !errors.As(err, &unknown) || unknown.Operation != "SubscribeCOVProperty" {
 		t.Fatalf("SubscribeCOVProperty wrap: %#v", err)
+	}
+	err = wrapOutcomeUnknown(apdu.ServiceAcknowledgeAlarm, cause)
+	if !errors.As(err, &unknown) || unknown.Operation != "AcknowledgeAlarm" {
+		t.Fatalf("AcknowledgeAlarm wrap: %#v", err)
+	}
+	err = wrapOutcomeUnknown(apdu.ServiceDeviceCommunicationControl, cause)
+	if !errors.As(err, &unknown) || unknown.Operation != "DeviceCommunicationControl" {
+		t.Fatalf("DCC wrap: %#v", err)
+	}
+	err = wrapOutcomeUnknown(apdu.ServiceReinitializeDevice, cause)
+	if !errors.As(err, &unknown) || unknown.Operation != "ReinitializeDevice" {
+		t.Fatalf("Reinit wrap: %#v", err)
 	}
 	plain := wrapOutcomeUnknown(apdu.ServiceReadProperty, cause)
 	if !errors.Is(plain, cause) {

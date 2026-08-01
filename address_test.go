@@ -47,4 +47,10 @@ func TestMACHelpers(t *testing.T) {
 	if _, err := bacnet.NewMAC(make([]byte, bacnet.MaxMACLength+1)); err == nil {
 		t.Fatal("expected oversized MAC error")
 	}
+	defer func() {
+		if recover() == nil {
+			t.Fatal("MustMAC should panic on oversized MAC")
+		}
+	}()
+	_ = bacnet.MustMAC(make([]byte, bacnet.MaxMACLength+1))
 }

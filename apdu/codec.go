@@ -35,19 +35,29 @@ const (
 
 // Confirmed service choices (subset).
 const (
-	ServiceSubscribeCOV         = 5
-	ServiceReadProperty         = 12
-	ServiceReadPropertyMultiple = 14
-	ServiceWriteProperty        = 15
-	ServiceSubscribeCOVProperty = 28
+	ServiceAcknowledgeAlarm           = 0
+	ServiceConfirmedCOVNotification   = 1
+	ServiceConfirmedEventNotification = 2
+	ServiceSubscribeCOV               = 5
+	ServiceReadProperty               = 12
+	ServiceReadPropertyMultiple       = 14
+	ServiceWriteProperty              = 15
+	ServiceWritePropertyMultiple      = 16
+	ServiceDeviceCommunicationControl = 17
+	ServiceReinitializeDevice         = 20
+	ServiceReadRange                  = 26
+	ServiceSubscribeCOVProperty       = 28
+	ServiceGetEventInformation        = 29
 )
 
 // Unconfirmed service choices (subset).
 const (
-	ServiceIAm            = 0
-	ServiceIHave          = 1
-	ServiceUnconfirmedCOV = 2
-	ServiceWhoIs          = 8
+	ServiceIAm                          = 0
+	ServiceIHave                        = 1
+	ServiceUnconfirmedCOV               = 2
+	ServiceUnconfirmedEventNotification = 3
+	ServiceWhoHas                       = 7
+	ServiceWhoIs                        = 8
 )
 
 // ConfirmedRequest is a confirmed request APDU with raw service payload.
@@ -189,7 +199,7 @@ func parseConfirmed(data []byte) (PDU, error) {
 	}
 	off := 3
 	if req.SegmentedMessage {
-		if len(data) < 6 {
+		if len(data) < 5 {
 			return PDU{}, fmt.Errorf("%w: segmented confirmed truncated", bacnet.ErrMalformed)
 		}
 		req.SequenceNumber = data[3]
@@ -257,7 +267,7 @@ func parseComplexACK(data []byte) (PDU, error) {
 	}
 	off := 2
 	if ack.SegmentedMessage {
-		if len(data) < 5 {
+		if len(data) < 4 {
 			return PDU{}, fmt.Errorf("%w: segmented complex ACK truncated", bacnet.ErrMalformed)
 		}
 		ack.SequenceNumber = data[2]
@@ -373,6 +383,9 @@ func AppendConfirmedRequest(dst []byte, req ConfirmedRequest) []byte {
 	if req.SegmentedMessage {
 		dst = append(dst, req.SequenceNumber, req.ProposedWindowSize)
 	}
+	// Service choice is encoded on every segment. ASHRAE 135 allows omitting it
+	// after segment 0, but BACpypes3/BACnet4J (and our hermetic segment tests)
+	// repeat it; matching that keeps reassembly interoperable.
 	dst = append(dst, req.ServiceChoice)
 	return append(dst, req.Payload...)
 }

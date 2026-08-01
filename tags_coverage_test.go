@@ -145,12 +145,30 @@ func TestSignedAndBooleanLVTForms(t *testing.T) {
 
 func TestExtendedLengthTruncation(t *testing.T) {
 	limits := bacnet.DefaultDecodeLimits()
+	// lvt=5 with no extended length octet
+	if _, _, err := bacnet.ParseTag([]byte{0x65}, limits); err == nil {
+		t.Fatal("expected truncated extended length")
+	}
 	// lvt=5, ext length truncated after 254 marker
 	if _, _, err := bacnet.ParseTag([]byte{0x65, 0xFE, 0x01}, limits); err == nil {
 		t.Fatal("expected truncated 16-bit length")
 	}
 	if _, _, err := bacnet.ParseTag([]byte{0x65, 0xFF, 0x00, 0x00}, limits); err == nil {
 		t.Fatal("expected truncated 32-bit length")
+	}
+	// signed with oversized payload (extended length 9)
+	signedOver := []byte{0x35, 0x09, 1, 2, 3, 4, 5, 6, 7, 8, 9}
+	if _, _, err := bacnet.ParseApplicationValue(signedOver, limits); !errors.Is(err, bacnet.ErrMalformed) {
+		t.Fatalf("signed length: %v", err)
+	}
+	// high context open/close tag numbers (>=15)
+	enc, err := bacnet.AppendContextTagged(nil, 20, []bacnet.Element{{Value: bacnet.UnsignedValue(1)}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	els, n, err := bacnet.ParseSequence(enc, limits, -1)
+	if err != nil || n != len(enc) || len(els) != 1 || els[0].TagNumber != 20 || !bacnet.IsContextConstructed(els[0]) {
+		t.Fatalf("high constructed tag: %#v n=%d err=%v", els, n, err)
 	}
 }
 

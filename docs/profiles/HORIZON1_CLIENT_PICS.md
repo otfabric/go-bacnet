@@ -20,11 +20,18 @@ Capabilities: see [`../capabilities.yaml`](../capabilities.yaml).
 | Service | Support |
 |---------|---------|
 | Who-Is | Yes |
+| Who-Has | Yes |
 | ReadProperty | Yes |
 | ReadPropertyMultiple | Yes |
 | WriteProperty | Yes |
+| WritePropertyMultiple | Yes |
+| ReadRange | Yes |
 | SubscribeCOV | Yes |
 | SubscribeCOVProperty | Optional / as implemented |
+| AcknowledgeAlarm | Yes |
+| GetEventInformation | Yes |
+| DeviceCommunicationControl | Optional (opt-in) |
+| ReinitializeDevice | Optional (opt-in) |
 | Who-Is-Router-To-Network | Yes (as needed for routing) |
 
 ## Supported services (execute / receive)
@@ -32,17 +39,20 @@ Capabilities: see [`../capabilities.yaml`](../capabilities.yaml).
 | Service | Support |
 |---------|---------|
 | I-Am | Yes (observe into registry) |
+| I-Have | Yes (observe into object registry) |
 | I-Am-Router-To-Network | Yes (cache) |
 | UnconfirmedCOVNotification | Yes |
 | ConfirmedCOVNotification | Yes (client indication path) |
+| UnconfirmedEventNotification | Yes |
+| ConfirmedEventNotification | Yes (client indication path) |
 | Forwarded-NPDU (BVLC) | Yes |
 
 ## Segmentation
 
 | Capability | Support |
 |------------|---------|
-| Segmented ComplexACK receive | Yes (required) |
-| Segmented request transmit | Optional |
+| Segmented ComplexACK receive | Yes (required; default actual window 1) |
+| Segmented request transmit | Yes (proposed window 16; peer Segmentation evidence) |
 
 ## Character sets / datatypes
 
@@ -55,4 +65,4 @@ decode when the encoding is valid.
 ## Explicit non-support
 
 Native MS/TP, BACnet/IPv6, BACnet/SC, BBMD server, full device/server object
-model, alarms, schedules, trends, WritePropertyMultiple.
+model, schedules, GetAlarmSummary, full EventNotification parameter typing.

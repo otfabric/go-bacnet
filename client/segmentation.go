@@ -38,6 +38,7 @@ type segmentReceiver struct {
 	clock          clock.Clock
 	active         map[uint8]*segState
 	localWindow    uint8
+	send           *segmentSender
 }
 
 type segState struct {
@@ -55,12 +56,15 @@ type segState struct {
 	c            *Client
 }
 
-func newSegmentReceiver(limits bacnet.DecodeLimits, d diag.Sink, clk clock.Clock, segmentTimeout time.Duration) *segmentReceiver {
+func newSegmentReceiver(limits bacnet.DecodeLimits, d diag.Sink, clk clock.Clock, segmentTimeout time.Duration, localWindow uint8) *segmentReceiver {
 	if segmentTimeout <= 0 {
 		segmentTimeout = 2 * time.Second
 	}
 	if clk == nil {
 		clk = clock.Real{}
+	}
+	if localWindow == 0 || localWindow > 127 {
+		localWindow = defaultSegmentReceiveWindow
 	}
 	return &segmentReceiver{
 		limits:         limits.Normalize(),
@@ -68,7 +72,8 @@ func newSegmentReceiver(limits bacnet.DecodeLimits, d diag.Sink, clk clock.Clock
 		segmentTimeout: segmentTimeout,
 		clock:          clk,
 		active:         make(map[uint8]*segState),
-		localWindow:    1,
+		localWindow:    localWindow,
+		send:           newSegmentSender(),
 	}
 }
 
@@ -121,7 +126,9 @@ func (r *segmentReceiver) accept(ack *apdu.ComplexACK, src packetSource, c *Clie
 		st.timer = r.clock.NewTimer(r.segmentTimeout)
 		c.wg.Add(1)
 		go r.watchTimeout(st)
-	} else if st.service != ack.ServiceChoice {
+	} else if ack.ServiceChoice != 0 && st.service != ack.ServiceChoice {
+		// Segment 0 establishes the service; later segments from common peers
+		// repeat the same choice. A mismatch is a protocol violation.
 		outbounds = append(outbounds, r.abortOutbound(st, abortReasonInvalidAPDU)...)
 		r.removeLocked(ack.InvokeID)
 		r.mu.Unlock()
@@ -296,12 +303,17 @@ func (r *segmentReceiver) removeLocked(invokeID uint8) {
 
 func (r *segmentReceiver) abortAll() {
 	r.mu.Lock()
-	defer r.mu.Unlock()
 	for id := range r.active {
 		r.removeLocked(id)
 	}
+	r.mu.Unlock()
+	if r.send != nil {
+		r.send.abortAll()
+	}
 }
 
-func (r *segmentReceiver) handleSegmentACK(ack *apdu.SegmentACK) {
-	_ = ack
+func (r *segmentReceiver) handleSegmentACK(ack *apdu.SegmentACK, src packetSource) {
+	if r.send != nil {
+		r.send.deliver(ack, src)
+	}
 }

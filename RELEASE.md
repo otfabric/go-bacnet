@@ -1,5 +1,91 @@
 # go-bacnet Releases
 
+## v0.2.0
+
+**Date:** 2026-08-02  
+**Previous release:** [v0.1.1](https://github.com/otfabric/go-bacnet/releases/tag/v0.1.1)
+
+### Summary
+
+Supervisory-client breadth release: WritePropertyMultiple, ReadRange (including
+typed Trend Log records), Who-Has / I-Have, EventNotification receive with typed
+common NotificationParameters, AcknowledgeAlarm, GetEventInformation, opt-in
+DeviceCommunicationControl / ReinitializeDevice, and windowed segmented
+confirmed-request send. Pin moves to
+[`bacnet-interop` v0.4.1](https://github.com/otfabric/bacnet-interop/releases/tag/v0.4.1)
+(BACpypes3 **0.0.106**). Requires **Go 1.23+**.
+
+Still **production-candidate** until the
+[real-device gate](docs/REAL_DEVICE_GATE.md) is complete.
+
+### Added
+
+- **WritePropertyMultiple** service codecs + `Client.WritePropertyMultiple`
+  (SimpleACK success; `*service.WritePropertyMultipleError` for first-failed
+  write; exact-APDU retransmit disabled; outcome-unknown after send)
+- **Segmented confirmed-request send** (proposed window 16, `WithSegmentWindow`):
+  SegmentACK/NAK handling with windowed in-flight send, segment timeout → client
+  Abort, peer Segmentation evidence gate, MaxSegments preflight; enables large
+  WPM when the peer can receive segments. Segmented ComplexACK receive defaults
+  to actual window 1 so peers that wait for SegmentACK before the next segment
+  (BACpypes3 / BACnet4J) do not stall
+- Confirmed-request / ComplexACK codecs: segmented PDUs carry service choice on
+  every segment (interop with BACpypes3/BACnet4J; ASHRAE allows omitting after
+  segment 0)
+- **ReadRange** codecs + `Client.ReadRange` (byPosition / bySequenceNumber /
+  byTime / all; resultFlags helpers; retransmit enabled)
+- Typed **BACnetLogRecord** split: `service.LogRecord` /
+  `ReadRangeACK.LogRecords` when property is `Log_Buffer`
+- **Who-Has / I-Have** codecs + `SendWhoHas` / `DiscoverObjects` / `Objects()`
+  with a bounded object-observation registry (shared retention options)
+- **EventNotification** receive (Confirmed/Unconfirmed) + handler API;
+  typed **NotificationParameters** for change-of-state / bitstring / value /
+  out-of-range (opaque `NotificationParams` retained); **AcknowledgeAlarm**;
+  **GetEventInformation**
+- **DeviceCommunicationControl** / **ReinitializeDevice** (opt-in via
+  `WithDeviceManagementEnabled`; outcome-unknown after send)
+- Runnable examples: `examples/read-range`, `examples/write-multiple`,
+  `examples/who-has`, `examples/events`
+- Context helpers: `AppendContextSigned`, `AppendContextBitString`,
+  `AppendContextCharacterString`, `AppendContextTime` (+ matching `Context*`)
+- Constants: `ObjectTypeTrendLog`, `PropertyLogBuffer`
+- Interop tests: three-peer WPM + Who-Has; BACpypes3 segmented WPM send;
+  bacnet-stack/BACnet4J ReadRange; BACpypes3/BACnet4J EventNotification receive;
+  three-peer ReinitializeDevice warmstart; bacnet-stack DCC enable;
+  BACpypes3/BACnet4J segmented RPM ComplexACK receive
+- Hermetic codec fixtures for the new services (via bacnet-interop)
+
+### Fixed
+
+- Routed interop harness: bind `bip-router` by static address→network (not
+  Docker `eth0`/`eth1` order), which was dropping DNET forwards when iface
+  order swapped after `create` + `network connect`
+
+### Changed
+
+- Pin → [`bacnet-interop` v0.4.1](https://github.com/otfabric/bacnet-interop/releases/tag/v0.4.1)
+  (BACpypes3 **0.0.106**; bacnet-stack 1.6.0; BACnet4J 6.1.0; digest-pinned GHCR images)
+- `DecodeReadRangeACK` populates `LogRecords` for Log_Buffer; otherwise trusts
+  wire `itemCount` when complex item tag streams do not 1:1 match flat items
+
+### Evidence
+
+| Gate | Result | Link |
+|---|---|---|
+| Shared CI (lint, Go matrix, race, coverage, PR fuzz) | green on `8bee3e6` | [30722438815](https://github.com/otfabric/go-bacnet/actions/runs/30722438815) |
+| Pinned interop `v0.4.1` | green | [30722438676](https://github.com/otfabric/go-bacnet/actions/runs/30722438676) (job *Pinned release peers*) |
+| bacnet-interop main compat | green | same run (job *bacnet-interop main compat*) |
+| Pin | [`bacnet-interop` v0.4.1](https://github.com/otfabric/bacnet-interop/releases/tag/v0.4.1) | `interop/bacnet-interop-pin.json` |
+
+### Notes
+
+- No public API break intended; additive services and options only.
+- BACnet4J rejects segmented confirmed-request *receive* (reject reason 9);
+  segmented WPM send evidence uses BACpypes3. See
+  [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md).
+
+---
+
 ## v0.1.1
 
 **Date:** 2026-08-01  
@@ -58,7 +144,7 @@ Still not **production-usable** until the
 - No public API break intended; additive options and stricter malformed
   rejection only.
 - Segmented confirmed-request *send*, WPM, server/BBMD-server remain out of
-  scope (see [PLAN.md](PLAN.md) Horizon 2+).
+  scope for this tag (added in later releases).
 
 ---
 

@@ -138,9 +138,12 @@ distinct from any application-level **retry** of a logical operation.
 
 | Service | Default retransmit | Notes |
 |---------|--------------------|-------|
-| ReadProperty / RPM | Enabled | Safe to resend identical APDU |
+| ReadProperty / RPM / ReadRange / GetEventInformation | Enabled | Safe to resend identical APDU |
 | WriteProperty | Disabled | After send, timeout/cancel → `*OutcomeUnknownError` |
+| WritePropertyMultiple | Disabled | After send (any segment), timeout/cancel → `*OutcomeUnknownError`; Error PDU → `*service.WritePropertyMultipleError` (first-failed only) |
 | SubscribeCOV / SubscribeCOVProperty | Disabled | After send, timeout/cancel → `*OutcomeUnknownError` (incl. cancel/renew) |
+| AcknowledgeAlarm | Disabled | After send → `*OutcomeUnknownError` |
+| DeviceCommunicationControl / ReinitializeDevice | Disabled | Opt-in only; after send → `*OutcomeUnknownError` |
 
 `WithTransactionOptions` sets APDU timeout, retransmit count and segment timeout.
 Application code that retries these operations after `OutcomeUnknownError` must
@@ -156,6 +159,39 @@ double write).
 - Per-property BACnet errors live in `PropertyResult.Err`; other properties in
   the same ACK may still succeed.
 - Always inspect property results even when `err == nil`.
+
+## ReadRange
+
+`ReadRange` returns `service.ReadRangeACK` with `ResultFlags`, `ItemCount`,
+`ItemData`, optional `FirstSequence`, and `LogRecords` when the property is
+`Log_Buffer` and the itemData stream is well-formed `BACnetLogRecord`
+SEQUENCEs. Prefer `LogRecords` for typed Trend Log access; `ItemData` remains
+the flat tag stream for generic ranges. Inspect `FirstItem` / `LastItem` /
+`MoreItems` for paging. Item values are cloned on decode (caller-owned).
+
+## Who-Has / I-Have
+
+`SendWhoHas` / `DiscoverObjects` mirror Who-Is / Discover. I-Have updates a
+separate bounded **object** observation registry (`Objects()`), using the same
+`WithRegistryOptions` retention policy as device observations. Device and
+object registries do not share entries.
+
+## EventNotification / alarms
+
+Inbound Confirmed/Unconfirmed EventNotification is distinct from COV.
+`WithEventNotificationHandler` / `SetEventNotificationHandler` delivers decoded
+notifications; confirmed indications are SimpleACK'd before the handler runs.
+`AcknowledgeAlarm` and `GetEventInformation` are typed initiate helpers.
+`EventNotification.Parameters` types common NotificationParameters CHOICEs
+(change-of-state, change-of-bitstring, change-of-value, out-of-range);
+`NotificationParams` retains the opaque constructed CHOICE body for all cases.
+
+## Device management (opt-in)
+
+`DeviceCommunicationControl` and `ReinitializeDevice` require
+`WithDeviceManagementEnabled(DeviceManagementConfirm)`. Without the opt-in,
+calls return `bacnet.ErrDeviceManagementDisabled`. These services can mute or
+reboot a peer; treat post-send failures as outcome-unknown.
 
 ## Experimental: `InvokeConfirmed`
 
@@ -214,10 +250,17 @@ Client `Close` closes all subscriptions.
 
 Do not retain aliased slices after the datagram buffer is reused.
 
-## Segmentation (Horizon 1)
+## Segmentation
 
-- Receiving segmented ComplexACK: **required** (transaction-owned reassembly with
-  timeouts, MaxSegments, path match before state creation, routed SegmentACK)
-- Sending segmented confirmed requests: **optional / not required** for H1
-- Preflight refuses requests that exceed remote max APDU without permitted
-  segmentation → `ErrAPDUTooLarge` / `*APDUTooLargeError`
+- Receiving segmented ComplexACK: transaction-owned reassembly with timeouts,
+  MaxSegments, path match before state creation, routed SegmentACK
+- Sending segmented confirmed requests: proposed window defaults to 16; actual
+  window follows SegmentACK. Receiving segmented ComplexACK defaults to actual
+  window 1 (ACK every segment) for peer compatibility. `WithSegmentWindow` sets
+  both directions (1..127). Used when the unsegmented APDU exceeds the remote
+  max **and** registry evidence shows peer Segmentation is `segmented-both` (0)
+  or `segmented-receive` (2). Without that evidence, preflight returns
+  `*APDUTooLargeError` with `SegmentationSupported=false`
+- Service choice appears only in segment 0 (ASHRAE 135)
+- Segment timeout / cancel during send may emit a client Abort; after any
+  segment was transmitted, side-effecting services wrap as outcome-unknown

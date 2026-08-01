@@ -5,12 +5,16 @@ production-candidate toward an unambiguous Go BACnet leadership claim.
 Adapter images, fixtures, and peer smoke live in
 [`bacnet-interop`](https://github.com/otfabric/bacnet-interop) (`PLAN.md`).
 
-**Status:** **production-candidate** (release-grade evidence closed in Batch
-**4D**; cut tag `v0.1.1` via Release workflow). Pin:
-[`bacnet-interop` v0.2.1](https://github.com/otfabric/bacnet-interop/releases/tag/v0.2.1).
-**Next:** Horizon-2 supervisory breadth (WPM + segmented confirmed-request
-send), then real-device gate → **production-usable**
-([docs/REAL_DEVICE_GATE.md](docs/REAL_DEVICE_GATE.md)).
+**Status:** **production-candidate** — supervisory-client breadth ready as
+**`v0.2.0`** (docs + green CI/interop on `8bee3e6`; cut the tag from `main`).
+Pin: [`bacnet-interop` v0.4.1](https://github.com/otfabric/bacnet-interop/releases/tag/v0.4.1).
+
+**Pin:** [`interop/bacnet-interop-pin.json`](interop/bacnet-interop-pin.json) →
+`v0.4.1` (`device-baseline-v2`; bacnet-stack **1.6.0**; BACpypes3 **0.0.106**).
+
+**Next human step:** cut **`v0.2.0`** (Actions → Release → **`minor`**), then
+either start the [real-device gate](docs/REAL_DEVICE_GATE.md) toward
+**production-usable**, or pick Horizon 3 / follow-ups below.
 
 Honest positioning (see [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md)):
 
@@ -22,13 +26,24 @@ executable peers.
 
 Status labels: `done` · `partial` · `open`.
 
+### Horizon 2 checklist
+
+| # | Item | Status | Evidence | Follow-ups |
+|---|---|---|---|---|
+| 1 | WritePropertyMultiple | `done` | codecs + client + three-peer live + fixtures; [30722438676](https://github.com/otfabric/go-bacnet/actions/runs/30722438676) | — |
+| 2 | Segmented confirmed-request send | `done` | windowed send (proposed 16) + receive window 1; BACpypes3 live segmented WPM; same run | BACnet4J rejects segmented confirmed receive (documented / blocked upstream) |
+| 3 | ReadRange | `done` | codecs + client + fixtures + live byPosition (stack/4J TrendLog); typed LogRecord split | — |
+| 4 | Who-Has / I-Have | `done` | codecs + client + three-peer live + fixtures; same run | — |
+| 5 | EventNotification / alarms | `done` | receive + AckAlarm + GetEventInformation; typed NotificationParameters for common CHOICEs; live emit BACpypes3/4J | remaining uncommon event-parameter CHOICEs |
+| 6 | DeviceCommunicationControl / ReinitializeDevice | `done` | opt-in client; live DCC enable (stack) + Reinit warmstart (3 peers); same run | — |
+
 ---
 
 ## Competitive landscape (summary)
 
 | Rank | Project | Strongest aspect | Main limitation |
 |---:|---|---|---|
-| 1 | **otfabric/go-bacnet** | Quality, strictness, transactions, segmented ComplexACK receive, pinned multi-peer interop, docs | Focused client; no server/BBMD-server/WPM/ReadRange |
+| 1 | **otfabric/go-bacnet** | Quality, strictness, transactions, segmentation, pinned multi-peer interop, H2 client breadth, docs | Focused client; no server/BBMD-server; no real-device gate yet |
 | 2 | worldiety/bacnet | Broadest modern pure-Go surface (server, BBMD, router, WPM, ReadRange, …) | Prototype; weaker independent interop/strictness evidence; no client-side segmented ComplexACK receive |
 | 3 | NubeDev/bacnet | Historical field-device / routed MS/TP claims | Legacy, GPL-2.0, inactive since ~2023 |
 | 4+ | ulbios, maxzerker, gobacnet, … | Historical codec or minimal experiments | Narrow or unsuitable as foundations |
@@ -62,7 +77,7 @@ Do not re-litigate these unless a regression appears:
 | FD / BBMD (client) | BACpypes3 + BACnet4J peer-as-BBMD |
 | Strict framing | Reserved APDU/NPDU bits, MaxAPDU, windows, router lists → `ErrMalformed` |
 | Evidence architecture | Digest-pinned adapters, fixture provenance, hermetic coverage, PR + nightly fuzz |
-| Adapters | `bacnet-interop` `v0.2.1` |
+| Adapters | `bacnet-interop` `v0.4.1` |
 
 Routing evidence phrase (until a second independent router exists):
 
@@ -95,7 +110,7 @@ ref is the preferred way to smoke a bacnet-interop release candidate.
 |---|---|---|---|
 | 1 | **P0** — `reexecInNetwork` honors `BACNET_INTEROP_ROOT` + require fixture files under mount | done | `interop/root.go` + unit tests |
 | 2 | Print / artifact both repo SHAs (+ peer ready metadata) in required interop job | done | workflow summary + artifacts |
-| 3 | Pin file for bacnet-interop ref/digests; required pinned lane | done | `interop/bacnet-interop-pin.json` → `v0.2.1` |
+| 3 | Pin file for bacnet-interop ref/digests; required pinned lane | done | `interop/bacnet-interop-pin.json` → `v0.4.1` |
 | 4 | Latest-main compatibility lane (detect upcoming breakage) | done | `peer-interop-main` job |
 | 5 | bacnet-interop CI: consumer job against go-bacnet main | **n/a** | Dependency inversion rejected |
 | 6 | bacnet-interop CI: build + require bip-router smoke | done | in bacnet-interop |
@@ -132,7 +147,7 @@ ref is the preferred way to smoke a bacnet-interop release candidate.
 
 | # | Item | Status |
 |---|---|---|
-| 1 | Full required interop green + race/fuzz on new cases | partial | completed via 4A |
+| 1 | Full required interop green + race/fuzz on new cases | done | completed via 4A / H2 CI |
 | 2 | Label tree **production-candidate** (docs / RELEASE; humans own tags) | done | provisional until 4D |
 | 3 | Real-device gate (≥2 independent devices) → **production-usable** | open |
 
@@ -177,7 +192,7 @@ ref is the preferred way to smoke a bacnet-interop release candidate.
 
 ## Batch 4D — Finish the quality claim
 
-Do **not** chase Worldiety feature breadth before the next tag is cut.
+Do **not** chase Worldiety feature breadth before `v0.2.0` is tagged.
 
 | # | Item | Status |
 |---|---|---|
@@ -185,21 +200,31 @@ Do **not** chase Worldiety feature breadth before the next tag is cut.
 | 2 | Race detector green | done | `-race` in shared Test matrix (same run) |
 | 3 | PR fuzz green | done | same run |
 | 4 | Nightly fuzz green (manual/scheduled retention) | done | [30707778922](https://github.com/otfabric/go-bacnet/actions/runs/30707778922) |
-| 5 | Pinned `v0.2.1` interop green **repeatedly** (≥2 runs) | done | [30705297526](https://github.com/otfabric/go-bacnet/actions/runs/30705297526), [30707779897](https://github.com/otfabric/go-bacnet/actions/runs/30707779897) |
-| 6 | Latest bacnet-interop main compatibility green | done | both interop runs |
+| 5 | Pinned interop green **repeatedly** (≥2 runs) | done | `v0.4.0` [30720046370](https://github.com/otfabric/go-bacnet/actions/runs/30720046370); `v0.4.1` [30722438676](https://github.com/otfabric/go-bacnet/actions/runs/30722438676) |
+| 6 | Latest bacnet-interop main compatibility green | done | [30722438676](https://github.com/otfabric/go-bacnet/actions/runs/30722438676) |
 | 7 | Registry-bound + IPv4/DBTN cases on the released tree | done | on `6256fd2` + follow-up docs commit |
 | 8 | Evidence artifact links in `RELEASE.md` for `v0.1.1` | done | see RELEASE.md |
 | 9 | Descriptive conventional commits on main (no `wip` noise) | partial | going forward; prior `wip` left intact |
 | 10 | [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md) seeded | done |
 
-**Human next step:** Actions → Release → bump **`patch`** to cut `v0.1.1`.
+### Release prep (`v0.2.0`)
+
+| # | Item | Status | Notes |
+|---|---|---|---|
+| 1 | H2 APIs + interop assertions on `main` | done | see checklist above |
+| 2 | Pin → bacnet-interop `v0.4.1` | done | digests in `interop/bacnet-interop-pin.json` (BACpypes3 0.0.106) |
+| 3 | CI green on `main` | done | [30722438815](https://github.com/otfabric/go-bacnet/actions/runs/30722438815) on `8bee3e6` |
+| 4 | Interop green (pinned + main compat) | done | [30722438676](https://github.com/otfabric/go-bacnet/actions/runs/30722438676) |
+| 5 | Docs / PLAN / RELEASE / INTEROP synced | done | evidence + `v0.2.0` notes |
+| 6 | **Human:** cut `v0.2.0` | open | Actions → Release → **`minor`** |
+| 7 | Real-device gate → **production-usable** | open | [docs/REAL_DEVICE_GATE.md](docs/REAL_DEVICE_GATE.md) |
 
 Promotion rules:
 
 | Label | Requirement |
 |---|---|
 | **alpha** | Pre-hardening |
-| **production-candidate** | Batches 4A–4D closed; reproducible oracle evidence |
+| **production-candidate** | Batches 4A–4D + Horizon 2 client breadth closed; reproducible oracle evidence |
 | **production-usable** | [Real-device gate](docs/REAL_DEVICE_GATE.md) complete |
 
 Container oracles are necessary but **not** sufficient for production-usable.
@@ -208,18 +233,32 @@ Container oracles are necessary but **not** sufficient for production-usable.
 
 ## Horizon 2 — Supervisory-client breadth (after 4D)
 
-Implement in this order. Preserve ownership, bounds, outcome-unknown, and
-peer evidence discipline. Do **not** inherit global process state, GPL lineage,
+**Closed** for the scoped deliverables below (in-tree + peer evidence; pin
+`v0.4.1`). Preserve ownership, bounds, outcome-unknown, and peer evidence
+discipline in follow-ups. Do **not** inherit global process state, GPL lineage,
 or permissive unbounded decoding from competitors.
 
-| Priority | Item | Notes |
+| Priority | Item | Status | Notes |
+|---|---|---|---|
+| 1 | **WritePropertyMultiple** | `done` | Codecs + client + three-peer live + fixtures |
+| 2 | **Client-side segmented confirmed-request send** | `done` | Windowed send (proposed 16) + receive window 1; BACpypes3 live segmented WPM; BACnet4J receive gap documented |
+| 3 | **ReadRange** | `done` | Codecs + client + fixtures + live byPosition (stack/4J); typed `LogRecords` on Log_Buffer |
+| 4 | **Who-Has / I-Have** | `done` | Codecs + client + three-peer live + fixtures |
+| 5 | **EventNotification / alarms** | `done` | Receive + AckAlarm + GetEventInformation; typed NotificationParameters for common CHOICEs; live emit BACpypes3/4J |
+| 6 | **DeviceCommunicationControl / ReinitializeDevice** | `done` | Opt-in APIs; live DCC (stack) + Reinit warmstart (3 peers) |
+
+### Horizon 2 follow-ups
+
+| Item | Status | Notes |
 |---|---|---|
-| 1 | **WritePropertyMultiple** | Per-property outcomes; ambiguous write semantics; MaxAPDU preflight; mixed-success + malformed fixtures; three-peer interop |
-| 2 | **Client-side segmented confirmed-request send** | Pair with WPM; transmit windows, SegmentACK/NAK, timeout ownership, MaxSegments, cancel/Abort, path correlation |
-| 3 | **ReadRange** | Trends / historical data |
-| 4 | **Who-Has / I-Have** | Bounded commissioning discovery |
-| 5 | EventNotification / alarm-oriented services | COV is not a substitute |
-| 6 | DeviceCommunicationControl / ReinitializeDevice | Explicit opt-in; safety-sensitive; outcome-unknown |
+| Segmented confirmed-request windows > 1 | `done` | Send proposed window 16; receive actual window 1 (peer-safe); `WithSegmentWindow` sets both; unit test send window=4 |
+| BACnet4J segmented confirmed-request receive | `blocked` | Upstream peer rejects (reason 9); keep skip + COMPATIBILITY row — not in `v0.2.0` scope |
+| Typed ReadRange LogRecord split | `done` | `DecodeLogRecords` / `ReadRangeACK.LogRecords` when property is Log_Buffer |
+| Richer EventNotification parameter typing | `done` | change-of-state / bitstring / value / out-of-range; opaque fallback retained |
+| Runnable `examples/` for H2 APIs | `done` | `examples/{read-range,write-multiple,who-has,events}` |
+
+Update the checklist at the top of this file whenever an item moves between
+`open` / `partial` / `done`.
 
 ---
 
@@ -289,17 +328,18 @@ code stays reusable.
 
 | Document | Purpose | Status |
 |---|---|---|
-| [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md) | Peer/device, version, topology, scenarios, artifacts, deviations | partial (seeded) |
+| [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md) | Peer/device, version, topology, scenarios, artifacts, deviations | done (seeded; keep current with pins) |
 | `docs/CAPABILITY_MATRIX.md` + `capabilities.yaml` | Machine-readable capability surface | done (keep current) |
+| [INTEROP.md](INTEROP.md) | Peer scenario matrix vs live tests | done (H2 rows + `device-baseline-v2`) |
 | Field-deviation catalogue (in COMPATIBILITY or ERRORS) | App vs context Error tags, string charsets, MaxAPDU segment sizing, Docker broadcast, delayed BVLC-Result | partial |
-| Runnable examples under `examples/` | Discovery, RP, routed RP, RPM partial, WP/null, COV, FD, diagnostics, capture decode, shutdown | open |
+| Runnable examples under `examples/` | H2: ReadRange, WPM, Who-Has, events shipped; remaining: discovery/RP/COV/FD as needed | partial |
 | `MIGRATING_FROM_NUBEDEV.md` / `MIGRATING_FROM_GOBACNET.md` | Adoption accelerators | open |
 
 ---
 
 ## Out of scope for the current promotion path
 
-- Claiming “best overall Go BACnet stack” before Horizons 2–3 close material gaps
+- Claiming “best overall Go BACnet stack” before Horizon 3 / server breadth closes material gaps
 - Claiming hardware or BTL interoperability without the real-device gate
 - Merging with or depending on worldiety / NubeDev
 - Moving consumer assertions into bacnet-interop

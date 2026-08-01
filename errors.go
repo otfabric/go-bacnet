@@ -20,6 +20,9 @@ var (
 	ErrTrailingData           = errors.New("bacnet: unexpected trailing data")
 	ErrLimitExceeded          = errors.New("bacnet: decode limit exceeded")
 	ErrDeliveryDropped        = errors.New("bacnet: delivery dropped")
+	// ErrDeviceManagementDisabled is returned when DeviceCommunicationControl
+	// or ReinitializeDevice is called without WithDeviceManagementEnabled.
+	ErrDeviceManagementDisabled = errors.New("bacnet: device management API disabled")
 )
 
 // APDUTooLargeError reports a request that would exceed the remote max APDU

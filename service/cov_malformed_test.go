@@ -376,6 +376,258 @@ func TestDecodeSubscribeCOVPropertyMalformed(t *testing.T) {
 			},
 			wantErr: bacnet.ErrMalformed,
 		},
+		{
+			name: "processIdentifier overflow",
+			build: func(t *testing.T) []byte {
+				p, err := bacnet.AppendContextUnsigned(nil, 0, 1<<32)
+				if err != nil {
+					t.Fatal(err)
+				}
+				p, err = bacnet.AppendContextObjectID(p, 1, obj)
+				if err != nil {
+					t.Fatal(err)
+				}
+				p = append(p, 0x4E)
+				p, err = bacnet.AppendContextUnsigned(p, 0, uint64(prop.Identifier))
+				if err != nil {
+					t.Fatal(err)
+				}
+				return append(p, 0x4F)
+			},
+			wantErr: bacnet.ErrMalformed,
+		},
+		{
+			name: "duplicate processIdentifier",
+			build: func(t *testing.T) []byte {
+				p, err := bacnet.AppendContextUnsigned(nil, 0, 1)
+				if err != nil {
+					t.Fatal(err)
+				}
+				p, err = bacnet.AppendContextUnsigned(p, 0, 2)
+				if err != nil {
+					t.Fatal(err)
+				}
+				p, err = bacnet.AppendContextObjectID(p, 1, obj)
+				if err != nil {
+					t.Fatal(err)
+				}
+				p = append(p, 0x4E)
+				p, err = bacnet.AppendContextUnsigned(p, 0, uint64(prop.Identifier))
+				if err != nil {
+					t.Fatal(err)
+				}
+				return append(p, 0x4F)
+			},
+			wantErr: bacnet.ErrMalformed,
+		},
+		{
+			name: "duplicate monitoredObject",
+			build: func(t *testing.T) []byte {
+				p, err := bacnet.AppendContextUnsigned(nil, 0, 1)
+				if err != nil {
+					t.Fatal(err)
+				}
+				p, err = bacnet.AppendContextObjectID(p, 1, obj)
+				if err != nil {
+					t.Fatal(err)
+				}
+				p, err = bacnet.AppendContextObjectID(p, 1, obj)
+				if err != nil {
+					t.Fatal(err)
+				}
+				p = append(p, 0x4E)
+				p, err = bacnet.AppendContextUnsigned(p, 0, uint64(prop.Identifier))
+				if err != nil {
+					t.Fatal(err)
+				}
+				return append(p, 0x4F)
+			},
+			wantErr: bacnet.ErrMalformed,
+		},
+		{
+			name: "duplicate issueConfirmed",
+			build: func(t *testing.T) []byte {
+				p, err := bacnet.AppendContextUnsigned(nil, 0, 1)
+				if err != nil {
+					t.Fatal(err)
+				}
+				p, err = bacnet.AppendContextObjectID(p, 1, obj)
+				if err != nil {
+					t.Fatal(err)
+				}
+				p, err = bacnet.AppendContextBool(p, 2, true)
+				if err != nil {
+					t.Fatal(err)
+				}
+				p, err = bacnet.AppendContextBool(p, 2, false)
+				if err != nil {
+					t.Fatal(err)
+				}
+				p, err = bacnet.AppendContextUnsigned(p, 3, 60)
+				if err != nil {
+					t.Fatal(err)
+				}
+				p = append(p, 0x4E)
+				p, err = bacnet.AppendContextUnsigned(p, 0, uint64(prop.Identifier))
+				if err != nil {
+					t.Fatal(err)
+				}
+				return append(p, 0x4F)
+			},
+			wantErr: bacnet.ErrMalformed,
+		},
+		{
+			name: "duplicate lifetime",
+			build: func(t *testing.T) []byte {
+				p, err := bacnet.AppendContextUnsigned(nil, 0, 1)
+				if err != nil {
+					t.Fatal(err)
+				}
+				p, err = bacnet.AppendContextObjectID(p, 1, obj)
+				if err != nil {
+					t.Fatal(err)
+				}
+				p, err = bacnet.AppendContextBool(p, 2, true)
+				if err != nil {
+					t.Fatal(err)
+				}
+				p, err = bacnet.AppendContextUnsigned(p, 3, 60)
+				if err != nil {
+					t.Fatal(err)
+				}
+				p, err = bacnet.AppendContextUnsigned(p, 3, 61)
+				if err != nil {
+					t.Fatal(err)
+				}
+				p = append(p, 0x4E)
+				p, err = bacnet.AppendContextUnsigned(p, 0, uint64(prop.Identifier))
+				if err != nil {
+					t.Fatal(err)
+				}
+				return append(p, 0x4F)
+			},
+			wantErr: bacnet.ErrMalformed,
+		},
+		{
+			name: "lifetime overflow",
+			build: func(t *testing.T) []byte {
+				p, err := bacnet.AppendContextUnsigned(nil, 0, 1)
+				if err != nil {
+					t.Fatal(err)
+				}
+				p, err = bacnet.AppendContextObjectID(p, 1, obj)
+				if err != nil {
+					t.Fatal(err)
+				}
+				p, err = bacnet.AppendContextBool(p, 2, true)
+				if err != nil {
+					t.Fatal(err)
+				}
+				p, err = bacnet.AppendContextUnsigned(p, 3, 1<<32)
+				if err != nil {
+					t.Fatal(err)
+				}
+				p = append(p, 0x4E)
+				p, err = bacnet.AppendContextUnsigned(p, 0, uint64(prop.Identifier))
+				if err != nil {
+					t.Fatal(err)
+				}
+				return append(p, 0x4F)
+			},
+			wantErr: bacnet.ErrMalformed,
+		},
+		{
+			name: "incomplete subscription fields",
+			build: func(t *testing.T) []byte {
+				p, err := bacnet.AppendContextUnsigned(nil, 0, 1)
+				if err != nil {
+					t.Fatal(err)
+				}
+				p, err = bacnet.AppendContextObjectID(p, 1, obj)
+				if err != nil {
+					t.Fatal(err)
+				}
+				p, err = bacnet.AppendContextBool(p, 2, true)
+				if err != nil {
+					t.Fatal(err)
+				}
+				p = append(p, 0x4E)
+				p, err = bacnet.AppendContextUnsigned(p, 0, uint64(prop.Identifier))
+				if err != nil {
+					t.Fatal(err)
+				}
+				return append(p, 0x4F)
+			},
+			wantErr: bacnet.ErrMalformed,
+		},
+		{
+			name: "unexpected tag",
+			build: func(t *testing.T) []byte {
+				return []byte{0x69, 0x01}
+			},
+			wantErr: bacnet.ErrMalformed,
+		},
+		{
+			name: "ContextUnsigned fail on processIdentifier",
+			build: func(t *testing.T) []byte {
+				return []byte{0x08} // context tag 0, length 0
+			},
+			wantErr: bacnet.ErrMalformed,
+		},
+		{
+			name: "ContextObjectID fail",
+			build: func(t *testing.T) []byte {
+				p, err := bacnet.AppendContextUnsigned(nil, 0, 1)
+				if err != nil {
+					t.Fatal(err)
+				}
+				return append(p, 0x1A, 0x00, 0x01)
+			},
+			wantErr: bacnet.ErrMalformed,
+		},
+		{
+			name: "ContextBool fail",
+			build: func(t *testing.T) []byte {
+				p, err := bacnet.AppendContextUnsigned(nil, 0, 1)
+				if err != nil {
+					t.Fatal(err)
+				}
+				p, err = bacnet.AppendContextObjectID(p, 1, obj)
+				if err != nil {
+					t.Fatal(err)
+				}
+				p, err = bacnet.AppendContextUnsigned(p, 2, 2) // not boolean 0/1
+				if err != nil {
+					t.Fatal(err)
+				}
+				return p
+			},
+			wantErr: bacnet.ErrMalformed,
+		},
+		{
+			name: "nested constructed in property reference",
+			build: func(t *testing.T) []byte {
+				p, err := bacnet.AppendContextUnsigned(nil, 0, 1)
+				if err != nil {
+					t.Fatal(err)
+				}
+				p, err = bacnet.AppendContextObjectID(p, 1, obj)
+				if err != nil {
+					t.Fatal(err)
+				}
+				p, err = bacnet.AppendContextBool(p, 2, true)
+				if err != nil {
+					t.Fatal(err)
+				}
+				p, err = bacnet.AppendContextUnsigned(p, 3, 60)
+				if err != nil {
+					t.Fatal(err)
+				}
+				p = append(p, 0x4E, 0x0E, 0x0F, 0x4F)
+				return p
+			},
+			wantErr: bacnet.ErrMalformed,
+		},
 	}
 
 	for _, tc := range tests {

@@ -28,7 +28,9 @@ GOWORK=off go test ./internal/fixtures/ -count=1
 ```
 
 Live device semantics for peer containers:
-`bacnet-interop/fixtures/device/device-baseline-v1.json` (device instance `1234`).
+`bacnet-interop/fixtures/device/device-baseline-v2.json` (device instance `1234`;
+includes TrendLog for ReadRange). The harness also accepts `device-baseline-v1`
+when v2 is absent.
 
 ## Running peer adapters
 
@@ -69,11 +71,16 @@ honored by Docker re-exec for routed tests), require
 `BACNET_INTEROP_REQUIRED=1`, and upload repository SHA evidence artifacts.
 Use `make interop-required` locally with `:local` images or the same digest pins.
 
-Current scenarios (fixture `device-baseline-v1`, device instance `1234`):
+Current scenarios (fixture `device-baseline-v2`, device instance `1234`).
+Pinned release: [`bacnet-interop` v0.4.1](https://github.com/otfabric/bacnet-interop/releases/tag/v0.4.1)
+(BACpypes3 **0.0.106**). Green pinned + main-compat:
+[30722438676](https://github.com/otfabric/go-bacnet/actions/runs/30722438676)
+(prior `v0.4.0`: [30720046370](https://github.com/otfabric/go-bacnet/actions/runs/30720046370)).
 
 | Scenario | bacnet-stack | BACpypes3 | BACnet4J | Interop test |
 |----------|:---:|:---:|:---:|---|
 | Directed Who-Is → I-Am (MaxAPDU/VendorID) | ✓ | ✓ | ✓ | `TestBacnetStackWhoIsIAm`, `TestBACpypes3WhoIsIAm`, `TestBACnet4JWhoIsIAm` |
+| Who-Has → I-Have | ✓ | ✓ | ✓ | `TestBacnetStackWhoHasIHave`, `TestBACpypes3WhoHasIHave`, `TestBACnet4JWhoHasIHave` |
 | ReadProperty device object-name | ✓ | ✓ | ✓ | `TestBacnetStackReadDeviceObjectName`, `TestBACpypes3ReadDeviceObjectName`, `TestBACnet4JReadDeviceObjectName` |
 | ReadProperty AV present-value | ✓ | ✓ | ✓ | `TestBacnetStackReadAnalogValue`, `TestBACpypes3ReadAnalogValue`, `TestBACnet4JReadAnalogValue` |
 | ReadProperty unknown-property → Error | ✓ | ✓ | ✓ | `TestBacnetStackReadPropertyUnknownPropertyError`, `TestBACpypes3ReadPropertyUnknownPropertyError`, `TestBACnet4JReadPropertyUnknownPropertyError` |
@@ -82,15 +89,22 @@ Current scenarios (fixture `device-baseline-v1`, device instance `1234`):
 | ReadPropertyMultiple success | ✓ | ✓ | ✓ | `TestBacnetStackReadPropertyMultiple`, `TestBACpypes3ReadPropertyMultiple`, `TestBACnet4JReadPropertyMultiple` |
 | RPM partial property Error | ✓ | ✓ | ✓ | `TestBacnetStackReadPropertyMultiplePartialError`, `TestBACpypes3ReadPropertyMultiplePartialError`, `TestBACnet4JReadPropertyMultiplePartialError` |
 | WriteProperty + readback + restore | ✓ | ✓ | ✓ | `TestBacnetStackWritePropertyReadbackReset`, `TestBACpypes3WritePropertyReadbackReset`, `TestBACnet4JWritePropertyReadbackReset` |
+| WritePropertyMultiple + readback + restore | ✓ | ✓ | ✓ | `TestBacnetStackWritePropertyMultipleReadbackReset`, `TestBACpypes3WritePropertyMultipleReadbackReset`, `TestBACnet4JWritePropertyMultipleReadbackReset` |
 | Segmented RPM ComplexACK reassembly | — | ✓ | ✓ | `TestBACpypes3SegmentedReadPropertyMultiple`, `TestBACnet4JSegmentedReadPropertyMultiple` |
+| Segmented confirmed-request send (WPM) | — | ✓ | — | `TestBACpypes3SegmentedWritePropertyMultipleSend` (BACnet4J skipped: rejects segmented confirmed receive) |
+| ReadRange byPosition (TrendLog) | ✓ | — | ✓ | `TestBacnetStackReadRangeByPosition`, `TestBACnet4JReadRangeByPosition` |
 | COV subscribe / notify / cancel | ✓ | ✓ | ✓ | `TestBacnetStackCOVSubscribeNotifyCancel`, `TestBACpypes3COVSubscribeNotifyCancel`, `TestBACnet4JCOVSubscribeNotifyCancel` |
 | COV renew | — | ✓ | — | `TestBACpypes3COVRenew` |
+| EventNotification receive | — | ✓ | ✓ | `TestBACpypes3EventNotificationReceive`, `TestBACnet4JEventNotificationReceive` (`BACNET_EMIT_EVENT=1`) |
+| DeviceCommunicationControl (enable) | ✓ | — | — | `TestBacnetStackDeviceCommunicationControlEnable` |
+| ReinitializeDevice warmstart | ✓ | ✓ | ✓ | `TestBacnetStackReinitializeDeviceWarmstart`, `TestBACpypes3ReinitializeDeviceWarmstart`, `TestBACnet4JReinitializeDeviceWarmstart` |
 | Routed Who-Is-Router → ResolveTarget → RP | — | ✓ | — | `TestBACpypes3RoutedWhoIsRouterReadProperty` (cache learn best-effort under Docker Desktop; hard assert is routed RP; unit coverage in `client/routing_test.go`) |
 | Routed RP (explicit next-hop DNET/DADR) | ✓ | ✓ | ✓ | `TestBACnetStackRoutedReadProperty`, `TestBACnet4JRoutedReadProperty`; BACpypes3 via Who-Is-Router test path |
 | Foreign-device register + DBTN Who-Is → RP | — | ✓ | ✓ | `TestBACpypes3ForeignDeviceWhoIsReadProperty`, `TestBACnet4JForeignDeviceWhoIsReadProperty` |
 
-See [PLAN.md](PLAN.md) for the closed production-candidate batches and the open
-real-device gate toward production-usable.
+See [RELEASE.md](RELEASE.md) for the current tag evidence and
+[docs/REAL_DEVICE_GATE.md](docs/REAL_DEVICE_GATE.md) for the open path to
+production-usable.
 
 Topology notes:
 
@@ -98,6 +112,10 @@ Topology notes:
   device net `2`) and **always** re-exec assertions inside the client network.
   Phrase evidence as client addressing validated through this topology aid with
   independent endpoint stacks — not as independent BACnet-router interoperability.
+- Routed harnesses assign static `/24`s and IPs, then start `bip-router` with
+  explicit `addr=` → BACnet network bindings (not `eth0`/`eth1` order). Docker
+  does not guarantee interface order after `create` + `network connect`; binding
+  by iface name silently swaps net numbers and drops DNET forwards.
 - Who-Is-Router is directed at the router hop (`WhoIsRouterToNetworkAt`); remote
   I-Am observation is best-effort.
 - BBMD/FD uses BACpypes3 or BACnet4J with `BACNET_BBMD=1` on a single network
@@ -116,7 +134,7 @@ that network via a `golang` image (`BACNET_INTEROP_GO_IMAGE`). See
 | Label | Meaning |
 |-------|---------|
 | **alpha** | Pre-hardening / incomplete oracle evidence |
-| **production-candidate** | Current — P0 wire/runtime closed with oracle/lab interop evidence; **no** claim of multi-vendor hardware readiness |
+| **production-candidate** | Current — supervisory client + oracle/lab interop evidence (`v0.2.0`); **no** claim of multi-vendor hardware readiness |
 | **production-usable** | Real-device gate met — see [docs/REAL_DEVICE_GATE.md](docs/REAL_DEVICE_GATE.md) |
 
 Do not claim vendor hardware interoperability from container oracles alone.

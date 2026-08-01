@@ -21,6 +21,7 @@ const (
 	ObjectTypeDevice          ObjectType = 8
 	ObjectTypeMultiStateInput ObjectType = 13
 	ObjectTypeMultiStateValue ObjectType = 19
+	ObjectTypeTrendLog        ObjectType = 20
 )
 
 // MaxObjectInstance is the largest valid object instance (22 bits).

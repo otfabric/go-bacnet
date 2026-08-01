@@ -98,16 +98,24 @@ readProperty:
 
 func TestBACnetStackRoutedReadProperty(t *testing.T) {
 	dev := loadDeviceFixture(t)
+	// bacnet-stack has no BACNET_NETWORK; bip-router return-path assist carries
+	// the reply after final unicast delivery omits SNET.
 	topo := startRoutedTopology(t, getEnv("BACNET_STACK_IMAGE", defaultStackImage), "bacnet-stack")
 	if topo.assertedByReexec {
 		return
 	}
-	c := newClient(t)
+	// Bind :47808 like the BACpypes3 routed test so router broadcasts and
+	// unicast replies to the standard port are receivable on docker bridges.
+	c := newDiscoveryClient(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 
-	// Explicit next-hop (no router-cache dependency): DNET/DADR via bip-router.
+	// Warm the next hop / return-path (best-effort; hard assert is RP below).
+	remote := topo.remoteNet
+	_ = c.WhoIsRouterToNetworkAt(ctx, topo.router, false, &remote)
+	time.Sleep(100 * time.Millisecond)
+
 	target := client.Target{
 		Address:  topo.remoteAddress(),
 		Endpoint: topo.router,
