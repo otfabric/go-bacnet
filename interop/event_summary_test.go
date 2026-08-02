@@ -129,7 +129,8 @@ func TestGetAlarmSummaryOutOfRange(t *testing.T) {
 // GetEnrollmentSummary: BACnet4J is the only pinned peer with a native
 // executable path (EventEnrollmentObject + GetEnrollmentSummaryRequest.handle).
 // bacnet-stack / BACpypes3 / Worldiety: unsupported-upstream — see
-// bacnet-interop/EVIDENCE.md.
+// bacnet-interop/PEER_SUPPORT.md.
+
 func TestBACnet4JGetEnrollmentSummary(t *testing.T) {
 	t.Setenv("BACNET_DEVICE_FIXTURE", deviceBaselineV3Path(t))
 	peer := startPeer(t, bacnet4jImage(), "bacnet4j",

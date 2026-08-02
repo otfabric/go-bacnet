@@ -1,157 +1,88 @@
 # Interoperability
 
-## Ownership split
+Executable scenario results for `go-bacnet` against pinned open-source BACnet
+stacks. Peer capability notes live in
+[bacnet-interop PEER_SUPPORT.md](https://github.com/otfabric/bacnet-interop/blob/main/PEER_SUPPORT.md).
+How to run tests locally: [CONTRIBUTING.md](CONTRIBUTING.md) and
+[interop/](interop/).
 
-| Repository | Owns |
-|------------|------|
-| [bacnet-interop](https://github.com/otfabric/bacnet-interop) | Adapter containers (bacnet-stack, BACpypes3, BACnet4J, Worldiety), `bip-router` topology aid, fixtures, readiness contract, golden packets, [`COVERAGE.md`](https://github.com/otfabric/bacnet-interop/blob/main/COVERAGE.md) |
-| `go-bacnet` (`interop/` with `-tags=interop`) | Assertions against those adapters using this library |
+## How interop testing works
 
-Same pattern as `mms-interop` / `go-mms`: interop infra stays out of the library
-module; the library owns behavioural tests.
+`go-bacnet` owns assertions. Peer images, fixtures, and ready contracts live in
+[`bacnet-interop`](https://github.com/otfabric/bacnet-interop). CI checks out a
+digest-pinned release (`interop/bacnet-interop-pin.json`) and runs
+`-tags=interop` tests against bacnet-stack, BACpypes3, BACnet4J, and Worldiety.
+`bip-router` is a topology aid for routed scenarios, not a peer oracle.
 
-Peers: **bacnet-stack**, **BACpypes3**, **BACnet4J**, and **Worldiety**
-(server peer; fixture payload shims). Topology aid: **bip-router**. Worldiety
-client probes are deferred until `go-bacnet` has a server (see
-[docs/COMPATIBILITY.md](docs/COMPATIBILITY.md) and [PLAN.md](PLAN.md)).
+Live cells mean a passing automated test against that peer at the pin. Some
+Worldiety application semantics are supplied by the fixture adapter (native
+transport still exercised). Codec-only rows mean the client API exists but no
+pinned peer exposes a usable server path.
 
-## Fixtures (Gate 3, no Docker)
+## Pinned peers
 
-Independently generated wire goldens live in `bacnet-interop/fixtures/codec/` and
-are indexed by `fixtures/manifest.json`. Library unit tests load them through
-`internal/fixtures` (sibling path `../bacnet-interop` or `BACNET_INTEROP_ROOT`).
+Pin: [`bacnet-interop` v0.8.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.8.0)
+@ `34f42dc` — see `interop/bacnet-interop-pin.json`.
 
-```bash
-# From go-bacnet with bacnet-interop checked out as a sibling:
-GOWORK=off go test ./internal/fixtures/ -count=1
-```
+| Peer | Upstream | Role |
+|---|---|---|
+| bacnet-stack | 1.6.0 | C executable oracle |
+| BACpypes3 | 0.0.106 | Python oracle (+ BBMD) |
+| BACnet4J | 6.1.0 | Java oracle (+ BBMD) |
+| Worldiety | `3cb2aa80` | Go peer (native transport; fixture object model for some services) |
+| bip-router | topology aid | Routed BIP↔BIP only |
 
-Live device semantics for peer containers:
-`bacnet-interop/fixtures/device/device-baseline-v2.json` (device instance `1234`;
-includes TrendLog for ReadRange). Fixture generations `v3`–`v8`, `topology-v2`,
-and `bbmd-v2` are checked in under `bacnet-interop/fixtures/` for the
-client-completeness roadmap; live peer alignment for those generations is still
-partial (see bacnet-interop `BLOCKERS.md`). The harness also accepts `device-baseline-v1`
-when v2 is absent.
+| Symbol | Meaning |
+|---|---|
+| ✅ | Live passing test |
+| — | Stack lacks usable server capability at the pin |
+| ⚠ | Known conflicting implementation |
+| C | Codec / unit evidence only |
 
-## Running peer adapters
+## Application-service matrix
 
-Build images from a sibling `bacnet-interop` checkout, then run assertions:
+| Scenario | stack | BACpypes3 | 4J | Worldiety | Notes |
+|---|:---:|:---:|:---:|:---:|---|
+| Who-Is → I-Am | ✅ | ✅ | ✅ | ✅ | |
+| Who-Has → I-Have | ✅ | ✅ | ✅ | ✅ | |
+| ReadProperty | ✅ | ✅ | ✅ | ✅ | |
+| ReadPropertyMultiple | ✅ | ✅ | ✅ | ✅ | |
+| WriteProperty / WPM + readback | ✅ | ✅ | ✅ | ✅ | |
+| ReadRange byPosition | ✅ | — | ✅ | ✅ | |
+| AtomicRead/WriteFile | ✅ | — | ✅ | — | |
+| CreateObject / DeleteObject | ✅ | — | ✅ | — | |
+| Add/RemoveListElement (NC) | ✅ | — | ✅ | — | |
+| GetAlarmSummary | ✅ | — | ✅ | — | |
+| GetEnrollmentSummary | — | — | ✅ | — | Single-peer |
+| SubscribeCOV / notify / cancel | ✅ | ✅ | ✅ | — | Renew: BACpypes3 |
+| SubscribeCOVPropertyMultiple | C | C | C | C | No peer server |
+| COVNotificationMultiple | C | C | C | C | No peer emit |
+| EventNotification receive | — | ✅ | ✅ | — | |
+| AcknowledgeAlarm / GetEventInformation | ✅ | ✅ | ✅ | — | Peer-dependent |
+| Messaging (time / text / PT / group) | ✅ | ✅ | ✅ | — | Per-service gaps in PEER_SUPPORT |
+| Who-Am-I / You-Are | ✅ | — | — | — | `TestBacnetStackWhoAmIYouAre` |
+| LifeSafetyOperation | ✅ | — | ✅ | — | |
+| Audit / AuthRequest / VT | C | C | C | C | |
+| DCC enable | ✅ | — | — | — | Opt-in |
+| ReinitializeDevice warmstart | ✅ | ✅ | ✅ | — | Opt-in |
 
-```bash
-# bacnet-interop
-make build   # stack + bacpypes3 + bacnet4j + worldiety + bip-router
+## Transport, network, and deviations
 
-# go-bacnet
-make interop
-# equivalent:
-GOWORK=off go test -tags=interop -count=1 ./interop/...
-```
+| Scenario | stack | BACpypes3 | 4J | Worldiety | Notes |
+|---|:---:|:---:|:---:|:---:|---|
+| BACnet/IP unicast / broadcast | ✅ | ✅ | ✅ | ✅ | |
+| Segmented ComplexACK receive | ⚠ | ✅ | ✅ | ⚠ | Stack may Abort; Worldiety continuation omits ServiceChoice |
+| Segmented confirmed-request send | — | ✅ | ⚠ | ⚠ | 4J rejects; Worldiety unsegmented-only for required scenarios |
+| Routed remote (via bip-router) | ✅ | ✅ | ✅ | — | Topology aid |
+| Peer-as-BBMD / FDR | ✅ | ✅ | ✅ | — | Stack BBMD_ENABLED; BACpypes3/4J via `BACNET_BBMD=1` |
+| Native multi-homed BIP router | — | — | — | — | Routed tests use `bip-router` aid |
 
-| Variable | Default | Purpose |
-|----------|---------|---------|
-| `BACNET_STACK_IMAGE` | `bacnet-interop-bacnet-stack:local` | bacnet-stack peer image |
-| `BACPYPES3_IMAGE` | `bacnet-interop-bacpypes3:local` | BACpypes3 peer image |
-| `BACNET4J_IMAGE` | `bacnet-interop-bacnet4j:local` | BACnet4J peer image |
-| `WORLDIETY_IMAGE` | `bacnet-interop-worldiety:local` | Worldiety peer image |
-| `BIP_ROUTER_IMAGE` | `bacnet-interop-bip-router:local` | Dual-homed BIP↔BIP topology router |
-| `BACNET_INTEROP_GO_IMAGE` | `golang:<go-minor>` | Image used for in-network re-exec on Docker Desktop / routed tests |
-| `BACNET_INTEROP_SKIP` | unset | Skip all peer tests when set (forbidden when required) |
-| `BACNET_INTEROP_REQUIRED` | unset | Fail instead of skip when Docker/images are missing |
-| `BACNET_INTEROP_ROOT` | sibling `../bacnet-interop` | Fixture/device JSON checkout |
+### Known deviations
 
-Local runs may skip when Docker or images are unavailable.
-
-CI (`.github/workflows/interop.yml`) runs two lanes:
-
-1. **Pinned** — loads `interop/bacnet-interop-pin.json` (ref + GHCR digests),
-   checks out that bacnet-interop tag for fixtures, pulls published images.
-2. **main compat** — checks out `bacnet-interop@main`, builds adapters from
-   source, runs the same required assertions (detects upcoming breakage).
-
-Both lanes set `BACNET_INTEROP_ROOT` to the checked-out fixtures tree (also
-honored by Docker re-exec for routed tests), require
-`BACNET_INTEROP_REQUIRED=1`, and upload repository SHA evidence artifacts.
-Use `make interop-required` locally with `:local` images or the same digest pins.
-
-Current scenarios default to fixture `device-baseline-v2` (device instance `1234`);
-selected tests also exercise `device-baseline-v3`/`v4`/`v5`/`v6` where peers serve
-them. Pinned release:
-[`bacnet-interop` v0.7.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.7.0)
-@ `224f51b` (BACpypes3 **0.0.106**; Worldiety + File/lifecycle/NC/alarm/messaging/LSO/identity adapters).
-Prior green pinned + main-compat on `v0.2.3` @ `86ffd31` with pin `v0.6.0`:
-[30766339454](https://github.com/otfabric/go-bacnet/actions/runs/30766339454).
-
-| Scenario | bacnet-stack | BACpypes3 | BACnet4J | Worldiety | Interop test |
-|----------|:---:|:---:|:---:|:---:|---|
-| Directed Who-Is → I-Am (MaxAPDU/VendorID) | ✓ | ✓ | ✓ | ✓ | `TestBacnetStackWhoIsIAm`, `TestBACpypes3WhoIsIAm`, `TestBACnet4JWhoIsIAm`, `TestWorldietyWhoIsIAm` |
-| Who-Has → I-Have | ✓ | ✓ | ✓ | ✓ | `…WhoHasIHave`, `TestWorldietyWhoHasIHave` |
-| ReadProperty device object-name | ✓ | ✓ | ✓ | ✓ | `…ReadDeviceObjectName`, `TestWorldietyReadDeviceObjectName` |
-| ReadProperty AV present-value | ✓ | ✓ | ✓ | ✓ | `…ReadAnalogValue`, `TestWorldietyReadAnalogValuePresentValue` |
-| ReadProperty unknown-property → Error | ✓ | ✓ | ✓ | ✓ | `…UnknownPropertyError`, `TestWorldietyReadPropertyUnknownPropertyError` |
-| Unrecognized service → Reject | ✓ | — | ✓ | — | `TestBacnetStackRejectUnrecognizedService`, `TestBACnet4JRejectUnrecognizedService` |
-| Abort (segmentation path) | ✓ | ✓ | — | — | `TestBacnetStackAbortSegmentationNotSupported`, `TestBACpypes3AbortWhenSegmentedResponseNotAccepted` |
-| ReadPropertyMultiple success | ✓ | ✓ | ✓ | ✓ | `…ReadPropertyMultiple`, `TestWorldietyReadPropertyMultiple` |
-| RPM partial property Error | ✓ | ✓ | ✓ | — | `…ReadPropertyMultiplePartialError` |
-| WriteProperty + readback + restore | ✓ | ✓ | ✓ | ✓ | `…WritePropertyReadbackReset`, `TestWorldietyWritePropertyReadbackReset` |
-| WritePropertyMultiple + readback + restore | ✓ | ✓ | ✓ | ✓ | `…WritePropertyMultipleReadbackReset`, `TestWorldietyWritePropertyMultipleReadbackReset` |
-| Segmented RPM ComplexACK reassembly | — | ✓ | ✓ | skip | Worldiety `upstream-deviation` B6; BACpypes3/4J ✓ |
-| Segmented confirmed-request send (WPM) | — | ✓ | — | skip | Worldiety B6; BACnet4J rejects segmented confirmed receive |
-| ReadRange byPosition (TrendLog) | ✓ | — | ✓ | ✓ | `…ReadRangeByPosition`, `TestWorldietyReadRangeByPosition` |
-| AtomicReadFile stream/record (`device-baseline-v4`) | ✓ | unsupported | ✓ | — | **live-multi-peer**; BACpypes3/Worldiety `unsupported-upstream` |
-| AtomicWriteFile stream + readback (`device-baseline-v4`) | ✓ | unsupported | ✓ | — | **live-multi-peer** |
-| CreateObject / DeleteObject (`device-baseline-v5`) | ✓ | unsupported | ✓ | — | **live-multi-peer**; BACpypes3/Worldiety `unsupported-upstream` |
-| AddListElement / RemoveListElement NC Recipient_List (`device-baseline-v3`) | ✓ | — | ✓ | — | **live-multi-peer** |
-| GetAlarmSummary after AV Out_Of_Range (`device-baseline-v3`) | ✓ | — | ✓ | — | **live-multi-peer** `TestGetAlarmSummaryOutOfRange` |
-| GetEnrollmentSummary EE-1 (`device-baseline-v3`) | unsupported | unsupported | ✓ | unsupported | **live-single-peer** `TestBACnet4JGetEnrollmentSummary`; others EVIDENCE unsupported-upstream |
-| SubscribeCOVPropertyMultiple / COVNotificationMultiple | unsupported | unsupported | unsupported | unsupported | Family **codec-only** at current pins (EVIDENCE B3c/d) |
-| Messaging semantic receipt (`device-baseline-v6` `operation` JSONL) | ✓ | ✓ | ✓ | unsupported | `TestMessagingSemanticReceipt`; per-service matrix in bacnet-interop `EVIDENCE.md` (B7d) |
-| Who-Am-I / You-Are (`device-baseline-v7`) | unsupported | unsupported | ✓ | unsupported | **live-single-peer** `TestBacnetStackWhoAmIYouAre`; others EVIDENCE unsupported-upstream |
-| LifeSafetyOperation LSP-1 (`device-baseline-v8`) | ✓ | unsupported | ✓ | unsupported | **live-multi-peer** `TestLifeSafetyOperation` |
-| Audit notification / AuditLogQuery / AuthRequest / VT | unsupported | unsupported | unsupported | unsupported | Family **codec-only** at current pins (EVIDENCE B7e2–e4 / B7g) |
-| Codec goldens (alarm/enrollment/COV-multiple/file/list/messaging/audit/VT) | n/a | n/a | n/a | n/a | Consumed via `internal/fixtures` from `bacnet-interop/fixtures/codec` |
-| COV subscribe / notify / cancel | ✓ | ✓ | ✓ | — | `…COVSubscribeNotifyCancel` |
-| COV renew | — | ✓ | — | — | `TestBACpypes3COVRenew` |
-| EventNotification receive | — | ✓ | ✓ | — | `…EventNotificationReceive` (`BACNET_EMIT_EVENT=1`) |
-| DeviceCommunicationControl (enable) | ✓ | — | — | — | `TestBacnetStackDeviceCommunicationControlEnable` |
-| ReinitializeDevice warmstart | ✓ | ✓ | ✓ | — | `…ReinitializeDeviceWarmstart` |
-| Routed Who-Is-Router → ResolveTarget → RP | — | ✓ | — | — | `TestBACpypes3RoutedWhoIsRouterReadProperty` |
-| Routed RP (explicit next-hop DNET/DADR) | ✓ | ✓ | ✓ | — | `TestBACnetStackRoutedReadProperty`, `TestBACnet4JRoutedReadProperty` |
-| Foreign-device register + DBTN Who-Is → RP | — | ✓ | ✓ | — | `…ForeignDeviceWhoIsReadProperty` |
-
-See [RELEASE.md](RELEASE.md) for the current tag evidence and
-[docs/REAL_DEVICE_GATE.md](docs/REAL_DEVICE_GATE.md) for the open path to
-production-usable.
-
-Topology notes:
-
-- Routed scenarios use `bip-router` on two docker networks (client net `1`,
-  device net `2`) and **always** re-exec assertions inside the client network.
-  Phrase evidence as client addressing validated through this topology aid with
-  independent endpoint stacks — not as independent BACnet-router interoperability.
-- Routed harnesses assign static `/24`s and IPs, then start `bip-router` with
-  explicit `addr=` → BACnet network bindings (not `eth0`/`eth1` order). Docker
-  does not guarantee interface order after `create` + `network connect`; binding
-  by iface name silently swaps net numbers and drops DNET forwards.
-- Who-Is-Router is directed at the router hop (`WhoIsRouterToNetworkAt`); remote
-  I-Am observation is best-effort.
-- BBMD/FD uses BACpypes3 or BACnet4J with `BACNET_BBMD=1` on a single network
-  (Register-Foreign-Device + Distribute-Broadcast-To-Network).
-- Abort (segmentation-not-supported) is asserted against bacnet-stack and
-  BACpypes3 only; BACnet4J segments ComplexACK instead (see segmented RPM row).
-- COV renew remains BACpypes3-only for now.
-
-On Linux, single-peer tests talk to the peer container IP on a dedicated docker
-network. On Docker Desktop (macOS/Windows), the same test is re-executed inside
-that network via a `golang` image (`BACNET_INTEROP_GO_IMAGE`). See
-`bacnet-interop/COVERAGE.md` for registered limitations.
-
-## Production-candidate vs production-usable
-
-| Label | Meaning |
-|-------|---------|
-| **alpha** | Pre-hardening / incomplete oracle evidence |
-| **production-candidate** | Current — supervisory client + oracle/lab interop evidence (`v0.2.4` pending + pin `v0.7.0`); **no** claim of multi-vendor hardware readiness |
-| **production-usable** | Real-device gate met — see [docs/REAL_DEVICE_GATE.md](docs/REAL_DEVICE_GATE.md) |
-
-Do not claim vendor hardware interoperability from container oracles alone.
+- **Worldiety** segmented ConfirmedRequest / ComplexACK continuations omit
+  ServiceChoice — required Worldiety scenarios stay unsegmented.
+- **BACnet4J** rejects segmented confirmed-request receive.
+- **bacnet-stack** may Abort on some segmented ComplexACK paths; Write-BDT
+  BVLC is NAK at Protocol_Revision ≥ 17.
+- No peer image packages a native multi-homed BIP router; see
+  bacnet-interop `PEER_SUPPORT.md`.

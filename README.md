@@ -7,71 +7,38 @@
 [![Codecov](https://codecov.io/gh/otfabric/go-bacnet/graph/badge.svg)](https://codecov.io/gh/otfabric/go-bacnet)
 [![Release](https://img.shields.io/github/v/release/otfabric/go-bacnet?label=release)](https://github.com/otfabric/go-bacnet/releases)
 
-`go-bacnet` is a pure-Go BACnet/IP supervisory client and protocol foundation for
-OT Fabric. Horizon 1 targets ANSI/ASHRAE 135-2024 (Protocol Revision 31 baseline)
-over IPv4/UDP on port **47808** (`0xBAC0`).
+`go-bacnet` is a pure-Go BACnet/IP client for discovery, supervisory control,
+event handling, and device management. It implements BACnet/IP over IPv4 with
+routed addressing, segmentation, COV, alarm/event, file, object-management, and
+selected advanced application services.
 
-New to BACnet? Start with [PROTOCOL.md](PROTOCOL.md) for a short primer on
-objects, BVLC/NPDU/APDU layering, discovery, and how those map to this library.
+New to BACnet? Start with [PROTOCOL.md](PROTOCOL.md).
 
-**Status:** early v0.x **production-candidate** —
-**v0.2.4** pending release (pin
-[`bacnet-interop` v0.7.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.7.0);
-Batches A–C live evidence + Who-Am-I/You-Are/LSO/TextMessage wire fixes).
-Prior tag: [`v0.2.3`](https://github.com/otfabric/go-bacnet/releases/tag/v0.2.3).
-Still not **production-usable** until the
-[real-device gate](docs/REAL_DEVICE_GATE.md) (≥2 independent BACnet/IP devices).
+**Status:** [v0.2.4](https://github.com/otfabric/go-bacnet/releases/tag/v0.2.4).
+The API is usable and extensively tested against four independent open-source
+BACnet stacks ([bacnet-interop v0.8.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.8.0)).
+Hardware interoperability testing is still incomplete
+([FIELD_VALIDATION.md](docs/FIELD_VALIDATION.md)).
 
-| Label | Meaning |
-|-------|---------|
-| **alpha** | Pre-hardening / incomplete evidence |
-| **production-candidate** | Current — wire/runtime + supervisory client services + reproducible pinned multi-peer evidence |
-| **production-usable** | [Real-device gate](docs/REAL_DEVICE_GATE.md) met (≥2 independent BACnet/IP devices) |
+### Capability groups
 
-Public Address, Value, transaction and subscription APIs may still evolve.
+1. **Transport and network** — BACnet/IP IPv4/UDP, BVLC/NPDU/APDU, routing,
+   Forwarded-NPDU, optional foreign-device registration, segmentation
+2. **Discovery and object access** — Who-Is/I-Am, Who-Has/I-Have, RP/RPM/WP/WPM,
+   ReadRange, list element mutation
+3. **Events, COV, and alarms** — SubscribeCOV, notifications, EventNotification,
+   AcknowledgeAlarm, GetEventInformation, GetAlarmSummary, GetEnrollmentSummary
+4. **File and object management** — AtomicRead/WriteFile, CreateObject,
+   DeleteObject
+5. **Advanced services** — PrivateTransfer, TextMessage, time synchronization,
+   WriteGroup, Who-Am-I/You-Are, LifeSafetyOperation, audit/VT codecs, opt-in
+   DCC/ReinitializeDevice
 
-### Table of contents
+Full matrix: [docs/CLIENT_SUPPORT.md](docs/CLIENT_SUPPORT.md).  
+Scenario-by-peer results: [INTEROP.md](INTEROP.md).
 
-- [Scope](#scope)
-- [Install](#install)
-- [Getting started](#getting-started)
-- [Documentation](#documentation)
-- [License](#license)
-
-### Scope
-
-**In scope (Horizon 1):**
-
-- BACnet/IP over IPv4/UDP (default port 47808 / `0xBAC0`)
-- BVLC, NPDU and APDU codecs
-- Who-Is / I-Am and Who-Has / I-Have discovery
-- ReadProperty, ReadPropertyMultiple, WriteProperty (priority + NULL relinquish)
-- WritePropertyMultiple (first-failed Error model; outcome-unknown after send)
-- ReadRange (by position / sequence / time)
-- Confirmed-request transactions; segmented ComplexACK receive
-- Segmented confirmed-request send (windowed; when peer Segmentation is both/receive)
-- Routed BACnet networks; BBMD Forwarded-NPDU receive
-- Optional foreign-device registration
-- COV subscribe / notify / renew / cancel
-- EventNotification receive (typed common NotificationParameters); AcknowledgeAlarm; GetEventInformation
-- GetAlarmSummary / GetEnrollmentSummary; SubscribeCOVPropertyMultiple; COVNotificationMultiple receive
-- Bounded OpenEventStream / OpenAuditStream
-- AtomicReadFile / AtomicWriteFile; Add/RemoveListElement; CreateObject / DeleteObject
-- PrivateTransfer / TextMessage; TimeSynchronization / UTCTimeSynchronization; WriteGroup
-- AuditLogQuery / AuthRequest / Who-Am-I / You-Are; LifeSafetyOperation; VT-Open/Close/Data
-- ReadRange with typed Trend Log `LogRecords` when applicable
-- DeviceCommunicationControl / ReinitializeDevice (explicit opt-in)
-- `bacnetctl` for decode, discover, read and write
-- Runnable examples under `examples/`
-
-**Out of scope (later):**
-
-- Convenience / supervisor package
-- Native MS/TP, BACnet/IPv6, BACnet/SC
-- Full BBMD server / multi-BBMD failover
-- Full BACnet server / device object model
-- Schedules; remaining proprietary/event CHOICEs without peer evidence
-- BTL certification itself
+**Out of scope:** convenience/supervisor package; MS/TP; BACnet/IPv6; BACnet/SC;
+BBMD server; full BACnet server/device model; BTL certification.
 
 ### Install
 
@@ -140,20 +107,20 @@ BACnet/IP peers use `bip.Endpoint` (not a root type).
 
 | Document | Contents |
 |----------|----------|
-| [PROTOCOL.md](PROTOCOL.md) | BACnet primer for newcomers (objects, layers, discovery) |
-| [API.md](API.md) | Address/MAC/Value, lifecycle, discovery, routing, FD, RPM, COV |
+| [PROTOCOL.md](PROTOCOL.md) | BACnet primer |
+| [API.md](API.md) | Client behavioural contract |
 | [ERRORS.md](ERRORS.md) | Sentinels, remote PDUs, outcome-unknown |
-| [SECURITY.md](SECURITY.md) | Trust model and vulnerability reporting |
-| [INTEROP.md](INTEROP.md) | Peer/topology scenarios and `-tags=interop` |
-| [RELEASE.md](RELEASE.md) | Versioning policy and history |
-| [CONTRIBUTING.md](CONTRIBUTING.md) | Local checks and import boundaries |
-| [PLAN.md](PLAN.md) | Evidence batches and forward plan |
-| [`examples/`](examples/) | Runnable samples (ReadRange, WPM, Who-Has, events) |
-| [docs/PACKAGE_DESIGN.md](docs/PACKAGE_DESIGN.md) | Package dependency rules |
+| [docs/CLIENT_SUPPORT.md](docs/CLIENT_SUPPORT.md) | Capability and evidence levels |
+| [INTEROP.md](INTEROP.md) | Scenario-by-peer results |
+| [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md) | Peer quirks and hardware results |
+| [docs/CLIENT_PROFILE.md](docs/CLIENT_PROFILE.md) | Descriptive standards profile |
 | [docs/STANDARD_BASELINE.md](docs/STANDARD_BASELINE.md) | Normative baseline |
-| [docs/CAPABILITY_MATRIX.md](docs/CAPABILITY_MATRIX.md) | Client capability matrix |
-| [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md) | Peer/device evidence matrix and positioning |
-| [docs/REAL_DEVICE_GATE.md](docs/REAL_DEVICE_GATE.md) | Production-usable evidence bar |
+| [docs/FIELD_VALIDATION.md](docs/FIELD_VALIDATION.md) | Physical-device checklist |
+| [PLAN.md](PLAN.md) | Forward plan |
+| [RELEASE.md](RELEASE.md) | Release history |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Local checks and interop how-to |
+| [SECURITY.md](SECURITY.md) | Trust model and reporting |
+| [`examples/`](examples/) | Runnable samples |
 
 ### License
 

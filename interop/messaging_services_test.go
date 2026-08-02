@@ -59,7 +59,7 @@ func messagingPeers() []messagingPeer {
 		{
 			name:  "bacnet-stack",
 			image: getEnv("BACNET_STACK_IMAGE", defaultStackImage),
-			// TextMessage + ConfirmedPrivateTransfer: unsupported-upstream (EVIDENCE.md).
+			// TextMessage + ConfirmedPrivateTransfer: unsupported-upstream; see bacnet-interop/PEER_SUPPORT.md.
 			ops: []string{"time-synchronization", "utc-time-synchronization", "unconfirmed-private-transfer", "write-group"},
 		},
 	}
@@ -169,5 +169,5 @@ func TestMessagingSemanticReceipt(t *testing.T) {
 }
 
 func TestWorldietyMessagingUnsupported(t *testing.T) {
-	t.Skip("Worldiety messaging family unsupported-upstream; see bacnet-interop/EVIDENCE.md (B7d)")
+	t.Skip("Worldiety messaging family unsupported-upstream; see bacnet-interop/PEER_SUPPORT.md")
 }

@@ -109,3 +109,68 @@ func TestBacnetStackReadAnalogValue(t *testing.T) {
 		t.Fatalf("present-value=%v, want %v", f, want)
 	}
 }
+
+// bacnet-stack 1.6.0 builds with BBMD_ENABLED; dlenv seeds a self BDT entry and
+// accepts foreign-device registration without a special adapter env var.
+func TestBacnetStackForeignDeviceWhoIsReadProperty(t *testing.T) {
+	dev := loadDeviceFixture(t)
+	peer := startPeer(t, getEnv("BACNET_STACK_IMAGE", defaultStackImage), "bacnet-stack")
+	if peer.assertedByReexec {
+		return
+	}
+
+	c := newClientOpts(t,
+		client.WithForeignDevice(client.ForeignDeviceConfig{
+			BBMD: peer.endpoint,
+			TTL:  60 * time.Second,
+		}),
+	)
+
+	deadline := time.Now().Add(8 * time.Second)
+	for !c.ForeignDeviceRegistered() {
+		if time.Now().After(deadline) {
+			t.Fatal("foreign-device registration did not succeed")
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	low, high := dev.DeviceInstance, dev.DeviceInstance
+	if err := c.SendWhoIs(ctx, peer.endpoint, true, client.DiscoveryOptions{
+		LowLimit:  &low,
+		HighLimit: &high,
+	}); err != nil {
+		t.Fatalf("FD SendWhoIs (DBTN): %v", err)
+	}
+
+	iamDeadline := time.Now().Add(5 * time.Second)
+	found := false
+	for time.Now().Before(iamDeadline) {
+		for _, obs := range c.Devices() {
+			if obs.Instance == dev.DeviceInstance {
+				found = true
+				break
+			}
+		}
+		if found {
+			break
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+	if !found {
+		t.Fatalf("no I-Am after FD Who-Is; devices=%v", c.Devices())
+	}
+
+	val, err := readPropertyRetry(t, ctx, c, peer.target,
+		bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeDevice, Instance: dev.DeviceInstance},
+		bacnet.PropertyReference{Identifier: bacnet.PropertyObjectName},
+	)
+	if err != nil {
+		t.Fatalf("FD ReadProperty: %v", err)
+	}
+	if name := characterString(t, val); name != dev.DeviceName {
+		t.Fatalf("object-name=%q, want %q", name, dev.DeviceName)
+	}
+}

@@ -1,6 +1,6 @@
 # API reference
 
-Behavioural contract for Horizon 1. Prefer this document over guessing from
+Behavioural contract for the BACnet/IP client. Prefer this document over guessing from
 sibling OT Fabric libraries. Generated GoDoc remains the source for signatures.
 
 ## Package dependency direction
@@ -21,7 +21,7 @@ Rules (enforced by `internal/imports`):
 - Root `bacnet` must not import `bip`, `bvlc`, `npdu`, `apdu`, `service`, or `client`.
 - Sibling codecs (`bvlc`, `npdu`, `apdu`) may import root only; they must not import each other or `client`.
 - `service` may import root and `apdu` helpers as needed; it must not import `bvlc`, `npdu`, `bip`, or `client`.
-- `client` is the composition root for Horizon 1 networking.
+- `client` is the composition root for BACnet/IP client networking.
 
 See [docs/PACKAGE_DESIGN.md](docs/PACKAGE_DESIGN.md).
 
@@ -44,7 +44,7 @@ broadcast with non-zero DADR, and malformed router network lists return
 | `RemoteBroadcast(net)` | Remote broadcast |
 | `GlobalBroadcast()` | Global broadcast |
 
-`bacnet.MAC` is immutable and comparable (max 7 octets retained for Horizon 1).
+`bacnet.MAC` is immutable and comparable (max 7 octets retained for BACnet/IP).
 Use `NewMAC` / `MustMAC`. `Bytes()` returns a copy.
 
 BACnet/IP UDP peers are **`bip.Endpoint`** (`netip.AddrPort`). They are intentionally
@@ -129,7 +129,7 @@ send the BVLC frame to `Target.Endpoint` (the next hop).
 - Forwarded-NPDU is accepted; when FD mode is active, only the configured BBMD
   may be the immediate peer for Forwarded-NPDU.
 
-Horizon 1 does **not** implement a BBMD server or multi-BBMD failover.
+This library does **not** implement a BBMD server or multi-BBMD failover.
 
 ## Transaction retransmission vs application retry
 
