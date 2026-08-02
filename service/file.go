@@ -50,14 +50,21 @@ type AtomicWriteFileACK struct {
 }
 
 // EncodeAtomicReadFile encodes an AtomicReadFile request.
+//
+// Wire shape (ASHRAE 135 Clause 17 / BACnet4J-compatible):
+//
+//	application ObjectIdentifier(file)
+//	[0] streamAccess  SEQUENCE { Signed start, Unsigned octetCount }
+//	or
+//	[1] recordAccess  SEQUENCE { Signed start, Unsigned recordCount }
 func EncodeAtomicReadFile(req AtomicReadFileRequest) ([]byte, error) {
-	dst, err := bacnet.AppendContextObjectID(nil, 0, req.File)
+	dst, err := bacnet.AppendApplicationValue(nil, bacnet.ObjectIDValue(req.File))
 	if err != nil {
 		return nil, err
 	}
-	tag := uint8(1)
+	tag := uint8(0)
 	if req.Access == FileAccessRecord {
-		tag = 2
+		tag = 1
 	}
 	return bacnet.AppendContextTagged(dst, tag, []bacnet.Element{
 		{Value: bacnet.SignedValue(int64(req.StartPosition))},
@@ -159,15 +166,23 @@ func EncodeAtomicReadFileACK(ack AtomicReadFileACK) ([]byte, error) {
 }
 
 // EncodeAtomicWriteFile encodes an AtomicWriteFile request.
+//
+// Wire shape (ASHRAE 135 / BACnet4J-compatible):
+//
+//	application ObjectIdentifier(file)
+//	[0] streamAccess  SEQUENCE { Signed start, OctetString data }
+//	or
+//	[1] recordAccess  SEQUENCE { Signed start, Unsigned recordCount, SEQUENCE OF OctetString }
 func EncodeAtomicWriteFile(req AtomicWriteFileRequest) ([]byte, error) {
-	dst, err := bacnet.AppendContextObjectID(nil, 0, req.File)
+	dst, err := bacnet.AppendApplicationValue(nil, bacnet.ObjectIDValue(req.File))
 	if err != nil {
 		return nil, err
 	}
-	tag := uint8(1)
+	tag := uint8(0)
 	els := []bacnet.Element{{Value: bacnet.SignedValue(int64(req.StartPosition))}}
 	if req.Access == FileAccessRecord {
-		tag = 2
+		tag = 1
+		els = append(els, bacnet.Element{Value: bacnet.UnsignedValue(uint64(len(req.Records)))})
 		for _, rec := range req.Records {
 			els = append(els, bacnet.Element{Value: bacnet.ApplicationValue{Kind: bacnet.ValueOctetString, OctetString: rec}})
 		}
@@ -178,6 +193,11 @@ func EncodeAtomicWriteFile(req AtomicWriteFileRequest) ([]byte, error) {
 }
 
 // DecodeAtomicWriteFileACK decodes an AtomicWriteFile ACK (stream/record start position).
+//
+// Wire shape (ASHRAE / BACnet4J / bacnet-stack):
+//
+//	streamAccess [0] Signed  — context primitive, not constructed
+//	recordAccess [1] Signed
 func DecodeAtomicWriteFileACK(payload []byte, limits bacnet.DecodeLimits) (AtomicWriteFileACK, error) {
 	els, n, err := bacnet.ParseSequence(payload, limits, -1)
 	if err != nil {
@@ -186,20 +206,23 @@ func DecodeAtomicWriteFileACK(payload []byte, limits bacnet.DecodeLimits) (Atomi
 	if n != len(payload) {
 		return AtomicWriteFileACK{}, fmt.Errorf("%w: AtomicWriteFileACK trailing", bacnet.ErrTrailingData)
 	}
-	if len(els) != 1 || !bacnet.IsContextConstructed(els[0]) {
+	if len(els) != 1 || !els[0].Context || bacnet.IsContextConstructed(els[0]) {
 		return AtomicWriteFileACK{}, fmt.Errorf("%w: AtomicWriteFileACK CHOICE", bacnet.ErrMalformed)
 	}
 	ack := AtomicWriteFileACK{Access: FileAccessStream}
-	if els[0].TagNumber == 1 {
+	switch els[0].TagNumber {
+	case 0:
+		ack.Access = FileAccessStream
+	case 1:
 		ack.Access = FileAccessRecord
-	} else if els[0].TagNumber != 0 {
+	default:
 		return AtomicWriteFileACK{}, fmt.Errorf("%w: AtomicWriteFileACK tag", bacnet.ErrMalformed)
 	}
-	inner := els[0].Value.Elements
-	if len(inner) != 1 || inner[0].Context || inner[0].Value.Kind != bacnet.ValueSigned {
+	pos, err := bacnet.ContextSigned(els[0])
+	if err != nil {
 		return AtomicWriteFileACK{}, fmt.Errorf("%w: start position", bacnet.ErrMalformed)
 	}
-	ack.StartPosition = int32(inner[0].Value.Signed)
+	ack.StartPosition = int32(pos)
 	return ack, nil
 }
 
@@ -209,9 +232,7 @@ func EncodeAtomicWriteFileACK(ack AtomicWriteFileACK) ([]byte, error) {
 	if ack.Access == FileAccessRecord {
 		tag = 1
 	}
-	return bacnet.AppendContextTagged(nil, tag, []bacnet.Element{
-		{Value: bacnet.SignedValue(int64(ack.StartPosition))},
-	})
+	return bacnet.AppendContextSigned(nil, tag, int64(ack.StartPosition))
 }
 
 // FileChunkBounds returns a safe [start, count] for the next stream read of size want

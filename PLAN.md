@@ -6,14 +6,19 @@ Adapter images, fixtures, and peer smoke live in
 [`bacnet-interop`](https://github.com/otfabric/bacnet-interop) (`PLAN.md`).
 
 **Status:** **production-candidate** —
-**[`v0.2.2`](https://github.com/otfabric/go-bacnet/releases/tag/v0.2.2)** released
-(see [RELEASE.md](RELEASE.md)). Pin:
-[`bacnet-interop` v0.5.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.5.0).
+**[`v0.2.2`](https://github.com/otfabric/go-bacnet/releases/tag/v0.2.2)** released;
+**`v0.2.3`** pending CI/tag (see [RELEASE.md](RELEASE.md)). Pin:
+[`bacnet-interop` v0.6.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.6.0).
 
 **Pin:** [`interop/bacnet-interop-pin.json`](interop/bacnet-interop-pin.json) →
-`v0.5.0` (`device-baseline-v2` + Worldiety; bacnet-stack **1.6.0**; BACpypes3 **0.0.106**).
+`v0.6.0` (File / Create-Delete / NC list adapters; bacnet-stack **1.6.0**;
+BACpypes3 **0.0.106**; Worldiety digest).
 
-**Next:** the [real-device gate](docs/REAL_DEVICE_GATE.md) toward **production-usable**.
+**Next cycle (evidence expansion — no new services):**
+
+1. **`v0.2.3`** — cut when shared CI + pinned interop `v0.6.0` are green
+2. B3 remainder (COV-multiple / second-peer summaries); B7d–g; B5/B6
+3. Then [real-device gate](docs/REAL_DEVICE_GATE.md) toward **production-usable**
 
 Honest positioning (see [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md)):
 
@@ -75,7 +80,7 @@ Do not re-litigate these unless a regression appears:
 | FD / BBMD (client) | BACpypes3 + BACnet4J peer-as-BBMD |
 | Strict framing | Reserved APDU/NPDU bits, MaxAPDU, windows, router lists → `ErrMalformed` |
 | Evidence architecture | Digest-pinned adapters, fixture provenance, hermetic coverage, PR + nightly fuzz |
-| Adapters | `bacnet-interop` `v0.5.0` (incl. Worldiety) |
+| Adapters | `bacnet-interop` `v0.6.0` (incl. Worldiety; File/lifecycle/NC list) |
 
 Routing evidence phrase (until a second independent router exists):
 
@@ -108,7 +113,7 @@ ref is the preferred way to smoke a bacnet-interop release candidate.
 |---|---|---|---|
 | 1 | **P0** — `reexecInNetwork` honors `BACNET_INTEROP_ROOT` + require fixture files under mount | done | `interop/root.go` + unit tests |
 | 2 | Print / artifact both repo SHAs (+ peer ready metadata) in required interop job | done | workflow summary + artifacts |
-| 3 | Pin file for bacnet-interop ref/digests; required pinned lane | done | `interop/bacnet-interop-pin.json` → `v0.5.0` |
+| 3 | Pin file for bacnet-interop ref/digests; required pinned lane | done | `interop/bacnet-interop-pin.json` → `v0.6.0` |
 | 4 | Latest-main compatibility lane (detect upcoming breakage) | done | `peer-interop-main` job |
 | 5 | bacnet-interop CI: consumer job against go-bacnet main | **n/a** | Dependency inversion rejected |
 | 6 | bacnet-interop CI: build + require bip-router smoke | done | in bacnet-interop |

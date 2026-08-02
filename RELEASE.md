@@ -1,5 +1,57 @@
 # go-bacnet Releases
 
+## v0.2.3
+
+Correctness and evidence patch after
+[`v0.2.2`](https://github.com/otfabric/go-bacnet/releases/tag/v0.2.2).
+**No new services.** Wire fixes for file / CreateObject / AtomicWriteFile ACK,
+plus live-multi-peer File, Create/Delete, and NC list evidence. Pin moves to
+[`bacnet-interop` v0.6.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.6.0)
+@ `f4ea3de`. Requires **Go 1.23+**.
+
+Fill **Date**, **Tag**, and CI evidence links when the cut is green.
+
+### Fixed
+
+- `EncodeAtomicReadFile` / `EncodeAtomicWriteFile`: application ObjectIdentifier
+  plus access CHOICE `[0]` stream / `[1]` record (was context file `[0]` and
+  CHOICE `[1]`/`[2]`)
+- `EncodeAtomicWriteFileACK` / `DecodeAtomicWriteFileACK`: context-primitive
+  Signed `[0]`/`[1]` (was constructed SEQUENCE)
+- `EncodeCreateObject` / `DecodeCreateObject`: objectSpecifier `[0]` CHOICE plus
+  listOfInitialValues `[1]` (was bare CHOICE + list `[2]`)
+- Request decoders reject the pre-v0.2.3 forms; record write includes
+  `recordCount`
+- Codec goldens + malformed old-form fixtures via bacnet-interop `v0.6.0`
+
+### Changed
+
+- Pin → [`bacnet-interop` v0.6.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.6.0)
+  (`interop/bacnet-interop-pin.json`)
+
+### Evidence targets (fill when CI green)
+
+| Scenario | Peers | Test |
+|---|---|---|
+| AtomicReadFile stream/record | BACnet4J + bacnet-stack | `TestAtomicReadFileStream` / `Record` |
+| AtomicWriteFile stream + readback | BACnet4J + bacnet-stack | `TestAtomicWriteFileStreamReadback` |
+| CreateObject / DeleteObject | BACnet4J + bacnet-stack | `TestCreateDeleteObject` |
+| AddListElement / RemoveListElement (NC Recipient_List) | BACnet4J + bacnet-stack | `TestAddRemoveListElementRecipientList` |
+| GetAlarmSummary (AV Out_Of_Range) | BACnet4J | `TestBACnet4JGetAlarmSummary` |
+| Library coverage | — | ≥90% (`make check`) |
+| Pinned interop `v0.6.0` | — | _(CI run TBD)_ |
+| bacnet-interop main compat | — | _(CI run TBD)_ |
+
+### Out of scope
+
+- New BACnet services
+- COV-multiple live (BACnet4J 6.1.0 `NotImplementedException`)
+- B5/B6 Worldiety router/BBMD/segmentation
+- B7d semantic messaging diagnostics; B7e–g audit/life-safety/VT
+  (see bacnet-interop `BLOCKERS.md`)
+
+---
+
 ## v0.2.2
 
 **Date:** 2026-08-02  
@@ -57,10 +109,10 @@ Green on tag SHA `a277aea`:
 ### Notes / known skips
 
 - Worldiety segmented WPM/RPM skipped (peer segment service-choice — B6)
-- BACnet4J AtomicReadFile live path skipped (Error services/10 — B8)
-- BACnet4J CreateObject / DeleteObject live path skipped (config — B9)
-- Broader live multi-peer coverage for event/COV-multiple, file, list/lifecycle,
-  messaging, audit, life-safety/VT, and topology/bbmd v2 modes remains partial
+- At tag time: BACnet4J AtomicReadFile / Create-Delete still skipped (B8/B9) —
+  unblocked locally in unreleased `v0.2.3` work
+- Broader live multi-peer coverage for COV-multiple, messaging diagnostics,
+  audit, life-safety/VT, and topology/bbmd v2 modes remains partial
   (see `bacnet-interop/BLOCKERS.md`)
 - Library coverage gate held at ≥90%
 

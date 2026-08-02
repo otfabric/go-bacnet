@@ -82,6 +82,10 @@ func DecodeGetEnrollmentSummary(payload []byte, limits bacnet.DecodeLimits) (Get
 }
 
 // DecodeAtomicReadFile decodes an AtomicReadFile request.
+//
+// Accepts only the Clause-17 shape: application ObjectIdentifier plus exactly
+// one access CHOICE ([0] stream or [1] record). Rejects the pre-v0.2.3 form
+// that used context-tagged fileIdentifier and CHOICE tags 1/2.
 func DecodeAtomicReadFile(payload []byte, limits bacnet.DecodeLimits) (AtomicReadFileRequest, error) {
 	els, n, err := bacnet.ParseSequence(payload, limits, -1)
 	if err != nil {
@@ -94,14 +98,23 @@ func DecodeAtomicReadFile(payload []byte, limits bacnet.DecodeLimits) (AtomicRea
 	var haveFile, haveAccess bool
 	for _, el := range els {
 		switch {
-		case el.TagNumber == 0 && !bacnet.IsContextConstructed(el):
-			req.File, err = bacnet.ContextObjectID(el)
+		case !el.Context && el.Value.Kind == bacnet.ValueObjectID:
+			if haveFile {
+				return AtomicReadFileRequest{}, fmt.Errorf("%w: AtomicReadFile duplicate fileIdentifier", bacnet.ErrMalformed)
+			}
+			req.File = el.Value.ObjectID
 			haveFile = true
-		case el.TagNumber == 1 && bacnet.IsContextConstructed(el):
+		case el.TagNumber == 0 && bacnet.IsContextConstructed(el):
+			if haveAccess {
+				return AtomicReadFileRequest{}, fmt.Errorf("%w: AtomicReadFile duplicate accessMethod", bacnet.ErrMalformed)
+			}
 			req.Access = FileAccessStream
 			err = decodeFileAccessParams(el.Value.Elements, &req)
 			haveAccess = true
-		case el.TagNumber == 2 && bacnet.IsContextConstructed(el):
+		case el.TagNumber == 1 && bacnet.IsContextConstructed(el):
+			if haveAccess {
+				return AtomicReadFileRequest{}, fmt.Errorf("%w: AtomicReadFile duplicate accessMethod", bacnet.ErrMalformed)
+			}
 			req.Access = FileAccessRecord
 			err = decodeFileAccessParams(el.Value.Elements, &req)
 			haveAccess = true
@@ -135,6 +148,8 @@ func decodeFileAccessParams(els []bacnet.Element, req *AtomicReadFileRequest) er
 }
 
 // DecodeAtomicWriteFile decodes an AtomicWriteFile request.
+//
+// Accepts only application ObjectIdentifier plus access CHOICE [0]/[1].
 func DecodeAtomicWriteFile(payload []byte, limits bacnet.DecodeLimits) (AtomicWriteFileRequest, error) {
 	els, n, err := bacnet.ParseSequence(payload, limits, -1)
 	if err != nil {
@@ -147,14 +162,23 @@ func DecodeAtomicWriteFile(payload []byte, limits bacnet.DecodeLimits) (AtomicWr
 	var haveFile, haveAccess bool
 	for _, el := range els {
 		switch {
-		case el.TagNumber == 0 && !bacnet.IsContextConstructed(el):
-			req.File, err = bacnet.ContextObjectID(el)
+		case !el.Context && el.Value.Kind == bacnet.ValueObjectID:
+			if haveFile {
+				return AtomicWriteFileRequest{}, fmt.Errorf("%w: AtomicWriteFile duplicate fileIdentifier", bacnet.ErrMalformed)
+			}
+			req.File = el.Value.ObjectID
 			haveFile = true
-		case el.TagNumber == 1 && bacnet.IsContextConstructed(el):
+		case el.TagNumber == 0 && bacnet.IsContextConstructed(el):
+			if haveAccess {
+				return AtomicWriteFileRequest{}, fmt.Errorf("%w: AtomicWriteFile duplicate accessMethod", bacnet.ErrMalformed)
+			}
 			req.Access = FileAccessStream
 			err = decodeWriteStreamParams(el.Value.Elements, &req)
 			haveAccess = true
-		case el.TagNumber == 2 && bacnet.IsContextConstructed(el):
+		case el.TagNumber == 1 && bacnet.IsContextConstructed(el):
+			if haveAccess {
+				return AtomicWriteFileRequest{}, fmt.Errorf("%w: AtomicWriteFile duplicate accessMethod", bacnet.ErrMalformed)
+			}
 			req.Access = FileAccessRecord
 			err = decodeWriteRecordParams(el.Value.Elements, &req)
 			haveAccess = true
@@ -187,14 +211,22 @@ func decodeWriteStreamParams(els []bacnet.Element, req *AtomicWriteFileRequest) 
 }
 
 func decodeWriteRecordParams(els []bacnet.Element, req *AtomicWriteFileRequest) error {
-	if len(els) < 1 {
+	if len(els) < 2 {
 		return fmt.Errorf("%w: record write params", bacnet.ErrMalformed)
 	}
 	if els[0].Context || els[0].Value.Kind != bacnet.ValueSigned {
 		return fmt.Errorf("%w: start position", bacnet.ErrMalformed)
 	}
 	req.StartPosition = int32(els[0].Value.Signed)
-	for _, el := range els[1:] {
+	count, err := bacnet.AsUnsigned(els[1].Value)
+	if err != nil {
+		return fmt.Errorf("%w: recordCount", bacnet.ErrMalformed)
+	}
+	recs := els[2:]
+	if uint64(len(recs)) != count {
+		return fmt.Errorf("%w: recordCount mismatch", bacnet.ErrMalformed)
+	}
+	for _, el := range recs {
 		if el.Context || el.Value.Kind != bacnet.ValueOctetString {
 			return fmt.Errorf("%w: record data", bacnet.ErrMalformed)
 		}
@@ -204,6 +236,10 @@ func decodeWriteRecordParams(els []bacnet.Element, req *AtomicWriteFileRequest) 
 }
 
 // DecodeCreateObject decodes a CreateObject request.
+//
+// Accepts only the Clause 21 shape: constructed objectSpecifier [0] containing
+// CHOICE [0]/[1], optional listOfInitialValues [1]. Rejects the pre-v0.2.3
+// bare-CHOICE + [2] list form.
 func DecodeCreateObject(payload []byte, limits bacnet.DecodeLimits) (CreateObjectRequest, error) {
 	els, n, err := bacnet.ParseSequence(payload, limits, -1)
 	if err != nil {
@@ -216,23 +252,36 @@ func DecodeCreateObject(payload []byte, limits bacnet.DecodeLimits) (CreateObjec
 	var haveSpec bool
 	for _, el := range els {
 		switch {
-		case el.TagNumber == 0 && !bacnet.IsContextConstructed(el):
-			u, e := bacnet.ContextUnsigned(el)
-			err = e
-			if err == nil {
-				ot := bacnet.ObjectType(u)
-				req.ObjectType = &ot
-				haveSpec = true
+		case el.TagNumber == 0 && bacnet.IsContextConstructed(el):
+			if haveSpec {
+				return CreateObjectRequest{}, fmt.Errorf("%w: CreateObject duplicate objectSpecifier", bacnet.ErrMalformed)
 			}
-		case el.TagNumber == 1 && !bacnet.IsContextConstructed(el):
-			id, e := bacnet.ContextObjectID(el)
-			err = e
-			if err == nil {
-				req.ObjectIdentifier = &id
-				haveSpec = true
+			inner := el.Value.Elements
+			if len(inner) != 1 {
+				return CreateObjectRequest{}, fmt.Errorf("%w: CreateObject objectSpecifier CHOICE", bacnet.ErrMalformed)
 			}
-		case el.TagNumber == 2 && bacnet.IsContextConstructed(el):
-			// Initial values opaque for fixture decode; ignore structured parse.
+			choice := inner[0]
+			switch {
+			case choice.TagNumber == 0 && !bacnet.IsContextConstructed(choice):
+				u, e := bacnet.ContextUnsigned(choice)
+				err = e
+				if err == nil {
+					ot := bacnet.ObjectType(u)
+					req.ObjectType = &ot
+					haveSpec = true
+				}
+			case choice.TagNumber == 1 && !bacnet.IsContextConstructed(choice):
+				id, e := bacnet.ContextObjectID(choice)
+				err = e
+				if err == nil {
+					req.ObjectIdentifier = &id
+					haveSpec = true
+				}
+			default:
+				return CreateObjectRequest{}, fmt.Errorf("%w: CreateObject objectSpecifier CHOICE tag %d", bacnet.ErrMalformed, choice.TagNumber)
+			}
+		case el.TagNumber == 1 && bacnet.IsContextConstructed(el):
+			req.InitialValues, err = decodeCOVValues(el.Value.Elements)
 		default:
 			return CreateObjectRequest{}, fmt.Errorf("%w: CreateObject tag %d", bacnet.ErrMalformed, el.TagNumber)
 		}

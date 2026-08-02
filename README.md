@@ -15,11 +15,12 @@ New to BACnet? Start with [PROTOCOL.md](PROTOCOL.md) for a short primer on
 objects, BVLC/NPDU/APDU layering, discovery, and how those map to this library.
 
 **Status:** early v0.x **production-candidate** —
-**[`v0.2.2`](https://github.com/otfabric/go-bacnet/releases/tag/v0.2.2)** released
-(Worldiety fourth peer + broader service codecs/APIs; pinned interop
-[`bacnet-interop` v0.5.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.5.0)).
-Still not **production-usable** until the [real-device gate](docs/REAL_DEVICE_GATE.md)
-(≥2 independent BACnet/IP devices).
+**[`v0.2.2`](https://github.com/otfabric/go-bacnet/releases/tag/v0.2.2)** released;
+pending **`v0.2.3`** (file/CreateObject/AWF-ACK wire + live-multi-peer File,
+Create/Delete, NC list). Pin:
+[`bacnet-interop` v0.6.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.6.0).
+Still not **production-usable** until the
+[real-device gate](docs/REAL_DEVICE_GATE.md) (≥2 independent BACnet/IP devices).
 
 | Label | Meaning |
 |-------|---------|

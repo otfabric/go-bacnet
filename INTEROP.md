@@ -77,10 +77,11 @@ Use `make interop-required` locally with `:local` images or the same digest pins
 Current scenarios default to fixture `device-baseline-v2` (device instance `1234`);
 selected tests also exercise `device-baseline-v3`/`v4`/`v5`/`v6` where peers serve
 them. Pinned release:
-[`bacnet-interop` v0.5.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.5.0)
-(BACpypes3 **0.0.106**; Worldiety digest included). Green pinned + main-compat on
-`v0.2.2` @ `a277aea`:
+[`bacnet-interop` v0.6.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.6.0)
+@ `f4ea3de` (BACpypes3 **0.0.106**; Worldiety + File/lifecycle/NC list adapters).
+Prior green on `v0.2.2` @ `a277aea` with pin `v0.5.0`:
 [30757758742](https://github.com/otfabric/go-bacnet/actions/runs/30757758742).
+Pending `v0.2.3` must re-prove pinned + main-compat against `v0.6.0`.
 
 | Scenario | bacnet-stack | BACpypes3 | BACnet4J | Worldiety | Interop test |
 |----------|:---:|:---:|:---:|:---:|---|
@@ -98,9 +99,12 @@ them. Pinned release:
 | Segmented RPM ComplexACK reassembly | — | ✓ | ✓ | skip | Worldiety skip B6 (service-choice on segments); BACpypes3/4J ✓ |
 | Segmented confirmed-request send (WPM) | — | ✓ | — | skip | Worldiety skip B6; BACnet4J rejects segmented confirmed receive |
 | ReadRange byPosition (TrendLog) | ✓ | — | ✓ | ✓ | `…ReadRangeByPosition`, `TestWorldietyReadRangeByPosition` |
-| AtomicReadFile stream/record (`device-baseline-v4`) | — | — | skip | — | BACnet4J File objects served; live read skipped B8 |
-| CreateObject / DeleteObject (`device-baseline-v5`) | — | — | skip | — | BACnet4J deletion/creatable config B9 |
-| TimeSynchronization / UnconfirmedTextMessage (`device-baseline-v6`) | — | — | ✓ | — | `TestBACnet4JTimeSynchronization` |
+| AtomicReadFile stream/record (`device-baseline-v4`) | ✓ | unsupported | ✓ | — | **live-multi-peer** (stack + BACnet4J); BACpypes3 0.0.106 has no File server; Worldiety loader rejects `file` |
+| AtomicWriteFile stream + readback (`device-baseline-v4`) | ✓ | unsupported | ✓ | — | **live-multi-peer**; needs AtomicWriteFile ACK context-Signed wire (`v0.2.3`) |
+| CreateObject / DeleteObject (`device-baseline-v5`) | ✓ | unsupported | ✓ | — | **live-multi-peer** (stack + BACnet4J); BACpypes3 lacks `do_CreateObject`; Worldiety has no Create/Delete handlers |
+| AddListElement / RemoveListElement NC Recipient_List (`device-baseline-v3`) | ✓ | — | ✓ | — | **live-multi-peer**; Destination bytes BACnet4J-compatible |
+| GetAlarmSummary after AV Out_Of_Range (`device-baseline-v3`) | — | — | ✓ | — | `TestBACnet4JGetAlarmSummary`; COV-multiple still unsupported upstream on BACnet4J 6.1.0 |
+| TimeSynchronization / UnconfirmedTextMessage (`device-baseline-v6`) | — | — | ✓ | — | `TestBACnet4JTimeSynchronization` (send-only; B7d semantic diagnostics open) |
 | Codec goldens (alarm/enrollment/COV-multiple/file/list/messaging/audit/VT) | n/a | n/a | n/a | n/a | Consumed via `internal/fixtures` from `bacnet-interop/fixtures/codec` |
 | COV subscribe / notify / cancel | ✓ | ✓ | ✓ | — | `…COVSubscribeNotifyCancel` |
 | COV renew | — | ✓ | — | — | `TestBACpypes3COVRenew` |
@@ -143,7 +147,7 @@ that network via a `golang` image (`BACNET_INTEROP_GO_IMAGE`). See
 | Label | Meaning |
 |-------|---------|
 | **alpha** | Pre-hardening / incomplete oracle evidence |
-| **production-candidate** | Current — supervisory client + oracle/lab interop evidence (`v0.2.2` + pin `v0.5.0`); **no** claim of multi-vendor hardware readiness |
+| **production-candidate** | Current — supervisory client + oracle/lab interop evidence (`v0.2.2`; pending `v0.2.3` + pin `v0.6.0`); **no** claim of multi-vendor hardware readiness |
 | **production-usable** | Real-device gate met — see [docs/REAL_DEVICE_GATE.md](docs/REAL_DEVICE_GATE.md) |
 
 Do not claim vendor hardware interoperability from container oracles alone.

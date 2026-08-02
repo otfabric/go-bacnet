@@ -692,8 +692,30 @@ func assertOperation(t *testing.T, meta fixtures.Meta, raw []byte, limits bacnet
 		}
 		want := meta.Expected
 		obj := want["file"].(map[string]any)
-		if int(req.File.Type) != intNum(obj["type"]) || string(req.Data) != want["data"].(string) {
+		access := "stream"
+		if req.Access == service.FileAccessRecord {
+			access = "record"
+		}
+		if int(req.File.Type) != intNum(obj["type"]) || int(req.File.Instance) != intNum(obj["instance"]) {
 			t.Fatalf("%+v", req)
+		}
+		if wantAccess, ok := want["access"].(string); ok && wantAccess != access {
+			t.Fatalf("access=%s want=%s", access, wantAccess)
+		}
+		if data, ok := want["data"].(string); ok {
+			if string(req.Data) != data {
+				t.Fatalf("%+v", req)
+			}
+		}
+		if recs, ok := want["records"].([]any); ok {
+			if len(req.Records) != len(recs) {
+				t.Fatalf("%+v", req)
+			}
+			for i, r := range recs {
+				if string(req.Records[i]) != r.(string) {
+					t.Fatalf("%+v", req)
+				}
+			}
 		}
 		assertReencode(t, meta, raw, func() ([]byte, error) { return service.EncodeAtomicWriteFile(req) })
 
@@ -734,6 +756,16 @@ func assertOperation(t *testing.T, meta fixtures.Meta, raw []byte, limits bacnet
 		if req.ObjectIdentifier == nil || int(req.ObjectIdentifier.Type) != intNum(obj["type"]) ||
 			int(req.ObjectIdentifier.Instance) != intNum(obj["instance"]) {
 			t.Fatalf("%+v", req)
+		}
+		if n, ok := want["initial_value_count"]; ok {
+			if len(req.InitialValues) != intNum(n) {
+				t.Fatalf("initial_value_count got %d want %v", len(req.InitialValues), n)
+			}
+		}
+		if name, ok := want["object_name"].(string); ok {
+			if len(req.InitialValues) == 0 || req.InitialValues[0].Value.Character.Value != name {
+				t.Fatalf("object_name %+v", req.InitialValues)
+			}
 		}
 		assertReencode(t, meta, raw, func() ([]byte, error) { return service.EncodeCreateObject(req) })
 

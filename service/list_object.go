@@ -84,10 +84,18 @@ func DecodeListElementRequest(payload []byte, limits bacnet.DecodeLimits) (ListE
 }
 
 // CreateObjectRequest is a CreateObject confirmed request.
+//
+// Wire shape (ASHRAE Clause 21):
+//
+//	objectSpecifier [0] CHOICE {
+//	  objectType [0] Unsigned,
+//	  objectIdentifier [1] ObjectIdentifier,
+//	}
+//	listOfInitialValues [1] SEQUENCE OF BACnetPropertyValue OPTIONAL
 type CreateObjectRequest struct {
 	ObjectType       *bacnet.ObjectType       // objectSpecifier CHOICE objectType [0]
 	ObjectIdentifier *bacnet.ObjectIdentifier // or objectIdentifier [1]
-	InitialValues    []PropertyValue          // listOfInitialValues [2] optional
+	InitialValues    []PropertyValue          // listOfInitialValues [1] optional
 }
 
 // CreateObjectACK is a CreateObject ComplexACK (created objectIdentifier).
@@ -97,23 +105,25 @@ type CreateObjectACK struct {
 
 // EncodeCreateObject encodes a CreateObject request.
 func EncodeCreateObject(req CreateObjectRequest) ([]byte, error) {
-	var dst []byte
+	var choice []byte
 	var err error
 	switch {
 	case req.ObjectIdentifier != nil:
-		dst, err = bacnet.AppendContextObjectID(nil, 1, *req.ObjectIdentifier)
+		choice, err = bacnet.AppendContextObjectID(nil, 1, *req.ObjectIdentifier)
 	case req.ObjectType != nil:
-		dst, err = bacnet.AppendContextUnsigned(nil, 0, uint64(*req.ObjectType))
+		choice, err = bacnet.AppendContextUnsigned(nil, 0, uint64(*req.ObjectType))
 	default:
 		return nil, fmt.Errorf("%w: CreateObject objectSpecifier required", bacnet.ErrMalformed)
 	}
 	if err != nil {
 		return nil, err
 	}
+	dst := append([]byte{0x0E}, choice...) // opening objectSpecifier [0]
+	dst = append(dst, 0x0F)                // closing objectSpecifier [0]
 	if len(req.InitialValues) == 0 {
 		return dst, nil
 	}
-	dst = append(dst, 0x2E) // opening listOfInitialValues [2]
+	dst = append(dst, 0x1E) // opening listOfInitialValues [1]
 	for _, pv := range req.InitialValues {
 		dst, err = bacnet.AppendContextUnsigned(dst, 0, uint64(pv.Property.Identifier))
 		if err != nil {
@@ -130,7 +140,7 @@ func EncodeCreateObject(req CreateObjectRequest) ([]byte, error) {
 			return nil, err
 		}
 	}
-	return append(dst, 0x2F), nil
+	return append(dst, 0x1F), nil
 }
 
 // DecodeCreateObjectACK decodes a CreateObject ComplexACK.
