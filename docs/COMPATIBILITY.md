@@ -18,15 +18,15 @@ Do not merge competitor codebases. Turn strong competitors into
 ## Software peers (digest-pinned)
 
 Pin: [`interop/bacnet-interop-pin.json`](../interop/bacnet-interop-pin.json)
-([bacnet-interop v0.6.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.6.0)).
+([bacnet-interop v0.7.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.7.0)).
 Scenarios: [INTEROP.md](../INTEROP.md), `go test -tags=interop ./interop/...`.
 
 | Peer | Role | Transport / topology | Scenarios (summary) | Evidence |
 |---|---|---|---|---|
-| bacnet-stack | Independent C peer (1.6.0) | BACnet/IP UDP; optional routed via bip-router | Who-Is/I-Am, Who-Has, RP/RPM/WP/WPM, ReadRange, COV, DCC, Reinit, File, Create/Delete, NC list, Error/Reject/Abort as supported | Pinned GHCR digest (`v0.6.0`); mostly **upstream-native** |
-| BACpypes3 | Independent Python peer (0.0.106) | BACnet/IP; peer-as-BBMD; COV renew | RP/RPM/WP/WPM, Who-Has, COV, FD/BBMD, segmented ComplexACK + segmented confirmed send, EventNotification, Reinit | Same; WPM execute + EventNotification emit are **adapter-shim** (stack/segmentation still native) |
-| BACnet4J | Independent Java peer (6.1.0) | BACnet/IP; peer-as-BBMD; segmentation | RP/RPM/WP/WPM, Who-Has, ReadRange, COV, FD/BBMD, segmented ComplexACK receive, EventNotification, Reinit, File, Create/Delete, NC list, GetAlarmSummary, TimeSync (`device-baseline-v6`) | Same; EventNotification emit may use adapter assist (`BACNET_EMIT_EVENT`); COV-multiple still unsupported upstream |
-| Worldiety | Independent Go peer (`3cb2aa80`) | BACnet/IP; native ASE segmentation | Who-Is/Who-Has, RP/RPM/WP/WPM, ReadRange (unsegmented) | Pinned GHCR digest (`v0.6.0`); service payloads **adapter-shim**; segmented interop skipped (B6) |
+| bacnet-stack | Independent C peer (1.6.0) | BACnet/IP UDP; optional routed via bip-router | Who-Is/I-Am, Who-Has, RP/RPM/WP/WPM, ReadRange, COV, DCC, Reinit, File, Create/Delete, NC list, GetAlarmSummary, TimeSync/UTC/UPT/WriteGroup/Who-Am-I/You-Are/LSO receipt | Pinned GHCR digest (`v0.7.0`); mostly **upstream-native**; GetEnrollmentSummary / TextMessage / ConfirmedPT / COV-multiple unsupported-upstream |
+| BACpypes3 | Independent Python peer (0.0.106) | BACnet/IP; peer-as-BBMD; COV renew | RP/RPM/WP/WPM, Who-Has, COV, FD/BBMD, segmented ComplexACK + segmented confirmed send, EventNotification, Reinit, messaging receipt (v6) | Same; WPM execute + EventNotification emit + messaging `do_*` sinks are **adapter-shim** / diagnostic |
+| BACnet4J | Independent Java peer (6.1.0) | BACnet/IP; peer-as-BBMD; segmentation | RP/RPM/WP/WPM, Who-Has, ReadRange, COV, FD/BBMD, segmented ComplexACK receive, EventNotification, Reinit, File, Create/Delete, NC list, GetAlarmSummary, GetEnrollmentSummary, messaging receipt (v6; WriteGroup NI) | Same; EventNotification emit may use adapter assist (`BACNET_EMIT_EVENT`); COV-multiple + WriteGroup `unsupported-upstream` |
+| Worldiety | Independent Go peer (`3cb2aa80`) | BACnet/IP; unsegmented required | Who-Is/Who-Has, RP/RPM/WP/WPM, ReadRange (unsegmented) | Pinned GHCR digest (`v0.7.0`); service payloads **adapter-shim**; segmented paths `upstream-deviation` (B6 in bacnet-interop `EVIDENCE.md`) |
 | bip-router | Topology aid (**not** a peer oracle) | Dual-homed BIP↔BIP (static addr→network bind) | Routed client DNET/DADR + SNET/SADR path matching | Same |
 
 Evidence types: **upstream-native** (peer implements the service), **adapter-shim**
@@ -44,7 +44,7 @@ Phrase for routing until a second independent router exists:
 
 | Project | Why | Direction |
 |---|---|---|
-| worldiety/bacnet | Strongest modern Go competitor | **Adapter pinned** in `bacnet-interop` v0.6.0; reverse client→go-bacnet-server later |
+| worldiety/bacnet | Strongest modern Go competitor | **Adapter pinned** in `bacnet-interop` v0.7.0; reverse client→go-bacnet-server later |
 | NubeDev/bacnet | Historical field / routed MS/TP comparison | Behavioral and packet comparison only (GPL-2.0 — no code merge) |
 | ulbios/bacnet | Older codec decomposition | Optional historical codec compatibility |
 

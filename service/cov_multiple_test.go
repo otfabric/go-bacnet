@@ -150,3 +150,61 @@ func mustParseCOVEls(t *testing.T, raw []byte) []bacnet.Element {
 	}
 	return els
 }
+
+func TestCOVNotificationMultipleRoundTrip(t *testing.T) {
+	n := service.COVNotificationMultiple{
+		SubscriberProcessIdentifier: 7,
+		InitiatingDevice:            bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeDevice, Instance: 1234},
+		TimeRemaining:               60,
+		Objects: []service.COVNotificationMultipleObject{
+			{
+				Object: bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeAnalogValue, Instance: 1},
+				Values: []service.COVNotificationMultipleValue{
+					{
+						Property: bacnet.PropertyReference{Identifier: bacnet.PropertyPresentValue},
+						Value:    bacnet.RealValue(21.5),
+					},
+				},
+			},
+		},
+	}
+	raw, err := service.EncodeCOVNotificationMultiple(n)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := service.DecodeCOVNotificationMultiple(raw, bacnet.DefaultDecodeLimits())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.SubscriberProcessIdentifier != 7 || len(got.Objects) != 1 {
+		t.Fatalf("%+v", got)
+	}
+}
+
+func TestSubscribeCOVPropertyMultipleOptionalFields(t *testing.T) {
+	idx := uint32(2)
+	inc := float32(0.5)
+	life := uint32(120)
+	raw, err := service.EncodeSubscribeCOVPropertyMultiple(service.SubscribeCOVPropertyMultipleRequest{
+		SubscriberProcessIdentifier: 3,
+		IssueConfirmedNotifications: true,
+		LifetimeRemaining:           &life,
+		Subscriptions: []service.COVMultipleSubscription{{
+			Object: bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeAnalogValue, Instance: 1},
+			Properties: []service.COVPropertyReference{{
+				Property: bacnet.PropertyReference{
+					Identifier: bacnet.PropertyPresentValue,
+					ArrayIndex: &idx,
+				},
+				COVIncrement: &inc,
+				Timestamped:  true,
+			}},
+		}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(raw) < 20 {
+		t.Fatalf("short %x", raw)
+	}
+}

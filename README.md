@@ -15,10 +15,10 @@ New to BACnet? Start with [PROTOCOL.md](PROTOCOL.md) for a short primer on
 objects, BVLC/NPDU/APDU layering, discovery, and how those map to this library.
 
 **Status:** early v0.x **production-candidate** —
-**[`v0.2.2`](https://github.com/otfabric/go-bacnet/releases/tag/v0.2.2)** released;
-pending **`v0.2.3`** (file/CreateObject/AWF-ACK wire + live-multi-peer File,
-Create/Delete, NC list). Pin:
-[`bacnet-interop` v0.6.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.6.0).
+**v0.2.4** pending release (pin
+[`bacnet-interop` v0.7.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.7.0);
+Batches A–C live evidence + Who-Am-I/You-Are/LSO/TextMessage wire fixes).
+Prior tag: [`v0.2.3`](https://github.com/otfabric/go-bacnet/releases/tag/v0.2.3).
 Still not **production-usable** until the
 [real-device gate](docs/REAL_DEVICE_GATE.md) (≥2 independent BACnet/IP devices).
 

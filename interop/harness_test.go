@@ -17,6 +17,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -106,6 +107,13 @@ type readyEvent struct {
 	Version string `json:"version"`
 }
 
+type operationEvent struct {
+	Event     string `json:"event"`
+	Adapter   string `json:"adapter"`
+	Operation string `json:"operation"`
+	Result    string `json:"result"`
+}
+
 type adapterReady struct {
 	addr    string
 	fixture string
@@ -120,6 +128,17 @@ type peerHandle struct {
 	// assertedByReexec is set when startPeer already ran this test inside a
 	// docker network (Docker Desktop). Callers should return immediately.
 	assertedByReexec bool
+
+	// container is the peer docker name (host-side scrape / diagnostics).
+	container string
+	// evidencePath is a host (or mounted) JSONL file of {"event":"operation"} lines.
+	// On Docker Desktop the host mirrors `docker logs` into this file and the
+	// in-network re-exec reads it via BACNET_INTEROP_EVIDENCE.
+	evidencePath   string
+	evidenceCursor int
+
+	opsMu sync.Mutex
+	ops   []operationEvent
 }
 
 // routedTopology is a dual-network peer: client + router on net A, device on net B.
@@ -224,30 +243,170 @@ func peerFromEnv(t *testing.T) *peerHandle {
 		t.Fatalf("BACNET_INTEROP_ENDPOINT: %v", err)
 	}
 	ep, target := targetFor(ap.Addr().String(), int(ap.Port()))
-	return &peerHandle{endpoint: ep, target: target, stop: func() {}}
+	p := &peerHandle{
+		endpoint:     ep,
+		target:       target,
+		stop:         func() {},
+		container:    os.Getenv("BACNET_INTEROP_PEER_CONTAINER"),
+		evidencePath: os.Getenv("BACNET_INTEROP_EVIDENCE"),
+	}
+	return p
 }
 
-func waitReady(t *testing.T, stdout io.Reader, wantAdapter, wantFixture string, stop func()) {
+func (p *peerHandle) recordOperation(ev operationEvent) {
+	if p == nil || ev.Event != "operation" || ev.Operation == "" {
+		return
+	}
+	p.opsMu.Lock()
+	p.ops = append(p.ops, ev)
+	p.opsMu.Unlock()
+}
+
+func (p *peerHandle) clearOperations() {
+	if p == nil {
+		return
+	}
+	p.opsMu.Lock()
+	p.ops = nil
+	p.opsMu.Unlock()
+}
+
+func normalizeOperationName(op string) string {
+	op = strings.TrimSpace(op)
+	switch op {
+	case "TimeSynchronizationRequest", "time-synchronization":
+		return "time-synchronization"
+	case "UTCTimeSynchronizationRequest", "utc-time-synchronization":
+		return "utc-time-synchronization"
+	case "UnconfirmedTextMessageRequest", "unconfirmed-text-message":
+		return "unconfirmed-text-message"
+	case "ConfirmedTextMessageRequest", "confirmed-text-message":
+		return "confirmed-text-message"
+	case "UnconfirmedPrivateTransferRequest", "unconfirmed-private-transfer":
+		return "unconfirmed-private-transfer"
+	case "ConfirmedPrivateTransferRequest", "confirmed-private-transfer":
+		return "confirmed-private-transfer"
+	case "WriteGroupRequest", "write-group":
+		return "write-group"
+	default:
+		return strings.ToLower(op)
+	}
+}
+
+func (p *peerHandle) scrapeEvidenceFile() {
+	if p == nil || p.evidencePath == "" {
+		return
+	}
+	b, err := os.ReadFile(p.evidencePath)
+	if err != nil {
+		return
+	}
+	lines := strings.Split(string(b), "\n")
+	if len(lines) > 0 && lines[len(lines)-1] == "" {
+		lines = lines[:len(lines)-1]
+	}
+	if p.evidenceCursor > len(lines) {
+		p.evidenceCursor = 0
+	}
+	for i := p.evidenceCursor; i < len(lines); i++ {
+		var ev operationEvent
+		if json.Unmarshal([]byte(lines[i]), &ev) == nil && ev.Event == "operation" {
+			p.recordOperation(ev)
+		}
+	}
+	p.evidenceCursor = len(lines)
+}
+
+func appendEvidenceLine(path, line string) {
+	if path == "" {
+		return
+	}
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+	if err != nil {
+		return
+	}
+	_, _ = f.WriteString(line + "\n")
+	_ = f.Sync()
+	_ = f.Close()
+}
+
+func (p *peerHandle) hasOperation(want string) bool {
+	want = normalizeOperationName(want)
+	p.opsMu.Lock()
+	defer p.opsMu.Unlock()
+	for _, ev := range p.ops {
+		if normalizeOperationName(ev.Operation) == want {
+			return true
+		}
+	}
+	return false
+}
+
+// awaitOperation waits for a peer diagnostic {"event":"operation",...} matching want.
+// want may be kebab-case (preferred) or a BACnet4J Java simple class name.
+func awaitOperation(t *testing.T, peer *peerHandle, want string, timeout time.Duration) {
+	t.Helper()
+	if peer == nil {
+		t.Fatal("awaitOperation: nil peer")
+	}
+	deadline := time.Now().Add(timeout)
+	for {
+		peer.scrapeEvidenceFile()
+		if peer.hasOperation(want) {
+			return
+		}
+		if time.Now().After(deadline) {
+			peer.opsMu.Lock()
+			got := append([]operationEvent(nil), peer.ops...)
+			peer.opsMu.Unlock()
+			t.Fatalf("timed out waiting for operation %q; seen=%+v", normalizeOperationName(want), got)
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+}
+
+func parseStdoutLine(line string, onReady func(adapterReady), onOp func(operationEvent)) {
+	var ready readyEvent
+	if json.Unmarshal([]byte(line), &ready) == nil && ready.Event == "ready" {
+		onReady(adapterReady{
+			addr:    ready.Address,
+			fixture: ready.Fixture,
+			adapter: ready.Adapter,
+			version: ready.Version,
+		})
+		return
+	}
+	var op operationEvent
+	if json.Unmarshal([]byte(line), &op) == nil && op.Event == "operation" {
+		onOp(op)
+	}
+}
+
+func waitReady(t *testing.T, stdout io.Reader, wantAdapter, wantFixture string, stop func(), peer *peerHandle) {
 	t.Helper()
 	ready := make(chan adapterReady, 1)
+	var readyOnce sync.Once
 	go func() {
 		scanner := bufio.NewScanner(stdout)
+		// Peers may emit long JSON diagnostic lines; raise the default token limit.
+		scanner.Buffer(make([]byte, 64*1024), 1024*1024)
 		for scanner.Scan() {
 			line := scanner.Text()
-			var ev readyEvent
-			if json.Unmarshal([]byte(line), &ev) == nil && ev.Event == "ready" {
-				ready <- adapterReady{
-					addr:    ev.Address,
-					fixture: ev.Fixture,
-					adapter: ev.Adapter,
-					version: ev.Version,
-				}
-				break
-			}
+			parseStdoutLine(line,
+				func(m adapterReady) {
+					readyOnce.Do(func() { ready <- m })
+				},
+				func(op operationEvent) {
+					if peer != nil {
+						peer.recordOperation(op)
+						// Tee to evidence file for Docker Desktop re-exec (no pipe there).
+						appendEvidenceLine(peer.evidencePath, line)
+					}
+				},
+			)
 		}
 		_ = scanner.Err()
-		_, _ = io.Copy(io.Discard, stdout)
-		close(ready)
+		readyOnce.Do(func() { close(ready) })
 	}()
 
 	startCtx, startCancel := context.WithTimeout(context.Background(), readyTimeout)
@@ -320,8 +479,16 @@ func startPeer(t *testing.T, image, wantAdapter string, env ...string) *peerHand
 		_ = cmd.Wait()
 		_ = exec.Command("docker", "network", "rm", networkName).Run()
 	}
+	evidencePath := filepath.Join(os.TempDir(), containerName+"-operations.jsonl")
+	_ = os.Remove(evidencePath)
+	if f, err := os.Create(evidencePath); err == nil {
+		_ = f.Close()
+	}
+	t.Cleanup(func() { _ = os.Remove(evidencePath) })
+
+	peer := &peerHandle{stop: stop, container: containerName, evidencePath: evidencePath}
 	dev := loadDeviceFixture(t)
-	waitReady(t, stdout, wantAdapter, dev.Fixture, stop)
+	waitReady(t, stdout, wantAdapter, dev.Fixture, stop, peer)
 
 	ipOut, err := exec.Command("docker", "inspect", "-f",
 		"{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}", containerName).Output()
@@ -337,12 +504,18 @@ func startPeer(t *testing.T, image, wantAdapter string, env ...string) *peerHand
 
 	if runtime.GOOS == "linux" {
 		ep, target := targetFor(containerIP, 47808)
+		peer.endpoint = ep
+		peer.target = target
 		t.Cleanup(stop)
-		return &peerHandle{endpoint: ep, target: target, stop: stop}
+		return peer
 	}
 
 	t.Cleanup(stop)
-	reexecInNetwork(t, networkName, containerIP)
+	reexecInNetwork(t, networkName, containerIP,
+		"BACNET_INTEROP_PEER_CONTAINER="+containerName,
+		"BACNET_INTEROP_EVIDENCE=/tmp/bacnet-operations.jsonl",
+		"BACNET_INTEROP_EVIDENCE_HOST="+evidencePath,
+	)
 	return &peerHandle{assertedByReexec: true, stop: stop}
 }
 
@@ -396,7 +569,19 @@ func runReexecInNetwork(t *testing.T, network, peerIP string, extraEnv ...string
 	if peerIP != "" {
 		args = append(args, "-e", "BACNET_INTEROP_ENDPOINT="+fmt.Sprintf("%s:47808", peerIP))
 	}
+	evidenceHost := ""
+	filteredExtra := make([]string, 0, len(extraEnv))
 	for _, e := range extraEnv {
+		if strings.HasPrefix(e, "BACNET_INTEROP_EVIDENCE_HOST=") {
+			evidenceHost = strings.TrimPrefix(e, "BACNET_INTEROP_EVIDENCE_HOST=")
+			continue
+		}
+		filteredExtra = append(filteredExtra, e)
+	}
+	if evidenceHost != "" {
+		args = append(args, "-v", evidenceHost+":/tmp/bacnet-operations.jsonl")
+	}
+	for _, e := range filteredExtra {
 		args = append(args, "-e", e)
 	}
 	if interopRequired() {

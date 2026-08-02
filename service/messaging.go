@@ -87,13 +87,26 @@ type TextMessage struct {
 }
 
 // EncodeTextMessage encodes Confirmed/UnconfirmedTextMessage.
+//
+// messageText [3] is a context-primitive CharacterString (ASHRAE 135), matching
+// BACnet4J / BACpypes3 decoders — not a constructed wrapper around an
+// application CharacterString.
 func EncodeTextMessage(m TextMessage) ([]byte, error) {
 	dst, err := bacnet.AppendContextObjectID(nil, 0, m.TextMessageSourceDevice)
 	if err != nil {
 		return nil, err
 	}
 	if m.MessageClass != nil {
-		dst, err = bacnet.AppendContextUnsigned(dst, 1, uint64(*m.MessageClass))
+		// messageClass [1] CHOICE { numeric [0] Unsigned, character [1] CharacterString }
+		dst, err = bacnet.AppendTag(dst, bacnet.Element{Context: true, TagNumber: 1, Opening: true})
+		if err != nil {
+			return nil, err
+		}
+		dst, err = bacnet.AppendContextUnsigned(dst, 0, uint64(*m.MessageClass))
+		if err != nil {
+			return nil, err
+		}
+		dst, err = bacnet.AppendTag(dst, bacnet.Element{Context: true, TagNumber: 1, Closing: true})
 		if err != nil {
 			return nil, err
 		}
@@ -102,9 +115,7 @@ func EncodeTextMessage(m TextMessage) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return bacnet.AppendContextTagged(dst, 3, []bacnet.Element{{
-		Value: bacnet.ApplicationValue{Kind: bacnet.ValueCharacterString, Character: bacnet.CharacterString{Value: m.Message}},
-	}})
+	return bacnet.AppendContextCharacterString(dst, 3, bacnet.CharacterString{Value: m.Message})
 }
 
 // DecodeTextMessage decodes Confirmed/UnconfirmedTextMessage.
@@ -123,7 +134,21 @@ func DecodeTextMessage(payload []byte, limits bacnet.DecodeLimits) (TextMessage,
 		case el.TagNumber == 0 && !bacnet.IsContextConstructed(el):
 			m.TextMessageSourceDevice, err = bacnet.ContextObjectID(el)
 			haveSrc = true
+		case el.TagNumber == 1 && bacnet.IsContextConstructed(el):
+			// CHOICE numeric [0] Unsigned (character [1] not exposed on this struct).
+			for _, inner := range el.Value.Elements {
+				if inner.TagNumber == 0 && !bacnet.IsContextConstructed(inner) {
+					u, e := bacnet.ContextUnsigned(inner)
+					err = e
+					if err == nil {
+						v := uint32(u)
+						m.MessageClass = &v
+					}
+					break
+				}
+			}
 		case el.TagNumber == 1 && !bacnet.IsContextConstructed(el):
+			// Legacy numeric-only encode (pre-CHOICE).
 			u, e := bacnet.ContextUnsigned(el)
 			err = e
 			if err == nil {
@@ -137,7 +162,15 @@ func DecodeTextMessage(payload []byte, limits bacnet.DecodeLimits) (TextMessage,
 				m.MessagePriority = uint8(u)
 				havePrio = true
 			}
+		case el.TagNumber == 3 && !bacnet.IsContextConstructed(el):
+			cs, e := bacnet.ContextCharacterString(el)
+			err = e
+			if err == nil {
+				m.Message = cs.Value
+				haveMsg = true
+			}
 		case el.TagNumber == 3 && bacnet.IsContextConstructed(el):
+			// Legacy constructed form (pre-fix encode); accept for decode.
 			if len(el.Value.Elements) == 1 && el.Value.Elements[0].Value.Kind == bacnet.ValueCharacterString {
 				m.Message = el.Value.Elements[0].Value.Character.Value
 				haveMsg = true
