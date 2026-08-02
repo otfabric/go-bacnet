@@ -69,9 +69,9 @@ func TestLifeSafetyOperation(t *testing.T) {
 }
 
 func TestBACpypes3LifeSafetyUnsupported(t *testing.T) {
-	t.Skip("BACpypes3 LifeSafetyOperation unsupported-upstream; see bacnet-interop/EVIDENCE.md (B7f)")
+	t.Skip("BACpypes3 LifeSafetyOperation unsupported-upstream; see bacnet-interop/PEER_SUPPORT.md")
 }
 
 func TestWorldietyLifeSafetyUnsupported(t *testing.T) {
-	t.Skip("Worldiety LifeSafetyOperation unsupported-upstream; see bacnet-interop/EVIDENCE.md (B7f)")
+	t.Skip("Worldiety LifeSafetyOperation unsupported-upstream; see bacnet-interop/PEER_SUPPORT.md")
 }

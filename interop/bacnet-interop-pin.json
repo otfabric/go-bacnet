@@ -1,11 +1,11 @@
 {
-  "ref": "v0.7.0",
-  "release": "https://github.com/otfabric/bacnet-interop/releases/tag/v0.7.0",
+  "ref": "v0.8.0",
+  "release": "https://github.com/otfabric/bacnet-interop/releases/tag/v0.8.0",
   "images": {
-    "bacnet-stack": "ghcr.io/otfabric/bacnet-interop-bacnet-stack@sha256:a20e85f0826dd1c7852a5a860bb62f107062171b0daec3e4bc13e47918c2ffac",
-    "bacpypes3": "ghcr.io/otfabric/bacnet-interop-bacpypes3@sha256:8a82f123996b9f8bebc5a54380376ecf8e677a8d1f5b527286a7c9914166e36c",
-    "bacnet4j": "ghcr.io/otfabric/bacnet-interop-bacnet4j@sha256:c35f4731ace71a526c331f1f7c4089b8419001b5cf3ed1238d50635c843c57eb",
-    "worldiety": "ghcr.io/otfabric/bacnet-interop-worldiety@sha256:c4d969bb07517bfac86d196df3e623355f840c7c79792d750a8ff8aeb153c421",
-    "bip-router": "ghcr.io/otfabric/bacnet-interop-bip-router@sha256:4902311ec6a0ecee4f7e6ed10c1229224880eafb5f516ebc31d605205b590741"
+    "bacnet-stack": "ghcr.io/otfabric/bacnet-interop-bacnet-stack@sha256:7001b185fbc7ca1e0c998d41e0fa81d2d803ef5af98b6958ffe775352021a23d",
+    "bacpypes3": "ghcr.io/otfabric/bacnet-interop-bacpypes3@sha256:bcd8a9b0a4d41e973cdfa3ebee0ed52cdd130ee8248a29d2f4fa7a9df314d52b",
+    "bacnet4j": "ghcr.io/otfabric/bacnet-interop-bacnet4j@sha256:4cd128a156ba8228f1bea7740ca3c718c25c0d6f86e15b1363fac318efdf8239",
+    "worldiety": "ghcr.io/otfabric/bacnet-interop-worldiety@sha256:6dd651ffa294cd7cec7655c6ac2d90b43c2a52f11563999a7bc914c92351cded",
+    "bip-router": "ghcr.io/otfabric/bacnet-interop-bip-router@sha256:636c791520a57ff90f81a18a4b45e603dfbb2eeaaf2bb071607cd8fd1b936d90"
   }
 }

@@ -1,6 +1,6 @@
 # Package design
 
-Horizon 1 package layout and dependency rules for `go-bacnet`.
+Package layout and dependency rules for `go-bacnet`.
 
 ## Layout
 
@@ -20,7 +20,7 @@ go-bacnet/
 ```
 
 There is no separate `encoding/`, `object/`, `transaction/`, or `network/` tree
-in Horizon 1. Transaction and segmentation state live inside `client`.
+in this module. Transaction and segmentation state live inside `client`.
 
 ## Dependency rules
 

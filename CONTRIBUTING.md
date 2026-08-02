@@ -66,8 +66,26 @@ Root `bacnet` stays transport-neutral: no `bip` / wire / client imports.
 - SPDX header on every first-party `.go` file: `// SPDX-License-Identifier: MIT`
 - Prefer sentinel / typed errors with `%w`; see [ERRORS.md](ERRORS.md)
 - Keep diffs focused; update tests and docs when behaviour changes
-- Do not claim real-device interoperability without evidence in
-  [docs/REAL_DEVICE_GATE.md](docs/REAL_DEVICE_GATE.md)
+- Do not claim hardware interoperability without evidence in
+  [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md) / [docs/FIELD_VALIDATION.md](docs/FIELD_VALIDATION.md)
+
+## Interop tests
+
+Pinned peer images and fixtures come from
+[`bacnet-interop`](https://github.com/otfabric/bacnet-interop)
+(`interop/bacnet-interop-pin.json`).
+
+```bash
+# With Docker and sibling or checked-out fixtures:
+export BACNET_INTEROP_ROOT=/path/to/bacnet-interop
+export BACNET_INTEROP_REQUIRED=1
+make interop
+# or:
+GOWORK=off go test -tags=interop ./interop/...
+```
+
+Scenario results: [INTEROP.md](INTEROP.md). Peer notes:
+[bacnet-interop PEER_SUPPORT.md](https://github.com/otfabric/bacnet-interop/blob/main/PEER_SUPPORT.md).
 
 ## Pull requests
 

@@ -11,7 +11,7 @@ stack shape this library assumes.
 - [Stack layers on BACnet/IP](#stack-layers-on-bacnetip)
 - [Confirmed vs unconfirmed](#confirmed-vs-unconfirmed)
 - [Discovery and addressing](#discovery-and-addressing)
-- [Segmentation (Horizon 1)](#segmentation-horizon-1)
+- [Segmentation (BACnet/IP)](#segmentation-horizon-1)
 - [What to read next](#what-to-read-next)
 
 ## What BACnet is
@@ -27,7 +27,7 @@ Typical supervisory work looks like:
 2. Read or write object properties (**ReadProperty**, **WriteProperty**, …).
 3. Optionally subscribe to change-of-value (**COV**) notifications.
 
-Horizon 1 of this library is a **BACnet/IP supervisory client** over IPv4/UDP
+This library is a **BACnet/IP supervisory client** over IPv4/UDP
 (default port **47808** / `0xBAC0`). It does not implement a full BACnet
 server/device product, MS/TP, BACnet/IPv6, or BACnet/SC.
 
@@ -101,7 +101,7 @@ Addresses in BACnet are not always “just an IP”:
 BACnet/IP also uses:
 
 - **BBMD** (BACnet Broadcast Management Device) — forwards broadcasts across
-  IP subnets; Horizon 1 receives **Forwarded-NPDU** and can act as a foreign
+  IP subnets; This library receives **Forwarded-NPDU** and can act as a foreign
   device toward a BBMD.
 - **Foreign device registration** — optional registration with a BBMD so a
   client on another subnet receives broadcasts.
@@ -118,13 +118,13 @@ evidence shows the device accepts segmented requests (`segmented-both` or
 (default proposed window 16; actual window follows SegmentACK) before waiting
 for the service response.
 
-## Framing policy (Horizon 1)
+## Framing policy (BACnet/IP)
 
 APDU and NPDU parsers are **strict by default**: reserved header bits,
 undefined MaxAPDU codes, MoreFollows without SegmentedMessage, zero or
 out-of-range segment windows, global broadcast with a non-zero DADR, and
 malformed router network lists are rejected as malformed rather than
-normalized away. There is no separate compatibility profile in Horizon 1.
+normalized away. There is no separate compatibility profile in this library.
 
 ## What to read next
 

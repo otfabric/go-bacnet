@@ -65,11 +65,11 @@ func TestBACnet4JWhoAmIYouAreUnsupported(t *testing.T) {
 }
 
 func TestBACpypes3WhoAmIYouAreUnsupported(t *testing.T) {
-	t.Skip("BACpypes3 Who-Am-I/You-Are unsupported-upstream; see bacnet-interop/EVIDENCE.md (B7e1)")
+	t.Skip("BACpypes3 Who-Am-I/You-Are unsupported-upstream; see bacnet-interop/PEER_SUPPORT.md")
 }
 
 func TestWorldietyWhoAmIYouAreUnsupported(t *testing.T) {
-	t.Skip("Worldiety Who-Am-I/You-Are unsupported-upstream; see bacnet-interop/EVIDENCE.md (B7e1)")
+	t.Skip("Worldiety Who-Am-I/You-Are unsupported-upstream; see bacnet-interop/PEER_SUPPORT.md")
 }
 
 func TestAuditNotificationUnsupported(t *testing.T) {

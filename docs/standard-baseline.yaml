@@ -1,4 +1,4 @@
-# Normative standard baseline for go-bacnet Horizon 1.
+# Normative standard baseline for go-bacnet this library.
 # Machine-readable companion to STANDARD_BASELINE.md
 
 base_standard: "ANSI/ASHRAE 135-2024"
@@ -9,7 +9,7 @@ addenda: []
 # Example entries when populated:
 # - id: "135-2024a"
 #   status: tracked
-#   notes: "summary of impact on Horizon 1"
+#   notes: "summary of impact on this library"
 
 # ASHRAE interpretations tracked for implementation impact.
 interpretations: []
@@ -19,5 +19,5 @@ interpretations: []
 #   notes: "summary"
 
 test_standard: "ANSI/ASHRAE 135.1-2023"
-# 135.1 addenda tracked for initiation/test mapping (TRACEABILITY.md).
+# 135.1 addenda tracked for initiation/test mapping (STANDARD_BASELINE.md).
 test_addenda: []

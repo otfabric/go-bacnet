@@ -1,10 +1,39 @@
 # go-bacnet Releases
 
+## v0.2.5
+
+**Date:** 2026-08-03  
+**Previous release:** [v0.2.4](https://github.com/otfabric/go-bacnet/releases/tag/v0.2.4)  
+**Tag:** [`v0.2.5`](https://github.com/otfabric/go-bacnet/releases/tag/v0.2.5) @ `867048a`
+
+### Summary
+
+Interop pin and documentation update. **No new client APIs.** Pin moves to
+[`bacnet-interop` v0.8.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.8.0)
+@ `34f42dc` (native router/BBMD audit; bacnet-stack peer-as-BBMD confirmed).
+Requires **Go 1.23+**.
+
+### Changed
+
+- Pin → [`bacnet-interop` v0.8.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.8.0)
+  (`interop/bacnet-interop-pin.json`) — digests from the published release
+- Interop: `TestBacnetStackForeignDeviceWhoIsReadProperty` (peer-as-BBMD / FDR)
+- Docs: lean client-support baseline; INTEROP BBMD matrix; CLIENT_SUPPORT
+  Register-Foreign-Device multi-peer evidence; PLAN client-completeness backlog
+
+### Evidence
+
+| Gate | Result | Link |
+|---|---|---|
+| Shared CI (lint, Go matrix, race, coverage, PR fuzz) | green | [30773312858](https://github.com/otfabric/go-bacnet/actions/runs/30773312858) |
+| Pinned interop `v0.8.0` | green | [30773312737](https://github.com/otfabric/go-bacnet/actions/runs/30773312737) |
+| Pin | [`bacnet-interop` v0.8.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.8.0) @ `34f42dc` | `interop/bacnet-interop-pin.json` |
+
 ## v0.2.4
 
 **Date:** 2026-08-03  
 **Previous release:** [v0.2.3](https://github.com/otfabric/go-bacnet/releases/tag/v0.2.3)  
-**Tag:** pending (cut via Actions → Release → `patch`)
+**Tag:** [`v0.2.4`](https://github.com/otfabric/go-bacnet/releases/tag/v0.2.4) @ `daef989`
 
 ### Summary
 
@@ -12,10 +41,10 @@ Evidence and wire-correctness patch after
 [`v0.2.3`](https://github.com/otfabric/go-bacnet/releases/tag/v0.2.3).
 **No new client APIs.** Pin moves to
 [`bacnet-interop` v0.7.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.7.0)
-@ `224f51b` (Batches A–C adapters). Requires **Go 1.23+**.
+@ `224f51b`. Requires **Go 1.23+**.
 
-Still **production-candidate** until the
-[real-device gate](docs/REAL_DEVICE_GATE.md) is complete.
+Container-interoperability validated; [field validation](docs/FIELD_VALIDATION.md)
+pending.
 
 ### Fixed
 
@@ -35,35 +64,34 @@ Still **production-candidate** until the
 
 ### Evidence
 
-Fill CI links after the Release workflow runs on the tag SHA:
-
 | Gate | Result | Link |
 |---|---|---|
-| Shared CI (lint, Go matrix, race, coverage, PR fuzz) | pending | — |
-| Pinned interop `v0.7.0` | pending | — |
-| bacnet-interop main compat | pending | — |
+| Shared CI (lint, Go matrix, race, coverage, PR fuzz) | green | [30771576116](https://github.com/otfabric/go-bacnet/actions/runs/30771576116) |
+| Pinned interop `v0.7.0` | green | [30771575928](https://github.com/otfabric/go-bacnet/actions/runs/30771575928) |
+| bacnet-interop main compat | green | same interop run |
 | Pin | [`bacnet-interop` v0.7.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.7.0) | `interop/bacnet-interop-pin.json` |
-| GitHub Release | pending | — |
+| GitHub Release | published | [v0.2.4](https://github.com/otfabric/go-bacnet/releases/tag/v0.2.4) |
 
-Live scenarios on the pinned digests (Batches A–C):
+Live scenarios on the pinned digests:
 
 | Scenario | Peers | Test / evidence |
 |---|---|---|
-| GetAlarmSummary (AV Out_Of_Range) | BACnet4J + bacnet-stack | `live-multi-peer` `TestGetAlarmSummaryOutOfRange` |
-| GetEnrollmentSummary (EE-1) | BACnet4J | `live-single-peer` `TestBACnet4JGetEnrollmentSummary` |
-| SubscribeCOVPropertyMultiple / COVNotificationMultiple | — | `codec-only` (all peers `unsupported-upstream`) |
-| Messaging semantic receipt (v6 `operation` JSONL) | BACnet4J + BACpypes3 + bacnet-stack | `TestMessagingSemanticReceipt` (per-service EVIDENCE matrix) |
-| Who-Am-I / You-Are (v7) | bacnet-stack | `live-single-peer` `TestBacnetStackWhoAmIYouAre` |
-| LifeSafetyOperation LSP-1 (v8) | BACnet4J + bacnet-stack | `live-multi-peer` `TestLifeSafetyOperation` |
-| Audit notification / AuditLogQuery / AuthRequest / VT | — | `codec-only` (B7e2–e4 / B7g) |
+| GetAlarmSummary (AV Out_Of_Range) | BACnet4J + bacnet-stack | `TestGetAlarmSummaryOutOfRange` |
+| GetEnrollmentSummary (EE-1) | BACnet4J | `TestBACnet4JGetEnrollmentSummary` |
+| SubscribeCOVPropertyMultiple / COVNotificationMultiple | — | codec/unit only |
+| Messaging semantic receipt (v6 `operation` JSONL) | BACnet4J + BACpypes3 + bacnet-stack | `TestMessagingSemanticReceipt` |
+| Who-Am-I / You-Are (v7) | bacnet-stack | `TestBacnetStackWhoAmIYouAre` |
+| LifeSafetyOperation LSP-1 (v8) | BACnet4J + bacnet-stack | `TestLifeSafetyOperation` |
+| Audit notification / AuditLogQuery / AuthRequest / VT | — | codec/unit only |
 
-Prior live-multi-peer File / Create-Delete / NC list scenarios from `v0.2.3`
-remain on the new digests.
+Prior File / Create-Delete / NC list live scenarios from `v0.2.3` remain on the
+new digests.
 
 ### Notes / known skips
 
-- Worldiety segmented WPM/RPM: `upstream-deviation` (B6; see bacnet-interop `EVIDENCE.md`)
-- Open execution work: B5/B5a–d (router/BBMD inventory; see bacnet-interop `BLOCKERS.md`)
+- Worldiety segmented WPM/RPM: continuation ServiceChoice deviation (see
+  bacnet-interop `PEER_SUPPORT.md`)
+- Open: native router/BBMD peer audit (bacnet-interop `BLOCKERS.md`)
 - Library coverage gate held at ≥90%
 
 ---
@@ -84,7 +112,7 @@ plus live-multi-peer File, Create/Delete, and NC list evidence. Pin moves to
 @ `f4ea3de`. Requires **Go 1.23+**.
 
 Still **production-candidate** until the
-[real-device gate](docs/REAL_DEVICE_GATE.md) is complete.
+[field validation](docs/FIELD_VALIDATION.md) is complete.
 
 ### Fixed
 
@@ -128,7 +156,7 @@ Live-multi-peer scenarios on the pinned digests:
 
 ### Notes / known skips
 
-- Worldiety segmented WPM/RPM: `upstream-deviation` (B6; see bacnet-interop `EVIDENCE.md`)
+- Worldiety segmented WPM/RPM: `upstream-deviation` (B6; see bacnet-interop `PEER_SUPPORT.md`)
 - Batch A–C live scenarios and the `v0.7.0` pin landed in **v0.2.4**
 - Library coverage gate held at ≥90%
 
@@ -149,7 +177,7 @@ audit/identity, and life-safety/VT. Pin moves to
 Requires **Go 1.23+**.
 
 Still **production-candidate** until the
-[real-device gate](docs/REAL_DEVICE_GATE.md) is complete.
+[field validation](docs/FIELD_VALIDATION.md) is complete.
 
 ### Added
 
@@ -216,7 +244,7 @@ decoders for WPM / ReadRange / events / DCC / ReinitializeDevice. Pin moves to
 Requires **Go 1.23+**.
 
 Still **production-candidate** until the
-[real-device gate](docs/REAL_DEVICE_GATE.md) is complete.
+[field validation](docs/FIELD_VALIDATION.md) is complete.
 
 ### Fixed
 
@@ -288,7 +316,7 @@ confirmed-request send. Pin moves to
 (BACpypes3 **0.0.106**). Requires **Go 1.23+**.
 
 Still **production-candidate** until the
-[real-device gate](docs/REAL_DEVICE_GATE.md) is complete.
+[field validation](docs/FIELD_VALIDATION.md) is complete.
 
 ### Added
 
@@ -371,7 +399,7 @@ fuzz, and pin to [`bacnet-interop` v0.2.1](https://github.com/otfabric/bacnet-in
 (28 fixtures including service-layer negatives). Requires **Go 1.23+**.
 
 Still not **production-usable** until the
-[real-device gate](docs/REAL_DEVICE_GATE.md) is complete.
+[field validation](docs/FIELD_VALIDATION.md) is complete.
 
 ### Added
 
