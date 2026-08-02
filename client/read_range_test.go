@@ -18,7 +18,7 @@ func TestReadRangeComplexACK(t *testing.T) {
 	defer cancel()
 
 	obj := bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeTrendLog, Instance: 1}
-	prop := bacnet.PropertyReference{Identifier: bacnet.PropertyLogBuffer}
+	prop := bacnet.PropertyReference{Identifier: bacnet.PropertyPresentValue}
 	go serveComplexACK(ctx, env.PeerTr, env.Local, func(serviceChoice uint8) ([]byte, error) {
 		if serviceChoice != apdu.ServiceReadRange {
 			return nil, bacnet.ErrProtocolViolation

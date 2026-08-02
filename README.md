@@ -14,12 +14,12 @@ over IPv4/UDP on port **47808** (`0xBAC0`).
 New to BACnet? Start with [PROTOCOL.md](PROTOCOL.md) for a short primer on
 objects, BVLC/NPDU/APDU layering, discovery, and how those map to this library.
 
-**Status:** early v0.x **production-candidate** — ready to tag as **`v0.2.0`**
-(WritePropertyMultiple, ReadRange, Who-Has, EventNotification, opt-in device
-management, segmented confirmed-request send; green CI + pinned interop on
-[`bacnet-interop` v0.4.1](https://github.com/otfabric/bacnet-interop/releases/tag/v0.4.1);
-see [RELEASE.md](RELEASE.md)). Not **production-usable** until the
-[real-device gate](docs/REAL_DEVICE_GATE.md) (≥2 independent BACnet/IP devices).
+**Status:** early v0.x **production-candidate** — **[`v0.2.0`](https://github.com/otfabric/go-bacnet/releases/tag/v0.2.0)**
+released; **`v0.2.1`** ready to tag (correlation, segmentation, outcome-unknown,
+decoder strictness, EventNotification receive-path safety; pinned interop
+[`bacnet-interop` v0.4.2](https://github.com/otfabric/bacnet-interop/releases/tag/v0.4.2)).
+Next after the cut: the [real-device gate](docs/REAL_DEVICE_GATE.md). Not
+**production-usable** until that gate (≥2 independent BACnet/IP devices).
 
 | Label | Meaning |
 |-------|---------|

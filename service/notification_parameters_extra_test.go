@@ -110,14 +110,13 @@ func TestDecodeNotificationParametersMalformed(t *testing.T) {
 	if _, err := DecodeNotificationParameters([]bacnet.Element{{Value: bacnet.RealValue(1)}}); !errors.Is(err, bacnet.ErrMalformed) {
 		t.Fatalf("%v", err)
 	}
-	// Typed decode fails → RawElements kept, no typed body.
+	// Known CHOICE with malformed contents → error (not opaque success).
 	badCOS := []bacnet.Element{{
 		Context: true, TagNumber: uint8(NotificationChangeOfState),
 		Value: bacnet.ApplicationValue{Kind: bacnet.ValueConstructed},
 	}}
-	got, err := DecodeNotificationParameters(badCOS)
-	if err != nil || got.ChangeOfState != nil {
-		t.Fatalf("bad COS: %v %+v", err, got)
+	if _, err := DecodeNotificationParameters(badCOS); !errors.Is(err, bacnet.ErrMalformed) {
+		t.Fatalf("bad COS: %v", err)
 	}
 	badCOV := []bacnet.Element{{
 		Context: true, TagNumber: uint8(NotificationChangeOfValue),
@@ -125,24 +124,22 @@ func TestDecodeNotificationParametersMalformed(t *testing.T) {
 			{Context: true, TagNumber: 9},
 		}},
 	}}
-	got, err = DecodeNotificationParameters(badCOV)
-	if err != nil || got.ChangeOfValue != nil {
-		t.Fatalf("bad COV: %v %+v", err, got)
+	if _, err := DecodeNotificationParameters(badCOV); !errors.Is(err, bacnet.ErrMalformed) {
+		t.Fatalf("bad COV: %v", err)
 	}
 	badCOB := []bacnet.Element{{
 		Context: true, TagNumber: uint8(NotificationChangeOfBitstring),
 		Value: bacnet.ApplicationValue{Kind: bacnet.ValueConstructed},
 	}}
-	got, err = DecodeNotificationParameters(badCOB)
-	if err != nil || got.ChangeOfBitstring != nil {
-		t.Fatalf("bad COB: %v %+v", err, got)
+	if _, err := DecodeNotificationParameters(badCOB); !errors.Is(err, bacnet.ErrMalformed) {
+		t.Fatalf("bad COB: %v", err)
 	}
-	// Unknown CHOICE tag hits default.
+	// Unknown / proprietary CHOICE tag keeps RawElements only.
 	unknown := []bacnet.Element{{
 		Context: true, TagNumber: 99,
 		Value: bacnet.ApplicationValue{Kind: bacnet.ValueConstructed},
 	}}
-	got, err = DecodeNotificationParameters(unknown)
+	got, err := DecodeNotificationParameters(unknown)
 	if err != nil || got.Choice != 99 {
 		t.Fatalf("unknown: %v %+v", err, got)
 	}

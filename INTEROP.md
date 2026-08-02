@@ -72,7 +72,7 @@ honored by Docker re-exec for routed tests), require
 Use `make interop-required` locally with `:local` images or the same digest pins.
 
 Current scenarios (fixture `device-baseline-v2`, device instance `1234`).
-Pinned release: [`bacnet-interop` v0.4.1](https://github.com/otfabric/bacnet-interop/releases/tag/v0.4.1)
+Pinned release: [`bacnet-interop` v0.4.2](https://github.com/otfabric/bacnet-interop/releases/tag/v0.4.2)
 (BACpypes3 **0.0.106**). Green pinned + main-compat:
 [30722438676](https://github.com/otfabric/go-bacnet/actions/runs/30722438676)
 (prior `v0.4.0`: [30720046370](https://github.com/otfabric/go-bacnet/actions/runs/30720046370)).
@@ -134,7 +134,7 @@ that network via a `golang` image (`BACNET_INTEROP_GO_IMAGE`). See
 | Label | Meaning |
 |-------|---------|
 | **alpha** | Pre-hardening / incomplete oracle evidence |
-| **production-candidate** | Current — supervisory client + oracle/lab interop evidence (`v0.2.0`); **no** claim of multi-vendor hardware readiness |
+| **production-candidate** | Current — supervisory client + oracle/lab interop evidence (`v0.2.0` / ready `v0.2.1`); **no** claim of multi-vendor hardware readiness |
 | **production-usable** | Real-device gate met — see [docs/REAL_DEVICE_GATE.md](docs/REAL_DEVICE_GATE.md) |
 
 Do not claim vendor hardware interoperability from container oracles alone.

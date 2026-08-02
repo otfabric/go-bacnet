@@ -25,8 +25,10 @@ const (
 
 // ReinitializeDeviceRequest is a ReinitializeDevice payload.
 type ReinitializeDeviceRequest struct {
-	State    ReinitializedStateOfDevice
-	Password *bacnet.CharacterString // optional; max 20 characters
+	State ReinitializedStateOfDevice
+	// Password is optional. Length is validated as Go string byte length
+	// (CharacterString octets), max 20 — not Unicode code points.
+	Password *bacnet.CharacterString
 }
 
 // EncodeReinitializeDevice encodes a ReinitializeDevice request payload.
@@ -57,7 +59,7 @@ func DecodeReinitializeDevice(payload []byte, limits bacnet.DecodeLimits) (Reini
 		return ReinitializeDeviceRequest{}, fmt.Errorf("%w: ReinitializeDevice trailing data", bacnet.ErrTrailingData)
 	}
 	var req ReinitializeDeviceRequest
-	var haveState bool
+	var haveState, havePassword bool
 	for _, el := range elements {
 		switch {
 		case el.TagNumber == 0 && !bacnet.IsContextConstructed(el):
@@ -74,6 +76,9 @@ func DecodeReinitializeDevice(payload []byte, limits bacnet.DecodeLimits) (Reini
 			req.State = ReinitializedStateOfDevice(u)
 			haveState = true
 		case el.TagNumber == 1 && !bacnet.IsContextConstructed(el):
+			if havePassword {
+				return ReinitializeDeviceRequest{}, fmt.Errorf("%w: duplicate password", bacnet.ErrMalformed)
+			}
 			cs, err := bacnet.ContextCharacterString(el)
 			if err != nil {
 				return ReinitializeDeviceRequest{}, err
@@ -82,6 +87,7 @@ func DecodeReinitializeDevice(payload []byte, limits bacnet.DecodeLimits) (Reini
 				return ReinitializeDeviceRequest{}, fmt.Errorf("%w: password longer than 20", bacnet.ErrMalformed)
 			}
 			req.Password = &cs
+			havePassword = true
 		default:
 			return ReinitializeDeviceRequest{}, fmt.Errorf("%w: unexpected ReinitializeDevice tag %d", bacnet.ErrMalformed, el.TagNumber)
 		}

@@ -87,7 +87,7 @@ func (r *segmentReceiver) accept(ack *apdu.ComplexACK, src packetSource, c *Clie
 		c.diag.Report(diag.Event{Kind: diag.KindWrongSource, Message: "segmented ComplexACK source mismatch"})
 		return apdu.PDU{}, false, nil
 	}
-	if tx.service != 0 && ack.ServiceChoice != 0 && tx.service != ack.ServiceChoice {
+	if tx.service != ack.ServiceChoice {
 		c.diag.Report(diag.Event{Kind: diag.KindWrongService, Message: "segmented ComplexACK service mismatch"})
 		return apdu.PDU{}, false, bacnet.ErrProtocolViolation
 	}
@@ -126,9 +126,8 @@ func (r *segmentReceiver) accept(ack *apdu.ComplexACK, src packetSource, c *Clie
 		st.timer = r.clock.NewTimer(r.segmentTimeout)
 		c.wg.Add(1)
 		go r.watchTimeout(st)
-	} else if ack.ServiceChoice != 0 && st.service != ack.ServiceChoice {
-		// Segment 0 establishes the service; later segments from common peers
-		// repeat the same choice. A mismatch is a protocol violation.
+	} else if st.service != ack.ServiceChoice {
+		// Every segment carries service choice; a mismatch is a protocol violation.
 		outbounds = append(outbounds, r.abortOutbound(st, abortReasonInvalidAPDU)...)
 		r.removeLocked(ack.InvokeID)
 		r.mu.Unlock()
@@ -212,11 +211,15 @@ func (r *segmentReceiver) ackOutbound(st *segState, negative bool) segOutbound {
 	if seq > 0 {
 		seq--
 	}
+	kind := "SegmentACK+"
+	if negative {
+		kind = "SegmentACK-"
+	}
 	return segOutbound{
 		destAddr: st.destAddr,
 		peer:     st.src,
 		c:        st.c,
-		kind:     "SegmentACK",
+		kind:     kind,
 		bytes: apdu.AppendSegmentACK(nil, apdu.SegmentACK{
 			NegativeACK:      negative,
 			Server:           false,
@@ -246,11 +249,18 @@ func (r *segmentReceiver) flush(actions []segOutbound) {
 		if a.c == nil {
 			continue
 		}
-		if err := a.c.sendAPDU(context.Background(), a.peer.immediate, false, a.destAddr, false, a.bytes); err != nil {
+		timeout := a.c.cfg.apduTimeout
+		if timeout <= 0 {
+			timeout = r.segmentTimeout
+		}
+		ctx, cancel := clock.ContextWithTimeout(context.Background(), a.c.clock, timeout)
+		err := a.c.sendAPDU(ctx, a.peer.immediate, false, a.destAddr, false, a.bytes)
+		cancel()
+		if err != nil {
 			r.diag.Report(diag.Event{
 				Kind:    diag.KindUnexpectedAPDU,
 				Message: a.kind + " send failed",
-				Fields:  map[string]any{"error": err.Error()},
+				Fields:  map[string]any{"error": err.Error(), "control": a.kind},
 			})
 		}
 	}

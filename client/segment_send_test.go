@@ -37,6 +37,11 @@ func TestBuildConfirmedSegmentsRoundTrip(t *testing.T) {
 	if len(segs) < 2 {
 		t.Fatalf("expected multiple segments, got %d", len(segs))
 	}
+	for i, raw := range segs {
+		if len(raw) > 50 {
+			t.Fatalf("segment %d len=%d exceeds remote max 50", i, len(raw))
+		}
+	}
 	var reassembled []byte
 	var serviceChoice uint8
 	for i, raw := range segs {
@@ -66,6 +71,50 @@ func TestBuildConfirmedSegmentsRoundTrip(t *testing.T) {
 	}
 	if string(reassembled) != string(payload) {
 		t.Fatal("payload mismatch")
+	}
+}
+
+func TestBuildConfirmedSegmentsExactFits(t *testing.T) {
+	for _, remoteMax := range []int{50, 128, 206, 480} {
+		payloadFit := make([]byte, remoteMax-confirmedSeg0Overhead)
+		segs, err := buildConfirmedSegments(apdu.ConfirmedRequest{
+			SegmentedResponseAccepted: true,
+			MaxSegments:               7,
+			MaxAPDU:                   5,
+			InvokeID:                  1,
+			ServiceChoice:             apdu.ServiceWritePropertyMultiple,
+			Payload:                   payloadFit,
+		}, remoteMax, 1)
+		if err != nil {
+			t.Fatalf("remoteMax=%d fit: %v", remoteMax, err)
+		}
+		if len(segs) != 1 {
+			t.Fatalf("remoteMax=%d: want 1 segment for exact fit, got %d", remoteMax, len(segs))
+		}
+		if len(segs[0]) != remoteMax {
+			t.Fatalf("remoteMax=%d: encoded len=%d want %d", remoteMax, len(segs[0]), remoteMax)
+		}
+
+		payloadOverflow := make([]byte, remoteMax-confirmedSeg0Overhead+1)
+		segs, err = buildConfirmedSegments(apdu.ConfirmedRequest{
+			SegmentedResponseAccepted: true,
+			MaxSegments:               7,
+			MaxAPDU:                   5,
+			InvokeID:                  1,
+			ServiceChoice:             apdu.ServiceWritePropertyMultiple,
+			Payload:                   payloadOverflow,
+		}, remoteMax, 1)
+		if err != nil {
+			t.Fatalf("remoteMax=%d overflow: %v", remoteMax, err)
+		}
+		if len(segs) != 2 {
+			t.Fatalf("remoteMax=%d: want 2 segments for +1 overflow, got %d", remoteMax, len(segs))
+		}
+		for i, raw := range segs {
+			if len(raw) > remoteMax {
+				t.Fatalf("remoteMax=%d segment %d len=%d", remoteMax, i, len(raw))
+			}
+		}
 	}
 }
 
@@ -194,12 +243,21 @@ func TestSegmentSenderDeliverIgnores(t *testing.T) {
 		invokeID: 7, address: env.Target.Address, immediate: env.Peer,
 	}
 	ch := env.Client.seg.send.register(tx)
-	env.Client.seg.send.deliver(&apdu.SegmentACK{InvokeID: 7}, packetSource{
+	env.Client.seg.send.deliver(&apdu.SegmentACK{InvokeID: 7, Server: true}, packetSource{
 		immediate: bip.NewEndpoint(netip.MustParseAddrPort("10.9.9.9:47808")),
 	})
 	select {
 	case <-ch:
 		t.Fatal("mismatched source must not deliver")
+	default:
+	}
+	// Client-direction SegmentACK (Server=false) must not advance send state.
+	env.Client.seg.send.deliver(&apdu.SegmentACK{
+		InvokeID: 7, Server: false, SequenceNumber: 0, ActualWindowSize: 1,
+	}, packetSource{immediate: env.Peer, bacnetAddress: env.Target.Address})
+	select {
+	case <-ch:
+		t.Fatal("client SegmentACK must not deliver to send state machine")
 	default:
 	}
 	env.Client.seg.send.unregister(7)
@@ -286,8 +344,10 @@ func TestSegmentedSendClosedDuringWait(t *testing.T) {
 	}()
 	_, _ = waitConfirmedInvokeID(t, env.ClientTr, time.Second)
 	_ = env.Client.Close()
-	if err := <-errCh; err != bacnet.ErrClosed {
-		t.Fatalf("got %v", err)
+	err := <-errCh
+	var unknown *bacnet.OutcomeUnknownError
+	if !errors.As(err, &unknown) || !errors.Is(err, bacnet.ErrClosed) {
+		t.Fatalf("got %v, want OutcomeUnknown wrapping ErrClosed", err)
 	}
 }
 

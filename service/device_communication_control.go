@@ -22,7 +22,9 @@ const (
 type DeviceCommunicationControlRequest struct {
 	TimeDuration  *uint16 // minutes; nil = indefinite / unused for enable
 	EnableDisable EnableDisable
-	Password      *bacnet.CharacterString // optional; max 20 characters
+	// Password is optional. Length is validated as Go string byte length
+	// (CharacterString octets), max 20 — not Unicode code points.
+	Password *bacnet.CharacterString
 }
 
 // EncodeDeviceCommunicationControl encodes a DCC request payload.
@@ -61,10 +63,13 @@ func DecodeDeviceCommunicationControl(payload []byte, limits bacnet.DecodeLimits
 		return DeviceCommunicationControlRequest{}, fmt.Errorf("%w: DeviceCommunicationControl trailing data", bacnet.ErrTrailingData)
 	}
 	var req DeviceCommunicationControlRequest
-	var haveEnable bool
+	var haveDuration, haveEnable, havePassword bool
 	for _, el := range elements {
 		switch {
 		case el.TagNumber == 0 && !bacnet.IsContextConstructed(el):
+			if haveDuration {
+				return DeviceCommunicationControlRequest{}, fmt.Errorf("%w: duplicate timeDuration", bacnet.ErrMalformed)
+			}
 			u, err := bacnet.ContextUnsigned(el)
 			if err != nil {
 				return DeviceCommunicationControlRequest{}, err
@@ -74,6 +79,7 @@ func DecodeDeviceCommunicationControl(payload []byte, limits bacnet.DecodeLimits
 			}
 			d := uint16(u)
 			req.TimeDuration = &d
+			haveDuration = true
 		case el.TagNumber == 1 && !bacnet.IsContextConstructed(el):
 			if haveEnable {
 				return DeviceCommunicationControlRequest{}, fmt.Errorf("%w: duplicate enableDisable", bacnet.ErrMalformed)
@@ -88,6 +94,9 @@ func DecodeDeviceCommunicationControl(payload []byte, limits bacnet.DecodeLimits
 			req.EnableDisable = EnableDisable(u)
 			haveEnable = true
 		case el.TagNumber == 2 && !bacnet.IsContextConstructed(el):
+			if havePassword {
+				return DeviceCommunicationControlRequest{}, fmt.Errorf("%w: duplicate password", bacnet.ErrMalformed)
+			}
 			cs, err := bacnet.ContextCharacterString(el)
 			if err != nil {
 				return DeviceCommunicationControlRequest{}, err
@@ -96,6 +105,7 @@ func DecodeDeviceCommunicationControl(payload []byte, limits bacnet.DecodeLimits
 				return DeviceCommunicationControlRequest{}, fmt.Errorf("%w: password longer than 20", bacnet.ErrMalformed)
 			}
 			req.Password = &cs
+			havePassword = true
 		default:
 			return DeviceCommunicationControlRequest{}, fmt.Errorf("%w: unexpected DeviceCommunicationControl tag %d", bacnet.ErrMalformed, el.TagNumber)
 		}

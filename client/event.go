@@ -3,8 +3,11 @@
 package client
 
 import (
+	"fmt"
+
 	"github.com/otfabric/go-bacnet"
 	"github.com/otfabric/go-bacnet/bip"
+	"github.com/otfabric/go-bacnet/internal/diag"
 	"github.com/otfabric/go-bacnet/service"
 )
 
@@ -20,7 +23,11 @@ type EventNotificationDelivery struct {
 // EventNotificationHandler receives decoded EventNotifications.
 //
 // Confirmed notifications are SimpleACK'd before the handler is invoked.
-// The handler runs synchronously on the receive path and must return promptly.
+// The handler runs synchronously on the receive path: it must not block and
+// must not call Client methods that wait for a response (ReadProperty,
+// confirmed requests, Discover, etc.), or the receive loop can deadlock.
+// Prefer copying the delivery and handling work on another goroutine.
+// Handler panics are recovered so a faulty callback cannot stop reception.
 type EventNotificationHandler func(EventNotificationDelivery)
 
 // SetEventNotificationHandler installs or clears the inbound EventNotification
@@ -38,6 +45,15 @@ func (c *Client) deliverEventNotification(note service.EventNotification, confir
 	if h == nil {
 		return
 	}
+	defer func() {
+		if rec := recover(); rec != nil {
+			c.diag.Report(diag.Event{
+				Kind:    diag.KindUnexpectedAPDU,
+				Message: "EventNotification handler panic",
+				Fields:  map[string]any{"panic": fmt.Sprint(rec)},
+			})
+		}
+	}()
 	h(EventNotificationDelivery{
 		Notification: note,
 		Confirmed:    confirmed,

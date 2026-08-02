@@ -4,6 +4,7 @@ package service
 
 import (
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/otfabric/go-bacnet"
@@ -71,7 +72,7 @@ func TestReadRangeACKRoundTrip(t *testing.T) {
 	seq := uint32(42)
 	ack := ReadRangeACK{
 		Object:      bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeTrendLog, Instance: 1},
-		Property:    bacnet.PropertyReference{Identifier: bacnet.PropertyLogBuffer},
+		Property:    bacnet.PropertyReference{Identifier: bacnet.PropertyPresentValue},
 		ResultFlags: EncodeResultFlags(true, false, true),
 		ItemCount:   2,
 		ItemData: []bacnet.ApplicationValue{
@@ -157,7 +158,8 @@ func TestReadRangeMalformed(t *testing.T) {
 		t.Fatalf("array index: %+v err=%v", got, err)
 	}
 	ack := ReadRangeACK{
-		Object: req.Object, Property: req.Property,
+		Object:      req.Object,
+		Property:    bacnet.PropertyReference{Identifier: bacnet.PropertyPresentValue},
 		ResultFlags: EncodeResultFlags(false, true, false),
 		ItemCount:   1,
 		ItemData:    []bacnet.ApplicationValue{bacnet.UnsignedValue(9)},
@@ -184,10 +186,11 @@ func TestReadRangeMalformed(t *testing.T) {
 	if _, err := DecodeReadRangeACK(menc, bacnet.DefaultDecodeLimits()); !errors.Is(err, bacnet.ErrMalformed) {
 		t.Fatalf("empty data with count: %v", err)
 	}
-	// Complex SEQUENCE OF items (e.g. LogRecord) may expand to more tags than
-	// ItemCount; that is accepted and ItemCount from the wire is trusted.
+	// Non-Log_Buffer properties may report ItemCount that does not match the
+	// flat tag stream; ItemCount from the wire is trusted.
 	complexMismatch := ReadRangeACK{
-		Object: req.Object, Property: req.Property,
+		Object:      req.Object,
+		Property:    bacnet.PropertyReference{Identifier: bacnet.PropertyPresentValue},
 		ResultFlags: EncodeResultFlags(true, true, false),
 		ItemCount:   2,
 		ItemData:    []bacnet.ApplicationValue{bacnet.UnsignedValue(1)},
@@ -254,7 +257,7 @@ func TestReadRangeACKConstructedItems(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	enc, err = bacnet.AppendContextUnsigned(enc, 1, 131)
+	enc, err = bacnet.AppendContextUnsigned(enc, 1, uint64(bacnet.PropertyPresentValue))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -286,5 +289,85 @@ func TestReadRangeACKConstructedItems(t *testing.T) {
 	}
 	if bitStringBit(bacnet.BitString{}, 0) {
 		t.Fatal("empty bitstring should be false")
+	}
+}
+func TestReadRangeStrictDuplicates(t *testing.T) {
+	limits := bacnet.DefaultDecodeLimits()
+
+	rrObj, err := bacnet.AppendContextObjectID(nil, 0, bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeTrendLog, Instance: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	rrProp, err := bacnet.AppendContextUnsigned(nil, 1, uint64(bacnet.PropertyLogBuffer))
+	if err != nil {
+		t.Fatal(err)
+	}
+	rrI1, err := bacnet.AppendContextUnsigned(nil, 2, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rrI2, err := bacnet.AppendContextUnsigned(nil, 2, 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rrRange, err := bacnet.AppendContextTagged(nil, 3, []bacnet.Element{
+		{Value: bacnet.UnsignedValue(1)}, {Value: bacnet.SignedValue(2)},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	dupIdx := append(append([]byte(nil), rrObj...), rrProp...)
+	dupIdx = append(dupIdx, rrI1...)
+	dupIdx = append(dupIdx, rrI2...)
+	dupIdx = append(dupIdx, rrRange...)
+	_, err = DecodeReadRange(dupIdx, limits)
+	if !errors.Is(err, bacnet.ErrMalformed) || !strings.Contains(err.Error(), "duplicate arrayIndex") {
+		t.Fatalf("duplicate arrayIndex: %v", err)
+	}
+
+	ack, err := EncodeReadRangeACK(ReadRangeACK{
+		Object:      bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeTrendLog, Instance: 1},
+		Property:    bacnet.PropertyReference{Identifier: bacnet.PropertyPresentValue},
+		ResultFlags: EncodeResultFlags(true, true, false),
+		ItemCount:   1,
+		ItemData:    []bacnet.ApplicationValue{bacnet.RealValue(1)},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	seq, err := bacnet.AppendContextUnsigned(nil, 6, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := DecodeReadRangeACK(append(append([]byte(nil), ack...), seq...), limits); err != nil {
+		t.Fatalf("single firstSequence: %v", err)
+	}
+	if _, err := DecodeReadRangeACK(append(append(append([]byte(nil), ack...), seq...), seq...), limits); !errors.Is(err, bacnet.ErrMalformed) {
+		t.Fatalf("duplicate firstSequence: %v", err)
+	}
+
+	badFlags := []byte{
+		0x0C, 0x05, 0x00, 0x00, 0x01,
+		0x19, 0x55,
+		0x3A, 0x03, 0x40, // unusedBits=3 — not BACnetResultFlags SIZE(3)
+		0x41, 0x01,
+		0x5E, 0x44, 0x3f, 0x80, 0x00, 0x00, 0x5F,
+	}
+	if _, err := DecodeReadRangeACK(badFlags, limits); !errors.Is(err, bacnet.ErrMalformed) {
+		t.Fatalf("invalid resultFlags: %v", err)
+	}
+
+	badLog, err := EncodeReadRangeACK(ReadRangeACK{
+		Object:      bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeTrendLog, Instance: 1},
+		Property:    bacnet.PropertyReference{Identifier: bacnet.PropertyLogBuffer},
+		ResultFlags: EncodeResultFlags(true, true, false),
+		ItemCount:   1,
+		ItemData:    []bacnet.ApplicationValue{bacnet.RealValue(1)},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := DecodeReadRangeACK(badLog, limits); !errors.Is(err, bacnet.ErrMalformed) {
+		t.Fatalf("malformed LogRecord split: %v", err)
 	}
 }

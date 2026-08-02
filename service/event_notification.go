@@ -193,10 +193,13 @@ func DecodeEventNotification(payload []byte, limits bacnet.DecodeLimits) (EventN
 		return EventNotification{}, fmt.Errorf("%w: EventNotification trailing data", bacnet.ErrTrailingData)
 	}
 	var note EventNotification
-	var havePID, haveDev, haveObj, haveTS, haveClass, havePrio, haveType, haveNotify, haveTo bool
+	var havePID, haveDev, haveObj, haveTS, haveClass, havePrio, haveType, haveMsg, haveNotify, haveAck, haveFrom, haveTo, haveParams bool
 	for _, el := range elements {
 		switch {
 		case el.TagNumber == 0 && !bacnet.IsContextConstructed(el):
+			if havePID {
+				return EventNotification{}, fmt.Errorf("%w: duplicate processIdentifier", bacnet.ErrMalformed)
+			}
 			u, err := bacnet.ContextUnsigned(el)
 			if err != nil {
 				return EventNotification{}, err
@@ -207,18 +210,30 @@ func DecodeEventNotification(payload []byte, limits bacnet.DecodeLimits) (EventN
 			note.ProcessIdentifier = uint32(u)
 			havePID = true
 		case el.TagNumber == 1 && !bacnet.IsContextConstructed(el):
+			if haveDev {
+				return EventNotification{}, fmt.Errorf("%w: duplicate initiatingDeviceIdentifier", bacnet.ErrMalformed)
+			}
 			note.InitiatingDevice, err = bacnet.ContextObjectID(el)
 			haveDev = true
 		case el.TagNumber == 2 && !bacnet.IsContextConstructed(el):
+			if haveObj {
+				return EventNotification{}, fmt.Errorf("%w: duplicate eventObjectIdentifier", bacnet.ErrMalformed)
+			}
 			note.EventObject, err = bacnet.ContextObjectID(el)
 			haveObj = true
 		case el.TagNumber == 3 && bacnet.IsContextConstructed(el):
+			if haveTS {
+				return EventNotification{}, fmt.Errorf("%w: duplicate timeStamp", bacnet.ErrMalformed)
+			}
 			if len(el.Value.Elements) != 1 {
 				return EventNotification{}, fmt.Errorf("%w: TimeStamp wrapper", bacnet.ErrMalformed)
 			}
 			note.TimeStamp, err = DecodeTimeStamp(el.Value.Elements[0])
 			haveTS = true
 		case el.TagNumber == 4 && !bacnet.IsContextConstructed(el):
+			if haveClass {
+				return EventNotification{}, fmt.Errorf("%w: duplicate notificationClass", bacnet.ErrMalformed)
+			}
 			u, err := bacnet.ContextUnsigned(el)
 			if err != nil {
 				return EventNotification{}, err
@@ -229,6 +244,9 @@ func DecodeEventNotification(payload []byte, limits bacnet.DecodeLimits) (EventN
 			note.NotificationClass = uint32(u)
 			haveClass = true
 		case el.TagNumber == 5 && !bacnet.IsContextConstructed(el):
+			if havePrio {
+				return EventNotification{}, fmt.Errorf("%w: duplicate priority", bacnet.ErrMalformed)
+			}
 			u, err := bacnet.ContextUnsigned(el)
 			if err != nil {
 				return EventNotification{}, err
@@ -239,51 +257,90 @@ func DecodeEventNotification(payload []byte, limits bacnet.DecodeLimits) (EventN
 			note.Priority = uint8(u)
 			havePrio = true
 		case el.TagNumber == 6 && !bacnet.IsContextConstructed(el):
+			if haveType {
+				return EventNotification{}, fmt.Errorf("%w: duplicate eventType", bacnet.ErrMalformed)
+			}
 			u, err := bacnet.ContextUnsigned(el)
 			if err != nil {
 				return EventNotification{}, err
 			}
+			if u > 0xFFFFFFFF {
+				return EventNotification{}, fmt.Errorf("%w: eventType overflow", bacnet.ErrMalformed)
+			}
 			note.EventType = uint32(u)
 			haveType = true
 		case el.TagNumber == 7 && !bacnet.IsContextConstructed(el):
+			if haveMsg {
+				return EventNotification{}, fmt.Errorf("%w: duplicate messageText", bacnet.ErrMalformed)
+			}
 			cs, err := bacnet.ContextCharacterString(el)
 			if err != nil {
 				return EventNotification{}, err
 			}
 			note.MessageText = &cs
+			haveMsg = true
 		case el.TagNumber == 8 && !bacnet.IsContextConstructed(el):
+			if haveNotify {
+				return EventNotification{}, fmt.Errorf("%w: duplicate notifyType", bacnet.ErrMalformed)
+			}
 			u, err := bacnet.ContextUnsigned(el)
 			if err != nil {
 				return EventNotification{}, err
 			}
+			if u > 0xFFFFFFFF {
+				return EventNotification{}, fmt.Errorf("%w: notifyType overflow", bacnet.ErrMalformed)
+			}
 			note.NotifyType = uint32(u)
 			haveNotify = true
 		case el.TagNumber == 9 && !bacnet.IsContextConstructed(el):
+			if haveAck {
+				return EventNotification{}, fmt.Errorf("%w: duplicate ackRequired", bacnet.ErrMalformed)
+			}
 			b, err := bacnet.ContextBool(el)
 			if err != nil {
 				return EventNotification{}, err
 			}
 			note.AckRequired = &b
+			haveAck = true
 		case el.TagNumber == 10 && !bacnet.IsContextConstructed(el):
+			if haveFrom {
+				return EventNotification{}, fmt.Errorf("%w: duplicate fromState", bacnet.ErrMalformed)
+			}
 			u, err := bacnet.ContextUnsigned(el)
 			if err != nil {
 				return EventNotification{}, err
 			}
+			if u > 0xFFFFFFFF {
+				return EventNotification{}, fmt.Errorf("%w: fromState overflow", bacnet.ErrMalformed)
+			}
 			v := uint32(u)
 			note.FromState = &v
+			haveFrom = true
 		case el.TagNumber == 11 && !bacnet.IsContextConstructed(el):
+			if haveTo {
+				return EventNotification{}, fmt.Errorf("%w: duplicate toState", bacnet.ErrMalformed)
+			}
 			u, err := bacnet.ContextUnsigned(el)
 			if err != nil {
 				return EventNotification{}, err
+			}
+			if u > 0xFFFFFFFF {
+				return EventNotification{}, fmt.Errorf("%w: toState overflow", bacnet.ErrMalformed)
 			}
 			note.ToState = uint32(u)
 			haveTo = true
 		case el.TagNumber == 12 && bacnet.IsContextConstructed(el):
+			if haveParams {
+				return EventNotification{}, fmt.Errorf("%w: duplicate eventValues", bacnet.ErrMalformed)
+			}
 			v := bacnet.ApplicationValue{Kind: bacnet.ValueConstructed, Elements: el.Value.Elements}.Clone()
 			note.NotificationParams = &v
-			if params, pErr := DecodeNotificationParameters(el.Value.Elements); pErr == nil {
-				note.Parameters = &params
+			params, pErr := DecodeNotificationParameters(el.Value.Elements)
+			if pErr != nil {
+				return EventNotification{}, pErr
 			}
+			note.Parameters = &params
+			haveParams = true
 		default:
 			return EventNotification{}, fmt.Errorf("%w: unexpected EventNotification tag %d", bacnet.ErrMalformed, el.TagNumber)
 		}

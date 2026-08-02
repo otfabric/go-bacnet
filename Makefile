@@ -77,15 +77,22 @@ imports: ## Enforce package import boundaries
 	@echo "Checking import boundaries..."
 	@go test ./internal/imports/...
 
+# Packages that own native fuzz targets. Discovery avoids hand-maintained name
+# lists and always uses ^Name$ so -fuzz never matches a longer sibling
+# (e.g. FuzzDecodeWritePropertyMultiple vs …Error).
+FUZZ_PKGS ?= . ./bvlc ./apdu ./npdu ./service
+
 fuzz: ## Run short fuzz targets (override FUZZTIME; nightly uses 5m)
 	@echo "Fuzzing (FUZZTIME=$(FUZZTIME))..."
-	@go test -run='^$$' -fuzz=FuzzParseTag -fuzztime=$(FUZZTIME) .
-	@go test -run='^$$' -fuzz=FuzzParseBVLC -fuzztime=$(FUZZTIME) ./bvlc
-	@go test -run='^$$' -fuzz=FuzzParseAPDU -fuzztime=$(FUZZTIME) ./apdu
-	@go test -run='^$$' -fuzz=FuzzParseNPDU -fuzztime=$(FUZZTIME) ./npdu
-	@go test -run='^$$' -fuzz=FuzzDecodeWhoIs -fuzztime=$(FUZZTIME) ./service
-	@go test -run='^$$' -fuzz=FuzzDecodeIAm -fuzztime=$(FUZZTIME) ./service
-	@go test -run='^$$' -fuzz=FuzzDecodeReadProperty -fuzztime=$(FUZZTIME) ./service
+	@set -euo pipefail; \
+	for pkg in $(FUZZ_PKGS); do \
+	  targets=$$(go test -list '^Fuzz' "$$pkg" | grep '^Fuzz' || true); \
+	  [ -n "$$targets" ] || continue; \
+	  for t in $$targets; do \
+	    echo "==> $$pkg $$t"; \
+	    go test -run='^$$' -fuzz="^$${t}$$" -fuzztime=$(FUZZTIME) "$$pkg"; \
+	  done; \
+	done
 
 interop: ## Peer assertions (-tags=interop); images from bacnet-interop
 	@echo "Interop: go test -tags=interop ./interop/... (see INTEROP.md)"

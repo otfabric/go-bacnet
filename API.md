@@ -181,6 +181,8 @@ object registries do not share entries.
 Inbound Confirmed/Unconfirmed EventNotification is distinct from COV.
 `WithEventNotificationHandler` / `SetEventNotificationHandler` delivers decoded
 notifications; confirmed indications are SimpleACK'd before the handler runs.
+The handler is synchronous on the receive path — return promptly and do not
+call Client methods that wait for responses. Handler panics are recovered.
 `AcknowledgeAlarm` and `GetEventInformation` are typed initiate helpers.
 `EventNotification.Parameters` types common NotificationParameters CHOICEs
 (change-of-state, change-of-bitstring, change-of-value, out-of-range);
@@ -261,6 +263,13 @@ Do not retain aliased slices after the datagram buffer is reused.
   max **and** registry evidence shows peer Segmentation is `segmented-both` (0)
   or `segmented-receive` (2). Without that evidence, preflight returns
   `*APDUTooLargeError` with `SegmentationSupported=false`
-- Service choice appears only in segment 0 (ASHRAE 135)
-- Segment timeout / cancel during send may emit a client Abort; after any
-  segment was transmitted, side-effecting services wrap as outcome-unknown
+- Segmented Confirmed-Request and ComplexACK PDUs carry service choice on every
+  segment; reassembly validates that the choice stays constant
+- Segment timeout / cancel / Close / transport failure during send may emit a
+  client Abort; after any transmission attempt, side-effecting services wrap as
+  outcome-unknown
+- EventNotification handlers run on the receive path: do not block or call
+  Client RPCs from the callback (deadlock risk); panics are recovered
+- ReadRangeACK with property `Log_Buffer` requires a successful typed
+  `LogRecord` split; known NotificationParameters CHOICEs reject malformed
+  contents (unknown/unimplemented CHOICEs remain opaque)

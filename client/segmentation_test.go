@@ -280,8 +280,7 @@ func TestSegmentedServiceMismatchAborts(t *testing.T) {
 	}()
 
 	invokeID, _ := waitConfirmedInvokeID(t, env.ClientTr, time.Second)
-	// Service choice is present only on segment 0; a mismatch there is a
-	// protocol violation. Later segments omit service choice on the wire.
+	// Service choice must match the transaction on every segment.
 	injectSegmentedComplexACK(t, env, invokeID, 0, true, apdu.ServiceReadPropertyMultiple, []byte("part"))
 	time.Sleep(20 * time.Millisecond)
 

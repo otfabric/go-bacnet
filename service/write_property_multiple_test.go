@@ -4,6 +4,7 @@ package service
 
 import (
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/otfabric/go-bacnet"
@@ -142,5 +143,91 @@ func TestDecodeWritePropertyMultipleMalformed(t *testing.T) {
 	}
 	if got.FirstProperty.ArrayIndex == nil || *got.FirstProperty.ArrayIndex != 3 {
 		t.Fatalf("array index=%v", got.FirstProperty.ArrayIndex)
+	}
+}
+func TestWPMStrictDuplicatesAndOverflow(t *testing.T) {
+	limits := bacnet.DefaultDecodeLimits()
+	obj := bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeAnalogValue, Instance: 1}
+	base, err := EncodeWritePropertyMultiple([]WriteAccessSpecification{{
+		Object: obj,
+		Properties: []WritePropertyValue{{
+			Property: bacnet.PropertyReference{Identifier: bacnet.PropertyPresentValue},
+			Value:    bacnet.RealValue(1),
+		}},
+	}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Append a second listOfProperties wrapper for the same object.
+	extraList := []byte{0x1E, 0x21, 0x55, 0x2E, 0x44, 0x3f, 0x80, 0x00, 0x00, 0x2F, 0x1F}
+	if _, err := DecodeWritePropertyMultiple(append(append([]byte(nil), base...), extraList...), limits); !errors.Is(err, bacnet.ErrMalformed) {
+		t.Fatalf("duplicate listOfProperties: %v", err)
+	}
+
+	idx := uint32(1)
+	prio := uint8(8)
+	withPrio, err := EncodeWritePropertyMultiple([]WriteAccessSpecification{{
+		Object: obj,
+		Properties: []WritePropertyValue{{
+			Property: bacnet.PropertyReference{Identifier: bacnet.PropertyPresentValue, ArrayIndex: &idx},
+			Value:    bacnet.RealValue(1),
+			Priority: &prio,
+		}},
+	}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if withPrio[len(withPrio)-1] != 0x1F {
+		t.Fatal("expected trailing list close")
+	}
+	extraPrio, err := bacnet.AppendContextUnsigned(nil, 3, 9)
+	if err != nil {
+		t.Fatal(err)
+	}
+	prioDup := append(append([]byte(nil), withPrio[:len(withPrio)-1]...), append(extraPrio, 0x1F)...)
+	if _, err := DecodeWritePropertyMultiple(prioDup, limits); !errors.Is(err, bacnet.ErrMalformed) {
+		t.Fatalf("duplicate priority: %v", err)
+	}
+
+	objRaw, err := bacnet.AppendContextObjectID(nil, 0, obj)
+	if err != nil {
+		t.Fatal(err)
+	}
+	propRaw, err := bacnet.AppendContextUnsigned(nil, 0, uint64(bacnet.PropertyPresentValue))
+	if err != nil {
+		t.Fatal(err)
+	}
+	i1, err := bacnet.AppendContextUnsigned(nil, 1, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	i2, err := bacnet.AppendContextUnsigned(nil, 1, 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	val := []byte{0x2E, 0x44, 0x3f, 0x80, 0x00, 0x00, 0x2F}
+	dupIdx := append(append([]byte(nil), objRaw...), 0x1E)
+	dupIdx = append(dupIdx, propRaw...)
+	dupIdx = append(dupIdx, i1...)
+	dupIdx = append(dupIdx, i2...)
+	dupIdx = append(dupIdx, val...)
+	dupIdx = append(dupIdx, 0x1F)
+	_, err = DecodeWritePropertyMultiple(dupIdx, limits)
+	if !errors.Is(err, bacnet.ErrMalformed) || !strings.Contains(err.Error(), "duplicate arrayIndex") {
+		t.Fatalf("duplicate arrayIndex: %v", err)
+	}
+
+	ovIdx, err := bacnet.AppendContextUnsigned(nil, 1, 0x100000000)
+	if err != nil {
+		t.Fatal(err)
+	}
+	overflowIdx := append(append([]byte(nil), objRaw...), 0x1E)
+	overflowIdx = append(overflowIdx, propRaw...)
+	overflowIdx = append(overflowIdx, ovIdx...)
+	overflowIdx = append(overflowIdx, val...)
+	overflowIdx = append(overflowIdx, 0x1F)
+	_, err = DecodeWritePropertyMultiple(overflowIdx, limits)
+	if !errors.Is(err, bacnet.ErrMalformed) || !strings.Contains(err.Error(), "arrayIndex overflow") {
+		t.Fatalf("arrayIndex overflow: %v", err)
 	}
 }

@@ -32,6 +32,32 @@ jobs:
             pkg: ./service
           - target: FuzzDecodeReadProperty
             pkg: ./service
+          - target: FuzzDecodeWritePropertyMultiple
+            pkg: ./service
+          - target: FuzzDecodeWritePropertyMultipleError
+            pkg: ./service
+          - target: FuzzDecodeReadRange
+            pkg: ./service
+          - target: FuzzDecodeReadRangeACK
+            pkg: ./service
+          - target: FuzzDecodeLogRecords
+            pkg: ./service
+          - target: FuzzDecodeWhoHas
+            pkg: ./service
+          - target: FuzzDecodeIHave
+            pkg: ./service
+          - target: FuzzDecodeEventNotification
+            pkg: ./service
+          - target: FuzzDecodeNotificationParameters
+            pkg: ./service
+          - target: FuzzDecodeGetEventInformationACK
+            pkg: ./service
+          - target: FuzzDecodeAcknowledgeAlarm
+            pkg: ./service
+          - target: FuzzDecodeDeviceCommunicationControl
+            pkg: ./service
+          - target: FuzzDecodeReinitializeDevice
+            pkg: ./service
     steps:
       - name: Checkout go-bacnet
         uses: actions/checkout@v7

@@ -164,7 +164,7 @@ func DecodeReadRange(payload []byte, limits bacnet.DecodeLimits) (ReadRangeReque
 		return ReadRangeRequest{}, fmt.Errorf("%w: ReadRange trailing data", bacnet.ErrTrailingData)
 	}
 	var req ReadRangeRequest
-	var haveObject, haveProperty, haveRange bool
+	var haveObject, haveProperty, haveIndex, haveRange bool
 	for _, el := range elements {
 		switch {
 		case el.TagNumber == 0 && !bacnet.IsContextConstructed(el):
@@ -179,13 +179,27 @@ func DecodeReadRange(payload []byte, limits bacnet.DecodeLimits) (ReadRangeReque
 			}
 			var u uint64
 			u, err = bacnet.ContextUnsigned(el)
-			req.Property.Identifier = bacnet.PropertyIdentifier(u)
-			haveProperty = true
+			if err == nil {
+				if u > 0xFFFFFFFF {
+					return ReadRangeRequest{}, fmt.Errorf("%w: propertyIdentifier overflow", bacnet.ErrMalformed)
+				}
+				req.Property.Identifier = bacnet.PropertyIdentifier(u)
+				haveProperty = true
+			}
 		case el.TagNumber == 2 && !bacnet.IsContextConstructed(el):
+			if haveIndex {
+				return ReadRangeRequest{}, fmt.Errorf("%w: duplicate arrayIndex", bacnet.ErrMalformed)
+			}
 			var u uint64
 			u, err = bacnet.ContextUnsigned(el)
-			idx := uint32(u)
-			req.Property.ArrayIndex = &idx
+			if err == nil {
+				if u > 0xFFFFFFFF {
+					return ReadRangeRequest{}, fmt.Errorf("%w: arrayIndex overflow", bacnet.ErrMalformed)
+				}
+				idx := uint32(u)
+				req.Property.ArrayIndex = &idx
+				haveIndex = true
+			}
 		case el.TagNumber == 3 && bacnet.IsContextConstructed(el):
 			if haveRange {
 				return ReadRangeRequest{}, fmt.Errorf("%w: duplicate range", bacnet.ErrMalformed)
@@ -329,7 +343,7 @@ func DecodeReadRangeACK(payload []byte, limits bacnet.DecodeLimits) (ReadRangeAC
 		return ReadRangeACK{}, fmt.Errorf("%w: ReadRangeACK trailing data", bacnet.ErrTrailingData)
 	}
 	var ack ReadRangeACK
-	var haveObject, haveProperty, haveFlags, haveCount, haveData bool
+	var haveObject, haveProperty, haveIndex, haveFlags, haveCount, haveData, haveFirstSeq bool
 	var rawItemElements []bacnet.Element
 	for _, el := range elements {
 		switch {
@@ -345,18 +359,35 @@ func DecodeReadRangeACK(payload []byte, limits bacnet.DecodeLimits) (ReadRangeAC
 			}
 			var u uint64
 			u, err = bacnet.ContextUnsigned(el)
-			ack.Property.Identifier = bacnet.PropertyIdentifier(u)
-			haveProperty = true
+			if err == nil {
+				if u > 0xFFFFFFFF {
+					return ReadRangeACK{}, fmt.Errorf("%w: propertyIdentifier overflow", bacnet.ErrMalformed)
+				}
+				ack.Property.Identifier = bacnet.PropertyIdentifier(u)
+				haveProperty = true
+			}
 		case el.TagNumber == 2 && !bacnet.IsContextConstructed(el):
+			if haveIndex {
+				return ReadRangeACK{}, fmt.Errorf("%w: duplicate arrayIndex", bacnet.ErrMalformed)
+			}
 			var u uint64
 			u, err = bacnet.ContextUnsigned(el)
-			idx := uint32(u)
-			ack.Property.ArrayIndex = &idx
+			if err == nil {
+				if u > 0xFFFFFFFF {
+					return ReadRangeACK{}, fmt.Errorf("%w: arrayIndex overflow", bacnet.ErrMalformed)
+				}
+				idx := uint32(u)
+				ack.Property.ArrayIndex = &idx
+				haveIndex = true
+			}
 		case el.TagNumber == 3 && !bacnet.IsContextConstructed(el):
 			if haveFlags {
 				return ReadRangeACK{}, fmt.Errorf("%w: duplicate resultFlags", bacnet.ErrMalformed)
 			}
 			ack.ResultFlags, err = bacnet.ContextBitString(el)
+			if err == nil && (ack.ResultFlags.UnusedBits != 5 || len(ack.ResultFlags.Bytes) != 1) {
+				return ReadRangeACK{}, fmt.Errorf("%w: invalid resultFlags shape", bacnet.ErrMalformed)
+			}
 			haveFlags = true
 		case el.TagNumber == 4 && !bacnet.IsContextConstructed(el):
 			if haveCount {
@@ -396,6 +427,9 @@ func DecodeReadRangeACK(payload []byte, limits bacnet.DecodeLimits) (ReadRangeAC
 			}
 			haveData = true
 		case el.TagNumber == 6 && !bacnet.IsContextConstructed(el):
+			if haveFirstSeq {
+				return ReadRangeACK{}, fmt.Errorf("%w: duplicate firstSequenceNumber", bacnet.ErrMalformed)
+			}
 			var u uint64
 			u, err = bacnet.ContextUnsigned(el)
 			if u > 0xFFFFFFFF {
@@ -403,6 +437,7 @@ func DecodeReadRangeACK(payload []byte, limits bacnet.DecodeLimits) (ReadRangeAC
 			}
 			seq := uint32(u)
 			ack.FirstSequence = &seq
+			haveFirstSeq = true
 		default:
 			return ReadRangeACK{}, fmt.Errorf("%w: unexpected ReadRangeACK tag %d", bacnet.ErrMalformed, el.TagNumber)
 		}
@@ -416,8 +451,8 @@ func DecodeReadRangeACK(payload []byte, limits bacnet.DecodeLimits) (ReadRangeAC
 	// itemData is SEQUENCE OF ABSTRACT-SYNTAX.&Type. Simple items are one
 	// application tag each; complex SEQUENCEs such as BACnetLogRecord expand
 	// to multiple tags with no outer delimiter. When Property is Log_Buffer,
-	// attempt a typed split; otherwise trust the wire ItemCount when the flat
-	// tag count differs (ItemData then holds the tag stream).
+	// require a successful typed LogRecord split; otherwise trust the wire
+	// ItemCount when the flat tag count differs (ItemData holds the tag stream).
 	if ack.ItemCount == 0 && len(ack.ItemData) != 0 {
 		return ReadRangeACK{}, fmt.Errorf("%w: ReadRangeACK itemCount mismatch", bacnet.ErrMalformed)
 	}
@@ -425,9 +460,11 @@ func DecodeReadRangeACK(payload []byte, limits bacnet.DecodeLimits) (ReadRangeAC
 		return ReadRangeACK{}, fmt.Errorf("%w: ReadRangeACK itemCount mismatch", bacnet.ErrMalformed)
 	}
 	if ack.Property.Identifier == bacnet.PropertyLogBuffer {
-		if records, splitErr := DecodeLogRecords(rawItemElements, int(ack.ItemCount)); splitErr == nil {
-			ack.LogRecords = records
+		records, splitErr := DecodeLogRecords(rawItemElements, int(ack.ItemCount))
+		if splitErr != nil {
+			return ReadRangeACK{}, splitErr
 		}
+		ack.LogRecords = records
 	}
 	return ack, nil
 }

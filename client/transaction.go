@@ -253,8 +253,12 @@ func (m *txManager) abortAll(err error) {
 		if tx.timer != nil {
 			tx.timer.Stop()
 		}
+		resErr := err
+		if tx.sent {
+			resErr = wrapOutcomeUnknown(tx.service, err)
+		}
 		select {
-		case tx.result <- txResult{err: err}:
+		case tx.result <- txResult{err: resErr}:
 		default:
 		}
 	}

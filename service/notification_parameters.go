@@ -226,21 +226,29 @@ func DecodeNotificationParameters(elements []bacnet.Element) (NotificationParame
 	}
 	switch p.Choice {
 	case NotificationChangeOfState:
-		if cos, err := decodeChangeOfState(choiceEl.Value.Elements); err == nil {
-			p.ChangeOfState = &cos
+		cos, err := decodeChangeOfState(choiceEl.Value.Elements)
+		if err != nil {
+			return NotificationParameters{}, err
 		}
+		p.ChangeOfState = &cos
 	case NotificationChangeOfBitstring:
-		if cob, err := decodeChangeOfBitstring(choiceEl.Value.Elements); err == nil {
-			p.ChangeOfBitstring = &cob
+		cob, err := decodeChangeOfBitstring(choiceEl.Value.Elements)
+		if err != nil {
+			return NotificationParameters{}, err
 		}
+		p.ChangeOfBitstring = &cob
 	case NotificationChangeOfValue:
-		if cov, err := decodeChangeOfValue(choiceEl.Value.Elements); err == nil {
-			p.ChangeOfValue = &cov
+		cov, err := decodeChangeOfValue(choiceEl.Value.Elements)
+		if err != nil {
+			return NotificationParameters{}, err
 		}
+		p.ChangeOfValue = &cov
 	case NotificationOutOfRange:
-		if oor, err := decodeOutOfRange(choiceEl.Value.Elements); err == nil {
-			p.OutOfRange = &oor
+		oor, err := decodeOutOfRange(choiceEl.Value.Elements)
+		if err != nil {
+			return NotificationParameters{}, err
 		}
+		p.OutOfRange = &oor
 	case NotificationCommandFailure,
 		NotificationFloatingLimit,
 		NotificationComplexEventType,

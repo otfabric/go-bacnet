@@ -41,8 +41,9 @@ if errors.Is(err, bacnet.ErrAPDUTooLarge) {
 ### `*OutcomeUnknownError`
 
 Returned when a request **may have executed** remotely but no definitive
-response was observed. After the APDU was sent, timeout or context cancellation
-wraps as `*OutcomeUnknownError` for:
+response was observed. After transmission has been attempted, timeout, context
+cancellation, `Close`, or an ambiguous transport failure wraps as
+`*OutcomeUnknownError` for:
 
 - `WriteProperty`
 - `WritePropertyMultiple` (including after any request segment was sent)

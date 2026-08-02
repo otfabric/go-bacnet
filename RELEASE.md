@@ -1,5 +1,77 @@
 # go-bacnet Releases
 
+## v0.2.1
+
+**Date:** 2026-08-02  
+**Previous release:** [v0.2.0](https://github.com/otfabric/go-bacnet/releases/tag/v0.2.0)
+
+### Summary
+
+Correctness and decoder-strictness patch on the `v0.2.0` supervisory-client
+surface: service-choice correlation, segmented confirmed-request overhead and
+SegmentACK direction, bounded segmentation control sends, broader
+outcome-unknown wrapping, EventNotification receive-path safety, and fail-closed
+decoders for WPM / ReadRange / events / DCC / ReinitializeDevice. Pin moves to
+[`bacnet-interop` v0.4.2](https://github.com/otfabric/bacnet-interop/releases/tag/v0.4.2).
+Requires **Go 1.23+**.
+
+Still **production-candidate** until the
+[real-device gate](docs/REAL_DEVICE_GATE.md) is complete.
+
+### Fixed
+
+- Service-choice correlation no longer treats choice `0` (AcknowledgeAlarm) as
+  “unknown”; SimpleACK / ComplexACK / Error and every ComplexACK segment compare
+  unconditionally
+- Segmented confirmed-request first-segment overhead corrected (`6`, not `7`)
+- Outbound segmented-request SegmentACK delivery requires `Server=true`
+- Segmentation control sends (SegmentACK / Abort) use a bounded timeout
+- Side-effecting services wrap Close and ambiguous transport failures after
+  transmission has been attempted as `*OutcomeUnknownError`
+- EventNotification handler: receive-path deadlock warning; panics recovered
+- Documentation: segmented PDUs carry service choice on every segment (not an
+  ASHRAE “omit after segment 0” peer quirk)
+- Decoder strictness: WPM / ReadRange / EventNotification / DCC /
+  ReinitializeDevice reject duplicate fields and unsigned overflows; ResultFlags
+  shape checked; Log_Buffer requires successful LogRecord split; known
+  NotificationParameters CHOICEs fail closed on malformed contents (unknown /
+  unimplemented CHOICEs stay opaque)
+
+### Added
+
+- Fuzz targets for WPM, ReadRange(+ACK), LogRecords, Who-Has/I-Have,
+  EventNotification, NotificationParameters, GetEventInformationACK,
+  AcknowledgeAlarm, DCC, ReinitializeDevice
+- Negative codec fixtures in `bacnet-interop` for WPM/ReadRange/DCC/Reinit
+  duplicates and overflow
+
+### Changed
+
+- Pin → [`bacnet-interop` v0.4.2](https://github.com/otfabric/bacnet-interop/releases/tag/v0.4.2)
+  (`interop/bacnet-interop-pin.json`)
+- `make fuzz` discovers `Fuzz*` targets via `go test -list` and runs each with an
+  anchored `-fuzz='^Name$'` so substring matches cannot skip or double-run
+
+### Evidence
+
+Pre-tag green on `main` @ `614c4d9` (re-verify / attach on the exact tag SHA when
+cutting):
+
+| Gate | Result | Link |
+|---|---|---|
+| Shared CI (lint, Go matrix, race, coverage, PR fuzz) | green on `614c4d9` | [30725263974](https://github.com/otfabric/go-bacnet/actions/runs/30725263974) |
+| Pinned interop `v0.4.2` | green | [30725263801](https://github.com/otfabric/go-bacnet/actions/runs/30725263801) (job *Pinned release peers*) |
+| bacnet-interop main compat | green | same run (job *bacnet-interop main compat*) |
+| Pin | [`bacnet-interop` v0.4.2](https://github.com/otfabric/bacnet-interop/releases/tag/v0.4.2) | `interop/bacnet-interop-pin.json` |
+
+### Notes
+
+- No public API break intended; behaviour and decoder strictness only.
+- BACnet4J still rejects segmented confirmed-request *receive* (reject reason 9);
+  see [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md).
+
+---
+
 ## v0.2.0
 
 **Date:** 2026-08-02  
@@ -30,8 +102,7 @@ Still **production-candidate** until the
   to actual window 1 so peers that wait for SegmentACK before the next segment
   (BACpypes3 / BACnet4J) do not stall
 - Confirmed-request / ComplexACK codecs: segmented PDUs carry service choice on
-  every segment (interop with BACpypes3/BACnet4J; ASHRAE allows omitting after
-  segment 0)
+  every segment (constant across reassembly; BACpypes3/BACnet4J agree)
 - **ReadRange** codecs + `Client.ReadRange` (byPosition / bySequenceNumber /
   byTime / all; resultFlags helpers; retransmit enabled)
 - Typed **BACnetLogRecord** split: `service.LogRecord` /

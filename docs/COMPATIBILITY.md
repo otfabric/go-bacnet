@@ -18,15 +18,21 @@ Do not merge competitor codebases. Turn strong competitors into
 ## Software peers (digest-pinned)
 
 Pin: [`interop/bacnet-interop-pin.json`](../interop/bacnet-interop-pin.json)
-([bacnet-interop v0.4.1](https://github.com/otfabric/bacnet-interop/releases/tag/v0.4.1)).
+([bacnet-interop v0.4.2](https://github.com/otfabric/bacnet-interop/releases/tag/v0.4.2)).
 Scenarios: [INTEROP.md](../INTEROP.md), `go test -tags=interop ./interop/...`.
 
 | Peer | Role | Transport / topology | Scenarios (summary) | Evidence |
 |---|---|---|---|---|
-| bacnet-stack | Independent C peer (1.6.0) | BACnet/IP UDP; optional routed via bip-router | Who-Is/I-Am, Who-Has, RP/RPM/WP/WPM, ReadRange, COV, DCC, Reinit, Error/Reject/Abort as supported | Pinned GHCR digest (`v0.4.1`); green [30722438676](https://github.com/otfabric/go-bacnet/actions/runs/30722438676) |
-| BACpypes3 | Independent Python peer (0.0.106) | BACnet/IP; peer-as-BBMD; COV renew | RP/RPM/WP/WPM, Who-Has, COV, FD/BBMD, segmented ComplexACK + segmented confirmed send, EventNotification, Reinit | Same |
-| BACnet4J | Independent Java peer (6.1.0) | BACnet/IP; peer-as-BBMD; segmentation | RP/RPM/WP/WPM, Who-Has, ReadRange, COV, FD/BBMD, segmented ComplexACK receive, EventNotification, Reinit | Same |
+| bacnet-stack | Independent C peer (1.6.0) | BACnet/IP UDP; optional routed via bip-router | Who-Is/I-Am, Who-Has, RP/RPM/WP/WPM, ReadRange, COV, DCC, Reinit, Error/Reject/Abort as supported | Pinned GHCR digest (`v0.4.2`); mostly **upstream-native** |
+| BACpypes3 | Independent Python peer (0.0.106) | BACnet/IP; peer-as-BBMD; COV renew | RP/RPM/WP/WPM, Who-Has, COV, FD/BBMD, segmented ComplexACK + segmented confirmed send, EventNotification, Reinit | Same; WPM execute + EventNotification emit are **adapter-shim** (stack/segmentation still native) |
+| BACnet4J | Independent Java peer (6.1.0) | BACnet/IP; peer-as-BBMD; segmentation | RP/RPM/WP/WPM, Who-Has, ReadRange, COV, FD/BBMD, segmented ComplexACK receive, EventNotification, Reinit | Same; EventNotification emit may use adapter assist (`BACNET_EMIT_EVENT`) |
 | bip-router | Topology aid (**not** a peer oracle) | Dual-homed BIP↔BIP (static addr→network bind) | Routed client DNET/DADR + SNET/SADR path matching | Same |
+
+Evidence types: **upstream-native** (peer implements the service), **adapter-shim**
+(peer stack handles the wire; adapter supplies service behaviour),
+**topology aid**, **fixture-only**, **real device**. See
+[`bacnet-interop` `adapters/inventory.yaml`](https://github.com/otfabric/bacnet-interop/blob/main/adapters/inventory.yaml)
+and `COVERAGE.md`.
 
 Phrase for routing until a second independent router exists:
 
@@ -57,7 +63,7 @@ capture exact model/firmware and sanitized notes.
 |---|---|---|
 | Delayed BVLC-Result after FD register | Wire has no generation field; late Result for an earlier attempt at the same BBMD cannot be distinguished | Documented in FD options; correlate by pending attempt + BBMD peer only |
 | Peers sizing segment payload to advertised MaxAPDU | Some stacks omit APDU header reserve | Prefer `WithAdvertisedMaxAPDU` < parser `MaxAPDUSize` when coaxing segmentation |
-| Segmented confirmed / ComplexACK service choice | ASHRAE 135 allows omitting choice after segment 0; BACpypes3/BACnet4J repeat it on every segment | Encode and decode include service choice on every segment for peer interop |
+| Segmented confirmed / ComplexACK service choice | Every segment is a full Confirmed-Request / ComplexACK PDU and carries service choice | Encode, decode, and reassembly require a constant service choice across segments |
 | BACnet4J segmented confirmed-request receive | Rejects segmented WritePropertyMultiple (reason 9) | Interop send evidence uses BACpypes3; BACnet4J test skipped |
 | Docker / published-UDP broadcast | Global broadcast may not reach containers | Directed Who-Is (`broadcast=false`) supported |
 | Application- vs context-tagged BACnet Error | Mixed peer encodings | Decoder accepts the forms covered by fixtures/tests; expand here when new forms appear |

@@ -10,7 +10,7 @@ import (
 	"github.com/otfabric/go-bacnet/service"
 )
 
-func TestH2EncodeRejectsInvalidObjectIDs(t *testing.T) {
+func TestEncodeRejectsInvalidObjectIDs(t *testing.T) {
 	bad := bacnet.ObjectIdentifier{Type: 0x400, Instance: 0}
 	if _, err := service.EncodeEventNotification(service.EventNotification{
 		InitiatingDevice: bad,
@@ -58,7 +58,7 @@ func TestH2EncodeRejectsInvalidObjectIDs(t *testing.T) {
 	}
 }
 
-func TestH2DecodeUnexpectedTags(t *testing.T) {
+func TestDecodeUnexpectedTags(t *testing.T) {
 	limits := bacnet.DefaultDecodeLimits()
 	cases := []struct {
 		name string

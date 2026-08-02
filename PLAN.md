@@ -5,16 +5,16 @@ production-candidate toward an unambiguous Go BACnet leadership claim.
 Adapter images, fixtures, and peer smoke live in
 [`bacnet-interop`](https://github.com/otfabric/bacnet-interop) (`PLAN.md`).
 
-**Status:** **production-candidate** — supervisory-client breadth ready as
-**`v0.2.0`** (docs + green CI/interop on `8bee3e6`; cut the tag from `main`).
-Pin: [`bacnet-interop` v0.4.1](https://github.com/otfabric/bacnet-interop/releases/tag/v0.4.1).
+**Status:** **production-candidate** — **[`v0.2.0`](https://github.com/otfabric/go-bacnet/releases/tag/v0.2.0)**
+released; **`v0.2.1`** ready to tag (see [RELEASE.md](RELEASE.md)). Pin:
+[`bacnet-interop` v0.4.2](https://github.com/otfabric/bacnet-interop/releases/tag/v0.4.2).
 
 **Pin:** [`interop/bacnet-interop-pin.json`](interop/bacnet-interop-pin.json) →
-`v0.4.1` (`device-baseline-v2`; bacnet-stack **1.6.0**; BACpypes3 **0.0.106**).
+`v0.4.2` (`device-baseline-v2`; bacnet-stack **1.6.0**; BACpypes3 **0.0.106**).
 
-**Next human step:** cut **`v0.2.0`** (Actions → Release → **`minor`**), then
-either start the [real-device gate](docs/REAL_DEVICE_GATE.md) toward
-**production-usable**, or pick Horizon 3 / follow-ups below.
+**Next:** human cuts **`v0.2.1`**, then the
+[real-device gate](docs/REAL_DEVICE_GATE.md) toward **production-usable**. Do
+**not** add another major BACnet service before that.
 
 Honest positioning (see [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md)):
 
@@ -77,7 +77,7 @@ Do not re-litigate these unless a regression appears:
 | FD / BBMD (client) | BACpypes3 + BACnet4J peer-as-BBMD |
 | Strict framing | Reserved APDU/NPDU bits, MaxAPDU, windows, router lists → `ErrMalformed` |
 | Evidence architecture | Digest-pinned adapters, fixture provenance, hermetic coverage, PR + nightly fuzz |
-| Adapters | `bacnet-interop` `v0.4.1` |
+| Adapters | `bacnet-interop` `v0.4.2` |
 
 Routing evidence phrase (until a second independent router exists):
 
@@ -110,7 +110,7 @@ ref is the preferred way to smoke a bacnet-interop release candidate.
 |---|---|---|---|
 | 1 | **P0** — `reexecInNetwork` honors `BACNET_INTEROP_ROOT` + require fixture files under mount | done | `interop/root.go` + unit tests |
 | 2 | Print / artifact both repo SHAs (+ peer ready metadata) in required interop job | done | workflow summary + artifacts |
-| 3 | Pin file for bacnet-interop ref/digests; required pinned lane | done | `interop/bacnet-interop-pin.json` → `v0.4.1` |
+| 3 | Pin file for bacnet-interop ref/digests; required pinned lane | done | `interop/bacnet-interop-pin.json` → `v0.4.2` |
 | 4 | Latest-main compatibility lane (detect upcoming breakage) | done | `peer-interop-main` job |
 | 5 | bacnet-interop CI: consumer job against go-bacnet main | **n/a** | Dependency inversion rejected |
 | 6 | bacnet-interop CI: build + require bip-router smoke | done | in bacnet-interop |
@@ -212,12 +212,29 @@ Do **not** chase Worldiety feature breadth before `v0.2.0` is tagged.
 | # | Item | Status | Notes |
 |---|---|---|---|
 | 1 | H2 APIs + interop assertions on `main` | done | see checklist above |
-| 2 | Pin → bacnet-interop `v0.4.1` | done | digests in `interop/bacnet-interop-pin.json` (BACpypes3 0.0.106) |
-| 3 | CI green on `main` | done | [30722438815](https://github.com/otfabric/go-bacnet/actions/runs/30722438815) on `8bee3e6` |
+| 2 | Pin → bacnet-interop `v0.4.2` | done | digests in `interop/bacnet-interop-pin.json` (BACpypes3 0.0.106) |
+| 3 | CI green on `main` | done | [30722438815](https://github.com/otfabric/go-bacnet/actions/runs/30722438815) |
 | 4 | Interop green (pinned + main compat) | done | [30722438676](https://github.com/otfabric/go-bacnet/actions/runs/30722438676) |
-| 5 | Docs / PLAN / RELEASE / INTEROP synced | done | evidence + `v0.2.0` notes |
-| 6 | **Human:** cut `v0.2.0` | open | Actions → Release → **`minor`** |
-| 7 | Real-device gate → **production-usable** | open | [docs/REAL_DEVICE_GATE.md](docs/REAL_DEVICE_GATE.md) |
+| 5 | Docs / PLAN / RELEASE / INTEROP synced | done | |
+| 6 | **Human:** cut `v0.2.0` | done | tag `v0.2.0` @ `3bc6288` |
+| 7 | Real-device gate → **production-usable** | open | after `v0.2.1` |
+
+### Batch — `v0.2.1` correctness / strictness
+
+| # | Item | Status | Notes |
+|---|---|---|---|
+| 1 | Remove zero-sentinel service matching | `done` | unconditional SimpleACK/ComplexACK/Error + segment checks |
+| 2 | Fix first-segment overhead 7→6 | `done` | boundary tests for MaxAPDU 50/128/206/480 |
+| 3 | Validate SegmentACK `Server` direction | `done` | client ACK ignored on outbound send path |
+| 4 | Bound SegmentACK / Abort send contexts | `done` | `clock.ContextWithTimeout` + control kind in diagnostics |
+| 5 | Wrap ambiguous post-send failures (Close, transport) | `done` | `abortAll` + await/send paths |
+| 6 | EventNotification handler: docs + panic recover | `done` | stream API deferred |
+| 7 | Correct service-choice-on-every-segment docs | `done` | API / COMPATIBILITY / codec comments |
+| 8 | Exact-tag release evidence artifact | `ready` | pre-tag green on `614c4d9` ([CI](https://github.com/otfabric/go-bacnet/actions/runs/30725263974), [interop](https://github.com/otfabric/go-bacnet/actions/runs/30725263801)); attach on tag SHA at cut |
+| 9 | Decoder strictness parity + negative fixtures | `done` | duplicates/overflow/ResultFlags/Log_Buffer/known CHOICE; 5 new interop negatives |
+| 10 | Service fuzz targets (WPM/ReadRange/Who-Has/events/DCC/Reinit) | `done` | functional `*_fuzz_test.go` + anchored `make fuzz` + nightly |
+| 11 | `bacnet-interop` v0.4.2 hygiene | `done` | tag [`v0.4.2`](https://github.com/otfabric/bacnet-interop/releases/tag/v0.4.2); go-bacnet pin updated |
+| 12 | **Human:** cut `v0.2.1` | `open` | patch release; see [RELEASE.md](RELEASE.md) |
 
 Promotion rules:
 
@@ -234,7 +251,7 @@ Container oracles are necessary but **not** sufficient for production-usable.
 ## Horizon 2 — Supervisory-client breadth (after 4D)
 
 **Closed** for the scoped deliverables below (in-tree + peer evidence; pin
-`v0.4.1`). Preserve ownership, bounds, outcome-unknown, and peer evidence
+`v0.4.2`). Preserve ownership, bounds, outcome-unknown, and peer evidence
 discipline in follow-ups. Do **not** inherit global process state, GPL lineage,
 or permissive unbounded decoding from competitors.
 

@@ -383,9 +383,8 @@ func AppendConfirmedRequest(dst []byte, req ConfirmedRequest) []byte {
 	if req.SegmentedMessage {
 		dst = append(dst, req.SequenceNumber, req.ProposedWindowSize)
 	}
-	// Service choice is encoded on every segment. ASHRAE 135 allows omitting it
-	// after segment 0, but BACpypes3/BACnet4J (and our hermetic segment tests)
-	// repeat it; matching that keeps reassembly interoperable.
+	// Service choice is present on every segmented Confirmed-Request PDU.
+	// Only the service-request content is fragmented across segments.
 	dst = append(dst, req.ServiceChoice)
 	return append(dst, req.Payload...)
 }

@@ -402,7 +402,7 @@ func TestReadRangeMoreEncodeBranches(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	prim, err = bacnet.AppendContextUnsigned(prim, 1, 131)
+	prim, err = bacnet.AppendContextUnsigned(prim, 1, uint64(bacnet.PropertyPresentValue))
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -177,8 +177,10 @@ func (c *Client) confirmedRequestOpts(ctx context.Context, target Target, servic
 	} else {
 		encoded := apdu.AppendConfirmedRequest(nil, req)
 		tx.encodedAPDU = append([]byte(nil), encoded...)
+		// Mark before Send: a transport error does not prove non-delivery.
 		tx.sent = true
 		if err := c.sendAPDU(ctx, target.Endpoint, false, target.Address, true, encoded); err != nil {
+			err = wrapOutcomeUnknown(serviceChoice, err)
 			if c.finishTx(id, txResult{err: err}, 0) {
 				return apdu.PDU{}, err
 			}
@@ -200,8 +202,12 @@ func (c *Client) confirmedRequestOpts(ctx context.Context, target Target, servic
 			res := <-tx.result
 			return res.pdu, res.err
 		case <-c.closeCh:
-			if c.finishTx(id, txResult{err: bacnet.ErrClosed}, 0) {
-				return apdu.PDU{}, bacnet.ErrClosed
+			cause := bacnet.ErrClosed
+			if tx.sent {
+				cause = wrapOutcomeUnknown(serviceChoice, cause)
+			}
+			if c.finishTx(id, txResult{err: cause}, 0) {
+				return apdu.PDU{}, cause
 			}
 			res := <-tx.result
 			return res.pdu, res.err
@@ -314,7 +320,9 @@ func (c *Client) handleConfirmedResponse(pdu apdu.PDU, src packetSource) {
 		c.diag.Report(diag.Event{Kind: diag.KindWrongSource, Message: fmt.Sprintf("invoke %d", invokeID)})
 		return
 	}
-	if tx.service != 0 && svc != 0 && tx.service != svc && pdu.Type != apdu.TypeReject && pdu.Type != apdu.TypeAbort {
+	// Service choice 0 (AcknowledgeAlarm) is valid; never treat 0 as "unknown".
+	// Reject/Abort do not carry a service choice.
+	if pdu.Type != apdu.TypeReject && pdu.Type != apdu.TypeAbort && tx.service != svc {
 		c.diag.Report(diag.Event{Kind: diag.KindWrongService, Message: fmt.Sprintf("invoke %d", invokeID)})
 		return
 	}

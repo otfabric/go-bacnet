@@ -86,6 +86,7 @@ func DecodeWritePropertyMultiple(payload []byte, limits bacnet.DecodeLimits) ([]
 	}
 	var specs []WriteAccessSpecification
 	var cur *WriteAccessSpecification
+	var haveProps bool
 	for _, el := range elements {
 		switch {
 		case el.TagNumber == 0 && !bacnet.IsContextConstructed(el):
@@ -95,15 +96,20 @@ func DecodeWritePropertyMultiple(payload []byte, limits bacnet.DecodeLimits) ([]
 			}
 			specs = append(specs, WriteAccessSpecification{Object: id})
 			cur = &specs[len(specs)-1]
+			haveProps = false
 		case el.TagNumber == 1 && bacnet.IsContextConstructed(el):
 			if cur == nil {
 				return nil, fmt.Errorf("%w: listOfProperties without object", bacnet.ErrMalformed)
+			}
+			if haveProps {
+				return nil, fmt.Errorf("%w: duplicate listOfProperties", bacnet.ErrMalformed)
 			}
 			props, err := decodeWPMPropertyValues(el.Value.Elements, limits)
 			if err != nil {
 				return nil, err
 			}
 			cur.Properties = props
+			haveProps = true
 		default:
 			return nil, fmt.Errorf("%w: unexpected WritePropertyMultiple tag %d", bacnet.ErrMalformed, el.TagNumber)
 		}
@@ -123,7 +129,7 @@ func decodeWPMPropertyValues(elements []bacnet.Element, limits bacnet.DecodeLimi
 	_ = limits
 	var out []WritePropertyValue
 	var cur WritePropertyValue
-	var haveProp, haveValue bool
+	var haveProp, haveIndex, haveValue, havePriority bool
 	flush := func() error {
 		if !haveProp && !haveValue {
 			return nil
@@ -134,7 +140,9 @@ func decodeWPMPropertyValues(elements []bacnet.Element, limits bacnet.DecodeLimi
 		out = append(out, cur)
 		cur = WritePropertyValue{}
 		haveProp = false
+		haveIndex = false
 		haveValue = false
+		havePriority = false
 		return nil
 	}
 	for _, el := range elements {
@@ -147,18 +155,31 @@ func decodeWPMPropertyValues(elements []bacnet.Element, limits bacnet.DecodeLimi
 			if err != nil {
 				return nil, err
 			}
+			if u > 0xFFFFFFFF {
+				return nil, fmt.Errorf("%w: propertyIdentifier overflow", bacnet.ErrMalformed)
+			}
 			cur.Property.Identifier = bacnet.PropertyIdentifier(u)
 			haveProp = true
 		case el.TagNumber == 1 && !bacnet.IsContextConstructed(el):
 			if !haveProp {
 				return nil, fmt.Errorf("%w: arrayIndex without property", bacnet.ErrMalformed)
 			}
+			if haveIndex {
+				return nil, fmt.Errorf("%w: duplicate arrayIndex", bacnet.ErrMalformed)
+			}
+			if haveValue {
+				return nil, fmt.Errorf("%w: arrayIndex after propertyValue", bacnet.ErrMalformed)
+			}
 			u, err := bacnet.ContextUnsigned(el)
 			if err != nil {
 				return nil, err
 			}
+			if u > 0xFFFFFFFF {
+				return nil, fmt.Errorf("%w: arrayIndex overflow", bacnet.ErrMalformed)
+			}
 			idx := uint32(u)
 			cur.Property.ArrayIndex = &idx
+			haveIndex = true
 		case el.TagNumber == 2 && bacnet.IsContextConstructed(el):
 			if !haveProp {
 				return nil, fmt.Errorf("%w: propertyValue without property", bacnet.ErrMalformed)
@@ -178,6 +199,9 @@ func decodeWPMPropertyValues(elements []bacnet.Element, limits bacnet.DecodeLimi
 			if !haveProp || !haveValue {
 				return nil, fmt.Errorf("%w: priority without property value", bacnet.ErrMalformed)
 			}
+			if havePriority {
+				return nil, fmt.Errorf("%w: duplicate priority", bacnet.ErrMalformed)
+			}
 			u, err := bacnet.ContextUnsigned(el)
 			if err != nil {
 				return nil, err
@@ -187,6 +211,7 @@ func decodeWPMPropertyValues(elements []bacnet.Element, limits bacnet.DecodeLimi
 			}
 			p := uint8(u)
 			cur.Priority = &p
+			havePriority = true
 		default:
 			return nil, fmt.Errorf("%w: unexpected WritePropertyValue tag %d", bacnet.ErrMalformed, el.TagNumber)
 		}
@@ -291,7 +316,7 @@ func EncodeWritePropertyMultipleError(e WritePropertyMultipleError) ([]byte, err
 func decodeObjectPropertyReference(elements []bacnet.Element) (bacnet.ObjectIdentifier, bacnet.PropertyReference, error) {
 	var obj bacnet.ObjectIdentifier
 	var prop bacnet.PropertyReference
-	var haveObj, haveProp bool
+	var haveObj, haveProp, haveIndex bool
 	for _, el := range elements {
 		switch {
 		case el.TagNumber == 0 && !bacnet.IsContextConstructed(el):
@@ -312,15 +337,25 @@ func decodeObjectPropertyReference(elements []bacnet.Element) (bacnet.ObjectIden
 			if err != nil {
 				return obj, prop, err
 			}
+			if u > 0xFFFFFFFF {
+				return obj, prop, fmt.Errorf("%w: propertyIdentifier overflow", bacnet.ErrMalformed)
+			}
 			prop.Identifier = bacnet.PropertyIdentifier(u)
 			haveProp = true
 		case el.TagNumber == 2 && !bacnet.IsContextConstructed(el):
+			if haveIndex {
+				return obj, prop, fmt.Errorf("%w: duplicate arrayIndex", bacnet.ErrMalformed)
+			}
 			u, err := bacnet.ContextUnsigned(el)
 			if err != nil {
 				return obj, prop, err
 			}
+			if u > 0xFFFFFFFF {
+				return obj, prop, fmt.Errorf("%w: arrayIndex overflow", bacnet.ErrMalformed)
+			}
 			idx := uint32(u)
 			prop.ArrayIndex = &idx
+			haveIndex = true
 		default:
 			return obj, prop, fmt.Errorf("%w: unexpected ObjectPropertyReference tag %d", bacnet.ErrMalformed, el.TagNumber)
 		}

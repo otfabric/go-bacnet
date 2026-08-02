@@ -11,11 +11,20 @@ import (
 )
 
 func TestEventNotificationOptionalParamsRoundTrip(t *testing.T) {
+	// Use an unimplemented CHOICE tag so opaque params round-trip without a
+	// typed NotificationParameters body (known CHOICEs reject malformed inners).
 	params := bacnet.ApplicationValue{
 		Kind: bacnet.ValueConstructed,
-		Elements: []bacnet.Element{
-			{Context: true, TagNumber: 0, Value: bacnet.ApplicationValue{Kind: bacnet.ValueOctetString, OctetString: []byte{1}}},
-		},
+		Elements: []bacnet.Element{{
+			Context:   true,
+			TagNumber: uint8(service.NotificationBufferReady),
+			Value: bacnet.ApplicationValue{
+				Kind: bacnet.ValueConstructed,
+				Elements: []bacnet.Element{
+					{Context: true, TagNumber: 0, Value: bacnet.ApplicationValue{Kind: bacnet.ValueOctetString, OctetString: []byte{1}}},
+				},
+			},
+		}},
 	}
 	note := service.EventNotification{
 		ProcessIdentifier:  2,
