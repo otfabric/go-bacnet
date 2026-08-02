@@ -14,7 +14,7 @@ func mustAppendJunk(t *testing.T, raw []byte) []byte {
 	return append(append([]byte{}, raw...), 0xff)
 }
 
-func TestCoverageBoostTrailingEverywhere(t *testing.T) {
+func TestDecodeRejectsTrailingData(t *testing.T) {
 	id := bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeDevice, Instance: 1}
 	cases := []struct {
 		name string
@@ -101,7 +101,7 @@ func mustEncode(t *testing.T, fn func() ([]byte, error)) []byte {
 	return raw
 }
 
-func TestCoverageBoostEncodeBadObjectIDs(t *testing.T) {
+func TestEncodeRejectsBadObjectIdentifiers(t *testing.T) {
 	bad := bacnet.ObjectIdentifier{Type: 0xFFFF, Instance: 1}
 	if _, err := service.EncodePrivateTransfer(service.PrivateTransfer{VendorID: 1, ServiceNumber: 1}); err != nil {
 		t.Fatal(err)

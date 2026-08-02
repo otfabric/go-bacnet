@@ -198,11 +198,11 @@ func TestWorldietySegmentedWritePropertyMultipleSend(t *testing.T) {
 	// Worldiety (3cb2aa80) omits service choice on confirmed-request continuation
 	// segments; go-bacnet sends choice on every segment (BACpypes3/BACnet4J agree).
 	// Mis-parse of continuation payloads yields Error rather than SimpleACK.
-	t.Skip("blocker B6: Worldiety omits service-choice on confirmed-request segments >0; see bacnet-interop/BLOCKERS.md")
+	t.Skip("B6 upstream-deviation: Worldiety omits service-choice on confirmed-request segments >0; see bacnet-interop/EVIDENCE.md")
 }
 
 func TestWorldietySegmentedReadPropertyMultiple(t *testing.T) {
 	// Worldiety encodes ComplexACK continuation segments without service choice;
 	// go-bacnet treats a missing/mismatched choice as ErrProtocolViolation.
-	t.Skip("blocker B6: Worldiety omits service-choice on ComplexACK segments >0; see bacnet-interop/BLOCKERS.md")
+	t.Skip("B6 upstream-deviation: Worldiety omits service-choice on ComplexACK segments >0; see bacnet-interop/EVIDENCE.md")
 }

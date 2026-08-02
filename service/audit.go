@@ -131,6 +131,9 @@ func DecodeAuditLogQueryACK(payload []byte, limits bacnet.DecodeLimits) (AuditLo
 }
 
 // WhoAmI is an Unconfirmed Who-Am-I request.
+//
+// Wire form matches ASHRAE 135 Who-Am-I-Request SEQUENCE without context tags
+// (application Unsigned16 + CharacterString + CharacterString), same as I-Am.
 type WhoAmI struct {
 	VendorID     uint16
 	ModelName    string
@@ -139,56 +142,60 @@ type WhoAmI struct {
 
 // EncodeWhoAmI encodes Who-Am-I.
 func EncodeWhoAmI(w WhoAmI) ([]byte, error) {
-	dst, err := bacnet.AppendContextUnsigned(nil, 0, uint64(w.VendorID))
+	dst, err := bacnet.AppendApplicationValue(nil, bacnet.UnsignedValue(uint64(w.VendorID)))
 	if err != nil {
 		return nil, err
 	}
-	dst, err = bacnet.AppendContextTagged(dst, 1, []bacnet.Element{{
-		Value: bacnet.ApplicationValue{Kind: bacnet.ValueCharacterString, Character: bacnet.CharacterString{Value: w.ModelName}},
-	}})
+	dst, err = bacnet.AppendApplicationValue(dst, bacnet.ApplicationValue{
+		Kind: bacnet.ValueCharacterString, Character: bacnet.CharacterString{Value: w.ModelName},
+	})
 	if err != nil {
 		return nil, err
 	}
-	return bacnet.AppendContextTagged(dst, 2, []bacnet.Element{{
-		Value: bacnet.ApplicationValue{Kind: bacnet.ValueCharacterString, Character: bacnet.CharacterString{Value: w.SerialNumber}},
-	}})
+	return bacnet.AppendApplicationValue(dst, bacnet.ApplicationValue{
+		Kind: bacnet.ValueCharacterString, Character: bacnet.CharacterString{Value: w.SerialNumber},
+	})
 }
 
 // DecodeWhoAmI decodes Who-Am-I.
 func DecodeWhoAmI(payload []byte, limits bacnet.DecodeLimits) (WhoAmI, error) {
-	els, n, err := bacnet.ParseSequence(payload, limits, -1)
+	off := 0
+	vendor, n, err := bacnet.ParseApplicationValue(payload[off:], limits)
 	if err != nil {
 		return WhoAmI{}, err
 	}
-	if n != len(payload) {
+	off += n
+	model, n, err := bacnet.ParseApplicationValue(payload[off:], limits)
+	if err != nil {
+		return WhoAmI{}, err
+	}
+	off += n
+	serial, n, err := bacnet.ParseApplicationValue(payload[off:], limits)
+	if err != nil {
+		return WhoAmI{}, err
+	}
+	off += n
+	if off != len(payload) {
 		return WhoAmI{}, fmt.Errorf("%w: WhoAmI trailing", bacnet.ErrTrailingData)
 	}
-	var w WhoAmI
-	for _, el := range els {
-		switch {
-		case el.TagNumber == 0 && !bacnet.IsContextConstructed(el):
-			u, e := bacnet.ContextUnsigned(el)
-			err = e
-			if err == nil {
-				w.VendorID = uint16(u)
-			}
-		case el.TagNumber == 1 && bacnet.IsContextConstructed(el):
-			if len(el.Value.Elements) == 1 {
-				w.ModelName = el.Value.Elements[0].Value.Character.Value
-			}
-		case el.TagNumber == 2 && bacnet.IsContextConstructed(el):
-			if len(el.Value.Elements) == 1 {
-				w.SerialNumber = el.Value.Elements[0].Value.Character.Value
-			}
-		}
-		if err != nil {
-			return WhoAmI{}, err
-		}
+	if vendor.Kind != bacnet.ValueUnsigned || vendor.Unsigned > 0xffff {
+		return WhoAmI{}, fmt.Errorf("%w: WhoAmI vendor-id", bacnet.ErrMalformed)
 	}
-	return w, nil
+	if model.Kind != bacnet.ValueCharacterString || serial.Kind != bacnet.ValueCharacterString {
+		return WhoAmI{}, fmt.Errorf("%w: WhoAmI character strings", bacnet.ErrMalformed)
+	}
+	return WhoAmI{
+		VendorID:     uint16(vendor.Unsigned),
+		ModelName:    model.Character.Value,
+		SerialNumber: serial.Character.Value,
+	}, nil
 }
 
 // YouAre is an Unconfirmed You-Are request.
+//
+// Wire form matches ASHRAE 135 You-Are-Request SEQUENCE without context tags
+// (application Unsigned16 + CharacterString + CharacterString + optional
+// Device ObjectIdentifier).
 type YouAre struct {
 	VendorID     uint16
 	ModelName    string
@@ -198,57 +205,70 @@ type YouAre struct {
 
 // EncodeYouAre encodes You-Are.
 func EncodeYouAre(y YouAre) ([]byte, error) {
-	dst, err := bacnet.AppendContextUnsigned(nil, 0, uint64(y.VendorID))
+	dst, err := bacnet.AppendApplicationValue(nil, bacnet.UnsignedValue(uint64(y.VendorID)))
 	if err != nil {
 		return nil, err
 	}
-	dst, err = bacnet.AppendContextTagged(dst, 1, []bacnet.Element{{
-		Value: bacnet.ApplicationValue{Kind: bacnet.ValueCharacterString, Character: bacnet.CharacterString{Value: y.ModelName}},
-	}})
+	dst, err = bacnet.AppendApplicationValue(dst, bacnet.ApplicationValue{
+		Kind: bacnet.ValueCharacterString, Character: bacnet.CharacterString{Value: y.ModelName},
+	})
 	if err != nil {
 		return nil, err
 	}
-	dst, err = bacnet.AppendContextTagged(dst, 2, []bacnet.Element{{
-		Value: bacnet.ApplicationValue{Kind: bacnet.ValueCharacterString, Character: bacnet.CharacterString{Value: y.SerialNumber}},
-	}})
+	dst, err = bacnet.AppendApplicationValue(dst, bacnet.ApplicationValue{
+		Kind: bacnet.ValueCharacterString, Character: bacnet.CharacterString{Value: y.SerialNumber},
+	})
 	if err != nil {
 		return nil, err
 	}
-	return bacnet.AppendContextObjectID(dst, 3, y.Device)
+	return bacnet.AppendApplicationValue(dst, bacnet.ObjectIDValue(y.Device))
 }
 
 // DecodeYouAre decodes You-Are.
 func DecodeYouAre(payload []byte, limits bacnet.DecodeLimits) (YouAre, error) {
-	els, n, err := bacnet.ParseSequence(payload, limits, -1)
+	off := 0
+	vendor, n, err := bacnet.ParseApplicationValue(payload[off:], limits)
 	if err != nil {
 		return YouAre{}, err
 	}
-	if n != len(payload) {
-		return YouAre{}, fmt.Errorf("%w: YouAre trailing", bacnet.ErrTrailingData)
+	off += n
+	model, n, err := bacnet.ParseApplicationValue(payload[off:], limits)
+	if err != nil {
+		return YouAre{}, err
 	}
-	var y YouAre
-	for _, el := range els {
-		switch {
-		case el.TagNumber == 0 && !bacnet.IsContextConstructed(el):
-			u, e := bacnet.ContextUnsigned(el)
-			err = e
-			if err == nil {
-				y.VendorID = uint16(u)
-			}
-		case el.TagNumber == 1 && bacnet.IsContextConstructed(el):
-			if len(el.Value.Elements) == 1 {
-				y.ModelName = el.Value.Elements[0].Value.Character.Value
-			}
-		case el.TagNumber == 2 && bacnet.IsContextConstructed(el):
-			if len(el.Value.Elements) == 1 {
-				y.SerialNumber = el.Value.Elements[0].Value.Character.Value
-			}
-		case el.TagNumber == 3 && !bacnet.IsContextConstructed(el):
-			y.Device, err = bacnet.ContextObjectID(el)
-		}
+	off += n
+	serial, n, err := bacnet.ParseApplicationValue(payload[off:], limits)
+	if err != nil {
+		return YouAre{}, err
+	}
+	off += n
+	if vendor.Kind != bacnet.ValueUnsigned || vendor.Unsigned > 0xffff {
+		return YouAre{}, fmt.Errorf("%w: YouAre vendor-id", bacnet.ErrMalformed)
+	}
+	if model.Kind != bacnet.ValueCharacterString || serial.Kind != bacnet.ValueCharacterString {
+		return YouAre{}, fmt.Errorf("%w: YouAre character strings", bacnet.ErrMalformed)
+	}
+	y := YouAre{
+		VendorID:     uint16(vendor.Unsigned),
+		ModelName:    model.Character.Value,
+		SerialNumber: serial.Character.Value,
+	}
+	if off < len(payload) {
+		device, n, err := bacnet.ParseApplicationValue(payload[off:], limits)
 		if err != nil {
 			return YouAre{}, err
 		}
+		off += n
+		id, err := bacnet.AsObjectID(device)
+		if err != nil {
+			return YouAre{}, fmt.Errorf("%w: YouAre device", bacnet.ErrMalformed)
+		}
+		y.Device = id
+	}
+	if off != len(payload) {
+		// Optional MAC OctetString and any further trailing data: reject extras
+		// we do not model yet so corpus fixtures stay deterministic.
+		return YouAre{}, fmt.Errorf("%w: YouAre trailing", bacnet.ErrTrailingData)
 	}
 	return y, nil
 }

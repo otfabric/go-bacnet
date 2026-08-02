@@ -1,6 +1,80 @@
 # go-bacnet Releases
 
+## v0.2.4
+
+**Date:** 2026-08-03  
+**Previous release:** [v0.2.3](https://github.com/otfabric/go-bacnet/releases/tag/v0.2.3)  
+**Tag:** pending (cut via Actions → Release → `patch`)
+
+### Summary
+
+Evidence and wire-correctness patch after
+[`v0.2.3`](https://github.com/otfabric/go-bacnet/releases/tag/v0.2.3).
+**No new client APIs.** Pin moves to
+[`bacnet-interop` v0.7.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.7.0)
+@ `224f51b` (Batches A–C adapters). Requires **Go 1.23+**.
+
+Still **production-candidate** until the
+[real-device gate](docs/REAL_DEVICE_GATE.md) is complete.
+
+### Fixed
+
+- Who-Am-I / You-Are: application-tagged SEQUENCE (ASHRAE unnamed fields),
+  matching bacnet-stack `whoami` / `youare` (was incorrect context tags)
+- LifeSafetyOperation `requestingSource`: context-primitive CharacterString
+  (was constructed wrapper); matches BACnet4J + bacnet-stack
+- TextMessage: `messageClass` CHOICE + context-primitive `messageText` (was
+  numeric-only class + constructed text); enables BACnet4J / BACpypes3 receipt
+
+### Changed
+
+- Pin → [`bacnet-interop` v0.7.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.7.0)
+  (`interop/bacnet-interop-pin.json`)
+- Interop harness retains peer `{"event":"operation",…}` JSONL after ready
+  (and tees to an evidence file for Docker Desktop re-exec)
+
+### Evidence
+
+Fill CI links after the Release workflow runs on the tag SHA:
+
+| Gate | Result | Link |
+|---|---|---|
+| Shared CI (lint, Go matrix, race, coverage, PR fuzz) | pending | — |
+| Pinned interop `v0.7.0` | pending | — |
+| bacnet-interop main compat | pending | — |
+| Pin | [`bacnet-interop` v0.7.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.7.0) | `interop/bacnet-interop-pin.json` |
+| GitHub Release | pending | — |
+
+Live scenarios on the pinned digests (Batches A–C):
+
+| Scenario | Peers | Test / evidence |
+|---|---|---|
+| GetAlarmSummary (AV Out_Of_Range) | BACnet4J + bacnet-stack | `live-multi-peer` `TestGetAlarmSummaryOutOfRange` |
+| GetEnrollmentSummary (EE-1) | BACnet4J | `live-single-peer` `TestBACnet4JGetEnrollmentSummary` |
+| SubscribeCOVPropertyMultiple / COVNotificationMultiple | — | `codec-only` (all peers `unsupported-upstream`) |
+| Messaging semantic receipt (v6 `operation` JSONL) | BACnet4J + BACpypes3 + bacnet-stack | `TestMessagingSemanticReceipt` (per-service EVIDENCE matrix) |
+| Who-Am-I / You-Are (v7) | bacnet-stack | `live-single-peer` `TestBacnetStackWhoAmIYouAre` |
+| LifeSafetyOperation LSP-1 (v8) | BACnet4J + bacnet-stack | `live-multi-peer` `TestLifeSafetyOperation` |
+| Audit notification / AuditLogQuery / AuthRequest / VT | — | `codec-only` (B7e2–e4 / B7g) |
+
+Prior live-multi-peer File / Create-Delete / NC list scenarios from `v0.2.3`
+remain on the new digests.
+
+### Notes / known skips
+
+- Worldiety segmented WPM/RPM: `upstream-deviation` (B6; see bacnet-interop `EVIDENCE.md`)
+- Open execution work: B5/B5a–d (router/BBMD inventory; see bacnet-interop `BLOCKERS.md`)
+- Library coverage gate held at ≥90%
+
+---
+
 ## v0.2.3
+
+**Date:** 2026-08-02  
+**Previous release:** [v0.2.2](https://github.com/otfabric/go-bacnet/releases/tag/v0.2.2)  
+**Tag:** [`v0.2.3`](https://github.com/otfabric/go-bacnet/releases/tag/v0.2.3) @ `86ffd31`
+
+### Summary
 
 Correctness and evidence patch after
 [`v0.2.2`](https://github.com/otfabric/go-bacnet/releases/tag/v0.2.2).
@@ -9,7 +83,8 @@ plus live-multi-peer File, Create/Delete, and NC list evidence. Pin moves to
 [`bacnet-interop` v0.6.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.6.0)
 @ `f4ea3de`. Requires **Go 1.23+**.
 
-Fill **Date**, **Tag**, and CI evidence links when the cut is green.
+Still **production-candidate** until the
+[real-device gate](docs/REAL_DEVICE_GATE.md) is complete.
 
 ### Fixed
 
@@ -29,7 +104,19 @@ Fill **Date**, **Tag**, and CI evidence links when the cut is green.
 - Pin → [`bacnet-interop` v0.6.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.6.0)
   (`interop/bacnet-interop-pin.json`)
 
-### Evidence targets (fill when CI green)
+### Evidence
+
+Green on tag SHA `86ffd31`:
+
+| Gate | Result | Link |
+|---|---|---|
+| Shared CI (lint, Go matrix, race, coverage, PR fuzz) | green | [30766339592](https://github.com/otfabric/go-bacnet/actions/runs/30766339592) |
+| Pinned interop `v0.6.0` | green | [30766339454](https://github.com/otfabric/go-bacnet/actions/runs/30766339454) (job *Pinned release peers*) |
+| bacnet-interop main compat | green | same run (job *bacnet-interop main compat*) |
+| Pin | [`bacnet-interop` v0.6.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.6.0) | `interop/bacnet-interop-pin.json` |
+| GitHub Release | published | [v0.2.3](https://github.com/otfabric/go-bacnet/releases/tag/v0.2.3) |
+
+Live-multi-peer scenarios on the pinned digests:
 
 | Scenario | Peers | Test |
 |---|---|---|
@@ -38,17 +125,12 @@ Fill **Date**, **Tag**, and CI evidence links when the cut is green.
 | CreateObject / DeleteObject | BACnet4J + bacnet-stack | `TestCreateDeleteObject` |
 | AddListElement / RemoveListElement (NC Recipient_List) | BACnet4J + bacnet-stack | `TestAddRemoveListElementRecipientList` |
 | GetAlarmSummary (AV Out_Of_Range) | BACnet4J | `TestBACnet4JGetAlarmSummary` |
-| Library coverage | — | ≥90% (`make check`) |
-| Pinned interop `v0.6.0` | — | _(CI run TBD)_ |
-| bacnet-interop main compat | — | _(CI run TBD)_ |
 
-### Out of scope
+### Notes / known skips
 
-- New BACnet services
-- COV-multiple live (BACnet4J 6.1.0 `NotImplementedException`)
-- B5/B6 Worldiety router/BBMD/segmentation
-- B7d semantic messaging diagnostics; B7e–g audit/life-safety/VT
-  (see bacnet-interop `BLOCKERS.md`)
+- Worldiety segmented WPM/RPM: `upstream-deviation` (B6; see bacnet-interop `EVIDENCE.md`)
+- Batch A–C live scenarios and the `v0.7.0` pin landed in **v0.2.4**
+- Library coverage gate held at ≥90%
 
 ---
 
@@ -110,7 +192,7 @@ Green on tag SHA `a277aea`:
 
 - Worldiety segmented WPM/RPM skipped (peer segment service-choice — B6)
 - At tag time: BACnet4J AtomicReadFile / Create-Delete still skipped (B8/B9) —
-  unblocked locally in unreleased `v0.2.3` work
+  closed in [`v0.2.3`](https://github.com/otfabric/go-bacnet/releases/tag/v0.2.3)
 - Broader live multi-peer coverage for COV-multiple, messaging diagnostics,
   audit, life-safety/VT, and topology/bbmd v2 modes remains partial
   (see `bacnet-interop/BLOCKERS.md`)

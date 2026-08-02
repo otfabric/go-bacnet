@@ -62,27 +62,61 @@ func TestGetAlarmSummaryACKRoundTrip(t *testing.T) {
 	}
 }
 
-func TestGetEnrollmentSummaryRoundTrip(t *testing.T) {
-	ack := service.GetEnrollmentSummaryACK{Entries: []service.EnrollmentSummaryEntry{{
-		Object:            bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeEventEnrollment, Instance: 1},
-		EventType:         5,
-		EventState:        2,
-		Priority:          100,
-		NotificationClass: 1,
-	}}}
-	raw, err := service.EncodeGetEnrollmentSummaryACK(ack)
+func TestGetAlarmSummaryACKEncodeDecodeErrors(t *testing.T) {
+	limits := bacnet.DefaultDecodeLimits()
+	badObj := bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeDevice, Instance: bacnet.MaxObjectInstance + 1}
+	if _, err := service.EncodeGetAlarmSummaryACK(service.GetAlarmSummaryACK{Entries: []service.AlarmSummaryEntry{{
+		Object: badObj, AlarmState: 1,
+		AckedTransitions: bacnet.BitString{UnusedBits: 5, Bytes: []byte{0xe0}},
+	}}}); err == nil {
+		t.Fatal("expected encode error")
+	}
+	emptyACK, err := service.EncodeGetAlarmSummaryACK(service.GetAlarmSummaryACK{})
+	if err != nil || emptyACK != nil {
+		t.Fatalf("empty alarm ACK: %v %v", emptyACK, err)
+	}
+	one, err := bacnet.AppendApplicationValue(nil, bacnet.UnsignedValue(1))
 	if err != nil {
 		t.Fatal(err)
 	}
-	got, err := service.DecodeGetEnrollmentSummaryACK(raw, bacnet.DefaultDecodeLimits())
+	if _, err := service.DecodeGetAlarmSummaryACK(one, limits); err == nil {
+		t.Fatal("expected length error")
+	}
+	if _, err := service.DecodeGetAlarmSummaryACK([]byte{0xff}, limits); err == nil {
+		t.Fatal("expected parse error")
+	}
+	badAlarmObj, err := bacnet.AppendApplicationValue(nil, bacnet.UnsignedValue(1))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(got.Entries) != 1 || got.Entries[0].Priority != 100 {
-		t.Fatalf("%+v", got)
-	}
-	req := service.GetEnrollmentSummaryRequest{AcknowledgmentFilter: service.EnrollmentFilterAll}
-	if _, err := service.EncodeGetEnrollmentSummary(req); err != nil {
+	badAlarmObj, err = bacnet.AppendApplicationValue(badAlarmObj, bacnet.EnumValue(1))
+	if err != nil {
 		t.Fatal(err)
+	}
+	badAlarmObj, err = bacnet.AppendApplicationValue(badAlarmObj, bacnet.ApplicationValue{
+		Kind: bacnet.ValueBitString, BitString: bacnet.BitString{UnusedBits: 5, Bytes: []byte{0}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := service.DecodeGetAlarmSummaryACK(badAlarmObj, limits); err == nil {
+		t.Fatal("expected bad object")
+	}
+	badAlarmBits, err := bacnet.AppendApplicationValue(nil, bacnet.ObjectIDValue(bacnet.ObjectIdentifier{
+		Type: bacnet.ObjectTypeAnalogInput, Instance: 1,
+	}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	badAlarmBits, err = bacnet.AppendApplicationValue(badAlarmBits, bacnet.EnumValue(1))
+	if err != nil {
+		t.Fatal(err)
+	}
+	badAlarmBits, err = bacnet.AppendApplicationValue(badAlarmBits, bacnet.UnsignedValue(1))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := service.DecodeGetAlarmSummaryACK(badAlarmBits, limits); err == nil {
+		t.Fatal("expected bad bitstring")
 	}
 }

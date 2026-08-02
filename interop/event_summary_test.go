@@ -29,12 +29,24 @@ func deviceBaselineV3Path(t *testing.T) string {
 	return ""
 }
 
-// TestBACnet4JGetAlarmSummary triggers AV-1 Out_Of_Range then queries GetAlarmSummary.
-// BACnet4J v3 enables intrinsic reporting with highLimit=80; COV-multiple remains
-// NotImplemented upstream (B3 remainder).
-func TestBACnet4JGetAlarmSummary(t *testing.T) {
+// Peers with native GetAlarmSummary + intrinsic Out_Of_Range on AV-1 (v3).
+func alarmSummaryPeers() []struct {
+	name  string
+	image string
+} {
+	return []struct {
+		name  string
+		image string
+	}{
+		{"bacnet4j", bacnet4jImage()},
+		{"bacnet-stack", getEnv("BACNET_STACK_IMAGE", defaultStackImage)},
+	}
+}
+
+func runGetAlarmSummaryOutOfRange(t *testing.T, image, adapter string) {
+	t.Helper()
 	t.Setenv("BACNET_DEVICE_FIXTURE", deviceBaselineV3Path(t))
-	peer := startPeer(t, bacnet4jImage(), "bacnet4j",
+	peer := startPeer(t, image, adapter,
 		"DEVICE_FIXTURE_FILE=/fixtures/device/device-baseline-v3.json",
 		"FIXTURE=device-baseline-v3",
 	)
@@ -63,6 +75,10 @@ func TestBACnet4JGetAlarmSummary(t *testing.T) {
 		found := false
 		for _, e := range ack.Entries {
 			if e.Object.Type == bacnet.ObjectTypeAnalogValue && e.Object.Instance == 1 {
+				// Peers report Out_Of_Range as offnormal(2) or high-limit(3).
+				if e.AlarmState != 2 && e.AlarmState != 3 {
+					t.Fatalf("alarmState=%d want offnormal(2) or high-limit(3); entry=%+v", e.AlarmState, e)
+				}
 				found = true
 				break
 			}
@@ -76,6 +92,82 @@ func TestBACnet4JGetAlarmSummary(t *testing.T) {
 		time.Sleep(200 * time.Millisecond)
 	}
 
-	// Restore normal so peer state does not leak across tests (fresh container anyway).
-	_ = c.WriteProperty(ctx, peer.target, av, prop, bacnet.RealValue(20), &prio)
+	if err := c.WriteProperty(ctx, peer.target, av, prop, bacnet.RealValue(20), &prio); err != nil {
+		t.Fatalf("WriteProperty AV-1=20 restore: %v", err)
+	}
+	deadline = time.Now().Add(8 * time.Second)
+	for {
+		ack, err = c.GetAlarmSummary(ctx, peer.target)
+		if err != nil {
+			t.Fatalf("GetAlarmSummary after restore: %v", err)
+		}
+		still := false
+		for _, e := range ack.Entries {
+			if e.Object.Type == bacnet.ObjectTypeAnalogValue && e.Object.Instance == 1 {
+				still = true
+				break
+			}
+		}
+		if !still {
+			return
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("AV-1 still in alarm summary after restore; entries=%+v", ack.Entries)
+		}
+		time.Sleep(200 * time.Millisecond)
+	}
+}
+
+func TestGetAlarmSummaryOutOfRange(t *testing.T) {
+	for _, p := range alarmSummaryPeers() {
+		t.Run(p.name, func(t *testing.T) {
+			runGetAlarmSummaryOutOfRange(t, p.image, p.name)
+		})
+	}
+}
+
+// GetEnrollmentSummary: BACnet4J is the only pinned peer with a native
+// executable path (EventEnrollmentObject + GetEnrollmentSummaryRequest.handle).
+// bacnet-stack / BACpypes3 / Worldiety: unsupported-upstream — see
+// bacnet-interop/EVIDENCE.md.
+func TestBACnet4JGetEnrollmentSummary(t *testing.T) {
+	t.Setenv("BACNET_DEVICE_FIXTURE", deviceBaselineV3Path(t))
+	peer := startPeer(t, bacnet4jImage(), "bacnet4j",
+		"DEVICE_FIXTURE_FILE=/fixtures/device/device-baseline-v3.json",
+		"FIXTURE=device-baseline-v3",
+	)
+	if peer.assertedByReexec {
+		return
+	}
+	c := newClient(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+
+	nc := uint32(1)
+	ack, err := c.GetEnrollmentSummary(ctx, peer.target, service.GetEnrollmentSummaryRequest{
+		AcknowledgmentFilter:    service.EnrollmentFilterAll,
+		NotificationClassFilter: &nc,
+	})
+	if err != nil {
+		t.Fatalf("GetEnrollmentSummary: %v", err)
+	}
+
+	// EE-1 monitors AV-1 Out_Of_Range on NC-1 (device-baseline-v3).
+	const eventTypeOutOfRange = 5
+	foundEE := false
+	for _, e := range ack.Entries {
+		if e.Object.Type == bacnet.ObjectTypeEventEnrollment && e.Object.Instance == 1 {
+			if e.EventType != eventTypeOutOfRange {
+				t.Fatalf("EE-1 eventType=%d want out-of-range(%d); entry=%+v", e.EventType, eventTypeOutOfRange, e)
+			}
+			if e.NotificationClass != 1 {
+				t.Fatalf("EE-1 notificationClass=%d want 1; entry=%+v", e.NotificationClass, e)
+			}
+			foundEE = true
+			break
+		}
+	}
+	if !foundEE {
+		t.Fatalf("EE-1 missing from enrollment summary; entries=%+v", ack.Entries)
+	}
 }

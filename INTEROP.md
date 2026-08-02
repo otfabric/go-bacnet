@@ -77,11 +77,10 @@ Use `make interop-required` locally with `:local` images or the same digest pins
 Current scenarios default to fixture `device-baseline-v2` (device instance `1234`);
 selected tests also exercise `device-baseline-v3`/`v4`/`v5`/`v6` where peers serve
 them. Pinned release:
-[`bacnet-interop` v0.6.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.6.0)
-@ `f4ea3de` (BACpypes3 **0.0.106**; Worldiety + File/lifecycle/NC list adapters).
-Prior green on `v0.2.2` @ `a277aea` with pin `v0.5.0`:
-[30757758742](https://github.com/otfabric/go-bacnet/actions/runs/30757758742).
-Pending `v0.2.3` must re-prove pinned + main-compat against `v0.6.0`.
+[`bacnet-interop` v0.7.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.7.0)
+@ `224f51b` (BACpypes3 **0.0.106**; Worldiety + File/lifecycle/NC/alarm/messaging/LSO/identity adapters).
+Prior green pinned + main-compat on `v0.2.3` @ `86ffd31` with pin `v0.6.0`:
+[30766339454](https://github.com/otfabric/go-bacnet/actions/runs/30766339454).
 
 | Scenario | bacnet-stack | BACpypes3 | BACnet4J | Worldiety | Interop test |
 |----------|:---:|:---:|:---:|:---:|---|
@@ -96,15 +95,20 @@ Pending `v0.2.3` must re-prove pinned + main-compat against `v0.6.0`.
 | RPM partial property Error | ✓ | ✓ | ✓ | — | `…ReadPropertyMultiplePartialError` |
 | WriteProperty + readback + restore | ✓ | ✓ | ✓ | ✓ | `…WritePropertyReadbackReset`, `TestWorldietyWritePropertyReadbackReset` |
 | WritePropertyMultiple + readback + restore | ✓ | ✓ | ✓ | ✓ | `…WritePropertyMultipleReadbackReset`, `TestWorldietyWritePropertyMultipleReadbackReset` |
-| Segmented RPM ComplexACK reassembly | — | ✓ | ✓ | skip | Worldiety skip B6 (service-choice on segments); BACpypes3/4J ✓ |
-| Segmented confirmed-request send (WPM) | — | ✓ | — | skip | Worldiety skip B6; BACnet4J rejects segmented confirmed receive |
+| Segmented RPM ComplexACK reassembly | — | ✓ | ✓ | skip | Worldiety `upstream-deviation` B6; BACpypes3/4J ✓ |
+| Segmented confirmed-request send (WPM) | — | ✓ | — | skip | Worldiety B6; BACnet4J rejects segmented confirmed receive |
 | ReadRange byPosition (TrendLog) | ✓ | — | ✓ | ✓ | `…ReadRangeByPosition`, `TestWorldietyReadRangeByPosition` |
-| AtomicReadFile stream/record (`device-baseline-v4`) | ✓ | unsupported | ✓ | — | **live-multi-peer** (stack + BACnet4J); BACpypes3 0.0.106 has no File server; Worldiety loader rejects `file` |
-| AtomicWriteFile stream + readback (`device-baseline-v4`) | ✓ | unsupported | ✓ | — | **live-multi-peer**; needs AtomicWriteFile ACK context-Signed wire (`v0.2.3`) |
-| CreateObject / DeleteObject (`device-baseline-v5`) | ✓ | unsupported | ✓ | — | **live-multi-peer** (stack + BACnet4J); BACpypes3 lacks `do_CreateObject`; Worldiety has no Create/Delete handlers |
-| AddListElement / RemoveListElement NC Recipient_List (`device-baseline-v3`) | ✓ | — | ✓ | — | **live-multi-peer**; Destination bytes BACnet4J-compatible |
-| GetAlarmSummary after AV Out_Of_Range (`device-baseline-v3`) | — | — | ✓ | — | `TestBACnet4JGetAlarmSummary`; COV-multiple still unsupported upstream on BACnet4J 6.1.0 |
-| TimeSynchronization / UnconfirmedTextMessage (`device-baseline-v6`) | — | — | ✓ | — | `TestBACnet4JTimeSynchronization` (send-only; B7d semantic diagnostics open) |
+| AtomicReadFile stream/record (`device-baseline-v4`) | ✓ | unsupported | ✓ | — | **live-multi-peer**; BACpypes3/Worldiety `unsupported-upstream` |
+| AtomicWriteFile stream + readback (`device-baseline-v4`) | ✓ | unsupported | ✓ | — | **live-multi-peer** |
+| CreateObject / DeleteObject (`device-baseline-v5`) | ✓ | unsupported | ✓ | — | **live-multi-peer**; BACpypes3/Worldiety `unsupported-upstream` |
+| AddListElement / RemoveListElement NC Recipient_List (`device-baseline-v3`) | ✓ | — | ✓ | — | **live-multi-peer** |
+| GetAlarmSummary after AV Out_Of_Range (`device-baseline-v3`) | ✓ | — | ✓ | — | **live-multi-peer** `TestGetAlarmSummaryOutOfRange` |
+| GetEnrollmentSummary EE-1 (`device-baseline-v3`) | unsupported | unsupported | ✓ | unsupported | **live-single-peer** `TestBACnet4JGetEnrollmentSummary`; others EVIDENCE unsupported-upstream |
+| SubscribeCOVPropertyMultiple / COVNotificationMultiple | unsupported | unsupported | unsupported | unsupported | Family **codec-only** at current pins (EVIDENCE B3c/d) |
+| Messaging semantic receipt (`device-baseline-v6` `operation` JSONL) | ✓ | ✓ | ✓ | unsupported | `TestMessagingSemanticReceipt`; per-service matrix in bacnet-interop `EVIDENCE.md` (B7d) |
+| Who-Am-I / You-Are (`device-baseline-v7`) | unsupported | unsupported | ✓ | unsupported | **live-single-peer** `TestBacnetStackWhoAmIYouAre`; others EVIDENCE unsupported-upstream |
+| LifeSafetyOperation LSP-1 (`device-baseline-v8`) | ✓ | unsupported | ✓ | unsupported | **live-multi-peer** `TestLifeSafetyOperation` |
+| Audit notification / AuditLogQuery / AuthRequest / VT | unsupported | unsupported | unsupported | unsupported | Family **codec-only** at current pins (EVIDENCE B7e2–e4 / B7g) |
 | Codec goldens (alarm/enrollment/COV-multiple/file/list/messaging/audit/VT) | n/a | n/a | n/a | n/a | Consumed via `internal/fixtures` from `bacnet-interop/fixtures/codec` |
 | COV subscribe / notify / cancel | ✓ | ✓ | ✓ | — | `…COVSubscribeNotifyCancel` |
 | COV renew | — | ✓ | — | — | `TestBACpypes3COVRenew` |
@@ -147,7 +151,7 @@ that network via a `golang` image (`BACNET_INTEROP_GO_IMAGE`). See
 | Label | Meaning |
 |-------|---------|
 | **alpha** | Pre-hardening / incomplete oracle evidence |
-| **production-candidate** | Current — supervisory client + oracle/lab interop evidence (`v0.2.2`; pending `v0.2.3` + pin `v0.6.0`); **no** claim of multi-vendor hardware readiness |
+| **production-candidate** | Current — supervisory client + oracle/lab interop evidence (`v0.2.4` pending + pin `v0.7.0`); **no** claim of multi-vendor hardware readiness |
 | **production-usable** | Real-device gate met — see [docs/REAL_DEVICE_GATE.md](docs/REAL_DEVICE_GATE.md) |
 
 Do not claim vendor hardware interoperability from container oracles alone.

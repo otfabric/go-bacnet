@@ -203,15 +203,3 @@ func TestDecodeCOVNotificationMultipleErrors(t *testing.T) {
 		t.Fatal("expected missing required")
 	}
 }
-
-func TestDecodeGetAlarmSummaryACKErrors(t *testing.T) {
-	if _, err := service.DecodeGetAlarmSummaryACK([]byte{0x21, 0x01}, bacnet.DefaultDecodeLimits()); err == nil {
-		t.Fatal("expected length error")
-	}
-}
-
-func TestDecodeGetEnrollmentSummaryACKErrors(t *testing.T) {
-	if _, err := service.DecodeGetEnrollmentSummaryACK([]byte{0x21, 0x01}, bacnet.DefaultDecodeLimits()); err == nil {
-		t.Fatal("expected length error")
-	}
-}

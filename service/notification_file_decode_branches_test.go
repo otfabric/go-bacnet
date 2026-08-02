@@ -8,7 +8,7 @@ import (
 	"github.com/otfabric/go-bacnet"
 )
 
-func TestCoverageBoostDecodeBranches(t *testing.T) {
+func TestNotificationAndFileDecodeBranches(t *testing.T) {
 	// Floating limit wrong tag numbers / bad reals
 	if _, err := decodeFloatingLimit([]bacnet.Element{
 		{Context: true, TagNumber: 9},
@@ -106,7 +106,7 @@ func TestCoverageBoostDecodeBranches(t *testing.T) {
 	}
 }
 
-func TestCoverageBoostEncodeNPErrors(t *testing.T) {
+func TestEncodeNotificationParametersBufferReadyAndFloatingLimit(t *testing.T) {
 	// Empty buffer-ready still encodes counts.
 	els, err := EncodeNotificationParameters(NotificationParameters{BufferReady: &BufferReadyParams{}})
 	if err != nil || len(els) != 1 {

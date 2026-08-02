@@ -17,14 +17,15 @@ type LifeSafetyOperationRequest struct {
 }
 
 // EncodeLifeSafetyOperation encodes LifeSafetyOperation.
+//
+// requestingSource is a context-primitive CharacterString (ASHRAE [1]
+// CharacterString), matching bacnet-stack and BACnet4J.
 func EncodeLifeSafetyOperation(req LifeSafetyOperationRequest) ([]byte, error) {
 	dst, err := bacnet.AppendContextUnsigned(nil, 0, uint64(req.RequestingProcessIdentifier))
 	if err != nil {
 		return nil, err
 	}
-	dst, err = bacnet.AppendContextTagged(dst, 1, []bacnet.Element{{
-		Value: bacnet.ApplicationValue{Kind: bacnet.ValueCharacterString, Character: bacnet.CharacterString{Value: req.RequestingSource}},
-	}})
+	dst, err = bacnet.AppendContextCharacterString(dst, 1, bacnet.CharacterString{Value: req.RequestingSource})
 	if err != nil {
 		return nil, err
 	}
@@ -58,12 +59,12 @@ func DecodeLifeSafetyOperation(payload []byte, limits bacnet.DecodeLimits) (Life
 				req.RequestingProcessIdentifier = uint32(u)
 				havePID = true
 			}
-		case el.TagNumber == 1 && bacnet.IsContextConstructed(el):
-			if len(el.Value.Elements) == 1 {
-				req.RequestingSource = el.Value.Elements[0].Value.Character.Value
+		case el.TagNumber == 1 && !bacnet.IsContextConstructed(el):
+			cs, e := bacnet.ContextCharacterString(el)
+			err = e
+			if err == nil {
+				req.RequestingSource = cs.Value
 				haveSrc = true
-			} else {
-				err = fmt.Errorf("%w: requestingSource", bacnet.ErrMalformed)
 			}
 		case el.TagNumber == 2 && !bacnet.IsContextConstructed(el):
 			u, e := bacnet.ContextUnsigned(el)

@@ -191,3 +191,44 @@ func TestAtomicFileTrailingAndWriteACKChoice(t *testing.T) {
 		t.Fatalf("peer stream ACK: %v %+v", err, got)
 	}
 }
+
+func TestAtomicWriteFileRecordEncode(t *testing.T) {
+	raw, err := service.EncodeAtomicWriteFile(service.AtomicWriteFileRequest{
+		File:   bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeFile, Instance: 2},
+		Access: service.FileAccessRecord, StartPosition: 1, Records: [][]byte{[]byte("a"), []byte("b")},
+	})
+	if err != nil || len(raw) < 8 {
+		t.Fatal(err)
+	}
+	fraw, err := service.EncodeAtomicWriteFile(service.AtomicWriteFileRequest{
+		File:          bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeFile, Instance: 2},
+		Access:        service.FileAccessRecord,
+		StartPosition: 0,
+		Records:       [][]byte{[]byte("record-0001")},
+	})
+	if err != nil || len(fraw) == 0 {
+		t.Fatalf("%v %x", err, fraw)
+	}
+}
+
+func TestAtomicReadFileACKMissingEOF(t *testing.T) {
+	body, err := bacnet.AppendApplicationValue(nil, bacnet.SignedValue(0))
+	if err != nil {
+		t.Fatal(err)
+	}
+	body, err = bacnet.AppendApplicationValue(body, bacnet.ApplicationValue{Kind: bacnet.ValueOctetString, OctetString: []byte{1}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	els, n, err := bacnet.ParseSequence(body, bacnet.DefaultDecodeLimits(), -1)
+	if err != nil || n != len(body) {
+		t.Fatal(err)
+	}
+	raw, err := bacnet.AppendContextTagged(nil, 0, els)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := service.DecodeAtomicReadFileACK(raw, bacnet.DefaultDecodeLimits()); err == nil {
+		t.Fatal("expected missing EOF")
+	}
+}

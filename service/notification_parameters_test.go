@@ -74,3 +74,67 @@ func TestNotificationParametersOutOfRangeRoundTrip(t *testing.T) {
 		t.Fatalf("%+v", got.OutOfRange)
 	}
 }
+
+func TestNotificationParametersChangeVariantsRoundTrip(t *testing.T) {
+	flags := bacnet.BitString{UnusedBits: 4, Bytes: []byte{0x10}}
+	bits := bacnet.BitString{UnusedBits: 0, Bytes: []byte{0xff}}
+	cases := []NotificationParameters{
+		{ChangeOfBitstring: &ChangeOfBitstringParams{
+			ReferencedBitstring: bits, StatusFlags: flags,
+		}},
+		{ChangeOfValue: &ChangeOfValueParams{
+			NewValue: bacnet.ApplicationValue{
+				Kind: bacnet.ValueConstructed,
+				Elements: []bacnet.Element{{
+					Value: bacnet.RealValue(3.5),
+				}},
+			},
+			StatusFlags: flags,
+		}},
+		{ChangeOfState: &ChangeOfStateParams{
+			NewState: PropertyStates{Choice: 0, Value: bacnet.BoolValue(true)}, StatusFlags: flags,
+		}},
+		{ChangeOfState: &ChangeOfStateParams{
+			NewState: PropertyStates{Choice: 1, Value: bacnet.EnumValue(2)}, StatusFlags: flags,
+		}},
+		{ChangeOfState: &ChangeOfStateParams{
+			NewState: PropertyStates{Choice: 2, Value: bacnet.UnsignedValue(7)}, StatusFlags: flags,
+		}},
+		{ChangeOfState: &ChangeOfStateParams{
+			NewState: PropertyStates{Choice: 9, Value: bacnet.RealValue(1.5)}, StatusFlags: flags,
+		}},
+	}
+	for i, params := range cases {
+		els, err := EncodeNotificationParameters(params)
+		if err != nil {
+			t.Fatalf("%d encode: %v", i, err)
+		}
+		got, err := DecodeNotificationParameters(els)
+		if err != nil {
+			t.Fatalf("%d decode: %v", i, err)
+		}
+		switch {
+		case params.ChangeOfBitstring != nil && got.ChangeOfBitstring == nil:
+			t.Fatalf("%d bitstring", i)
+		case params.ChangeOfValue != nil && got.ChangeOfValue == nil:
+			t.Fatalf("%d value", i)
+		case params.ChangeOfState != nil && got.ChangeOfState == nil:
+			t.Fatalf("%d state", i)
+		}
+	}
+}
+
+func TestNotificationParametersEmptyAndRawElements(t *testing.T) {
+	if _, err := EncodeNotificationParameters(NotificationParameters{}); err == nil {
+		t.Fatal("expected empty NotificationParameters")
+	}
+	rawNP, err := EncodeNotificationParameters(NotificationParameters{
+		Choice: NotificationExtended,
+		RawElements: []bacnet.Element{{
+			Value: bacnet.UnsignedValue(1),
+		}},
+	})
+	if err != nil || len(rawNP) == 0 {
+		t.Fatalf("raw NotificationParameters: %v %#v", err, rawNP)
+	}
+}
