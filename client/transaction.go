@@ -22,13 +22,18 @@ const (
 // DefaultRetransmitPolicy returns per-service exact-APDU retransmission defaults.
 func DefaultRetransmitPolicy(serviceChoice uint8) RetransmitPolicy {
 	switch serviceChoice {
-	case apdu.ServiceWriteProperty, apdu.ServiceWritePropertyMultiple:
-		return RetransmitDisabled
-	case apdu.ServiceReadProperty, apdu.ServiceReadPropertyMultiple, apdu.ServiceReadRange, apdu.ServiceGetEventInformation:
+	case apdu.ServiceReadProperty, apdu.ServiceReadPropertyMultiple, apdu.ServiceReadRange,
+		apdu.ServiceGetEventInformation, apdu.ServiceGetAlarmSummary, apdu.ServiceGetEnrollmentSummary,
+		apdu.ServiceAtomicReadFile, apdu.ServiceAuditLogQuery:
 		return RetransmitEnabled
-	case apdu.ServiceSubscribeCOV, apdu.ServiceSubscribeCOVProperty:
-		return RetransmitDisabled
-	case apdu.ServiceAcknowledgeAlarm, apdu.ServiceDeviceCommunicationControl, apdu.ServiceReinitializeDevice:
+	case apdu.ServiceWriteProperty, apdu.ServiceWritePropertyMultiple,
+		apdu.ServiceAtomicWriteFile, apdu.ServiceAddListElement, apdu.ServiceRemoveListElement,
+		apdu.ServiceCreateObject, apdu.ServiceDeleteObject,
+		apdu.ServiceSubscribeCOV, apdu.ServiceSubscribeCOVProperty, apdu.ServiceSubscribeCOVPropertyMultiple,
+		apdu.ServiceAcknowledgeAlarm, apdu.ServiceDeviceCommunicationControl, apdu.ServiceReinitializeDevice,
+		apdu.ServiceConfirmedPrivateTransfer, apdu.ServiceConfirmedTextMessage,
+		apdu.ServiceLifeSafetyOperation, apdu.ServiceVTOpen, apdu.ServiceVTClose, apdu.ServiceVTData,
+		apdu.ServiceAuthRequest:
 		return RetransmitDisabled
 	default:
 		return RetransmitDisabled

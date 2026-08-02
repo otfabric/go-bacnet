@@ -35,29 +35,59 @@ const (
 
 // Confirmed service choices (subset).
 const (
-	ServiceAcknowledgeAlarm           = 0
-	ServiceConfirmedCOVNotification   = 1
-	ServiceConfirmedEventNotification = 2
-	ServiceSubscribeCOV               = 5
-	ServiceReadProperty               = 12
-	ServiceReadPropertyMultiple       = 14
-	ServiceWriteProperty              = 15
-	ServiceWritePropertyMultiple      = 16
-	ServiceDeviceCommunicationControl = 17
-	ServiceReinitializeDevice         = 20
-	ServiceReadRange                  = 26
-	ServiceSubscribeCOVProperty       = 28
-	ServiceGetEventInformation        = 29
+	ServiceAcknowledgeAlarm                 = 0
+	ServiceConfirmedCOVNotification         = 1
+	ServiceConfirmedEventNotification       = 2
+	ServiceGetAlarmSummary                  = 3
+	ServiceGetEnrollmentSummary             = 4
+	ServiceSubscribeCOV                     = 5
+	ServiceAtomicReadFile                   = 6
+	ServiceAtomicWriteFile                  = 7
+	ServiceAddListElement                   = 8
+	ServiceRemoveListElement                = 9
+	ServiceCreateObject                     = 10
+	ServiceDeleteObject                     = 11
+	ServiceReadProperty                     = 12
+	ServiceReadPropertyMultiple             = 14
+	ServiceWriteProperty                    = 15
+	ServiceWritePropertyMultiple            = 16
+	ServiceDeviceCommunicationControl       = 17
+	ServiceConfirmedPrivateTransfer         = 18
+	ServiceConfirmedTextMessage             = 19
+	ServiceReinitializeDevice               = 20
+	ServiceVTOpen                           = 21
+	ServiceVTClose                          = 22
+	ServiceVTData                           = 23
+	ServiceReadRange                        = 26
+	ServiceLifeSafetyOperation              = 27
+	ServiceSubscribeCOVProperty             = 28
+	ServiceGetEventInformation              = 29
+	ServiceSubscribeCOVPropertyMultiple     = 30
+	ServiceConfirmedCOVNotificationMultiple = 31
+	ServiceConfirmedAuditNotification       = 32
+	ServiceAuditLogQuery                    = 33
+	// ServiceAuthRequest is a reserved/extension choice used by AuthRequest codecs.
+	// Peer support is uncommon; evidence remains interop-single-peer until validated.
+	ServiceAuthRequest = 34
 )
 
 // Unconfirmed service choices (subset).
 const (
-	ServiceIAm                          = 0
-	ServiceIHave                        = 1
-	ServiceUnconfirmedCOV               = 2
-	ServiceUnconfirmedEventNotification = 3
-	ServiceWhoHas                       = 7
-	ServiceWhoIs                        = 8
+	ServiceIAm                                = 0
+	ServiceIHave                              = 1
+	ServiceUnconfirmedCOV                     = 2
+	ServiceUnconfirmedEventNotification       = 3
+	ServiceUnconfirmedPrivateTransfer         = 4
+	ServiceUnconfirmedTextMessage             = 5
+	ServiceTimeSynchronization                = 6
+	ServiceWhoHas                             = 7
+	ServiceWhoIs                              = 8
+	ServiceUTCTimeSynchronization             = 9
+	ServiceWriteGroup                         = 10
+	ServiceUnconfirmedCOVNotificationMultiple = 11
+	ServiceUnconfirmedAuditNotification       = 12
+	ServiceWhoAmI                             = 13
+	ServiceYouAre                             = 14
 )
 
 // ConfirmedRequest is a confirmed request APDU with raw service payload.

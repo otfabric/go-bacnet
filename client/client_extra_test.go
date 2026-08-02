@@ -59,6 +59,37 @@ func TestInterfaceBroadcastInvalidInterface(t *testing.T) {
 	}
 }
 
+func TestInterfaceBroadcastIPv4Interface(t *testing.T) {
+	ifaces, err := net.Interfaces()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i := range ifaces {
+		ifi := &ifaces[i]
+		addrs, err := ifi.Addrs()
+		if err != nil || len(addrs) == 0 {
+			continue
+		}
+		hasV4 := false
+		for _, a := range addrs {
+			ipnet, ok := a.(*net.IPNet)
+			if ok && ipnet.IP.To4() != nil && len(ipnet.Mask) == 4 {
+				hasV4 = true
+				break
+			}
+		}
+		if !hasV4 {
+			continue
+		}
+		addr := interfaceBroadcast(ifi, 47808)
+		if addr == nil || addr.IP == nil || addr.Port != 47808 {
+			t.Fatalf("interface %q: unexpected broadcast %v", ifi.Name, addr)
+		}
+		return
+	}
+	t.Skip("no IPv4 interface with a /32–/0 mask")
+}
+
 func TestSendWhoIsClosedClient(t *testing.T) {
 	env := newVirtualPair(t)
 	if err := env.Client.Close(); err != nil {

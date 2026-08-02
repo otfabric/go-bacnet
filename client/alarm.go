@@ -48,3 +48,39 @@ func (c *Client) GetEventInformation(ctx context.Context, target Target, req ser
 	}
 	return service.DecodeGetEventInformationACK(pdu.ComplexACK.Payload, c.limits)
 }
+
+// GetAlarmSummary performs a confirmed GetAlarmSummary.
+//
+// Exact-APDU retransmission is enabled (read-like).
+func (c *Client) GetAlarmSummary(ctx context.Context, target Target) (service.GetAlarmSummaryACK, error) {
+	payload, err := service.EncodeGetAlarmSummary()
+	if err != nil {
+		return service.GetAlarmSummaryACK{}, err
+	}
+	pdu, err := c.confirmedRequest(ctx, target, apdu.ServiceGetAlarmSummary, payload, DefaultRetransmitPolicy(apdu.ServiceGetAlarmSummary))
+	if err != nil {
+		return service.GetAlarmSummaryACK{}, err
+	}
+	if pdu.Type != apdu.TypeComplexACK || pdu.ComplexACK == nil {
+		return service.GetAlarmSummaryACK{}, bacnet.ErrProtocolViolation
+	}
+	return service.DecodeGetAlarmSummaryACK(pdu.ComplexACK.Payload, c.limits)
+}
+
+// GetEnrollmentSummary performs a confirmed GetEnrollmentSummary.
+//
+// Exact-APDU retransmission is enabled (read-like).
+func (c *Client) GetEnrollmentSummary(ctx context.Context, target Target, req service.GetEnrollmentSummaryRequest) (service.GetEnrollmentSummaryACK, error) {
+	payload, err := service.EncodeGetEnrollmentSummary(req)
+	if err != nil {
+		return service.GetEnrollmentSummaryACK{}, err
+	}
+	pdu, err := c.confirmedRequest(ctx, target, apdu.ServiceGetEnrollmentSummary, payload, DefaultRetransmitPolicy(apdu.ServiceGetEnrollmentSummary))
+	if err != nil {
+		return service.GetEnrollmentSummaryACK{}, err
+	}
+	if pdu.Type != apdu.TypeComplexACK || pdu.ComplexACK == nil {
+		return service.GetEnrollmentSummaryACK{}, bacnet.ErrProtocolViolation
+	}
+	return service.DecodeGetEnrollmentSummaryACK(pdu.ComplexACK.Payload, c.limits)
+}

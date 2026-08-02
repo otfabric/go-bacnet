@@ -5,7 +5,7 @@
 | Status | Requirement |
 |--------|-------------|
 | **alpha** | Pre-hardening / incomplete oracle evidence |
-| **production-candidate** | Release-grade at `v0.1.1` hardening + `v0.2.0` supervisory-client breadth + `v0.2.1` correctness/strictness (see [RELEASE.md](../RELEASE.md)). Does **not** require this real-device checklist. |
+| **production-candidate** | Release-grade through `v0.2.1` correctness/strictness; pending `v0.2.2` adds Worldiety-pinned peer evidence and broader service codecs (see [RELEASE.md](../RELEASE.md)). Does **not** require this real-device checklist. |
 | **production-usable** | Allowed in docs and release notes only after the checklist below is complete. |
 
 **Production-usable** requires successful smoke testing against **≥ 2 real,

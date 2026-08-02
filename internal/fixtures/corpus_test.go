@@ -568,6 +568,317 @@ func assertOperation(t *testing.T, meta fixtures.Meta, raw []byte, limits bacnet
 		}
 		assertReencode(t, meta, raw, func() ([]byte, error) { return service.EncodeReinitializeDevice(req) })
 
+	case "decode_get_alarm_summary":
+		err := service.DecodeGetAlarmSummary(raw, limits)
+		assertExpectedError(t, meta, err, "service")
+		if err != nil {
+			return
+		}
+		assertReencode(t, meta, raw, service.EncodeGetAlarmSummary)
+
+	case "decode_get_alarm_summary_ack":
+		ack, err := service.DecodeGetAlarmSummaryACK(raw, limits)
+		assertExpectedError(t, meta, err, "service")
+		if err != nil {
+			return
+		}
+		want := meta.Expected
+		if len(ack.Entries) != intNum(want["entry_count"]) {
+			t.Fatalf("%+v", ack)
+		}
+		obj := want["object"].(map[string]any)
+		if int(ack.Entries[0].Object.Type) != intNum(obj["type"]) || int(ack.Entries[0].Object.Instance) != intNum(obj["instance"]) {
+			t.Fatalf("%+v", ack.Entries[0].Object)
+		}
+		if int(ack.Entries[0].AlarmState) != intNum(want["alarm_state"]) {
+			t.Fatalf("state=%d", ack.Entries[0].AlarmState)
+		}
+		assertReencode(t, meta, raw, func() ([]byte, error) { return service.EncodeGetAlarmSummaryACK(ack) })
+
+	case "decode_get_enrollment_summary":
+		req, err := service.DecodeGetEnrollmentSummary(raw, limits)
+		assertExpectedError(t, meta, err, "service")
+		if err != nil {
+			return
+		}
+		want := meta.Expected
+		if int(req.AcknowledgmentFilter) != intNum(want["acknowledgment_filter"]) {
+			t.Fatalf("%+v", req)
+		}
+		if req.EventStateFilter == nil || int(*req.EventStateFilter) != intNum(want["event_state_filter"]) {
+			t.Fatalf("%+v", req)
+		}
+		assertReencode(t, meta, raw, func() ([]byte, error) { return service.EncodeGetEnrollmentSummary(req) })
+
+	case "decode_get_enrollment_summary_ack":
+		ack, err := service.DecodeGetEnrollmentSummaryACK(raw, limits)
+		assertExpectedError(t, meta, err, "service")
+		if err != nil {
+			return
+		}
+		want := meta.Expected
+		if len(ack.Entries) != intNum(want["entry_count"]) {
+			t.Fatalf("%+v", ack)
+		}
+		obj := want["object"].(map[string]any)
+		if int(ack.Entries[0].Object.Type) != intNum(obj["type"]) || int(ack.Entries[0].NotificationClass) != intNum(want["notification_class"]) {
+			t.Fatalf("%+v", ack.Entries[0])
+		}
+		assertReencode(t, meta, raw, func() ([]byte, error) { return service.EncodeGetEnrollmentSummaryACK(ack) })
+
+	case "decode_subscribe_cov_property_multiple":
+		req, err := service.DecodeSubscribeCOVPropertyMultiple(raw, limits)
+		assertExpectedError(t, meta, err, "service")
+		if err != nil {
+			return
+		}
+		want := meta.Expected
+		if int(req.SubscriberProcessIdentifier) != intNum(want["subscriber_process_identifier"]) ||
+			req.LifetimeRemaining == nil || int(*req.LifetimeRemaining) != intNum(want["lifetime_remaining"]) ||
+			len(req.Subscriptions) != intNum(want["subscription_count"]) {
+			t.Fatalf("%+v", req)
+		}
+		assertReencode(t, meta, raw, func() ([]byte, error) { return service.EncodeSubscribeCOVPropertyMultiple(req) })
+
+	case "decode_cov_notification_multiple":
+		note, err := service.DecodeCOVNotificationMultiple(raw, limits)
+		assertExpectedError(t, meta, err, "service")
+		if err != nil {
+			return
+		}
+		want := meta.Expected
+		if int(note.SubscriberProcessIdentifier) != intNum(want["subscriber_process_identifier"]) ||
+			int(note.TimeRemaining) != intNum(want["time_remaining"]) ||
+			len(note.Objects) != intNum(want["object_count"]) {
+			t.Fatalf("%+v", note)
+		}
+		assertReencode(t, meta, raw, func() ([]byte, error) { return service.EncodeCOVNotificationMultiple(note) })
+
+	case "decode_atomic_read_file":
+		req, err := service.DecodeAtomicReadFile(raw, limits)
+		assertExpectedError(t, meta, err, "service")
+		if err != nil {
+			return
+		}
+		want := meta.Expected
+		obj := want["file"].(map[string]any)
+		access := "stream"
+		if req.Access == service.FileAccessRecord {
+			access = "record"
+		}
+		if int(req.File.Type) != intNum(obj["type"]) || int(req.File.Instance) != intNum(obj["instance"]) ||
+			access != want["access"].(string) || int(req.Count) != intNum(want["count"]) {
+			t.Fatalf("%+v", req)
+		}
+		assertReencode(t, meta, raw, func() ([]byte, error) { return service.EncodeAtomicReadFile(req) })
+
+	case "decode_atomic_read_file_ack":
+		ack, err := service.DecodeAtomicReadFileACK(raw, limits)
+		assertExpectedError(t, meta, err, "service")
+		if err != nil {
+			return
+		}
+		want := meta.Expected
+		if ack.EndOfFile != boolVal(want["end_of_file"]) || string(ack.Data) != want["data"].(string) {
+			t.Fatalf("%+v", ack)
+		}
+		assertReencode(t, meta, raw, func() ([]byte, error) { return service.EncodeAtomicReadFileACK(ack) })
+
+	case "decode_atomic_write_file":
+		req, err := service.DecodeAtomicWriteFile(raw, limits)
+		assertExpectedError(t, meta, err, "service")
+		if err != nil {
+			return
+		}
+		want := meta.Expected
+		obj := want["file"].(map[string]any)
+		if int(req.File.Type) != intNum(obj["type"]) || string(req.Data) != want["data"].(string) {
+			t.Fatalf("%+v", req)
+		}
+		assertReencode(t, meta, raw, func() ([]byte, error) { return service.EncodeAtomicWriteFile(req) })
+
+	case "decode_atomic_write_file_ack":
+		ack, err := service.DecodeAtomicWriteFileACK(raw, limits)
+		assertExpectedError(t, meta, err, "service")
+		if err != nil {
+			return
+		}
+		want := meta.Expected
+		if int(ack.StartPosition) != intNum(want["start_position"]) {
+			t.Fatalf("%+v", ack)
+		}
+		assertReencode(t, meta, raw, func() ([]byte, error) { return service.EncodeAtomicWriteFileACK(ack) })
+
+	case "decode_list_element":
+		req, err := service.DecodeListElementRequest(raw, limits)
+		assertExpectedError(t, meta, err, "service")
+		if err != nil {
+			return
+		}
+		want := meta.Expected
+		obj := want["object"].(map[string]any)
+		if int(req.Object.Type) != intNum(obj["type"]) || int(req.Property.Identifier) != intNum(want["property"]) ||
+			len(req.Elements) != intNum(want["element_count"]) {
+			t.Fatalf("%+v", req)
+		}
+		assertReencode(t, meta, raw, func() ([]byte, error) { return service.EncodeListElementRequest(req) })
+
+	case "decode_create_object":
+		req, err := service.DecodeCreateObject(raw, limits)
+		assertExpectedError(t, meta, err, "service")
+		if err != nil {
+			return
+		}
+		want := meta.Expected
+		obj := want["object"].(map[string]any)
+		if req.ObjectIdentifier == nil || int(req.ObjectIdentifier.Type) != intNum(obj["type"]) ||
+			int(req.ObjectIdentifier.Instance) != intNum(obj["instance"]) {
+			t.Fatalf("%+v", req)
+		}
+		assertReencode(t, meta, raw, func() ([]byte, error) { return service.EncodeCreateObject(req) })
+
+	case "decode_create_object_ack":
+		ack, err := service.DecodeCreateObjectACK(raw, limits)
+		assertExpectedError(t, meta, err, "service")
+		if err != nil {
+			return
+		}
+		want := meta.Expected
+		obj := want["object"].(map[string]any)
+		if int(ack.Object.Type) != intNum(obj["type"]) || int(ack.Object.Instance) != intNum(obj["instance"]) {
+			t.Fatalf("%+v", ack)
+		}
+		assertReencode(t, meta, raw, func() ([]byte, error) { return service.EncodeCreateObjectACK(ack) })
+
+	case "decode_delete_object":
+		req, err := service.DecodeDeleteObject(raw, limits)
+		assertExpectedError(t, meta, err, "service")
+		if err != nil {
+			return
+		}
+		want := meta.Expected
+		obj := want["object"].(map[string]any)
+		if int(req.Object.Type) != intNum(obj["type"]) || int(req.Object.Instance) != intNum(obj["instance"]) {
+			t.Fatalf("%+v", req)
+		}
+		assertReencode(t, meta, raw, func() ([]byte, error) { return service.EncodeDeleteObject(req) })
+
+	case "decode_private_transfer":
+		req, err := service.DecodePrivateTransfer(raw, limits)
+		assertExpectedError(t, meta, err, "service")
+		if err != nil {
+			return
+		}
+		want := meta.Expected
+		if int(req.VendorID) != intNum(want["vendor_id"]) || int(req.ServiceNumber) != intNum(want["service_number"]) {
+			t.Fatalf("%+v", req)
+		}
+		assertReencode(t, meta, raw, func() ([]byte, error) { return service.EncodePrivateTransfer(req) })
+
+	case "decode_text_message":
+		req, err := service.DecodeTextMessage(raw, limits)
+		assertExpectedError(t, meta, err, "service")
+		if err != nil {
+			return
+		}
+		want := meta.Expected
+		src := want["source"].(map[string]any)
+		if req.Message != want["message"].(string) || int(req.TextMessageSourceDevice.Instance) != intNum(src["instance"]) {
+			t.Fatalf("%+v", req)
+		}
+		assertReencode(t, meta, raw, func() ([]byte, error) { return service.EncodeTextMessage(req) })
+
+	case "decode_time_synchronization":
+		req, err := service.DecodeTimeSynchronization(raw, limits)
+		assertExpectedError(t, meta, err, "service")
+		if err != nil {
+			return
+		}
+		want := meta.Expected
+		if int(req.Date.Year) != intNum(want["year"]) || int(req.Date.Month) != intNum(want["month"]) ||
+			int(req.Date.Day) != intNum(want["day"]) || int(req.Time.Hour) != intNum(want["hour"]) {
+			t.Fatalf("%+v", req)
+		}
+		assertReencode(t, meta, raw, func() ([]byte, error) { return service.EncodeTimeSynchronization(req) })
+
+	case "decode_write_group":
+		req, err := service.DecodeWriteGroup(raw, limits)
+		assertExpectedError(t, meta, err, "service")
+		if err != nil {
+			return
+		}
+		want := meta.Expected
+		if int(req.GroupNumber) != intNum(want["group_number"]) || int(req.WritePriority) != intNum(want["write_priority"]) ||
+			len(req.ChangeList) != intNum(want["change_list_count"]) {
+			t.Fatalf("%+v", req)
+		}
+		assertReencode(t, meta, raw, func() ([]byte, error) { return service.EncodeWriteGroup(req) })
+
+	case "decode_audit_log_query":
+		req, err := service.DecodeAuditLogQuery(raw, limits)
+		assertExpectedError(t, meta, err, "service")
+		if err != nil {
+			return
+		}
+		want := meta.Expected
+		obj := want["audit_log"].(map[string]any)
+		if int(req.AuditLog.Type) != intNum(obj["type"]) || int(req.AuditLog.Instance) != intNum(obj["instance"]) {
+			t.Fatalf("%+v", req)
+		}
+		assertReencode(t, meta, raw, func() ([]byte, error) { return service.EncodeAuditLogQuery(req) })
+
+	case "decode_who_am_i":
+		req, err := service.DecodeWhoAmI(raw, limits)
+		assertExpectedError(t, meta, err, "service")
+		if err != nil {
+			return
+		}
+		want := meta.Expected
+		if int(req.VendorID) != intNum(want["vendor_id"]) || req.ModelName != want["model_name"].(string) ||
+			req.SerialNumber != want["serial_number"].(string) {
+			t.Fatalf("%+v", req)
+		}
+		assertReencode(t, meta, raw, func() ([]byte, error) { return service.EncodeWhoAmI(req) })
+
+	case "decode_you_are":
+		req, err := service.DecodeYouAre(raw, limits)
+		assertExpectedError(t, meta, err, "service")
+		if err != nil {
+			return
+		}
+		want := meta.Expected
+		dev := want["device"].(map[string]any)
+		if int(req.VendorID) != intNum(want["vendor_id"]) || int(req.Device.Instance) != intNum(dev["instance"]) {
+			t.Fatalf("%+v", req)
+		}
+		assertReencode(t, meta, raw, func() ([]byte, error) { return service.EncodeYouAre(req) })
+
+	case "decode_life_safety_operation":
+		req, err := service.DecodeLifeSafetyOperation(raw, limits)
+		assertExpectedError(t, meta, err, "service")
+		if err != nil {
+			return
+		}
+		want := meta.Expected
+		obj := want["object"].(map[string]any)
+		if int(req.Request) != intNum(want["request"]) || req.RequestingSource != want["source"].(string) ||
+			req.Object == nil || int(req.Object.Instance) != intNum(obj["instance"]) {
+			t.Fatalf("%+v", req)
+		}
+		assertReencode(t, meta, raw, func() ([]byte, error) { return service.EncodeLifeSafetyOperation(req) })
+
+	case "decode_vt_open":
+		req, err := service.DecodeVTOpen(raw, limits)
+		assertExpectedError(t, meta, err, "service")
+		if err != nil {
+			return
+		}
+		want := meta.Expected
+		if int(req.VTClass) != intNum(want["vt_class"]) || int(req.LocalVTSessionIdentifier) != intNum(want["local_session"]) {
+			t.Fatalf("%+v", req)
+		}
+		assertReencode(t, meta, raw, func() ([]byte, error) { return service.EncodeVTOpen(req) })
+
 	default:
 		t.Fatalf("unsupported operation %q", meta.Operation)
 	}

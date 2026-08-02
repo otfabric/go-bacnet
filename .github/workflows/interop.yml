@@ -31,6 +31,7 @@ jobs:
             echo "bacnet_stack=$(jq -r '.images["bacnet-stack"]' "$pin")"
             echo "bacpypes3=$(jq -r '.images.bacpypes3' "$pin")"
             echo "bacnet4j=$(jq -r '.images.bacnet4j' "$pin")"
+            echo "worldiety=$(jq -r '.images.worldiety' "$pin")"
             echo "bip_router=$(jq -r '.images["bip-router"]' "$pin")"
           } >> "$GITHUB_OUTPUT"
 
@@ -52,6 +53,7 @@ jobs:
             echo "BACNET_STACK_IMAGE=${{ steps.pin.outputs.bacnet_stack }}"
             echo "BACPYPES3_IMAGE=${{ steps.pin.outputs.bacpypes3 }}"
             echo "BACNET4J_IMAGE=${{ steps.pin.outputs.bacnet4j }}"
+            echo "WORLDIETY_IMAGE=${{ steps.pin.outputs.worldiety }}"
             echo "BIP_ROUTER_IMAGE=${{ steps.pin.outputs.bip_router }}"
           } | tee interop-evidence.txt
           echo "## Interop evidence (pinned)" >> "$GITHUB_STEP_SUMMARY"
@@ -83,12 +85,14 @@ jobs:
           BACNET_STACK_IMAGE: ${{ steps.pin.outputs.bacnet_stack }}
           BACPYPES3_IMAGE: ${{ steps.pin.outputs.bacpypes3 }}
           BACNET4J_IMAGE: ${{ steps.pin.outputs.bacnet4j }}
+          WORLDIETY_IMAGE: ${{ steps.pin.outputs.worldiety }}
           BIP_ROUTER_IMAGE: ${{ steps.pin.outputs.bip_router }}
         run: |
           set -euo pipefail
           docker pull "$BACNET_STACK_IMAGE"
           docker pull "$BACPYPES3_IMAGE"
           docker pull "$BACNET4J_IMAGE"
+          docker pull "$WORLDIETY_IMAGE"
           docker pull "$BIP_ROUTER_IMAGE"
           # In-network re-exec uses golang:<go.mod major.minor>; pull before tests
           # so the first routed topology is not racing an image download.
@@ -114,6 +118,7 @@ jobs:
           BACNET_STACK_IMAGE: ${{ steps.pin.outputs.bacnet_stack }}
           BACPYPES3_IMAGE: ${{ steps.pin.outputs.bacpypes3 }}
           BACNET4J_IMAGE: ${{ steps.pin.outputs.bacnet4j }}
+          WORLDIETY_IMAGE: ${{ steps.pin.outputs.worldiety }}
           BIP_ROUTER_IMAGE: ${{ steps.pin.outputs.bip_router }}
           GOWORK: "off"
           CI: "true"
@@ -192,6 +197,7 @@ jobs:
           BACNET_STACK_IMAGE: bacnet-interop-bacnet-stack:local
           BACPYPES3_IMAGE: bacnet-interop-bacpypes3:local
           BACNET4J_IMAGE: bacnet-interop-bacnet4j:local
+          WORLDIETY_IMAGE: bacnet-interop-worldiety:local
           BIP_ROUTER_IMAGE: bacnet-interop-bip-router:local
           GOWORK: "off"
           CI: "true"

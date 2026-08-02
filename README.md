@@ -14,12 +14,12 @@ over IPv4/UDP on port **47808** (`0xBAC0`).
 New to BACnet? Start with [PROTOCOL.md](PROTOCOL.md) for a short primer on
 objects, BVLC/NPDU/APDU layering, discovery, and how those map to this library.
 
-**Status:** early v0.x **production-candidate** — **[`v0.2.0`](https://github.com/otfabric/go-bacnet/releases/tag/v0.2.0)**
-released; **`v0.2.1`** ready to tag (correlation, segmentation, outcome-unknown,
-decoder strictness, EventNotification receive-path safety; pinned interop
-[`bacnet-interop` v0.4.2](https://github.com/otfabric/bacnet-interop/releases/tag/v0.4.2)).
-Next after the cut: the [real-device gate](docs/REAL_DEVICE_GATE.md). Not
-**production-usable** until that gate (≥2 independent BACnet/IP devices).
+**Status:** early v0.x **production-candidate** — **[`v0.2.1`](https://github.com/otfabric/go-bacnet/releases/tag/v0.2.1)**
+released; next pending minor **`v0.2.2`** adds Worldiety as a fourth digest-pinned
+peer plus broader service codecs/APIs; pinned interop
+[`bacnet-interop` v0.5.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.5.0).
+Still not **production-usable** until the [real-device gate](docs/REAL_DEVICE_GATE.md)
+(≥2 independent BACnet/IP devices).
 
 | Label | Meaning |
 |-------|---------|
@@ -53,18 +53,23 @@ Public Address, Value, transaction and subscription APIs may still evolve.
 - Optional foreign-device registration
 - COV subscribe / notify / renew / cancel
 - EventNotification receive (typed common NotificationParameters); AcknowledgeAlarm; GetEventInformation
+- GetAlarmSummary / GetEnrollmentSummary; SubscribeCOVPropertyMultiple; COVNotificationMultiple receive
+- Bounded OpenEventStream / OpenAuditStream
+- AtomicReadFile / AtomicWriteFile; Add/RemoveListElement; CreateObject / DeleteObject
+- PrivateTransfer / TextMessage; TimeSynchronization / UTCTimeSynchronization; WriteGroup
+- AuditLogQuery / AuthRequest / Who-Am-I / You-Are; LifeSafetyOperation; VT-Open/Close/Data
 - ReadRange with typed Trend Log `LogRecords` when applicable
 - DeviceCommunicationControl / ReinitializeDevice (explicit opt-in)
 - `bacnetctl` for decode, discover, read and write
-- Runnable H2 examples under `examples/`
+- Runnable examples under `examples/`
 
-**Out of scope (Horizon 3+ / later):**
+**Out of scope (later):**
 
-- Convenience / supervisor package (Horizon 3)
+- Convenience / supervisor package
 - Native MS/TP, BACnet/IPv6, BACnet/SC
 - Full BBMD server / multi-BBMD failover
 - Full BACnet server / device object model
-- Schedules; uncommon event-parameter CHOICEs; GetAlarmSummary
+- Schedules; remaining proprietary/event CHOICEs without peer evidence
 - BTL certification itself
 
 ### Install

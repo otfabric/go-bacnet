@@ -4,6 +4,7 @@ package client
 
 import (
 	"errors"
+	"net"
 	"net/netip"
 	"testing"
 	"time"
@@ -68,11 +69,44 @@ func TestTxMatchSourceUsesTargetMatcher(t *testing.T) {
 }
 
 func TestNewWithLoopbackInterface(t *testing.T) {
-	c, err := New(WithInterface("lo0"), WithLocalAddr("127.0.0.1:0"))
+	name := loopbackInterfaceName(t)
+	c, err := New(WithInterface(name), WithLocalAddr("127.0.0.1:0"))
+	if err != nil {
+		t.Fatalf("loopback %q: %v", name, err)
+	}
+	defer func() { _ = c.Close() }()
+}
+
+func TestNewWithMissingInterface(t *testing.T) {
+	_, err := New(WithInterface("invalid-test-iface-does-not-exist-xyz"), WithLocalAddr("127.0.0.1:0"))
+	if err == nil {
+		t.Fatal("expected missing interface error")
+	}
+}
+
+func loopbackInterfaceName(t *testing.T) string {
+	t.Helper()
+	ifaces, err := net.Interfaces()
 	if err != nil {
 		t.Skip(err)
 	}
-	defer func() { _ = c.Close() }()
+	for _, ifi := range ifaces {
+		if ifi.Flags&net.FlagLoopback == 0 || ifi.Flags&net.FlagUp == 0 {
+			continue
+		}
+		addrs, err := ifi.Addrs()
+		if err != nil {
+			continue
+		}
+		for _, a := range addrs {
+			ipnet, ok := a.(*net.IPNet)
+			if ok && ipnet.IP.To4() != nil {
+				return ifi.Name
+			}
+		}
+	}
+	t.Skip("no IPv4 loopback interface")
+	return ""
 }
 
 func mustEndpoint(s string) bip.Endpoint {

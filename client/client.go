@@ -42,6 +42,10 @@ type Client struct {
 
 	eventMu      sync.Mutex
 	eventHandler EventNotificationHandler
+	eventStream  *eventStream
+
+	auditMu     sync.Mutex
+	auditStream *auditStream
 }
 
 // New constructs a Client. Prefer WithTransport for tests; otherwise UDP is used.

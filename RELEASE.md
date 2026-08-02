@@ -1,5 +1,46 @@
 # go-bacnet Releases
 
+## Unreleased — pending `v0.2.2`
+
+Next minor after [`v0.2.1`](https://github.com/otfabric/go-bacnet/releases/tag/v0.2.1).
+Pin: [`bacnet-interop` v0.5.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.5.0)
+(`interop/bacnet-interop-pin.json`, including Worldiety).
+
+### Added
+
+- Worldiety as a fourth digest-pinned peer oracle (`interop/worldiety_test.go`):
+  Who-Is/Who-Has, RP/RPM/WP/WPM, ReadRange (unsegmented)
+- GetAlarmSummary / GetEnrollmentSummary / SubscribeCOVPropertyMultiple
+- Confirmed/Unconfirmed COVNotificationMultiple receive (+ encode helper)
+- OpenEventStream / TransitionOf; OpenAuditStream
+- AtomicReadFile / AtomicWriteFile (+ FileChunkBounds)
+- AddListElement / RemoveListElement / CreateObject / DeleteObject
+- Confirmed/Unconfirmed PrivateTransfer and TextMessage; TimeSynchronization /
+  UTCTimeSynchronization; WriteGroup
+- AuditLogQuery / AuthRequest / Who-Am-I / You-Are; audit notification receive
+- LifeSafetyOperation; VT-Open / VT-Close / VT-Data
+- Additional NotificationParameters typed CHOICEs (command-failure, floating-limit,
+  buffer-ready, unsigned-range)
+- Request decoders for the new confirmed/unconfirmed services
+- Codec goldens for the new services via `bacnet-interop/fixtures/codec`
+
+### Changed
+
+- CI pinned interop lane pulls and runs Worldiety digests from `v0.5.0`
+- Interop pin file includes `worldiety` image digest
+
+### Notes / known skips
+
+- Worldiety segmented WPM/RPM skipped (peer segment service-choice — B6)
+- BACnet4J AtomicReadFile live path skipped (Error services/10 — B8)
+- BACnet4J CreateObject / DeleteObject live path skipped (config — B9)
+- Broader live multi-peer coverage for event/COV-multiple, file, list/lifecycle,
+  messaging, audit, life-safety/VT, and topology/bbmd v2 modes remains partial
+  (see `bacnet-interop/BLOCKERS.md`)
+- Library coverage gate held at ≥90%
+
+---
+
 ## v0.2.1
 
 **Date:** 2026-08-02  
