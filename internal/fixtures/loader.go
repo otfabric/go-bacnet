@@ -137,8 +137,11 @@ func LoadAll() ([]Meta, error) {
 
 // Bytes returns decoded input_hex.
 func (m Meta) Bytes() ([]byte, error) {
+	// Empty input_hex is a valid empty service payload (e.g. GetAlarmSummary).
+	// Distinguish "missing key" from "" by requiring the field when other expect
+	// flags demand bytes; callers with explicit "" decode to zero-length.
 	if m.InputHex == "" {
-		return nil, fmt.Errorf("fixtures: %s missing input_hex", m.ID)
+		return []byte{}, nil
 	}
 	return hex.DecodeString(strings.ToLower(m.InputHex))
 }

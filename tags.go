@@ -440,20 +440,16 @@ func encodeUnsigned(u uint64) []byte {
 }
 
 func encodeSigned(v int64) []byte {
-	// Minimal two's-complement encoding.
+	// Minimal two's-complement encoding (1..8 octets).
 	u := uint64(v)
 	width := 1
-	for {
+	for width < 8 {
 		shift := uint((8 - width) * 8)
 		s := int64(u<<shift) >> shift
 		if s == v {
 			break
 		}
 		width++
-		if width > 8 {
-			width = 8
-			break
-		}
 	}
 	out := make([]byte, width)
 	for i := 0; i < width; i++ {

@@ -12,16 +12,25 @@ type ObjectType uint16
 
 // Common standard object types (ASHRAE 135).
 const (
-	ObjectTypeAnalogInput     ObjectType = 0
-	ObjectTypeAnalogOutput    ObjectType = 1
-	ObjectTypeAnalogValue     ObjectType = 2
-	ObjectTypeBinaryInput     ObjectType = 3
-	ObjectTypeBinaryOutput    ObjectType = 4
-	ObjectTypeBinaryValue     ObjectType = 5
-	ObjectTypeDevice          ObjectType = 8
-	ObjectTypeMultiStateInput ObjectType = 13
-	ObjectTypeMultiStateValue ObjectType = 19
-	ObjectTypeTrendLog        ObjectType = 20
+	ObjectTypeAnalogInput       ObjectType = 0
+	ObjectTypeAnalogOutput      ObjectType = 1
+	ObjectTypeAnalogValue       ObjectType = 2
+	ObjectTypeBinaryInput       ObjectType = 3
+	ObjectTypeBinaryOutput      ObjectType = 4
+	ObjectTypeBinaryValue       ObjectType = 5
+	ObjectTypeCalendar          ObjectType = 6
+	ObjectTypeCommand           ObjectType = 7
+	ObjectTypeDevice            ObjectType = 8
+	ObjectTypeEventEnrollment   ObjectType = 9
+	ObjectTypeFile              ObjectType = 10
+	ObjectTypeGroup             ObjectType = 11
+	ObjectTypeLifeSafetyPoint   ObjectType = 21
+	ObjectTypeLifeSafetyZone    ObjectType = 22
+	ObjectTypeMultiStateInput   ObjectType = 13
+	ObjectTypeNotificationClass ObjectType = 15
+	ObjectTypeMultiStateValue   ObjectType = 19
+	ObjectTypeTrendLog          ObjectType = 20
+	ObjectTypeAuditLog          ObjectType = 61
 )
 
 // MaxObjectInstance is the largest valid object instance (22 bits).

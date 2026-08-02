@@ -23,7 +23,11 @@ func TestMetaHasTagAndMalformed(t *testing.T) {
 	if ok.Malformed() {
 		t.Fatal("ok should not be malformed")
 	}
-	if _, err := (fixtures.Meta{}).Bytes(); err == nil {
-		t.Fatal("expected missing input_hex")
+	raw, err := (fixtures.Meta{ID: "empty-payload"}).Bytes()
+	if err != nil || len(raw) != 0 {
+		t.Fatalf("empty input_hex: %v %#v", err, raw)
+	}
+	if _, err := (fixtures.Meta{ID: "bad", InputHex: "zz"}).Bytes(); err == nil {
+		t.Fatal("expected hex decode error")
 	}
 }

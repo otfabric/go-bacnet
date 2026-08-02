@@ -3,7 +3,7 @@
 Derived from [`capabilities.yaml`](capabilities.yaml). Includes WPM, ReadRange,
 Who-Has/I-Have, EventNotification receive, opt-in DCC/Reinit, and segmented
 confirmed-request send; evidenced under [INTEROP.md](../INTEROP.md) /
-[RELEASE.md](../RELEASE.md) `v0.2.0` / `v0.2.1`.
+[RELEASE.md](../RELEASE.md) `v0.2.2`.
 
 | Area | Capability | Horizon 1 |
 |------|------------|-----------|

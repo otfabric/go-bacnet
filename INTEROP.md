@@ -4,17 +4,16 @@
 
 | Repository | Owns |
 |------------|------|
-| [bacnet-interop](https://github.com/otfabric/bacnet-interop) | Adapter containers (bacnet-stack, BACpypes3, BACnet4J), `bip-router` topology aid, fixtures, readiness contract, golden packets, [`COVERAGE.md`](https://github.com/otfabric/bacnet-interop/blob/main/COVERAGE.md) |
+| [bacnet-interop](https://github.com/otfabric/bacnet-interop) | Adapter containers (bacnet-stack, BACpypes3, BACnet4J, Worldiety), `bip-router` topology aid, fixtures, readiness contract, golden packets, [`COVERAGE.md`](https://github.com/otfabric/bacnet-interop/blob/main/COVERAGE.md) |
 | `go-bacnet` (`interop/` with `-tags=interop`) | Assertions against those adapters using this library |
 
 Same pattern as `mms-interop` / `go-mms`: interop infra stays out of the library
 module; the library owns behavioural tests.
 
-Horizon 1 peers: **bacnet-stack**, **BACpypes3**, and **BACnet4J**. Topology aid:
-**bip-router** (not a peer oracle). Additional oracles may be added later
-without changing ownership — planned Go peers include **worldiety/bacnet**
-(primary modern competitor) and optionally NubeDev for behavioral comparison
-(see [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md) and [PLAN.md](PLAN.md)).
+Peers: **bacnet-stack**, **BACpypes3**, **BACnet4J**, and **Worldiety**
+(server peer; fixture payload shims). Topology aid: **bip-router**. Worldiety
+client probes are deferred until `go-bacnet` has a server (see
+[docs/COMPATIBILITY.md](docs/COMPATIBILITY.md) and [PLAN.md](PLAN.md)).
 
 ## Fixtures (Gate 3, no Docker)
 
@@ -29,7 +28,10 @@ GOWORK=off go test ./internal/fixtures/ -count=1
 
 Live device semantics for peer containers:
 `bacnet-interop/fixtures/device/device-baseline-v2.json` (device instance `1234`;
-includes TrendLog for ReadRange). The harness also accepts `device-baseline-v1`
+includes TrendLog for ReadRange). Fixture generations `v3`–`v8`, `topology-v2`,
+and `bbmd-v2` are checked in under `bacnet-interop/fixtures/` for the
+client-completeness roadmap; live peer alignment for those generations is still
+partial (see bacnet-interop `BLOCKERS.md`). The harness also accepts `device-baseline-v1`
 when v2 is absent.
 
 ## Running peer adapters
@@ -38,7 +40,7 @@ Build images from a sibling `bacnet-interop` checkout, then run assertions:
 
 ```bash
 # bacnet-interop
-make build   # bacnet-stack + bacpypes3 + bacnet4j + bip-router
+make build   # stack + bacpypes3 + bacnet4j + worldiety + bip-router
 
 # go-bacnet
 make interop
@@ -51,6 +53,7 @@ GOWORK=off go test -tags=interop -count=1 ./interop/...
 | `BACNET_STACK_IMAGE` | `bacnet-interop-bacnet-stack:local` | bacnet-stack peer image |
 | `BACPYPES3_IMAGE` | `bacnet-interop-bacpypes3:local` | BACpypes3 peer image |
 | `BACNET4J_IMAGE` | `bacnet-interop-bacnet4j:local` | BACnet4J peer image |
+| `WORLDIETY_IMAGE` | `bacnet-interop-worldiety:local` | Worldiety peer image |
 | `BIP_ROUTER_IMAGE` | `bacnet-interop-bip-router:local` | Dual-homed BIP↔BIP topology router |
 | `BACNET_INTEROP_GO_IMAGE` | `golang:<go-minor>` | Image used for in-network re-exec on Docker Desktop / routed tests |
 | `BACNET_INTEROP_SKIP` | unset | Skip all peer tests when set (forbidden when required) |
@@ -71,36 +74,42 @@ honored by Docker re-exec for routed tests), require
 `BACNET_INTEROP_REQUIRED=1`, and upload repository SHA evidence artifacts.
 Use `make interop-required` locally with `:local` images or the same digest pins.
 
-Current scenarios (fixture `device-baseline-v2`, device instance `1234`).
-Pinned release: [`bacnet-interop` v0.4.2](https://github.com/otfabric/bacnet-interop/releases/tag/v0.4.2)
-(BACpypes3 **0.0.106**). Green pinned + main-compat:
-[30722438676](https://github.com/otfabric/go-bacnet/actions/runs/30722438676)
-(prior `v0.4.0`: [30720046370](https://github.com/otfabric/go-bacnet/actions/runs/30720046370)).
+Current scenarios default to fixture `device-baseline-v2` (device instance `1234`);
+selected tests also exercise `device-baseline-v3`/`v4`/`v5`/`v6` where peers serve
+them. Pinned release:
+[`bacnet-interop` v0.5.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.5.0)
+(BACpypes3 **0.0.106**; Worldiety digest included). Green pinned + main-compat on
+`v0.2.2` @ `a277aea`:
+[30757758742](https://github.com/otfabric/go-bacnet/actions/runs/30757758742).
 
-| Scenario | bacnet-stack | BACpypes3 | BACnet4J | Interop test |
-|----------|:---:|:---:|:---:|---|
-| Directed Who-Is → I-Am (MaxAPDU/VendorID) | ✓ | ✓ | ✓ | `TestBacnetStackWhoIsIAm`, `TestBACpypes3WhoIsIAm`, `TestBACnet4JWhoIsIAm` |
-| Who-Has → I-Have | ✓ | ✓ | ✓ | `TestBacnetStackWhoHasIHave`, `TestBACpypes3WhoHasIHave`, `TestBACnet4JWhoHasIHave` |
-| ReadProperty device object-name | ✓ | ✓ | ✓ | `TestBacnetStackReadDeviceObjectName`, `TestBACpypes3ReadDeviceObjectName`, `TestBACnet4JReadDeviceObjectName` |
-| ReadProperty AV present-value | ✓ | ✓ | ✓ | `TestBacnetStackReadAnalogValue`, `TestBACpypes3ReadAnalogValue`, `TestBACnet4JReadAnalogValue` |
-| ReadProperty unknown-property → Error | ✓ | ✓ | ✓ | `TestBacnetStackReadPropertyUnknownPropertyError`, `TestBACpypes3ReadPropertyUnknownPropertyError`, `TestBACnet4JReadPropertyUnknownPropertyError` |
-| Unrecognized service → Reject | ✓ | — | ✓ | `TestBacnetStackRejectUnrecognizedService`, `TestBACnet4JRejectUnrecognizedService` |
-| Abort (segmentation path) | ✓ | ✓ | — | `TestBacnetStackAbortSegmentationNotSupported`, `TestBACpypes3AbortWhenSegmentedResponseNotAccepted` |
-| ReadPropertyMultiple success | ✓ | ✓ | ✓ | `TestBacnetStackReadPropertyMultiple`, `TestBACpypes3ReadPropertyMultiple`, `TestBACnet4JReadPropertyMultiple` |
-| RPM partial property Error | ✓ | ✓ | ✓ | `TestBacnetStackReadPropertyMultiplePartialError`, `TestBACpypes3ReadPropertyMultiplePartialError`, `TestBACnet4JReadPropertyMultiplePartialError` |
-| WriteProperty + readback + restore | ✓ | ✓ | ✓ | `TestBacnetStackWritePropertyReadbackReset`, `TestBACpypes3WritePropertyReadbackReset`, `TestBACnet4JWritePropertyReadbackReset` |
-| WritePropertyMultiple + readback + restore | ✓ | ✓ | ✓ | `TestBacnetStackWritePropertyMultipleReadbackReset`, `TestBACpypes3WritePropertyMultipleReadbackReset`, `TestBACnet4JWritePropertyMultipleReadbackReset` |
-| Segmented RPM ComplexACK reassembly | — | ✓ | ✓ | `TestBACpypes3SegmentedReadPropertyMultiple`, `TestBACnet4JSegmentedReadPropertyMultiple` |
-| Segmented confirmed-request send (WPM) | — | ✓ | — | `TestBACpypes3SegmentedWritePropertyMultipleSend` (BACnet4J skipped: rejects segmented confirmed receive) |
-| ReadRange byPosition (TrendLog) | ✓ | — | ✓ | `TestBacnetStackReadRangeByPosition`, `TestBACnet4JReadRangeByPosition` |
-| COV subscribe / notify / cancel | ✓ | ✓ | ✓ | `TestBacnetStackCOVSubscribeNotifyCancel`, `TestBACpypes3COVSubscribeNotifyCancel`, `TestBACnet4JCOVSubscribeNotifyCancel` |
-| COV renew | — | ✓ | — | `TestBACpypes3COVRenew` |
-| EventNotification receive | — | ✓ | ✓ | `TestBACpypes3EventNotificationReceive`, `TestBACnet4JEventNotificationReceive` (`BACNET_EMIT_EVENT=1`) |
-| DeviceCommunicationControl (enable) | ✓ | — | — | `TestBacnetStackDeviceCommunicationControlEnable` |
-| ReinitializeDevice warmstart | ✓ | ✓ | ✓ | `TestBacnetStackReinitializeDeviceWarmstart`, `TestBACpypes3ReinitializeDeviceWarmstart`, `TestBACnet4JReinitializeDeviceWarmstart` |
-| Routed Who-Is-Router → ResolveTarget → RP | — | ✓ | — | `TestBACpypes3RoutedWhoIsRouterReadProperty` (cache learn best-effort under Docker Desktop; hard assert is routed RP; unit coverage in `client/routing_test.go`) |
-| Routed RP (explicit next-hop DNET/DADR) | ✓ | ✓ | ✓ | `TestBACnetStackRoutedReadProperty`, `TestBACnet4JRoutedReadProperty`; BACpypes3 via Who-Is-Router test path |
-| Foreign-device register + DBTN Who-Is → RP | — | ✓ | ✓ | `TestBACpypes3ForeignDeviceWhoIsReadProperty`, `TestBACnet4JForeignDeviceWhoIsReadProperty` |
+| Scenario | bacnet-stack | BACpypes3 | BACnet4J | Worldiety | Interop test |
+|----------|:---:|:---:|:---:|:---:|---|
+| Directed Who-Is → I-Am (MaxAPDU/VendorID) | ✓ | ✓ | ✓ | ✓ | `TestBacnetStackWhoIsIAm`, `TestBACpypes3WhoIsIAm`, `TestBACnet4JWhoIsIAm`, `TestWorldietyWhoIsIAm` |
+| Who-Has → I-Have | ✓ | ✓ | ✓ | ✓ | `…WhoHasIHave`, `TestWorldietyWhoHasIHave` |
+| ReadProperty device object-name | ✓ | ✓ | ✓ | ✓ | `…ReadDeviceObjectName`, `TestWorldietyReadDeviceObjectName` |
+| ReadProperty AV present-value | ✓ | ✓ | ✓ | ✓ | `…ReadAnalogValue`, `TestWorldietyReadAnalogValuePresentValue` |
+| ReadProperty unknown-property → Error | ✓ | ✓ | ✓ | ✓ | `…UnknownPropertyError`, `TestWorldietyReadPropertyUnknownPropertyError` |
+| Unrecognized service → Reject | ✓ | — | ✓ | — | `TestBacnetStackRejectUnrecognizedService`, `TestBACnet4JRejectUnrecognizedService` |
+| Abort (segmentation path) | ✓ | ✓ | — | — | `TestBacnetStackAbortSegmentationNotSupported`, `TestBACpypes3AbortWhenSegmentedResponseNotAccepted` |
+| ReadPropertyMultiple success | ✓ | ✓ | ✓ | ✓ | `…ReadPropertyMultiple`, `TestWorldietyReadPropertyMultiple` |
+| RPM partial property Error | ✓ | ✓ | ✓ | — | `…ReadPropertyMultiplePartialError` |
+| WriteProperty + readback + restore | ✓ | ✓ | ✓ | ✓ | `…WritePropertyReadbackReset`, `TestWorldietyWritePropertyReadbackReset` |
+| WritePropertyMultiple + readback + restore | ✓ | ✓ | ✓ | ✓ | `…WritePropertyMultipleReadbackReset`, `TestWorldietyWritePropertyMultipleReadbackReset` |
+| Segmented RPM ComplexACK reassembly | — | ✓ | ✓ | skip | Worldiety skip B6 (service-choice on segments); BACpypes3/4J ✓ |
+| Segmented confirmed-request send (WPM) | — | ✓ | — | skip | Worldiety skip B6; BACnet4J rejects segmented confirmed receive |
+| ReadRange byPosition (TrendLog) | ✓ | — | ✓ | ✓ | `…ReadRangeByPosition`, `TestWorldietyReadRangeByPosition` |
+| AtomicReadFile stream/record (`device-baseline-v4`) | — | — | skip | — | BACnet4J File objects served; live read skipped B8 |
+| CreateObject / DeleteObject (`device-baseline-v5`) | — | — | skip | — | BACnet4J deletion/creatable config B9 |
+| TimeSynchronization / UnconfirmedTextMessage (`device-baseline-v6`) | — | — | ✓ | — | `TestBACnet4JTimeSynchronization` |
+| Codec goldens (alarm/enrollment/COV-multiple/file/list/messaging/audit/VT) | n/a | n/a | n/a | n/a | Consumed via `internal/fixtures` from `bacnet-interop/fixtures/codec` |
+| COV subscribe / notify / cancel | ✓ | ✓ | ✓ | — | `…COVSubscribeNotifyCancel` |
+| COV renew | — | ✓ | — | — | `TestBACpypes3COVRenew` |
+| EventNotification receive | — | ✓ | ✓ | — | `…EventNotificationReceive` (`BACNET_EMIT_EVENT=1`) |
+| DeviceCommunicationControl (enable) | ✓ | — | — | — | `TestBacnetStackDeviceCommunicationControlEnable` |
+| ReinitializeDevice warmstart | ✓ | ✓ | ✓ | — | `…ReinitializeDeviceWarmstart` |
+| Routed Who-Is-Router → ResolveTarget → RP | — | ✓ | — | — | `TestBACpypes3RoutedWhoIsRouterReadProperty` |
+| Routed RP (explicit next-hop DNET/DADR) | ✓ | ✓ | ✓ | — | `TestBACnetStackRoutedReadProperty`, `TestBACnet4JRoutedReadProperty` |
+| Foreign-device register + DBTN Who-Is → RP | — | ✓ | ✓ | — | `…ForeignDeviceWhoIsReadProperty` |
 
 See [RELEASE.md](RELEASE.md) for the current tag evidence and
 [docs/REAL_DEVICE_GATE.md](docs/REAL_DEVICE_GATE.md) for the open path to
@@ -134,7 +143,7 @@ that network via a `golang` image (`BACNET_INTEROP_GO_IMAGE`). See
 | Label | Meaning |
 |-------|---------|
 | **alpha** | Pre-hardening / incomplete oracle evidence |
-| **production-candidate** | Current — supervisory client + oracle/lab interop evidence (`v0.2.0` / ready `v0.2.1`); **no** claim of multi-vendor hardware readiness |
+| **production-candidate** | Current — supervisory client + oracle/lab interop evidence (`v0.2.2` + pin `v0.5.0`); **no** claim of multi-vendor hardware readiness |
 | **production-usable** | Real-device gate met — see [docs/REAL_DEVICE_GATE.md](docs/REAL_DEVICE_GATE.md) |
 
 Do not claim vendor hardware interoperability from container oracles alone.

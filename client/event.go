@@ -39,9 +39,20 @@ func (c *Client) SetEventNotificationHandler(h EventNotificationHandler) {
 }
 
 func (c *Client) deliverEventNotification(note service.EventNotification, confirmed bool, src packetSource) {
+	d := EventNotificationDelivery{
+		Notification: note,
+		Confirmed:    confirmed,
+		Address:      src.bacnetAddress,
+		Origin:       src.origin,
+		Immediate:    src.immediate,
+	}
 	c.eventMu.Lock()
 	h := c.eventHandler
+	stream := c.eventStream
 	c.eventMu.Unlock()
+	if stream != nil {
+		stream.publish(d)
+	}
 	if h == nil {
 		return
 	}
@@ -54,11 +65,5 @@ func (c *Client) deliverEventNotification(note service.EventNotification, confir
 			})
 		}
 	}()
-	h(EventNotificationDelivery{
-		Notification: note,
-		Confirmed:    confirmed,
-		Address:      src.bacnetAddress,
-		Origin:       src.origin,
-		Immediate:    src.immediate,
-	})
+	h(d)
 }

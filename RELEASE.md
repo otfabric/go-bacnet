@@ -1,5 +1,71 @@
 # go-bacnet Releases
 
+## v0.2.2
+
+**Date:** 2026-08-02  
+**Previous release:** [v0.2.1](https://github.com/otfabric/go-bacnet/releases/tag/v0.2.1)  
+**Tag:** [`v0.2.2`](https://github.com/otfabric/go-bacnet/releases/tag/v0.2.2) @ `a277aea`
+
+### Summary
+
+Service-breadth minor: Worldiety as a fourth digest-pinned peer oracle, plus
+codecs/APIs for alarm/enrollment/COV-multiple, file, list/lifecycle, messaging,
+audit/identity, and life-safety/VT. Pin moves to
+[`bacnet-interop` v0.5.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.5.0).
+Requires **Go 1.23+**.
+
+Still **production-candidate** until the
+[real-device gate](docs/REAL_DEVICE_GATE.md) is complete.
+
+### Added
+
+- Worldiety as a fourth digest-pinned peer oracle (`interop/worldiety_test.go`):
+  Who-Is/Who-Has, RP/RPM/WP/WPM, ReadRange (unsegmented)
+- GetAlarmSummary / GetEnrollmentSummary / SubscribeCOVPropertyMultiple
+- Confirmed/Unconfirmed COVNotificationMultiple receive (+ encode helper)
+- OpenEventStream / TransitionOf; OpenAuditStream
+- AtomicReadFile / AtomicWriteFile (+ FileChunkBounds)
+- AddListElement / RemoveListElement / CreateObject / DeleteObject
+- Confirmed/Unconfirmed PrivateTransfer and TextMessage; TimeSynchronization /
+  UTCTimeSynchronization; WriteGroup
+- AuditLogQuery / AuthRequest / Who-Am-I / You-Are; audit notification receive
+- LifeSafetyOperation; VT-Open / VT-Close / VT-Data
+- Additional NotificationParameters typed CHOICEs (command-failure, floating-limit,
+  buffer-ready, unsigned-range)
+- Request decoders for the new confirmed/unconfirmed services
+- Codec goldens for the new services via `bacnet-interop/fixtures/codec`
+
+### Changed
+
+- CI pinned interop lane pulls and runs Worldiety digests from `v0.5.0`
+- Interop pin file includes `worldiety` image digest
+- Portable loopback interface selection for coverage-stable `WithInterface` tests
+  (Linux `lo` / Darwin `lo0`)
+
+### Evidence
+
+Green on tag SHA `a277aea`:
+
+| Gate | Result | Link |
+|---|---|---|
+| Shared CI (lint, Go matrix, race, coverage, PR fuzz) | green | [30757758929](https://github.com/otfabric/go-bacnet/actions/runs/30757758929) |
+| Pinned interop `v0.5.0` (+ Worldiety) | green | [30757758742](https://github.com/otfabric/go-bacnet/actions/runs/30757758742) (job *Pinned release peers*) |
+| bacnet-interop main compat | green | same run (job *bacnet-interop main compat*) |
+| Pin | [`bacnet-interop` v0.5.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.5.0) | `interop/bacnet-interop-pin.json` |
+| GitHub Release | published | [v0.2.2](https://github.com/otfabric/go-bacnet/releases/tag/v0.2.2) |
+
+### Notes / known skips
+
+- Worldiety segmented WPM/RPM skipped (peer segment service-choice — B6)
+- BACnet4J AtomicReadFile live path skipped (Error services/10 — B8)
+- BACnet4J CreateObject / DeleteObject live path skipped (config — B9)
+- Broader live multi-peer coverage for event/COV-multiple, file, list/lifecycle,
+  messaging, audit, life-safety/VT, and topology/bbmd v2 modes remains partial
+  (see `bacnet-interop/BLOCKERS.md`)
+- Library coverage gate held at ≥90%
+
+---
+
 ## v0.2.1
 
 **Date:** 2026-08-02  

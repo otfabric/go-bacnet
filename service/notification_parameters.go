@@ -71,10 +71,43 @@ type NotificationParameters struct {
 	ChangeOfState     *ChangeOfStateParams
 	ChangeOfValue     *ChangeOfValueParams
 	OutOfRange        *OutOfRangeParams
+	CommandFailure    *CommandFailureParams
+	FloatingLimit     *FloatingLimitParams
+	UnsignedRange     *UnsignedRangeParams
+	BufferReady       *BufferReadyParams
 
 	// RawElements is the inner SEQUENCE of the chosen alternative when no
 	// typed body is set (or as a decode fallback for unsupported choices).
 	RawElements []bacnet.Element
+}
+
+// CommandFailureParams is NotificationParameters command-failure [3].
+type CommandFailureParams struct {
+	CommandValue  bacnet.ApplicationValue
+	StatusFlags   bacnet.BitString
+	FeedbackValue bacnet.ApplicationValue
+}
+
+// FloatingLimitParams is NotificationParameters floating-limit [4].
+type FloatingLimitParams struct {
+	ReferenceValue float32
+	StatusFlags    bacnet.BitString
+	SetPointValue  float32
+	ErrorLimit     float32
+}
+
+// UnsignedRangeParams is NotificationParameters unsigned-range [11].
+type UnsignedRangeParams struct {
+	ExceedingValue uint32
+	StatusFlags    bacnet.BitString
+	ExceededLimit  uint32
+}
+
+// BufferReadyParams is NotificationParameters buffer-ready [10].
+type BufferReadyParams struct {
+	BufferProperty []bacnet.Element // DeviceObjectPropertyReference as elements
+	PreviousCount  uint32
+	CurrentCount   uint32
 }
 
 // EncodeNotificationParameters encodes the CHOICE as elements for context tag 12.
@@ -132,11 +165,74 @@ func encodeNotificationInner(p NotificationParameters) ([]bacnet.Element, Notifi
 	case p.OutOfRange != nil:
 		els, err := encodeOutOfRange(*p.OutOfRange)
 		return els, NotificationOutOfRange, err
+	case p.CommandFailure != nil:
+		flags, err := parseContextBitStringElement(1, p.CommandFailure.StatusFlags)
+		if err != nil {
+			return nil, 0, err
+		}
+		return []bacnet.Element{
+			{Context: true, TagNumber: 0, Value: p.CommandFailure.CommandValue},
+			flags,
+			{Context: true, TagNumber: 2, Value: p.CommandFailure.FeedbackValue},
+		}, NotificationCommandFailure, nil
+	case p.FloatingLimit != nil:
+		els, err := encodeFloatingLimit(*p.FloatingLimit)
+		return els, NotificationFloatingLimit, err
+	case p.BufferReady != nil:
+		prev, err := parseContextUnsignedElement(1, uint64(p.BufferReady.PreviousCount))
+		if err != nil {
+			return nil, 0, err
+		}
+		cur, err := parseContextUnsignedElement(2, uint64(p.BufferReady.CurrentCount))
+		if err != nil {
+			return nil, 0, err
+		}
+		body := append([]bacnet.Element{}, p.BufferReady.BufferProperty...)
+		return append(body, prev, cur), NotificationBufferReady, nil
+	case p.UnsignedRange != nil:
+		ex, err := parseContextUnsignedElement(0, uint64(p.UnsignedRange.ExceedingValue))
+		if err != nil {
+			return nil, 0, err
+		}
+		flags, err := parseContextBitStringElement(1, p.UnsignedRange.StatusFlags)
+		if err != nil {
+			return nil, 0, err
+		}
+		lim, err := parseContextUnsignedElement(2, uint64(p.UnsignedRange.ExceededLimit))
+		if err != nil {
+			return nil, 0, err
+		}
+		return []bacnet.Element{ex, flags, lim}, NotificationUnsignedRange, nil
 	case len(p.RawElements) > 0:
 		return p.RawElements, p.Choice, nil
 	default:
 		return nil, 0, fmt.Errorf("%w: empty NotificationParameters", bacnet.ErrMalformed)
 	}
+}
+
+func encodeFloatingLimit(p FloatingLimitParams) ([]bacnet.Element, error) {
+	flags, err := parseContextBitStringElement(1, p.StatusFlags)
+	if err != nil {
+		return nil, err
+	}
+	return []bacnet.Element{
+		{Context: true, TagNumber: 0, Value: bacnet.ApplicationValue{Kind: bacnet.ValueConstructed, Elements: []bacnet.Element{{Value: bacnet.RealValue(p.ReferenceValue)}}}},
+		flags,
+		{Context: true, TagNumber: 2, Value: bacnet.ApplicationValue{Kind: bacnet.ValueConstructed, Elements: []bacnet.Element{{Value: bacnet.RealValue(p.SetPointValue)}}}},
+		{Context: true, TagNumber: 3, Value: bacnet.ApplicationValue{Kind: bacnet.ValueConstructed, Elements: []bacnet.Element{{Value: bacnet.RealValue(p.ErrorLimit)}}}},
+	}, nil
+}
+
+func parseContextUnsignedElement(tag uint8, v uint64) (bacnet.Element, error) {
+	raw, err := bacnet.AppendContextUnsigned(nil, tag, v)
+	if err != nil {
+		return bacnet.Element{}, err
+	}
+	el, n, err := bacnet.ParseTag(raw, bacnet.DefaultDecodeLimits())
+	if err != nil || n != len(raw) {
+		return bacnet.Element{}, fmt.Errorf("%w: context unsigned", bacnet.ErrMalformed)
+	}
+	return el, nil
 }
 
 func parseContextBitStringElement(tag uint8, bs bacnet.BitString) (bacnet.Element, error) {
@@ -249,18 +345,112 @@ func DecodeNotificationParameters(elements []bacnet.Element) (NotificationParame
 			return NotificationParameters{}, err
 		}
 		p.OutOfRange = &oor
-	case NotificationCommandFailure,
-		NotificationFloatingLimit,
-		NotificationComplexEventType,
-		NotificationChangeOfLifeSafety,
-		NotificationExtended,
-		NotificationBufferReady,
-		NotificationUnsignedRange:
-		// Typed bodies not implemented yet; RawElements retained above.
+	case NotificationCommandFailure:
+		cf, err := decodeCommandFailure(choiceEl.Value.Elements)
+		if err != nil {
+			return NotificationParameters{}, err
+		}
+		p.CommandFailure = &cf
+	case NotificationFloatingLimit:
+		fl, err := decodeFloatingLimit(choiceEl.Value.Elements)
+		if err != nil {
+			return NotificationParameters{}, err
+		}
+		p.FloatingLimit = &fl
+	case NotificationBufferReady:
+		br, err := decodeBufferReady(choiceEl.Value.Elements)
+		if err != nil {
+			return NotificationParameters{}, err
+		}
+		p.BufferReady = &br
+	case NotificationUnsignedRange:
+		ur, err := decodeUnsignedRange(choiceEl.Value.Elements)
+		if err != nil {
+			return NotificationParameters{}, err
+		}
+		p.UnsignedRange = &ur
+	case NotificationComplexEventType, NotificationChangeOfLifeSafety, NotificationExtended:
+		// Keep RawElements only.
 	default:
 		// Unknown / proprietary CHOICE tag — keep RawElements only.
 	}
 	return p, nil
+}
+
+func decodeCommandFailure(els []bacnet.Element) (CommandFailureParams, error) {
+	if len(els) != 3 {
+		return CommandFailureParams{}, fmt.Errorf("%w: command-failure fields", bacnet.ErrMalformed)
+	}
+	flags, err := bacnet.ContextBitString(els[1])
+	if err != nil {
+		return CommandFailureParams{}, err
+	}
+	return CommandFailureParams{CommandValue: els[0].Value, StatusFlags: flags, FeedbackValue: els[2].Value}, nil
+}
+
+func decodeFloatingLimit(els []bacnet.Element) (FloatingLimitParams, error) {
+	if len(els) != 4 {
+		return FloatingLimitParams{}, fmt.Errorf("%w: floating-limit fields", bacnet.ErrMalformed)
+	}
+	ref, err := contextReal(els[0], 0)
+	if err != nil {
+		return FloatingLimitParams{}, err
+	}
+	flags, err := bacnet.ContextBitString(els[1])
+	if err != nil {
+		return FloatingLimitParams{}, err
+	}
+	set, err := contextReal(els[2], 2)
+	if err != nil {
+		return FloatingLimitParams{}, err
+	}
+	lim, err := contextReal(els[3], 3)
+	if err != nil {
+		return FloatingLimitParams{}, err
+	}
+	return FloatingLimitParams{ReferenceValue: ref, StatusFlags: flags, SetPointValue: set, ErrorLimit: lim}, nil
+}
+
+func decodeBufferReady(els []bacnet.Element) (BufferReadyParams, error) {
+	var br BufferReadyParams
+	for _, el := range els {
+		switch {
+		case el.TagNumber == 0:
+			br.BufferProperty = append(br.BufferProperty, el)
+		case el.TagNumber == 1 && !bacnet.IsContextConstructed(el):
+			u, err := bacnet.ContextUnsigned(el)
+			if err != nil {
+				return BufferReadyParams{}, err
+			}
+			br.PreviousCount = uint32(u)
+		case el.TagNumber == 2 && !bacnet.IsContextConstructed(el):
+			u, err := bacnet.ContextUnsigned(el)
+			if err != nil {
+				return BufferReadyParams{}, err
+			}
+			br.CurrentCount = uint32(u)
+		}
+	}
+	return br, nil
+}
+
+func decodeUnsignedRange(els []bacnet.Element) (UnsignedRangeParams, error) {
+	if len(els) != 3 {
+		return UnsignedRangeParams{}, fmt.Errorf("%w: unsigned-range fields", bacnet.ErrMalformed)
+	}
+	u0, err := bacnet.ContextUnsigned(els[0])
+	if err != nil {
+		return UnsignedRangeParams{}, err
+	}
+	flags, err := bacnet.ContextBitString(els[1])
+	if err != nil {
+		return UnsignedRangeParams{}, err
+	}
+	u2, err := bacnet.ContextUnsigned(els[2])
+	if err != nil {
+		return UnsignedRangeParams{}, err
+	}
+	return UnsignedRangeParams{ExceedingValue: uint32(u0), StatusFlags: flags, ExceededLimit: uint32(u2)}, nil
 }
 
 func decodeChangeOfState(els []bacnet.Element) (ChangeOfStateParams, error) {

@@ -29,6 +29,7 @@ const (
 	defaultStackImage     = "bacnet-interop-bacnet-stack:local"
 	defaultBACpypes3Image = "bacnet-interop-bacpypes3:local"
 	defaultBACnet4JImage  = "bacnet-interop-bacnet4j:local"
+	defaultWorldietyImage = "bacnet-interop-worldiety:local"
 	defaultRouterImage    = "bacnet-interop-bip-router:local"
 	readyTimeout          = 45 * time.Second
 

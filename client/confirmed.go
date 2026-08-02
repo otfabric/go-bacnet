@@ -372,6 +372,14 @@ func (c *Client) handleConfirmedIndication(req *apdu.ConfirmedRequest, src packe
 			Notification: note,
 			State:        SubscriptionActive,
 		}, note.ProcessIdentifier, src)
+	case apdu.ServiceConfirmedCOVNotificationMultiple:
+		note, err := service.DecodeCOVNotificationMultiple(req.Payload, c.limits)
+		if err != nil {
+			c.diag.Report(diag.Event{Kind: diag.KindMalformed, Message: err.Error()})
+			return
+		}
+		c.sendSimpleACK(req.InvokeID, req.ServiceChoice, src, diag.KindCOV, "confirmed COVMultiple SimpleACK send failed")
+		c.deliverCOVNotificationMultiple(note, true, src)
 	case apdu.ServiceConfirmedEventNotification:
 		note, err := service.DecodeEventNotification(req.Payload, c.limits)
 		if err != nil {
@@ -380,6 +388,14 @@ func (c *Client) handleConfirmedIndication(req *apdu.ConfirmedRequest, src packe
 		}
 		c.sendSimpleACK(req.InvokeID, req.ServiceChoice, src, diag.KindEvent, "confirmed EventNotification SimpleACK send failed")
 		c.deliverEventNotification(note, true, src)
+	case apdu.ServiceConfirmedAuditNotification:
+		note, err := service.DecodeAuditNotification(req.Payload, c.limits)
+		if err != nil {
+			c.diag.Report(diag.Event{Kind: diag.KindMalformed, Message: err.Error()})
+			return
+		}
+		c.sendSimpleACK(req.InvokeID, req.ServiceChoice, src, diag.KindEvent, "confirmed AuditNotification SimpleACK send failed")
+		c.deliverAuditNotification(note, true)
 	default:
 		c.diag.Report(diag.Event{Kind: diag.KindUnexpectedAPDU, Message: fmt.Sprintf("confirmed service %d", req.ServiceChoice)})
 	}

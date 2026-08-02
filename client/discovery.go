@@ -147,6 +147,13 @@ func (c *Client) handleUnconfirmed(req *apdu.UnconfirmedRequest, src packetSourc
 			Notification: &note,
 			State:        SubscriptionActive,
 		}, note.ProcessIdentifier, src)
+	case apdu.ServiceUnconfirmedCOVNotificationMultiple:
+		note, err := service.DecodeCOVNotificationMultiple(req.Payload, c.limits)
+		if err != nil {
+			c.diag.Report(diag.Event{Kind: diag.KindMalformed, Message: err.Error()})
+			return
+		}
+		c.deliverCOVNotificationMultiple(note, false, src)
 	case apdu.ServiceUnconfirmedEventNotification:
 		note, err := service.DecodeEventNotification(req.Payload, c.limits)
 		if err != nil {
@@ -154,5 +161,12 @@ func (c *Client) handleUnconfirmed(req *apdu.UnconfirmedRequest, src packetSourc
 			return
 		}
 		c.deliverEventNotification(note, false, src)
+	case apdu.ServiceUnconfirmedAuditNotification:
+		note, err := service.DecodeAuditNotification(req.Payload, c.limits)
+		if err != nil {
+			c.diag.Report(diag.Event{Kind: diag.KindMalformed, Message: err.Error()})
+			return
+		}
+		c.deliverAuditNotification(note, false)
 	}
 }

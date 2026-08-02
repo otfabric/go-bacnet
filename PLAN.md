@@ -5,16 +5,15 @@ production-candidate toward an unambiguous Go BACnet leadership claim.
 Adapter images, fixtures, and peer smoke live in
 [`bacnet-interop`](https://github.com/otfabric/bacnet-interop) (`PLAN.md`).
 
-**Status:** **production-candidate** — **[`v0.2.0`](https://github.com/otfabric/go-bacnet/releases/tag/v0.2.0)**
-released; **`v0.2.1`** ready to tag (see [RELEASE.md](RELEASE.md)). Pin:
-[`bacnet-interop` v0.4.2](https://github.com/otfabric/bacnet-interop/releases/tag/v0.4.2).
+**Status:** **production-candidate** —
+**[`v0.2.2`](https://github.com/otfabric/go-bacnet/releases/tag/v0.2.2)** released
+(see [RELEASE.md](RELEASE.md)). Pin:
+[`bacnet-interop` v0.5.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.5.0).
 
 **Pin:** [`interop/bacnet-interop-pin.json`](interop/bacnet-interop-pin.json) →
-`v0.4.2` (`device-baseline-v2`; bacnet-stack **1.6.0**; BACpypes3 **0.0.106**).
+`v0.5.0` (`device-baseline-v2` + Worldiety; bacnet-stack **1.6.0**; BACpypes3 **0.0.106**).
 
-**Next:** human cuts **`v0.2.1`**, then the
-[real-device gate](docs/REAL_DEVICE_GATE.md) toward **production-usable**. Do
-**not** add another major BACnet service before that.
+**Next:** the [real-device gate](docs/REAL_DEVICE_GATE.md) toward **production-usable**.
 
 Honest positioning (see [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md)):
 
@@ -57,8 +56,7 @@ Status labels: `done` · `partial` · `open`.
 | Historical hardware name-list | NubeDev (informal; not a gate) |
 
 Use NubeDev’s vendor families as **inspiration for the real-device matrix**, not
-as evidence. Prefer Worldiety as the **fourth bacnet-interop Go peer** once an
-adapter exists.
+as evidence. Worldiety is the **fourth bacnet-interop Go peer** (pinned in `v0.5.0`).
 
 ---
 
@@ -77,7 +75,7 @@ Do not re-litigate these unless a regression appears:
 | FD / BBMD (client) | BACpypes3 + BACnet4J peer-as-BBMD |
 | Strict framing | Reserved APDU/NPDU bits, MaxAPDU, windows, router lists → `ErrMalformed` |
 | Evidence architecture | Digest-pinned adapters, fixture provenance, hermetic coverage, PR + nightly fuzz |
-| Adapters | `bacnet-interop` `v0.4.2` |
+| Adapters | `bacnet-interop` `v0.5.0` (incl. Worldiety) |
 
 Routing evidence phrase (until a second independent router exists):
 
@@ -110,7 +108,7 @@ ref is the preferred way to smoke a bacnet-interop release candidate.
 |---|---|---|---|
 | 1 | **P0** — `reexecInNetwork` honors `BACNET_INTEROP_ROOT` + require fixture files under mount | done | `interop/root.go` + unit tests |
 | 2 | Print / artifact both repo SHAs (+ peer ready metadata) in required interop job | done | workflow summary + artifacts |
-| 3 | Pin file for bacnet-interop ref/digests; required pinned lane | done | `interop/bacnet-interop-pin.json` → `v0.4.2` |
+| 3 | Pin file for bacnet-interop ref/digests; required pinned lane | done | `interop/bacnet-interop-pin.json` → `v0.5.0` |
 | 4 | Latest-main compatibility lane (detect upcoming breakage) | done | `peer-interop-main` job |
 | 5 | bacnet-interop CI: consumer job against go-bacnet main | **n/a** | Dependency inversion rejected |
 | 6 | bacnet-interop CI: build + require bip-router smoke | done | in bacnet-interop |
@@ -212,12 +210,12 @@ Do **not** chase Worldiety feature breadth before `v0.2.0` is tagged.
 | # | Item | Status | Notes |
 |---|---|---|---|
 | 1 | H2 APIs + interop assertions on `main` | done | see checklist above |
-| 2 | Pin → bacnet-interop `v0.4.2` | done | digests in `interop/bacnet-interop-pin.json` (BACpypes3 0.0.106) |
+| 2 | Pin → bacnet-interop `v0.5.0` | done | digests in `interop/bacnet-interop-pin.json` (incl. Worldiety; BACpypes3 0.0.106) |
 | 3 | CI green on `main` | done | [30722438815](https://github.com/otfabric/go-bacnet/actions/runs/30722438815) |
 | 4 | Interop green (pinned + main compat) | done | [30722438676](https://github.com/otfabric/go-bacnet/actions/runs/30722438676) |
 | 5 | Docs / PLAN / RELEASE / INTEROP synced | done | |
 | 6 | **Human:** cut `v0.2.0` | done | tag `v0.2.0` @ `3bc6288` |
-| 7 | Real-device gate → **production-usable** | open | after `v0.2.1` |
+| 7 | Real-device gate → **production-usable** | open | after `v0.2.2` |
 
 ### Batch — `v0.2.1` correctness / strictness
 
@@ -233,8 +231,10 @@ Do **not** chase Worldiety feature breadth before `v0.2.0` is tagged.
 | 8 | Exact-tag release evidence artifact | `ready` | pre-tag green on `614c4d9` ([CI](https://github.com/otfabric/go-bacnet/actions/runs/30725263974), [interop](https://github.com/otfabric/go-bacnet/actions/runs/30725263801)); attach on tag SHA at cut |
 | 9 | Decoder strictness parity + negative fixtures | `done` | duplicates/overflow/ResultFlags/Log_Buffer/known CHOICE; 5 new interop negatives |
 | 10 | Service fuzz targets (WPM/ReadRange/Who-Has/events/DCC/Reinit) | `done` | functional `*_fuzz_test.go` + anchored `make fuzz` + nightly |
-| 11 | `bacnet-interop` v0.4.2 hygiene | `done` | tag [`v0.4.2`](https://github.com/otfabric/bacnet-interop/releases/tag/v0.4.2); go-bacnet pin updated |
-| 12 | **Human:** cut `v0.2.1` | `open` | patch release; see [RELEASE.md](RELEASE.md) |
+| 11 | `bacnet-interop` v0.4.2 hygiene | `done` | tag [`v0.4.2`](https://github.com/otfabric/bacnet-interop/releases/tag/v0.4.2); superseded by `v0.5.0` pin |
+| 12 | **Human:** cut `v0.2.1` | `done` | [`v0.2.1`](https://github.com/otfabric/go-bacnet/releases/tag/v0.2.1) |
+| 13 | Pin → `bacnet-interop` v0.5.0 (+ Worldiety) | `done` | digests in `interop/bacnet-interop-pin.json`; CI pulls Worldiety |
+| 14 | **Human:** cut `v0.2.2` | `done` | [`v0.2.2`](https://github.com/otfabric/go-bacnet/releases/tag/v0.2.2) @ `a277aea` |
 
 Promotion rules:
 
@@ -251,7 +251,7 @@ Container oracles are necessary but **not** sufficient for production-usable.
 ## Horizon 2 — Supervisory-client breadth (after 4D)
 
 **Closed** for the scoped deliverables below (in-tree + peer evidence; pin
-`v0.4.2`). Preserve ownership, bounds, outcome-unknown, and peer evidence
+`v0.5.0`). Preserve ownership, bounds, outcome-unknown, and peer evidence
 discipline in follow-ups. Do **not** inherit global process state, GPL lineage,
 or permissive unbounded decoding from competitors.
 
