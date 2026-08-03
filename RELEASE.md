@@ -1,5 +1,107 @@
 # go-bacnet Releases
 
+## v0.3.0
+
+**Date:** 2026-08-03  
+**Previous release:** [v0.2.5](https://github.com/otfabric/go-bacnet/releases/tag/v0.2.5)  
+**Tag:** [`v0.3.0`](https://github.com/otfabric/go-bacnet/releases/tag/v0.3.0)
+
+### Summary
+
+Client-completeness release: confirmed-service policy registry, BVLC BDT/FDT
+management, multi-route state, adaptive RPM/WPM/file/ReadRange helpers, optional
+event dispatcher and `device` snapshot, Schedule/Calendar/HostNPort constructed
+types, property-aware decoding, and expanded NotificationParameters. Pin moves
+to [`bacnet-interop` v0.9.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.9.0)
+@ `180006f`. Requires **Go 1.23+**.
+
+Still **production-candidate** until
+[field validation](docs/FIELD_VALIDATION.md) is complete.
+
+### Added
+
+- **ConfirmedServicePolicy** / **ConfirmedServiceCapabilities** registry —
+  retransmit safety, outcome-unknown after send, `OperationClass` opt-in, and
+  success-response form separated from segmentation capabilities
+- **`WithNetworkManagementEnabled`** — opt-in for BVLC Write-BDT
+  (`ErrNetworkManagementDisabled` without confirm)
+- Typed **BVLC BDT/FDT** codecs (`bvlc.BDTEntry` / `FDTEntry`, `IPv4Mask`) and
+  client APIs: `ReadBroadcastDistributionTable`,
+  `WriteBroadcastDistributionTable`, `ReadForeignDeviceTable`,
+  `DeleteForeignDeviceTableEntry` (`*BVLCOperationError` on non-zero Result)
+- Multi-route cache with **transaction-stable** next-hop selection; Busy /
+  Available / Reject update route state for later transactions only
+- Adaptive helpers: `ReadPropertyMultipleBatched`,
+  `WritePropertyMultipleBatched` (Completed/Failed/Unknown),
+  `ReadFileStream` / `ReadFileRecords` / `WriteFileStream`, `ReadRangeAll`,
+  `ReadObjectList` / `ReadPropertyList` / `WritePriority` / `RelinquishPriority`
+- Optional **`WithEventDispatcher`** (bounded workers, overflow policy, panic
+  recovery); confirmed EventNotifications still SimpleACK'd before enqueue
+- Optional **`device.ReadSnapshot`** via `PropertyReader` (client does not
+  import `device`)
+- Constructed types: DateRange / DateTime / TimeStamp, CalendarEntry,
+  WeeklySchedule / ExceptionSchedule, HostNPort
+- `DecodePropertyValue` with `ApplicationValue` fallback; access / life-safety
+  enums; expanded object-type and property-identifier constants; ID name maps
+- NotificationParameters: change-of-life-safety, extended, complex-event-type
+- NPDU network-message constants and codecs for Reject-Message-To-Network,
+  I-Could-Be-Router-To-Network, Network-Number-Is validation
+- `internal/faulty` transport for fault-injection tests; `bacnet.ErrBusy`
+- Interop: BDT/FDT / Write-BDT / Delete-FDT scenarios
+  (`interop/bvlc_mgmt_test.go`) against bacnet-stack, BACpypes3, BACnet4J
+
+### Changed
+
+- Pin → [`bacnet-interop` v0.9.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.9.0)
+  (`interop/bacnet-interop-pin.json`) — digests from the published release
+- Typed confirmed helpers look up the policy registry for retransmission and
+  outcome-unknown wrapping (broader coverage than the prior hard-coded set)
+- `InvokeConfirmed` / `ConfirmedInvokeOptions`: additive `Retransmit` and
+  `SideEffecting` fields; default remains non-retransmitting; outcome-unknown
+  wraps only when `SideEffecting` is true
+- Retransmit send failures emit diagnostics instead of being silently ignored
+- Docs: CLIENT_SUPPORT / INTEROP / API / PLAN reflect closed client-completeness
+  backlog and BBMD peer limits (Write-BDT NAK on stack/BACpypes3; BACnet4J live)
+
+### Breaking (v0.x)
+
+- `npdu.NetMsgRouterNetworkNumberIs` renamed to `npdu.NetMsgNetworkNumberIs`
+  (same wire value `0x13`)
+
+### Evidence
+
+Gates green on `main` @ `7fd28e5` (re-attach Tag SHA if the release commit
+differs):
+
+| Gate | Result | Link |
+|---|---|---|
+| Shared CI (lint, Go matrix, race, coverage, PR fuzz) | green | [30776971381](https://github.com/otfabric/go-bacnet/actions/runs/30776971381) |
+| Pinned interop `v0.9.0` | green | [30776971164](https://github.com/otfabric/go-bacnet/actions/runs/30776971164) (job *Pinned release peers*) |
+| bacnet-interop main compat | green | same run (job *bacnet-interop main compat*) |
+| Pin | [`bacnet-interop` v0.9.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.9.0) @ `180006f` | `interop/bacnet-interop-pin.json` |
+
+Live BBMD / FDT scenarios on the pinned digests:
+
+| Scenario | Peers | Test / evidence |
+|---|---|---|
+| Read-BDT | bacnet-stack + BACpypes3 + BACnet4J | `Test*ReadBDT` |
+| Read-FDT (after FD) | bacnet-stack + BACpypes3 + BACnet4J | `Test*ReadFDT*` |
+| Write-BDT | BACnet4J OK; stack/BACpypes3 NAK asserted | `Test*WriteBDT*` |
+| Delete-FDT | bacnet-stack + BACpypes3 + BACnet4J | `Test*DeleteFDT*` |
+
+Prior application-service and FDR scenarios from `v0.2.5` remain on the new
+digests.
+
+### Notes / known skips
+
+- Worldiety BBMD / native multi-homed BIP router unavailable at pin (routed
+  tests use `bip-router`; see bacnet-interop `PEER_SUPPORT.md`)
+- Audit / AuthRequest / VT remain codec/unit — no peer servers at pin
+- Field validation still pending ([FIELD_VALIDATION.md](docs/FIELD_VALIDATION.md))
+- Library coverage gate held at ≥90%
+
+---
+
 ## v0.2.5
 
 **Date:** 2026-08-03  

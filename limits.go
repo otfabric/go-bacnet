@@ -16,7 +16,7 @@ type DecodeLimits struct {
 	MaxReassembledAPDU   int
 }
 
-// DefaultDecodeLimits returns conservative Horizon 1 defaults.
+// DefaultDecodeLimits returns conservative BACnet/IP IPv4 defaults.
 func DefaultDecodeLimits() DecodeLimits {
 	return DecodeLimits{
 		MaxDatagramSize:      65535,

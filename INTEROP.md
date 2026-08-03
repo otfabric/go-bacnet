@@ -21,8 +21,8 @@ pinned peer exposes a usable server path.
 
 ## Pinned peers
 
-Pin: [`bacnet-interop` v0.8.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.8.0)
-@ `34f42dc` — see `interop/bacnet-interop-pin.json`.
+Pin: [`bacnet-interop` v0.9.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.9.0)
+@ `180006f` — see `interop/bacnet-interop-pin.json`.
 
 | Peer | Upstream | Role |
 |---|---|---|
@@ -75,6 +75,10 @@ Pin: [`bacnet-interop` v0.8.0](https://github.com/otfabric/bacnet-interop/releas
 | Segmented confirmed-request send | — | ✅ | ⚠ | ⚠ | 4J rejects; Worldiety unsegmented-only for required scenarios |
 | Routed remote (via bip-router) | ✅ | ✅ | ✅ | — | Topology aid |
 | Peer-as-BBMD / FDR | ✅ | ✅ | ✅ | — | Stack BBMD_ENABLED; BACpypes3/4J via `BACNET_BBMD=1` |
+| Read-BDT | ✅ | ✅ | ✅ | — | `Test*ReadBDT` |
+| Read-FDT (after FD) | ✅ | ✅ | ✅ | — | Empty table alone is not evidence |
+| Write-BDT | ⚠ | ⚠ | ✅ | — | Stack/BACpypes3 NAK (asserted); BACnet4J identity write |
+| Delete-FDT | ✅ | ✅ | ✅ | — | Register → delete → absence |
 | Native multi-homed BIP router | — | — | — | — | Routed tests use `bip-router` aid |
 
 ### Known deviations

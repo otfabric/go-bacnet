@@ -19,25 +19,14 @@ const (
 	RetransmitDisabled
 )
 
-// DefaultRetransmitPolicy returns per-service exact-APDU retransmission defaults.
+// DefaultRetransmitPolicy returns per-service exact-APDU retransmission defaults
+// from the confirmed-service policy registry.
 func DefaultRetransmitPolicy(serviceChoice uint8) RetransmitPolicy {
-	switch serviceChoice {
-	case apdu.ServiceReadProperty, apdu.ServiceReadPropertyMultiple, apdu.ServiceReadRange,
-		apdu.ServiceGetEventInformation, apdu.ServiceGetAlarmSummary, apdu.ServiceGetEnrollmentSummary,
-		apdu.ServiceAtomicReadFile, apdu.ServiceAuditLogQuery:
-		return RetransmitEnabled
-	case apdu.ServiceWriteProperty, apdu.ServiceWritePropertyMultiple,
-		apdu.ServiceAtomicWriteFile, apdu.ServiceAddListElement, apdu.ServiceRemoveListElement,
-		apdu.ServiceCreateObject, apdu.ServiceDeleteObject,
-		apdu.ServiceSubscribeCOV, apdu.ServiceSubscribeCOVProperty, apdu.ServiceSubscribeCOVPropertyMultiple,
-		apdu.ServiceAcknowledgeAlarm, apdu.ServiceDeviceCommunicationControl, apdu.ServiceReinitializeDevice,
-		apdu.ServiceConfirmedPrivateTransfer, apdu.ServiceConfirmedTextMessage,
-		apdu.ServiceLifeSafetyOperation, apdu.ServiceVTOpen, apdu.ServiceVTClose, apdu.ServiceVTData,
-		apdu.ServiceAuthRequest:
-		return RetransmitDisabled
-	default:
+	p, ok := ConfirmedServicePolicyFor(serviceChoice)
+	if !ok || !p.RetransmitSafe {
 		return RetransmitDisabled
 	}
+	return RetransmitEnabled
 }
 
 type txPhase uint8

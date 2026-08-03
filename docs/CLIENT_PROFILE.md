@@ -26,6 +26,7 @@ Standards edition: [STANDARD_BASELINE.md](STANDARD_BASELINE.md).
 | BACnet/IP Annex J over IPv4/UDP | Supported (default port 47808 / `0xBAC0`) |
 | Foreign-device registration | Supported (optional) |
 | BBMD Forwarded-NPDU receive | Supported |
+| BBMD BDT/FDT client management | Supported (Write-BDT opt-in; peer-dependent) |
 | BBMD server | Not supported |
 | BACnet/IPv6 | Not supported |
 | BACnet/SC | Not supported |

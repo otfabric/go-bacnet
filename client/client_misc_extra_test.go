@@ -219,7 +219,7 @@ func TestResolveTargetExpiredRouter(t *testing.T) {
 
 	remoteMAC := bacnet.MustMAC([]byte{10, 0, 0, 5, 0xBA, 0xC0})
 	remoteAddr := bacnet.RemoteStation(2, remoteMAC)
-	c.routers.upsert(2, router, router, clk.Now())
+	c.routers.upsertLearned(2, router, router, clk.Now())
 	clk.Advance(11 * time.Minute)
 
 	_, err = c.ResolveTarget(remoteAddr, bip.Endpoint{})

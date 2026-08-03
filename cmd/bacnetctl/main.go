@@ -252,7 +252,7 @@ func parseTarget(addr string) (client.Target, error) {
 		return client.Target{}, fmt.Errorf("addr: %w", err)
 	}
 	if !ap.Addr().Is4() {
-		return client.Target{}, fmt.Errorf("addr: Horizon 1 requires IPv4")
+		return client.Target{}, fmt.Errorf("addr: BACnet/IP requires IPv4")
 	}
 	ip := ap.Addr().As4()
 	ep := bip.NewEndpoint(ap)

@@ -67,14 +67,17 @@ type OutOfRangeParams struct {
 type NotificationParameters struct {
 	Choice NotificationParametersChoice
 
-	ChangeOfBitstring *ChangeOfBitstringParams
-	ChangeOfState     *ChangeOfStateParams
-	ChangeOfValue     *ChangeOfValueParams
-	OutOfRange        *OutOfRangeParams
-	CommandFailure    *CommandFailureParams
-	FloatingLimit     *FloatingLimitParams
-	UnsignedRange     *UnsignedRangeParams
-	BufferReady       *BufferReadyParams
+	ChangeOfBitstring  *ChangeOfBitstringParams
+	ChangeOfState      *ChangeOfStateParams
+	ChangeOfValue      *ChangeOfValueParams
+	OutOfRange         *OutOfRangeParams
+	CommandFailure     *CommandFailureParams
+	FloatingLimit      *FloatingLimitParams
+	UnsignedRange      *UnsignedRangeParams
+	BufferReady        *BufferReadyParams
+	ChangeOfLifeSafety *ChangeOfLifeSafetyParams
+	Extended           *ExtendedParams
+	ComplexEventType   *ComplexEventTypeParams
 
 	// RawElements is the inner SEQUENCE of the chosen alternative when no
 	// typed body is set (or as a decode fallback for unsupported choices).
@@ -108,6 +111,27 @@ type BufferReadyParams struct {
 	BufferProperty []bacnet.Element // DeviceObjectPropertyReference as elements
 	PreviousCount  uint32
 	CurrentCount   uint32
+}
+
+// ChangeOfLifeSafetyParams is NotificationParameters change-of-life-safety [8].
+type ChangeOfLifeSafetyParams struct {
+	NewState          uint32 // BACnetLifeSafetyState
+	NewMode           uint32 // BACnetLifeSafetyMode
+	StatusFlags       bacnet.BitString
+	OperationExpected uint32 // BACnetLifeSafetyOperation
+}
+
+// ExtendedParams is NotificationParameters extended [9].
+type ExtendedParams struct {
+	VendorID          uint16
+	ExtendedEventType uint32
+	Parameters        []bacnet.Element
+}
+
+// ComplexEventTypeParams is NotificationParameters complex-event-type [6].
+// Values are BACnetPropertyValue SEQUENCE elements kept as constructed lists.
+type ComplexEventTypeParams struct {
+	Values []bacnet.Element
 }
 
 // EncodeNotificationParameters encodes the CHOICE as elements for context tag 12.
@@ -203,11 +227,58 @@ func encodeNotificationInner(p NotificationParameters) ([]bacnet.Element, Notifi
 			return nil, 0, err
 		}
 		return []bacnet.Element{ex, flags, lim}, NotificationUnsignedRange, nil
+	case p.ChangeOfLifeSafety != nil:
+		els, err := encodeChangeOfLifeSafety(*p.ChangeOfLifeSafety)
+		return els, NotificationChangeOfLifeSafety, err
+	case p.Extended != nil:
+		els, err := encodeExtended(*p.Extended)
+		return els, NotificationExtended, err
+	case p.ComplexEventType != nil:
+		return append([]bacnet.Element{}, p.ComplexEventType.Values...), NotificationComplexEventType, nil
 	case len(p.RawElements) > 0:
 		return p.RawElements, p.Choice, nil
 	default:
 		return nil, 0, fmt.Errorf("%w: empty NotificationParameters", bacnet.ErrMalformed)
 	}
+}
+
+func encodeChangeOfLifeSafety(p ChangeOfLifeSafetyParams) ([]bacnet.Element, error) {
+	st, err := parseContextUnsignedElement(0, uint64(p.NewState))
+	if err != nil {
+		return nil, err
+	}
+	mode, err := parseContextUnsignedElement(1, uint64(p.NewMode))
+	if err != nil {
+		return nil, err
+	}
+	flags, err := parseContextBitStringElement(2, p.StatusFlags)
+	if err != nil {
+		return nil, err
+	}
+	op, err := parseContextUnsignedElement(3, uint64(p.OperationExpected))
+	if err != nil {
+		return nil, err
+	}
+	return []bacnet.Element{st, mode, flags, op}, nil
+}
+
+func encodeExtended(p ExtendedParams) ([]bacnet.Element, error) {
+	vid, err := parseContextUnsignedElement(0, uint64(p.VendorID))
+	if err != nil {
+		return nil, err
+	}
+	et, err := parseContextUnsignedElement(1, uint64(p.ExtendedEventType))
+	if err != nil {
+		return nil, err
+	}
+	body := []bacnet.Element{vid, et}
+	if len(p.Parameters) > 0 {
+		body = append(body, bacnet.Element{
+			Context: true, TagNumber: 2,
+			Value: bacnet.ApplicationValue{Kind: bacnet.ValueConstructed, Elements: append([]bacnet.Element{}, p.Parameters...)},
+		})
+	}
+	return body, nil
 }
 
 func encodeFloatingLimit(p FloatingLimitParams) ([]bacnet.Element, error) {
@@ -369,12 +440,72 @@ func DecodeNotificationParameters(elements []bacnet.Element) (NotificationParame
 			return NotificationParameters{}, err
 		}
 		p.UnsignedRange = &ur
-	case NotificationComplexEventType, NotificationChangeOfLifeSafety, NotificationExtended:
-		// Keep RawElements only.
+	case NotificationChangeOfLifeSafety:
+		cls, err := decodeChangeOfLifeSafety(choiceEl.Value.Elements)
+		if err != nil {
+			return NotificationParameters{}, err
+		}
+		p.ChangeOfLifeSafety = &cls
+	case NotificationExtended:
+		ext, err := decodeExtended(choiceEl.Value.Elements)
+		if err != nil {
+			return NotificationParameters{}, err
+		}
+		p.Extended = &ext
+	case NotificationComplexEventType:
+		p.ComplexEventType = &ComplexEventTypeParams{Values: cloneElements(choiceEl.Value.Elements)}
 	default:
 		// Unknown / proprietary CHOICE tag — keep RawElements only.
 	}
 	return p, nil
+}
+
+func decodeChangeOfLifeSafety(els []bacnet.Element) (ChangeOfLifeSafetyParams, error) {
+	if len(els) != 4 {
+		return ChangeOfLifeSafetyParams{}, fmt.Errorf("%w: change-of-life-safety fields", bacnet.ErrMalformed)
+	}
+	st, err := bacnet.ContextUnsigned(els[0])
+	if err != nil {
+		return ChangeOfLifeSafetyParams{}, err
+	}
+	mode, err := bacnet.ContextUnsigned(els[1])
+	if err != nil {
+		return ChangeOfLifeSafetyParams{}, err
+	}
+	flags, err := bacnet.ContextBitString(els[2])
+	if err != nil {
+		return ChangeOfLifeSafetyParams{}, err
+	}
+	op, err := bacnet.ContextUnsigned(els[3])
+	if err != nil {
+		return ChangeOfLifeSafetyParams{}, err
+	}
+	return ChangeOfLifeSafetyParams{
+		NewState: uint32(st), NewMode: uint32(mode), StatusFlags: flags, OperationExpected: uint32(op),
+	}, nil
+}
+
+func decodeExtended(els []bacnet.Element) (ExtendedParams, error) {
+	var ext ExtendedParams
+	for _, el := range els {
+		switch {
+		case el.TagNumber == 0 && !bacnet.IsContextConstructed(el):
+			u, err := bacnet.ContextUnsigned(el)
+			if err != nil {
+				return ExtendedParams{}, err
+			}
+			ext.VendorID = uint16(u)
+		case el.TagNumber == 1 && !bacnet.IsContextConstructed(el):
+			u, err := bacnet.ContextUnsigned(el)
+			if err != nil {
+				return ExtendedParams{}, err
+			}
+			ext.ExtendedEventType = uint32(u)
+		case el.TagNumber == 2 && bacnet.IsContextConstructed(el):
+			ext.Parameters = cloneElements(el.Value.Elements)
+		}
+	}
+	return ext, nil
 }
 
 func decodeCommandFailure(els []bacnet.Element) (CommandFailureParams, error) {

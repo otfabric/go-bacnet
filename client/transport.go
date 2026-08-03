@@ -15,7 +15,7 @@ import (
 )
 
 // Transport is the data-link send/receive abstraction.
-// Horizon 1: one Client owns one local endpoint.
+// Client: one Client owns one local endpoint.
 type Transport interface {
 	Local() bip.Endpoint
 	Send(ctx context.Context, pkt OutboundPacket) error

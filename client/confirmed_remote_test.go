@@ -5,12 +5,17 @@ package client
 import (
 	"context"
 	"errors"
+	"net/netip"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/otfabric/go-bacnet"
 	"github.com/otfabric/go-bacnet/apdu"
+	"github.com/otfabric/go-bacnet/bip"
 	"github.com/otfabric/go-bacnet/bvlc"
+	"github.com/otfabric/go-bacnet/internal/clock"
+	"github.com/otfabric/go-bacnet/internal/virtual"
 	"github.com/otfabric/go-bacnet/npdu"
 	"github.com/otfabric/go-bacnet/service"
 )
@@ -181,5 +186,72 @@ func TestReadPropertyRetransmitOnTimeout(t *testing.T) {
 		}
 	case <-time.After(time.Second):
 		t.Fatal("timed out")
+	}
+}
+
+type failAfterSendTransport struct {
+	inner Transport
+	n     atomic.Int32
+	after int32
+}
+
+func (t *failAfterSendTransport) Local() bip.Endpoint { return t.inner.Local() }
+func (t *failAfterSendTransport) Close() error        { return t.inner.Close() }
+func (t *failAfterSendTransport) Recv(ctx context.Context) (InboundPacket, error) {
+	return t.inner.Recv(ctx)
+}
+func (t *failAfterSendTransport) Send(ctx context.Context, pkt OutboundPacket) error {
+	if t.n.Add(1) > t.after {
+		return errors.New("injected send failure")
+	}
+	return t.inner.Send(ctx, pkt)
+}
+
+func TestRetransmitSendFailureDiagnostics(t *testing.T) {
+	clk := clock.NewManual(time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC))
+	local := bip.NewEndpoint(netip.MustParseAddrPort("10.0.0.1:47808"))
+	peer := bip.NewEndpoint(netip.MustParseAddrPort("10.0.0.2:47808"))
+	v := virtual.New(local, clk, 16)
+	ft := &failAfterSendTransport{inner: AdaptVirtual(v), after: 1}
+	var saw atomic.Bool
+	c, err := New(
+		WithTransport(ft),
+		withClock(clk),
+		WithTransactionOptions(20*time.Millisecond, 2, 0),
+		WithDiagnosticFunc(func(d Diagnostic) {
+			if d.Message == "retransmit send failed" {
+				saw.Store(true)
+			}
+		}),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = c.Close() }()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	obj := bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeAnalogValue, Instance: 1}
+	target := Target{
+		Address:  bacnet.LocalStation(bacnet.MustMAC([]byte{10, 0, 0, 2, 0xBA, 0xC0})),
+		Endpoint: peer,
+		MaxAPDU:  480,
+	}
+	errCh := make(chan error, 1)
+	go func() {
+		_, err := c.ReadProperty(ctx, target, obj, bacnet.PropertyReference{Identifier: bacnet.PropertyPresentValue})
+		errCh <- err
+	}()
+	for i := 0; i < 10 && !saw.Load(); i++ {
+		time.Sleep(5 * time.Millisecond)
+		clk.Advance(25 * time.Millisecond)
+	}
+	select {
+	case <-errCh:
+	case <-time.After(2 * time.Second):
+		t.Fatal("request did not finish")
+	}
+	if !saw.Load() {
+		t.Fatal("expected retransmit send failure diagnostic")
 	}
 }

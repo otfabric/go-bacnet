@@ -30,7 +30,15 @@ const (
 	ObjectTypeNotificationClass ObjectType = 15
 	ObjectTypeMultiStateValue   ObjectType = 19
 	ObjectTypeTrendLog          ObjectType = 20
+	ObjectTypeSchedule          ObjectType = 17
+	ObjectTypeMultiStateOutput  ObjectType = 14
+	ObjectTypeAccumulator       ObjectType = 23
+	ObjectTypePulseConverter    ObjectType = 24
+	ObjectTypeTrendLogMultiple  ObjectType = 27
+	ObjectTypeNetworkPort       ObjectType = 56
 	ObjectTypeAuditLog          ObjectType = 61
+	ObjectTypeAccessDoor        ObjectType = 30
+	ObjectTypeAccessPoint       ObjectType = 33
 )
 
 // MaxObjectInstance is the largest valid object instance (22 bits).

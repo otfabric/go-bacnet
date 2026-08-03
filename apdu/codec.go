@@ -5,7 +5,7 @@
 // apdu understands PDU structure, service choice and raw service payload only.
 // It does not decode ReadProperty, Who-Is or COV payload structure.
 //
-// Horizon 1 uses a strict framing decoder: reserved header bits, undefined
+// Strict BACnet/IP uses a framing decoder: reserved header bits, undefined
 // MaxAPDU codes, MoreFollows without SegmentedMessage, and zero/out-of-range
 // segment windows are rejected as ErrMalformed.
 //

@@ -10,23 +10,33 @@ import (
 
 // ConfirmedInvokeOptions controls a low-level confirmed request.
 //
-// Typed helpers (ReadProperty, WriteProperty, …) always accept segmented
-// responses. This experimental API exists so callers (and interop tests) can
-// observe Reject/Abort outcomes that depend on the confirmed-request header.
+// Typed helpers always look up ConfirmedServicePolicy. This escape hatch
+// requires the caller to state retransmission and side-effect intent explicitly
+// (or accept the safe default: no retransmit, outcome-unknown after send).
 type ConfirmedInvokeOptions struct {
 	// SegmentedResponseAccepted is written into the confirmed-request header.
 	SegmentedResponseAccepted bool
+	// Retransmit controls exact-APDU retransmission. Zero means RetransmitDisabled.
+	Retransmit RetransmitPolicy
+	// SideEffecting, when true, wraps ambiguous post-send failures as
+	// *bacnet.OutcomeUnknownError with Operation "InvokeConfirmed".
+	SideEffecting bool
 }
 
-// InvokeConfirmed is an experimental raw confirmed-request escape hatch.
+// InvokeConfirmed is a raw confirmed-request escape hatch.
 //
-// It sends an arbitrary service choice and payload with retransmission disabled.
-// Callers own payload bytes through the send; Error, Reject, and Abort PDUs
-// surface as *bacnet.ErrorResponse, *bacnet.RejectError, and *bacnet.AbortError.
-// Prefer typed helpers for production traffic. The surface may change in v0.x.
+// Prefer typed helpers for production traffic. Default policy is non-retransmitting
+// and outcome-unknown after send when SideEffecting is true.
 func (c *Client) InvokeConfirmed(ctx context.Context, target Target, serviceChoice uint8, payload []byte, opts ConfirmedInvokeOptions) (apdu.PDU, error) {
-	return c.confirmedRequestOpts(ctx, target, serviceChoice, payload, confirmedOpts{
-		policy:                    RetransmitDisabled,
+	policy := opts.Retransmit
+	if policy != RetransmitEnabled {
+		policy = RetransmitDisabled
+	}
+	pdu, err := c.confirmedRequestOpts(ctx, target, serviceChoice, payload, confirmedOpts{
+		policy:                    policy,
 		segmentedResponseAccepted: opts.SegmentedResponseAccepted,
+		forceOutcomeUnknown:       opts.SideEffecting,
+		outcomeUnknownName:        "InvokeConfirmed",
 	})
+	return pdu, err
 }

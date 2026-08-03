@@ -6,7 +6,7 @@
 // live here so the root API stays transport-neutral for future MS/TP, IPv6 and
 // BACnet/SC modules.
 //
-// Horizon 1 is IPv4-only: IsValid requires a usable IPv4 AddrPort. IPv6
+// BACnet/IP is IPv4-only: IsValid requires a usable IPv4 AddrPort. IPv6
 // addresses may be constructed but are not treated as valid B/IP endpoints.
 package bip
 
@@ -23,7 +23,7 @@ type Endpoint struct {
 }
 
 // NewEndpoint returns an Endpoint for addr.
-// Horizon 1 treats only IPv4 endpoints as valid (see IsValid).
+// BACnet/IP treats only IPv4 endpoints as valid (see IsValid).
 func NewEndpoint(addr netip.AddrPort) Endpoint {
 	return Endpoint{Addr: addr}
 }
@@ -36,7 +36,7 @@ func (e Endpoint) String() string {
 	return e.Addr.String()
 }
 
-// IsValid reports whether the endpoint is a usable Horizon-1 B/IP endpoint
+// IsValid reports whether the endpoint is a usable BACnet/IP IPv4 B/IP endpoint
 // (valid IPv4 AddrPort). IPv6 and zero values are not valid.
 func (e Endpoint) IsValid() bool {
 	return e.Addr.IsValid() && e.Addr.Addr().Is4()

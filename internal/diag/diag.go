@@ -26,6 +26,7 @@ const (
 	KindEvent             Kind = "event"
 	KindRegistryEviction  Kind = "registry_eviction"
 	KindBVLC              Kind = "bvlc"
+	KindTransaction       Kind = "transaction"
 )
 
 // Event is a diagnostic report.

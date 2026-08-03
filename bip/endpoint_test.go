@@ -33,7 +33,7 @@ func TestEndpointBasics(t *testing.T) {
 
 	v6 := bip.NewEndpoint(netip.MustParseAddrPort("[2001:db8::1]:47808"))
 	if v6.IsValid() {
-		t.Fatal("IPv6 endpoint must not be IsValid in Horizon 1")
+		t.Fatal("IPv6 endpoint must not be IsValid for BACnet/IP IPv4")
 	}
 	if v6.String() == "" {
 		t.Fatal("IPv6 endpoint String should still render AddrPort")

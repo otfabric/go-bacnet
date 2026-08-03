@@ -15,25 +15,27 @@ import (
 type Option func(*config)
 
 type config struct {
-	iface                   string
-	localAddr               string // host:port bind
-	port                    int
-	limits                  bacnet.DecodeLimits
-	advertisedMaxAPDU       uint16 // 0 = use limits.MaxAPDUSize
-	clock                   clock.Clock
-	diag                    diag.Sink
-	transport               Transport
-	apduTimeout             time.Duration
-	retryCount              int
-	segmentTimeout          time.Duration
-	segmentSendWindow       uint8
-	segmentReceiveWindow    uint8
-	maxTransactions         int
-	fd                      *ForeignDeviceConfig
-	hopCount                uint8
-	registry                RegistryOptions
-	deviceManagementEnabled bool
-	eventHandler            EventNotificationHandler
+	iface                    string
+	localAddr                string // host:port bind
+	port                     int
+	limits                   bacnet.DecodeLimits
+	advertisedMaxAPDU        uint16 // 0 = use limits.MaxAPDUSize
+	clock                    clock.Clock
+	diag                     diag.Sink
+	transport                Transport
+	apduTimeout              time.Duration
+	retryCount               int
+	segmentTimeout           time.Duration
+	segmentSendWindow        uint8
+	segmentReceiveWindow     uint8
+	maxTransactions          int
+	fd                       *ForeignDeviceConfig
+	hopCount                 uint8
+	registry                 RegistryOptions
+	deviceManagementEnabled  bool
+	networkManagementEnabled bool
+	eventHandler             EventNotificationHandler
+	eventDispatcher          *EventDispatcherConfig
 }
 
 // ForeignDeviceConfig registers with a single BBMD.
@@ -180,7 +182,8 @@ func WithForeignDevice(fd ForeignDeviceConfig) Option {
 const DeviceManagementConfirm = "I_UNDERSTAND_DEVICE_MANAGEMENT"
 
 // WithDeviceManagementEnabled opts into DeviceCommunicationControl and
-// ReinitializeDevice. confirm must equal DeviceManagementConfirm.
+// ReinitializeDevice (OperationDeviceManagement). confirm must equal
+// DeviceManagementConfirm.
 //
 // These services can disable communication or reboot a peer. Exact-APDU
 // retransmission is disabled and post-send timeout/cancel returns
@@ -191,12 +194,35 @@ func WithDeviceManagementEnabled(confirm string) Option {
 	}
 }
 
+// NetworkManagementConfirm is required by WithNetworkManagementEnabled.
+const NetworkManagementConfirm = "I_UNDERSTAND_NETWORK_MANAGEMENT"
+
+// WithNetworkManagementEnabled opts into BVLC Write-BDT and similar
+// OperationNetworkManagement actions. confirm must equal NetworkManagementConfirm.
+func WithNetworkManagementEnabled(confirm string) Option {
+	return func(c *config) {
+		c.networkManagementEnabled = confirm == NetworkManagementConfirm
+	}
+}
+
 // WithEventNotificationHandler registers a handler for inbound
 // Confirmed/Unconfirmed EventNotification PDUs. Confirmed notifications are
 // SimpleACK'd before the handler runs. Nil disables the handler.
 //
 // The handler is invoked synchronously on the receive path and must return
-// promptly without panicking.
+// promptly without panicking. Prefer WithEventDispatcher for asynchronous work.
 func WithEventNotificationHandler(h EventNotificationHandler) Option {
 	return func(c *config) { c.eventHandler = h }
+}
+
+// WithEventDispatcher enables a bounded asynchronous EventNotification worker
+// pool. Confirmed notifications are still SimpleACK'd on the receive path
+// before enqueue. Handler must be non-nil. When set, the synchronous
+// WithEventNotificationHandler path is unused for deliveries (dispatcher owns
+// the handler). OpenEventStream remains independent.
+func WithEventDispatcher(cfg EventDispatcherConfig) Option {
+	return func(c *config) {
+		cp := cfg
+		c.eventDispatcher = &cp
+	}
 }

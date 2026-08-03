@@ -23,6 +23,7 @@ var (
 	// ErrDeviceManagementDisabled is returned when DeviceCommunicationControl
 	// or ReinitializeDevice is called without WithDeviceManagementEnabled.
 	ErrDeviceManagementDisabled = errors.New("bacnet: device management API disabled")
+	ErrBusy                     = errors.New("bacnet: operation already in progress")
 )
 
 // APDUTooLargeError reports a request that would exceed the remote max APDU
