@@ -49,9 +49,14 @@ func (c *Client) deliverEventNotification(note service.EventNotification, confir
 	c.eventMu.Lock()
 	h := c.eventHandler
 	stream := c.eventStream
+	dispatcher := c.eventDispatcher
 	c.eventMu.Unlock()
 	if stream != nil {
 		stream.publish(d)
+	}
+	if dispatcher != nil {
+		dispatcher.publish(d)
+		return
 	}
 	if h == nil {
 		return

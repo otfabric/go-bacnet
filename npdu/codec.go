@@ -2,7 +2,7 @@
 
 // Package npdu implements BACnet Network Layer Protocol Data Units.
 //
-// Horizon 1 uses a strict framing decoder: reserved control bits, global
+// Strict BACnet/IP uses a framing decoder: reserved control bits, global
 // broadcast with non-zero DADR, and odd-length router network lists are
 // rejected as ErrMalformed.
 //
@@ -29,15 +29,28 @@ const (
 	ControlReservedBits = 0x40 | 0x10
 )
 
-// NetworkMessage types used in Horizon 1.
+// Network message types (ASHRAE 135).
 const (
-	NetMsgWhoIsRouterToNetwork     = 0x00
-	NetMsgIAmRouterToNetwork       = 0x01
-	NetMsgICouldBeRouterToNetwork  = 0x02
-	NetMsgRejectMessageToNetwork   = 0x03
-	NetMsgRouterAvailableToNetwork = 0x04
-	NetMsgRouterBusyToNetwork      = 0x05
-	NetMsgRouterNetworkNumberIs    = 0x13
+	NetMsgWhoIsRouterToNetwork          = 0x00
+	NetMsgIAmRouterToNetwork            = 0x01
+	NetMsgICouldBeRouterToNetwork       = 0x02
+	NetMsgRejectMessageToNetwork        = 0x03
+	NetMsgRouterAvailableToNetwork      = 0x04
+	NetMsgRouterBusyToNetwork           = 0x05
+	NetMsgInitializeRoutingTable        = 0x06
+	NetMsgInitializeRoutingTableAck     = 0x07
+	NetMsgEstablishConnectionToNetwork  = 0x08
+	NetMsgDisconnectConnectionToNetwork = 0x09
+	NetMsgChallengeRequest              = 0x0A
+	NetMsgSecurityPayload               = 0x0B
+	NetMsgSecurityResponse              = 0x0C
+	NetMsgRequestKeyUpdate              = 0x0D
+	NetMsgUpdateKeySet                  = 0x0E
+	NetMsgUpdateDistributionKey         = 0x0F
+	NetMsgRequestMasterKey              = 0x10
+	NetMsgSetMasterKey                  = 0x11
+	NetMsgWhatIsNetworkNumber           = 0x12
+	NetMsgNetworkNumberIs               = 0x13
 )
 
 // NPDU is a parsed network PDU. APDU aliases input when present.
@@ -179,6 +192,18 @@ func validateNetworkMessageData(msgType uint8, data []byte) error {
 		if _, err := DecodeNetworkList(data); err != nil {
 			return err
 		}
+	case NetMsgRejectMessageToNetwork:
+		if _, _, err := DecodeRejectMessageToNetwork(data); err != nil {
+			return err
+		}
+	case NetMsgICouldBeRouterToNetwork:
+		if _, _, err := DecodeICouldBeRouterToNetwork(data); err != nil {
+			return err
+		}
+	case NetMsgNetworkNumberIs:
+		if len(data) < 2 {
+			return fmt.Errorf("%w: Network-Number-Is truncated", bacnet.ErrMalformed)
+		}
 	}
 	return nil
 }
@@ -198,6 +223,28 @@ func DecodeNetworkList(data []byte) ([]uint16, error) {
 		out = append(out, netn)
 	}
 	return out, nil
+}
+
+// DecodeRejectMessageToNetwork returns reason and DNET from Reject-Message-To-Network.
+func DecodeRejectMessageToNetwork(data []byte) (reason uint8, network uint16, err error) {
+	if len(data) < 3 {
+		return 0, 0, fmt.Errorf("%w: Reject-Message-To-Network truncated", bacnet.ErrMalformed)
+	}
+	if len(data) > 3 {
+		return 0, 0, fmt.Errorf("%w: Reject-Message-To-Network trailing", bacnet.ErrTrailingData)
+	}
+	return data[0], uint16(data[1])<<8 | uint16(data[2]), nil
+}
+
+// DecodeICouldBeRouterToNetwork returns DNET and performance index.
+func DecodeICouldBeRouterToNetwork(data []byte) (network uint16, perf uint8, err error) {
+	if len(data) < 3 {
+		return 0, 0, fmt.Errorf("%w: I-Could-Be-Router-To-Network truncated", bacnet.ErrMalformed)
+	}
+	if len(data) > 3 {
+		return 0, 0, fmt.Errorf("%w: I-Could-Be-Router-To-Network trailing", bacnet.ErrTrailingData)
+	}
+	return uint16(data[0])<<8 | uint16(data[1]), data[2], nil
 }
 
 // Append encodes an NPDU. For application messages, set APDU; for network

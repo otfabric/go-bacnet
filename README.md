@@ -14,9 +14,9 @@ selected advanced application services.
 
 New to BACnet? Start with [PROTOCOL.md](PROTOCOL.md).
 
-**Status:** [v0.2.5](https://github.com/otfabric/go-bacnet/releases/tag/v0.2.5).
+**Status:** [v0.3.0](https://github.com/otfabric/go-bacnet/releases/tag/v0.3.0).
 The API is usable and extensively tested against four independent open-source
-BACnet stacks ([bacnet-interop v0.8.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.8.0)).
+BACnet stacks ([bacnet-interop v0.9.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.9.0)).
 Hardware interoperability testing is still incomplete
 ([FIELD_VALIDATION.md](docs/FIELD_VALIDATION.md)).
 

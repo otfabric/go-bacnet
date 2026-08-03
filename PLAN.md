@@ -2,57 +2,48 @@
 
 ## Current release
 
-[go-bacnet v0.2.5](https://github.com/otfabric/go-bacnet/releases/tag/v0.2.5)
-implements a broad BACnet/IP IPv4 supervisory client and is tested against
-bacnet-stack, BACpypes3, BACnet4J, and Worldiety
-([bacnet-interop v0.8.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.8.0)).
+[go-bacnet v0.3.0](https://github.com/otfabric/go-bacnet/releases/tag/v0.3.0)
+implements a broad BACnet/IP IPv4 supervisory client (including the closed
+client-completeness backlog) and is tested against bacnet-stack, BACpypes3,
+BACnet4J, and Worldiety
+([bacnet-interop v0.9.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.9.0)).
 
-Status: **container-interoperability validated**; **field validation pending**
-([FIELD_VALIDATION.md](docs/FIELD_VALIDATION.md)).
+Status: **container-interoperability validated at pin**; **field validation
+pending** ([FIELD_VALIDATION.md](docs/FIELD_VALIDATION.md)).
+
+## Client-completeness backlog (closed)
+
+Former P1–P3 items are implemented or explicitly bounded in
+[CLIENT_SUPPORT.md](docs/CLIENT_SUPPORT.md) and [API.md](API.md):
+
+| Area | Status |
+|---|---|
+| Confirmed-service policy vs segmentation capabilities; OperationClass | Done |
+| Outcome-unknown for side-effecting services; InvokeConfirmed explicit opts | Done |
+| Typed BVLC BDT/FDT + interop where BBMD adapters are executable | Done |
+| Network-message codecs; transaction-stable multi-route state | Done |
+| MaxAPDU audit; RPM batched (read-only shrink); WPM batch outcomes | Done |
+| File stream/record helpers; ReadRange pager | Done |
+| List/priority helpers; optional `device` snapshot (`PropertyReader`) | Done |
+| Schedule/Calendar/HostNPort constructed types; property decode helpers | Done |
+| NotificationParameters practical CHOICEs (incl. life-safety/extended) | Done |
+| Optional `WithEventDispatcher`; fault-injection transport (`internal/faulty`) | Done |
+| Access/life-safety enums; reviewed ID name maps | Done |
+| Audit / Auth / VT | Codec/unit — no peer servers at pin |
+| Physical-device campaign | Out of scope for this backlog |
 
 ## Current priorities
 
-1. Client completeness backlog below (P1 → P3).
-2. Validate against physical BACnet/IP devices and record results in
-   [COMPATIBILITY.md](docs/COMPATIBILITY.md).
-3. Improve higher-level client ergonomics without hiding BACnet semantics.
-
-## Client completeness backlog
-
-Prioritize client value over indiscriminate enum completion.
-
-### Priority 1 — Core client correctness
-
-- Network-layer responses needed for routing
-- BVLC management for FD/BBMD (Read-BDT / Read-FDT / Delete-FDT exercise)
-- MaxAPDU-aware request construction
-- Segmentation correctness
-- Safe retry classification
-- Cancellation and transaction cleanup
-- Error / Reject / Abort completeness
-- Long-lived COV and event subscription behavior
-
-### Priority 2 — Broad supervisory interoperability
-
-- Standard object/property identifiers
-- Common constructed types
-- Schedule / calendar and network-port types
-- Event / notification parameter variants
-- Commandable value handling
-- Property-list / object-list helpers
-
-### Priority 3 — Rare or specialized
-
-- VT; audit; legacy authentication
-- Specialized life-safety / access-control structures
-- Rarely implemented network messages
-- Services with little executable peer support
+1. Field validation against physical BACnet/IP devices
+   ([FIELD_VALIDATION.md](docs/FIELD_VALIDATION.md) →
+   [COMPATIBILITY.md](docs/COMPATIBILITY.md)).
+2. Longer soak / combined-fault evidence under load.
+3. Optional packaging of bacnet-stack native router in bacnet-interop if
+   bip-router topology evidence is insufficient.
 
 ## Future
 
-- Additional network-layer services
 - BACnet/IPv6
 - BACnet/SC
 - MS/TP transport
-- Optional supervisory helpers
-- Server functionality
+- Full BACnet server / device model

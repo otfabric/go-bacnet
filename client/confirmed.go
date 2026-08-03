@@ -18,26 +18,11 @@ import (
 // wrapOutcomeUnknown marks side-effecting confirmed services whose request may
 // have executed remotely when no definitive response was observed after send.
 func wrapOutcomeUnknown(serviceChoice uint8, cause error) error {
-	var op string
-	switch serviceChoice {
-	case apdu.ServiceWriteProperty:
-		op = "WriteProperty"
-	case apdu.ServiceWritePropertyMultiple:
-		op = "WritePropertyMultiple"
-	case apdu.ServiceSubscribeCOV:
-		op = "SubscribeCOV"
-	case apdu.ServiceSubscribeCOVProperty:
-		op = "SubscribeCOVProperty"
-	case apdu.ServiceAcknowledgeAlarm:
-		op = "AcknowledgeAlarm"
-	case apdu.ServiceDeviceCommunicationControl:
-		op = "DeviceCommunicationControl"
-	case apdu.ServiceReinitializeDevice:
-		op = "ReinitializeDevice"
-	default:
+	p, ok := ConfirmedServicePolicyFor(serviceChoice)
+	if !ok || !p.OutcomeUnknownAfterSend {
 		return cause
 	}
-	return &bacnet.OutcomeUnknownError{Operation: op, Cause: cause}
+	return &bacnet.OutcomeUnknownError{Operation: p.Name, Cause: cause}
 }
 
 // Target identifies a remote BACnet device for confirmed requests.
@@ -58,6 +43,22 @@ func (c *Client) confirmedRequest(ctx context.Context, target Target, serviceCho
 type confirmedOpts struct {
 	policy                    RetransmitPolicy
 	segmentedResponseAccepted bool
+	forceOutcomeUnknown       bool
+	outcomeUnknownName        string
+}
+
+func (o confirmedOpts) maybeUnknown(serviceChoice uint8, cause error, sent bool) error {
+	if !sent {
+		return cause
+	}
+	if o.forceOutcomeUnknown {
+		name := o.outcomeUnknownName
+		if name == "" {
+			name = "InvokeConfirmed"
+		}
+		return &bacnet.OutcomeUnknownError{Operation: name, Cause: cause}
+	}
+	return wrapOutcomeUnknown(serviceChoice, cause)
 }
 
 func (c *Client) confirmedRequestOpts(ctx context.Context, target Target, serviceChoice uint8, payload []byte, opts confirmedOpts) (apdu.PDU, error) {
@@ -180,7 +181,7 @@ func (c *Client) confirmedRequestOpts(ctx context.Context, target Target, servic
 		// Mark before Send: a transport error does not prove non-delivery.
 		tx.sent = true
 		if err := c.sendAPDU(ctx, target.Endpoint, false, target.Address, true, encoded); err != nil {
-			err = wrapOutcomeUnknown(serviceChoice, err)
+			err = opts.maybeUnknown(serviceChoice, err, true)
 			if c.finishTx(id, txResult{err: err}, 0) {
 				return apdu.PDU{}, err
 			}
@@ -192,20 +193,14 @@ func (c *Client) confirmedRequestOpts(ctx context.Context, target Target, servic
 	for {
 		select {
 		case <-ctx.Done():
-			cause := ctx.Err()
-			if tx.sent {
-				cause = wrapOutcomeUnknown(serviceChoice, cause)
-			}
+			cause := opts.maybeUnknown(serviceChoice, ctx.Err(), tx.sent)
 			if c.finishTx(id, txResult{err: cause}, c.cfg.apduTimeout) {
 				return apdu.PDU{}, cause
 			}
 			res := <-tx.result
 			return res.pdu, res.err
 		case <-c.closeCh:
-			cause := bacnet.ErrClosed
-			if tx.sent {
-				cause = wrapOutcomeUnknown(serviceChoice, cause)
-			}
+			cause := opts.maybeUnknown(serviceChoice, bacnet.ErrClosed, tx.sent)
 			if c.finishTx(id, txResult{err: cause}, 0) {
 				return apdu.PDU{}, cause
 			}
@@ -220,14 +215,21 @@ func (c *Client) confirmedRequestOpts(ctx context.Context, target Target, servic
 				// APDU timer ownership transferred; ignore late fire.
 				continue
 			case timeoutRetransmit:
-				_ = c.sendAPDU(ctx, target.Endpoint, false, target.Address, true, tx.encodedAPDU)
+				if err := c.sendAPDU(ctx, target.Endpoint, false, target.Address, true, tx.encodedAPDU); err != nil {
+					c.diag.Report(diag.Event{
+						Kind:    diag.KindTransaction,
+						Message: "retransmit send failed",
+						Fields: map[string]any{
+							"invoke_id": id,
+							"service":   serviceChoice,
+							"error":     err.Error(),
+						},
+					})
+				}
 				timer.Reset(c.cfg.apduTimeout)
 				continue
 			default: // timeoutFail
-				err := bacnet.ErrTimeout
-				if tx.sent {
-					err = wrapOutcomeUnknown(serviceChoice, err)
-				}
+				err := opts.maybeUnknown(serviceChoice, bacnet.ErrTimeout, tx.sent)
 				if c.finishTx(id, txResult{err: err}, c.cfg.apduTimeout) {
 					return apdu.PDU{}, err
 				}

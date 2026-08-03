@@ -16,8 +16,8 @@ import (
 // retransmission is disabled. After send, timeout/cancel returns
 // *bacnet.OutcomeUnknownError — the peer may already have applied the control.
 func (c *Client) DeviceCommunicationControl(ctx context.Context, target Target, req service.DeviceCommunicationControlRequest) error {
-	if !c.cfg.deviceManagementEnabled {
-		return bacnet.ErrDeviceManagementDisabled
+	if err := c.checkOperationClass(apdu.ServiceDeviceCommunicationControl); err != nil {
+		return err
 	}
 	payload, err := service.EncodeDeviceCommunicationControl(req)
 	if err != nil {
@@ -39,8 +39,8 @@ func (c *Client) DeviceCommunicationControl(ctx context.Context, target Target, 
 // retransmission is disabled. After send, timeout/cancel returns
 // *bacnet.OutcomeUnknownError — the peer may already be reinitializing.
 func (c *Client) ReinitializeDevice(ctx context.Context, target Target, req service.ReinitializeDeviceRequest) error {
-	if !c.cfg.deviceManagementEnabled {
-		return bacnet.ErrDeviceManagementDisabled
+	if err := c.checkOperationClass(apdu.ServiceReinitializeDevice); err != nil {
+		return err
 	}
 	payload, err := service.EncodeReinitializeDevice(req)
 	if err != nil {

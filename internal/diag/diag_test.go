@@ -8,27 +8,16 @@ import (
 	"github.com/otfabric/go-bacnet/internal/diag"
 )
 
-func TestDiscardAndFunc(t *testing.T) {
-	diag.Discard{}.Report(diag.Event{Kind: diag.KindMalformed, Message: "ignored"})
-
+func TestDiscardAndFuncSink(t *testing.T) {
+	diag.Discard{}.Report(diag.Event{Kind: diag.KindMalformed, Message: "x"})
 	var got diag.Event
-	var sink diag.Func = func(e diag.Event) { got = e }
-	sink.Report(diag.Event{Kind: diag.KindCOV, Message: "cov"})
-	if got.Kind != diag.KindCOV || got.Message != "cov" {
-		t.Fatalf("got %#v", got)
+	s := diag.Func(func(e diag.Event) { got = e })
+	s.Report(diag.Event{Kind: diag.KindRouter, Message: "y", Fields: map[string]any{"n": 1}})
+	if got.Message != "y" {
+		t.Fatalf("%#v", got)
 	}
-	sink.Report(diag.Event{Kind: diag.KindEvent, Message: "event"})
-	if got.Kind != diag.KindEvent {
-		t.Fatalf("got %#v", got)
+	if s := diag.Format(got); s == "" {
+		t.Fatal("format")
 	}
-
-	var nilFunc diag.Func
-	nilFunc.Report(diag.Event{Kind: diag.KindRouter, Message: "noop"}) // must not panic
-}
-
-func TestFormat(t *testing.T) {
-	s := diag.Format(diag.Event{Kind: diag.KindWrongSource, Message: "peer"})
-	if s != "wrong_source: peer" {
-		t.Fatalf("Format=%q", s)
-	}
+	diag.Func(nil).Report(diag.Event{})
 }

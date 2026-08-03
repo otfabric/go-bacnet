@@ -7,7 +7,7 @@ import (
 	"fmt"
 )
 
-// MaxMACLength is the maximum BACnet MAC length retained for Horizon 1
+// MaxMACLength is the maximum BACnet MAC length retained for BACnet/IP IPv4
 // addressing (covers BACnet/IP 6-octet MAC and common shorter MACs).
 const MaxMACLength = 7
 

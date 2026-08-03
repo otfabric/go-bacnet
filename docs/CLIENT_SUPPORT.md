@@ -4,8 +4,8 @@ Authoritative declaration of BACnet client capabilities in `go-bacnet` and how
 well each is validated. Per-peer results live in [INTEROP.md](../INTEROP.md).
 Behavioural contracts live in [API.md](../API.md) and [ERRORS.md](../ERRORS.md).
 
-**Library version:** [v0.2.4](https://github.com/otfabric/go-bacnet/releases/tag/v0.2.4)  
-**Interop pin:** [bacnet-interop v0.8.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.8.0)
+**Library version:** [v0.3.0](https://github.com/otfabric/go-bacnet/releases/tag/v0.3.0)  
+**Interop pin:** [bacnet-interop v0.9.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.9.0)
 
 | Client support | Meaning |
 |---|---|
@@ -30,12 +30,12 @@ Behavioural contracts live in [API.md](../API.md) and [ERRORS.md](../ERRORS.md).
 | Original-Broadcast-NPDU | Implemented | Multi-peer | Discovery and broadcasts |
 | Forwarded-NPDU receive | Implemented | Multi-peer | BBMD forwarded frames |
 | Register-Foreign-Device | Implemented | Multi-peer | FD against bacnet-stack, BACpypes3, BACnet4J |
-| Distribute-Broadcast-To-Network | Partial | Not yet exercised | Client send path exists; limited live exercise |
-| BVLC Result | Implemented | Codec/unit | |
-| Read-Broadcast-Distribution-Table | Partial | Not yet exercised | Client helpers; native peer audit open |
-| Write-Broadcast-Distribution-Table | Partial | Not yet exercised | |
-| Read-Foreign-Device-Table | Partial | Not yet exercised | |
-| Delete-Foreign-Device-Table-Entry | Partial | Not yet exercised | |
+| Distribute-Broadcast-To-Network | Implemented | Multi-peer | Used when foreign-device registered |
+| BVLC Result | Implemented | Multi-peer | FD registration + BDT/FDT management |
+| Read-Broadcast-Distribution-Table | Implemented | Multi-peer | bacnet-stack / BACpypes3 / BACnet4J |
+| Write-Broadcast-Distribution-Table | Implemented | Single-peer | Opt-in network management; BACnet4J write OK; stack/BACpypes3 NAK asserted |
+| Read-Foreign-Device-Table | Implemented | Multi-peer | After FD registration |
+| Delete-Foreign-Device-Table-Entry | Implemented | Multi-peer | Register → delete → absence |
 | BBMD server | Not implemented | — | Out of scope |
 | BACnet/IPv6 | Not implemented | — | |
 | BACnet/SC | Not implemented | — | |
@@ -48,7 +48,8 @@ Behavioural contracts live in [API.md](../API.md) and [ERRORS.md](../ERRORS.md).
 | Global broadcast | Implemented | Multi-peer | |
 | Who-Is-Router-To-Network | Implemented | Multi-peer | Topology aid + peer endpoints |
 | I-Am-Router-To-Network receive | Implemented | Multi-peer | |
-| Other network-layer messages | Partial | Not yet exercised | Raw preserve where decoded; full NL set incomplete |
+| Reject / Router-Busy / Router-Available | Implemented | Codec/unit | Updates bounded route state; unit-tested selection |
+| Other network-layer messages | Partial | Codec/unit | Typed codecs + raw preserve; client is not a router |
 
 ## APDU and transaction layer
 
@@ -61,7 +62,8 @@ Behavioural contracts live in [API.md](../API.md) and [ERRORS.md](../ERRORS.md).
 | Segmented confirmed-request send | Implemented | Single-peer | BACpypes3 live; BACnet4J rejects |
 | Segmented ComplexACK receive | Implemented | Multi-peer | Window 1; Worldiety continuation deviation |
 | Timeout and cancellation | Implemented | Codec/unit | See API.md |
-| Outcome-unknown after send | Implemented | Codec/unit | Documented for writes |
+| Outcome-unknown after send | Implemented | Codec/unit | Policy registry; side-effecting services |
+| Event dispatcher (async) | Implemented | Codec/unit | Opt-in `WithEventDispatcher`; sync handler default |
 
 ## Object and property services
 
@@ -72,6 +74,9 @@ Behavioural contracts live in [API.md](../API.md) and [ERRORS.md](../ERRORS.md).
 | WriteProperty | Implemented | Multi-peer | Priority + NULL relinquish |
 | WritePropertyMultiple | Implemented | Multi-peer | First-failed Error model |
 | ReadRange | Implemented | Multi-peer | byPosition / sequence / time; typed LogRecord |
+| ReadRangeAll pager | Implemented | Codec/unit | byPosition / bySequence; MaxItems/MaxBytes/MaxPages |
+| ReadPropertyMultipleBatched | Implemented | Codec/unit | Read-only MaxAPDU planning + shrink |
+| WritePropertyMultipleBatched | Implemented | Codec/unit | Batch Completed/Failed/Unknown |
 | AddListElement / RemoveListElement | Implemented | Multi-peer | Notification Class list |
 | CreateObject / DeleteObject | Implemented | Multi-peer | |
 
@@ -92,7 +97,7 @@ Behavioural contracts live in [API.md](../API.md) and [ERRORS.md](../ERRORS.md).
 | SubscribeCOVPropertyMultiple | Implemented | Codec/unit | No peer server support at pin |
 | COVNotification / ConfirmedCOVNotification | Implemented | Multi-peer | |
 | COVNotificationMultiple | Implemented | Codec/unit | No peer emit at pin |
-| EventNotification receive | Implemented | Multi-peer | Common NotificationParameters typed |
+| EventNotification receive | Implemented | Multi-peer | Practical NotificationParameters typed (incl. life-safety/extended) |
 | AcknowledgeAlarm | Implemented | Multi-peer | |
 | GetAlarmSummary | Implemented | Multi-peer | |
 | GetEnrollmentSummary | Implemented | Single-peer | BACnet4J only |
@@ -104,6 +109,8 @@ Behavioural contracts live in [API.md](../API.md) and [ERRORS.md](../ERRORS.md).
 |---|---|---|---|
 | AtomicReadFile stream / record | Implemented | Multi-peer | |
 | AtomicWriteFile stream / record | Implemented | Multi-peer | |
+| ReadFileStream / ReadFileRecords | Implemented | Codec/unit | Bounded helpers over AtomicReadFile |
+| WriteFileStream | Implemented | Codec/unit | Per-chunk outcome-unknown |
 
 ## Device management and advanced services
 
@@ -126,7 +133,7 @@ Behavioural contracts live in [API.md](../API.md) and [ERRORS.md](../ERRORS.md).
 |---|---|---|
 | Native MS/TP | Not implemented | |
 | Full BACnet server / device model | Not implemented | |
-| Schedules as first-class helpers | Not implemented | Raw/property access may still work |
+| Full schedule object database | Not implemented | Weekly/Exception/Calendar/HostNPort codecs + property decode helpers exist |
 | BTL certification | Not implemented | Descriptive profile only |
 
 See also [CLIENT_PROFILE.md](CLIENT_PROFILE.md) and [STANDARD_BASELINE.md](STANDARD_BASELINE.md).

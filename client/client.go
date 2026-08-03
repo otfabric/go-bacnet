@@ -2,8 +2,8 @@
 
 // Package client implements a BACnet/IP supervisory client runtime.
 //
-// One Client instance represents one local BACnet data-link endpoint during
-// Horizon 1. The client composes bvlc → npdu → apdu → service layers.
+// One Client instance represents one local BACnet/IP data-link endpoint.
+// The client composes bvlc → npdu → apdu → service layers.
 package client
 
 import (
@@ -40,12 +40,15 @@ type Client struct {
 	seg     *segmentReceiver
 	objReg  *objectRegistry
 
-	eventMu      sync.Mutex
-	eventHandler EventNotificationHandler
-	eventStream  *eventStream
+	eventMu         sync.Mutex
+	eventHandler    EventNotificationHandler
+	eventStream     *eventStream
+	eventDispatcher *eventDispatcher
 
 	auditMu     sync.Mutex
 	auditStream *auditStream
+
+	bvlcOps bvlcOps
 }
 
 // New constructs a Client. Prefer WithTransport for tests; otherwise UDP is used.
@@ -91,6 +94,13 @@ func New(opts ...Option) (*Client, error) {
 		objReg:       newObjectRegistry(cfg.diag, cfg.clock, cfg.registry),
 		eventHandler: cfg.eventHandler,
 	}
+	if cfg.eventDispatcher != nil {
+		if cfg.eventDispatcher.Handler == nil {
+			_ = tr.Close()
+			return nil, fmt.Errorf("%w: EventDispatcher Handler required", bacnet.ErrMalformed)
+		}
+		c.eventDispatcher = newEventDispatcher(*cfg.eventDispatcher, cfg.diag)
+	}
 	if cfg.fd != nil {
 		fd, fdErr := newFDState(*cfg.fd, cfg.clock, cfg.diag)
 		if fdErr != nil {
@@ -124,6 +134,9 @@ func (c *Client) Close() error {
 	c.subs.closeAll()
 	if c.fd != nil {
 		c.fd.stop()
+	}
+	if c.eventDispatcher != nil {
+		c.eventDispatcher.close()
 	}
 	err := c.tr.Close()
 	c.wg.Wait()
@@ -189,7 +202,7 @@ func (c *Client) handlePacket(pkt InboundPacket) {
 	case bvlc.FunctionOriginalUnicastNPDU, bvlc.FunctionOriginalBroadcastNPDU:
 		// origin == immediate
 	case bvlc.FunctionDistributeBroadcastToNetwork:
-		// DBTN is a BBMD-directed request. Horizon 1 is not a BBMD server.
+		// DBTN is a BBMD-directed request. client is not a BBMD server.
 		c.diag.Report(diag.Event{
 			Kind:    diag.KindBVLC,
 			Message: "inbound Distribute-Broadcast-To-Network ignored (client is not a BBMD)",
@@ -209,10 +222,10 @@ func (c *Client) handlePacket(pkt InboundPacket) {
 		if ap, ok := msg.OriginAddrPort(); ok {
 			origin = bip.NewEndpoint(ap)
 		}
-	case bvlc.FunctionResult:
-		if c.fd != nil {
-			c.fd.handleResult(msg.ResultCode, pkt.ImmediatePeer)
-		}
+	case bvlc.FunctionResult,
+		bvlc.FunctionReadBroadcastDistributionTableAck,
+		bvlc.FunctionReadForeignDeviceTableAck:
+		_ = c.handleBVLCManagement(msg, pkt.ImmediatePeer)
 		return
 	case bvlc.FunctionRegisterForeignDevice:
 		return

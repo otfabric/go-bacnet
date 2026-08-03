@@ -131,24 +131,53 @@ send the BVLC frame to `Target.Endpoint` (the next hop).
 
 This library does **not** implement a BBMD server or multi-BBMD failover.
 
+## Confirmed-service policy registry
+
+Every typed confirmed helper looks up `ConfirmedServicePolicy` (safety) and
+`ConfirmedServiceCapabilities` (legal segmentation). Policy drives retransmission
+defaults, outcome-unknown wrapping, and `OperationClass` opt-in
+(`WithDeviceManagementEnabled`, `WithNetworkManagementEnabled`).
+`SuccessResponse` is SimpleACK or ComplexACK on success only; Error / Reject /
+Abort remain valid terminals. Raw `InvokeConfirmed` takes explicit retransmit /
+side-effect options.
+
 ## Transaction retransmission vs application retry
 
 Exact-APDU **retransmission** is owned by the client transaction manager and is
-distinct from any application-level **retry** of a logical operation.
-
-| Service | Default retransmit | Notes |
-|---------|--------------------|-------|
-| ReadProperty / RPM / ReadRange / GetEventInformation | Enabled | Safe to resend identical APDU |
-| WriteProperty | Disabled | After send, timeout/cancel → `*OutcomeUnknownError` |
-| WritePropertyMultiple | Disabled | After send (any segment), timeout/cancel → `*OutcomeUnknownError`; Error PDU → `*service.WritePropertyMultipleError` (first-failed only) |
-| SubscribeCOV / SubscribeCOVProperty | Disabled | After send, timeout/cancel → `*OutcomeUnknownError` (incl. cancel/renew) |
-| AcknowledgeAlarm | Disabled | After send → `*OutcomeUnknownError` |
-| DeviceCommunicationControl / ReinitializeDevice | Disabled | Opt-in only; after send → `*OutcomeUnknownError` |
+distinct from any application-level **retry**. Defaults come from the policy
+registry (reads typically enabled; writes / COV / device management disabled).
 
 `WithTransactionOptions` sets APDU timeout, retransmit count and segment timeout.
-Application code that retries these operations after `OutcomeUnknownError` must
-treat execution as possibly already applied (orphaned remote subscription or
-double write).
+Retries after `OutcomeUnknownError` must treat execution as possibly applied.
+
+## BVLC BDT/FDT and routing
+
+Typed `ReadBroadcastDistributionTable`, `WriteBroadcastDistributionTable`
+(network-management opt-in), `ReadForeignDeviceTable`, and
+`DeleteForeignDeviceTableEntry` target a BBMD. Non-zero BVLC-Result →
+`*BVLCOperationError`.
+
+`ResolveTarget` selects a next hop once; Busy / Available / Reject update route
+**state** for later transactions only. Side-effecting requests are never
+transparently retried on another route.
+
+## Adaptive helpers
+
+`ReadPropertyMultipleBatched` (read-only MaxAPDU planning),
+`WritePropertyMultipleBatched` (batch-level Completed/Failed/Unknown),
+`ReadObjectList` / `ReadPropertyList` / `WritePriority` / `RelinquishPriority`,
+`ReadFileStream` / `ReadFileRecords` / `WriteFileStream` (per-chunk ambiguity),
+`ReadRangeAll` (byPosition/bySequence paging with MaxItems/MaxBytes/MaxPages),
+and optional `device.ReadSnapshot` via `PropertyReader` (client does not import
+`device`).
+
+## Event delivery
+
+Default `WithEventNotificationHandler` is synchronous on the receive path.
+`WithEventDispatcher` adds a bounded worker queue (`Workers`, `BufferSize`,
+`Overflow` DropNewest/DropOldest) with panic recovery; Confirmed notifications
+are still SimpleACK'd before enqueue. `OpenEventStream` remains an independent
+bounded consumer.
 
 ## RPM result model
 

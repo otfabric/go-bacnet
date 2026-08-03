@@ -25,6 +25,19 @@ const (
 	PropertyUnits             PropertyIdentifier = 117
 	PropertyRelinquishDefault PropertyIdentifier = 104
 	PropertyLogBuffer         PropertyIdentifier = 131
+	PropertyObjectList        PropertyIdentifier = 76
+	PropertyPropertyList      PropertyIdentifier = 371
+	PropertyReliability       PropertyIdentifier = 103
+	PropertyEventState        PropertyIdentifier = 36
+	PropertyWeeklySchedule    PropertyIdentifier = 123
+	PropertyExceptionSchedule PropertyIdentifier = 38
+	PropertyScheduleDefault   PropertyIdentifier = 174
+	PropertyDateList          PropertyIdentifier = 23
+	PropertyRecipientList     PropertyIdentifier = 102
+	PropertyNetworkType       PropertyIdentifier = 427
+	PropertyIPAddress         PropertyIdentifier = 400
+	PropertyIPSubnetMask      PropertyIdentifier = 411
+	PropertyBACnetIPUDPPort   PropertyIdentifier = 412
 )
 
 // ArrayAll selects all array elements.
