@@ -4,7 +4,7 @@
 
 [go-bacnet v0.3.0](https://github.com/otfabric/go-bacnet/releases/tag/v0.3.0)
 implements a broad BACnet/IP IPv4 supervisory client (including the closed
-client-completeness backlog) and is tested against bacnet-stack, BACpypes3,
+client-completeness backlog) and was tested against bacnet-stack, BACpypes3,
 BACnet4J, and Worldiety
 ([bacnet-interop v0.9.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.9.0)).
 
@@ -32,6 +32,19 @@ Former P1–P3 items are implemented or explicitly bounded in
 | Audit / Auth / VT | Codec/unit — no peer servers at pin |
 | Physical-device campaign | Out of scope for this backlog |
 
+## v0.4.0 (unreleased)
+
+Review release: client hardening (invoke-ID reservation, receive-loop
+backoff, option validation, rejection of unserved requests), codec
+corrections against the standard, five peer stacks and Wireshark, named
+remote errors, `slog` logging, discovery and addressing helpers, peer
+coverage for the helper APIs, a Wireshark dissector oracle, and the move of
+the CLI to [otfabric/bacnetctl](https://github.com/otfabric/bacnetctl). See
+[RELEASE.md](RELEASE.md).
+
+The interop pin is at bacnet-interop v0.10.0. After this version is tagged,
+bacnetctl drops its local `replace` and requires it.
+
 ## Current priorities
 
 1. Field validation against physical BACnet/IP devices
@@ -40,6 +53,13 @@ Former P1–P3 items are implemented or explicitly bounded in
 2. Longer soak / combined-fault evidence under load.
 3. Optional packaging of bacnet-stack native router in bacnet-interop if
    bip-router topology evidence is insufficient.
+4. COV-multiple end to end: `SubscribeCOVMultiple` is a managed subscription
+   and delivers whole notifications, but no stack executes the subscription,
+   so subscribe → change → notify has not been seen against one device.
+5. VT: handle VT-Data sent to the client (a session API). No peer has a VT
+   session to test it against.
+6. AuthRequest: a typed codec once a stable stack implements the service
+   (BACnet4J 7.0 is the first to have one). All five peers refuse it today.
 
 ## Future
 

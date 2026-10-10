@@ -54,17 +54,16 @@ func DecodeListElementRequest(payload []byte, limits bacnet.DecodeLimits) (ListE
 			req.Object, err = bacnet.ContextObjectID(el)
 			haveObj = true
 		case el.TagNumber == 1 && !bacnet.IsContextConstructed(el):
-			u, e := bacnet.ContextUnsigned(el)
+			u, e := bacnet.ContextUnsigned32(el)
 			err = e
 			if err == nil {
 				req.Property.Identifier = bacnet.PropertyIdentifier(u)
 				haveProp = true
 			}
 		case el.TagNumber == 2 && !bacnet.IsContextConstructed(el):
-			u, e := bacnet.ContextUnsigned(el)
+			idx, e := bacnet.ContextUnsigned32(el)
 			err = e
 			if err == nil {
-				idx := uint32(u)
 				req.Property.ArrayIndex = &idx
 			}
 		case el.TagNumber == 3 && bacnet.IsContextConstructed(el):
@@ -138,6 +137,15 @@ func EncodeCreateObject(req CreateObjectRequest) ([]byte, error) {
 		dst, err = bacnet.AppendContextTagged(dst, 2, []bacnet.Element{{Value: pv.Value}})
 		if err != nil {
 			return nil, err
+		}
+		if pv.Priority != nil {
+			if *pv.Priority < 1 || *pv.Priority > 16 {
+				return nil, fmt.Errorf("%w: CreateObject initial value priority out of range", bacnet.ErrMalformed)
+			}
+			dst, err = bacnet.AppendContextUnsigned(dst, 3, uint64(*pv.Priority))
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 	return append(dst, 0x1F), nil

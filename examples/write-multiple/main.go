@@ -51,9 +51,13 @@ func main() {
 	defer func() { _ = c.Close() }()
 
 	low, high := uint32(*instance), uint32(*instance)
-	_ = c.SendWhoIs(ctx, target.Endpoint, false, client.DiscoveryOptions{
+	// A unicast Who-Is lets the client learn the device's Max APDU and
+	// segmentation support from its I-Am before the write is sized.
+	if err := c.SendWhoIs(ctx, target.Endpoint, false, client.DiscoveryOptions{
 		LowLimit: &low, HighLimit: &high,
-	})
+	}); err != nil {
+		log.Fatalf("SendWhoIs: %v", err)
+	}
 	time.Sleep(300 * time.Millisecond)
 
 	prio := uint8(8)

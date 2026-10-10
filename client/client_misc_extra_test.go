@@ -69,7 +69,7 @@ func TestConfirmedResponseMalformedErrorPDU(t *testing.T) {
 
 func TestHandleConfirmedIndicationNil(t *testing.T) {
 	env := newVirtualPair(t)
-	env.Client.handleConfirmedIndication(nil, packetSource{})
+	env.Client.handleConfirmedIndication(nil, packetSource{}, bacnet.Address{})
 }
 
 func TestHandleUnconfirmedNil(t *testing.T) {

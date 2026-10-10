@@ -133,7 +133,7 @@ normalized away. There is no separate compatibility profile in this library.
 | [README.md](README.md) | Install and first client example |
 | [API.md](API.md) | Ownership, discovery, routing, FD, RPM, COV contracts |
 | [ERRORS.md](ERRORS.md) | Local vs remote errors, outcome-unknown writes |
-| [docs/PACKAGE_DESIGN.md](docs/PACKAGE_DESIGN.md) | Import boundaries and layering |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | Import boundaries and layering |
 | [docs/STANDARD_BASELINE.md](docs/STANDARD_BASELINE.md) | ASHRAE edition / revision baseline |
 | [INTEROP.md](INTEROP.md) | Peer oracle evidence and `-tags=interop` |
 

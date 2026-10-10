@@ -4,6 +4,7 @@ package client
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -26,11 +27,37 @@ func wrapOutcomeUnknown(serviceChoice uint8, cause error) error {
 }
 
 // Target identifies a remote BACnet device for confirmed requests.
+//
+// For a device reachable directly over BACnet/IP, Endpoint alone is enough:
+// a zero Address is filled in as the local station at that endpoint. For a
+// device behind a BACnet router, Address is the remote station (network and
+// MAC) and Endpoint is the router; see ResolveTarget. DeviceObservation.Target
+// builds either form from a discovery result.
+//
+// Responses are only accepted from the path the Target describes.
 type Target struct {
 	Address  bacnet.Address
-	Endpoint bip.Endpoint // immediate B/IP peer (device or router)
+	Endpoint bip.Endpoint // immediate B/IP peer (device or router); required
 	Origin   bip.Endpoint // optional forwarded origin expectation
-	MaxAPDU  uint16       // 0 = use registry/fallback
+	// MaxAPDU is the largest APDU the device accepts. Zero uses the value
+	// from its I-Am when the device was discovered, else a conservative 480.
+	MaxAPDU uint16
+}
+
+// normalizeTarget validates target and fills in the local-station address of
+// a directly addressed device.
+func normalizeTarget(target Target) (Target, error) {
+	if !target.Endpoint.IsValid() {
+		return Target{}, fmt.Errorf("%w: target endpoint is not a valid IPv4 address and port", bacnet.ErrMalformed)
+	}
+	if target.Address.Scope() == bacnet.AddressLocalStation && target.Address.MAC().IsZero() {
+		addr, ok := bipMACAddress(target.Endpoint)
+		if !ok {
+			return Target{}, fmt.Errorf("%w: target endpoint has no BACnet/IP MAC", bacnet.ErrMalformed)
+		}
+		target.Address = addr
+	}
+	return target, nil
 }
 
 func (c *Client) confirmedRequest(ctx context.Context, target Target, serviceChoice uint8, payload []byte, policy RetransmitPolicy) (apdu.PDU, error) {
@@ -64,6 +91,10 @@ func (o confirmedOpts) maybeUnknown(serviceChoice uint8, cause error, sent bool)
 func (c *Client) confirmedRequestOpts(ctx context.Context, target Target, serviceChoice uint8, payload []byte, opts confirmedOpts) (apdu.PDU, error) {
 	if c.isClosed() {
 		return apdu.PDU{}, bacnet.ErrClosed
+	}
+	target, err := normalizeTarget(target)
+	if err != nil {
+		return apdu.PDU{}, err
 	}
 	// MaxAPDU in the confirmed-request header advertises *local* receive capacity.
 	localMax, err := c.advertisedMaxAPDU()
@@ -179,7 +210,7 @@ func (c *Client) confirmedRequestOpts(ctx context.Context, target Target, servic
 		encoded := apdu.AppendConfirmedRequest(nil, req)
 		tx.encodedAPDU = append([]byte(nil), encoded...)
 		// Mark before Send: a transport error does not prove non-delivery.
-		tx.sent = true
+		tx.sent.Store(true)
 		if err := c.sendAPDU(ctx, target.Endpoint, false, target.Address, true, encoded); err != nil {
 			err = opts.maybeUnknown(serviceChoice, err, true)
 			if c.finishTx(id, txResult{err: err}, 0) {
@@ -193,14 +224,14 @@ func (c *Client) confirmedRequestOpts(ctx context.Context, target Target, servic
 	for {
 		select {
 		case <-ctx.Done():
-			cause := opts.maybeUnknown(serviceChoice, ctx.Err(), tx.sent)
+			cause := opts.maybeUnknown(serviceChoice, ctx.Err(), tx.sent.Load())
 			if c.finishTx(id, txResult{err: cause}, c.cfg.apduTimeout) {
 				return apdu.PDU{}, cause
 			}
 			res := <-tx.result
 			return res.pdu, res.err
 		case <-c.closeCh:
-			cause := opts.maybeUnknown(serviceChoice, bacnet.ErrClosed, tx.sent)
+			cause := opts.maybeUnknown(serviceChoice, bacnet.ErrClosed, tx.sent.Load())
 			if c.finishTx(id, txResult{err: cause}, 0) {
 				return apdu.PDU{}, cause
 			}
@@ -229,7 +260,7 @@ func (c *Client) confirmedRequestOpts(ctx context.Context, target Target, servic
 				timer.Reset(c.cfg.apduTimeout)
 				continue
 			default: // timeoutFail
-				err := opts.maybeUnknown(serviceChoice, bacnet.ErrTimeout, tx.sent)
+				err := opts.maybeUnknown(serviceChoice, bacnet.ErrTimeout, tx.sent.Load())
 				if c.finishTx(id, txResult{err: err}, c.cfg.apduTimeout) {
 					return apdu.PDU{}, err
 				}
@@ -325,19 +356,37 @@ func (c *Client) handleConfirmedResponse(pdu apdu.PDU, src packetSource) {
 	// Service choice 0 (AcknowledgeAlarm) is valid; never treat 0 as "unknown".
 	// Reject/Abort do not carry a service choice.
 	if pdu.Type != apdu.TypeReject && pdu.Type != apdu.TypeAbort && tx.service != svc {
-		c.diag.Report(diag.Event{Kind: diag.KindWrongService, Message: fmt.Sprintf("invoke %d", invokeID)})
-		return
+		c.diag.Report(diag.Event{
+			Kind:    diag.KindWrongService,
+			Message: fmt.Sprintf("invoke %d", invokeID),
+			Fields:  map[string]any{"requested": tx.service, "answered": svc, "pdu": fmt.Sprint(pdu.Type)},
+		})
+		// An acknowledgement for another service cannot be decoded as the
+		// answer and is dropped. An Error is different: invoke ID and source
+		// already tie it to this request, it carries no service-specific
+		// result, and at least one stack (BACnet4J) puts another error-choice
+		// in it. Dropping it would turn a definite refusal into a timeout,
+		// and for a write into an outcome-unknown.
+		if pdu.Type != apdu.TypeError {
+			return
+		}
 	}
 
 	var err error
 	switch pdu.Type {
 	case apdu.TypeError:
-		if svc == apdu.ServiceWritePropertyMultiple {
+		if tx.service == apdu.ServiceWritePropertyMultiple && svc == tx.service {
 			wpmErr, e := service.DecodeWritePropertyMultipleError(pdu.Error.Payload, c.limits)
-			if e != nil {
-				err = e
-			} else {
+			if e == nil {
 				err = wpmErr
+			} else if class, code, plain := apdu.DecodeErrorClassCode(pdu.Error.Payload, c.limits); plain == nil {
+				// Not every stack sends the WritePropertyMultiple-Error
+				// structure: System.IO.BACnet answers with a plain Error.
+				// The class and code are still the device's definite answer;
+				// which write failed is then unknown.
+				err = &bacnet.ErrorResponse{InvokeID: invokeID, Service: svc, Class: class, Code: code}
+			} else {
+				err = e
 			}
 		} else {
 			class, code, e := apdu.DecodeErrorClassCode(pdu.Error.Payload, c.limits)
@@ -358,15 +407,38 @@ func (c *Client) handleConfirmedResponse(pdu apdu.PDU, src packetSource) {
 	c.finishTx(invokeID, txResult{pdu: pdu, src: src, err: err}, c.cfg.apduTimeout)
 }
 
-func (c *Client) handleConfirmedIndication(req *apdu.ConfirmedRequest, src packetSource) {
+// handleConfirmedIndication answers confirmed requests addressed to the
+// client. Only notification services are served; everything else is refused
+// with a Reject so the peer's transaction ends instead of retrying into
+// silence.
+func (c *Client) handleConfirmedIndication(req *apdu.ConfirmedRequest, src packetSource, dest bacnet.Address) {
 	if req == nil {
 		return
+	}
+	// A DNET other than the global broadcast means the NPDU is in transit to
+	// another network. The client is not a router and must not answer it.
+	if s := dest.Scope(); s == bacnet.AddressRemoteStation || s == bacnet.AddressRemoteBroadcast {
+		return
+	}
+	if req.SegmentedMessage {
+		// The client advertises no segmented-request reception.
+		c.diag.Report(diag.Event{
+			Kind:    diag.KindUnexpectedAPDU,
+			Message: "segmented confirmed request aborted",
+			Fields:  map[string]any{"service": req.ServiceChoice, "invoke_id": req.InvokeID},
+		})
+		c.sendIndicationAbort(req.InvokeID, bacnet.AbortReasonSegmentationNotSupported, src)
+		return
+	}
+	malformed := func(err error) {
+		c.diag.Report(diag.Event{Kind: diag.KindMalformed, Message: err.Error()})
+		c.sendReject(req.InvokeID, rejectReasonFor(err), src)
 	}
 	switch req.ServiceChoice {
 	case apdu.ServiceConfirmedCOVNotification:
 		note, err := decodeCOVNotification(req.Payload, c.limits)
 		if err != nil {
-			c.diag.Report(diag.Event{Kind: diag.KindMalformed, Message: err.Error()})
+			malformed(err)
 			return
 		}
 		c.sendSimpleACK(req.InvokeID, req.ServiceChoice, src, diag.KindCOV, "confirmed COV SimpleACK send failed")
@@ -377,7 +449,7 @@ func (c *Client) handleConfirmedIndication(req *apdu.ConfirmedRequest, src packe
 	case apdu.ServiceConfirmedCOVNotificationMultiple:
 		note, err := service.DecodeCOVNotificationMultiple(req.Payload, c.limits)
 		if err != nil {
-			c.diag.Report(diag.Event{Kind: diag.KindMalformed, Message: err.Error()})
+			malformed(err)
 			return
 		}
 		c.sendSimpleACK(req.InvokeID, req.ServiceChoice, src, diag.KindCOV, "confirmed COVMultiple SimpleACK send failed")
@@ -385,29 +457,63 @@ func (c *Client) handleConfirmedIndication(req *apdu.ConfirmedRequest, src packe
 	case apdu.ServiceConfirmedEventNotification:
 		note, err := service.DecodeEventNotification(req.Payload, c.limits)
 		if err != nil {
-			c.diag.Report(diag.Event{Kind: diag.KindMalformed, Message: err.Error()})
+			malformed(err)
 			return
 		}
 		c.sendSimpleACK(req.InvokeID, req.ServiceChoice, src, diag.KindEvent, "confirmed EventNotification SimpleACK send failed")
 		c.deliverEventNotification(note, true, src)
 	case apdu.ServiceConfirmedAuditNotification:
-		note, err := service.DecodeAuditNotification(req.Payload, c.limits)
+		notes, err := service.DecodeAuditNotificationRequest(req.Payload, c.limits)
 		if err != nil {
-			c.diag.Report(diag.Event{Kind: diag.KindMalformed, Message: err.Error()})
+			malformed(err)
 			return
 		}
 		c.sendSimpleACK(req.InvokeID, req.ServiceChoice, src, diag.KindEvent, "confirmed AuditNotification SimpleACK send failed")
-		c.deliverAuditNotification(note, true)
+		for _, note := range notes {
+			c.deliverAuditNotification(note, true)
+		}
 	default:
-		c.diag.Report(diag.Event{Kind: diag.KindUnexpectedAPDU, Message: fmt.Sprintf("confirmed service %d", req.ServiceChoice)})
+		c.diag.Report(diag.Event{
+			Kind:    diag.KindUnexpectedAPDU,
+			Message: "confirmed request rejected: service not served by a client",
+			Fields:  map[string]any{"service": req.ServiceChoice, "invoke_id": req.InvokeID},
+		})
+		c.sendReject(req.InvokeID, bacnet.RejectReasonUnrecognizedService, src)
 	}
+}
+
+// rejectReasonFor maps a local decode failure to the Reject reason sent back.
+func rejectReasonFor(err error) uint8 {
+	switch {
+	case errors.Is(err, bacnet.ErrLimitExceeded):
+		return bacnet.RejectReasonBufferOverflow
+	case errors.Is(err, bacnet.ErrTrailingData):
+		return bacnet.RejectReasonTooManyArguments
+	default:
+		return bacnet.RejectReasonInvalidTag
+	}
+}
+
+func (c *Client) sendReject(invokeID, reason uint8, src packetSource) {
+	c.sendIndicationReply(apdu.AppendReject(nil, apdu.RejectPDU{InvokeID: invokeID, Reason: reason}),
+		invokeID, src, diag.KindUnexpectedAPDU, "Reject send failed")
+}
+
+func (c *Client) sendIndicationAbort(invokeID, reason uint8, src packetSource) {
+	// Server=true: the client is the responding side of this transaction.
+	c.sendIndicationReply(apdu.AppendAbort(nil, apdu.AbortPDU{Server: true, InvokeID: invokeID, Reason: reason}),
+		invokeID, src, diag.KindUnexpectedAPDU, "Abort send failed")
 }
 
 func (c *Client) sendSimpleACK(invokeID, serviceChoice uint8, src packetSource, kind diag.Kind, failMsg string) {
 	ack := apdu.AppendSimpleACK(nil, apdu.SimpleACK{InvokeID: invokeID, ServiceChoice: serviceChoice})
+	c.sendIndicationReply(ack, invokeID, src, kind, failMsg)
+}
+
+func (c *Client) sendIndicationReply(reply []byte, invokeID uint8, src packetSource, kind diag.Kind, failMsg string) {
 	destAddr := responseDestination(src)
 	ackCtx, cancel := clock.ContextWithTimeout(context.Background(), c.clock, c.cfg.apduTimeout)
-	if err := c.sendAPDU(ackCtx, src.immediate, false, destAddr, false, ack); err != nil {
+	if err := c.sendAPDU(ackCtx, src.immediate, false, destAddr, false, reply); err != nil {
 		c.diag.Report(diag.Event{
 			Kind:    kind,
 			Message: failMsg,

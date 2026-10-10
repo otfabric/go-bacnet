@@ -45,7 +45,9 @@ func TestAdvancedComplexACKDecodeErrors(t *testing.T) {
 		}},
 		{"audit-query", apdu.ServiceAuditLogQuery, []byte{0xff}, func(env *virtualPair, ctx context.Context) error {
 			_, err := env.Client.AuditLogQuery(ctx, env.Target, service.AuditLogQueryRequest{
-				AuditLog: bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeAuditLog, Instance: 1},
+				AuditLog:       bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeAuditLog, Instance: 1},
+				ByTarget:       &service.AuditQueryByTarget{TargetDevice: bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeDevice, Instance: 1}},
+				RequestedCount: 10,
 			})
 			return err
 		}},

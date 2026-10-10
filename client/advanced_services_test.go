@@ -94,7 +94,7 @@ func TestAuditStreamAndQuery(t *testing.T) {
 	stream := env.Client.OpenAuditStream(2)
 	defer stream.Close()
 	env.Client.deliverAuditNotification(service.AuditNotification{
-		SourceDevice: bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeDevice, Instance: 1},
+		SourceDevice: service.AuditDevice(bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeDevice, Instance: 1}),
 		Operation:    2,
 	}, true)
 	select {
@@ -105,11 +105,14 @@ func TestAuditStreamAndQuery(t *testing.T) {
 	case <-time.After(time.Second):
 		t.Fatal("timeout")
 	}
-	ackPayload := []byte{}
+	// An ACK without records: audit-log [0], records [1] {}, no-more-items [2].
+	ackPayload := []byte{0x0c, 0x0f, 0x40, 0x00, 0x01, 0x1e, 0x1f, 0x29, 0x01}
 	errCh := make(chan error, 1)
 	go func() {
 		_, e := env.Client.AuditLogQuery(context.Background(), env.Target, service.AuditLogQueryRequest{
-			AuditLog: bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeAuditLog, Instance: 1},
+			AuditLog:       bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeAuditLog, Instance: 1},
+			ByTarget:       &service.AuditQueryByTarget{TargetDevice: bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeDevice, Instance: 1}},
+			RequestedCount: 10,
 		})
 		errCh <- e
 	}()

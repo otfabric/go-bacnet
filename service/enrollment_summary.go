@@ -8,9 +8,21 @@ import (
 	"github.com/otfabric/go-bacnet"
 )
 
-// EnrollmentFilter is the optional GetEnrollmentSummary filter acknowledgment.
+// EnrollmentFilter is the GetEnrollmentSummary acknowledgmentFilter
+// enumeration: all (0), acked (1), not-acked (2).
 type EnrollmentFilter uint8
 
+// acknowledgmentFilter values (ASHRAE 135 GetEnrollmentSummary-Request).
+const (
+	AcknowledgmentFilterAll      EnrollmentFilter = 0
+	AcknowledgmentFilterAcked    EnrollmentFilter = 1
+	AcknowledgmentFilterNotAcked EnrollmentFilter = 2
+)
+
+// Misnamed aliases of the acknowledgmentFilter values, kept for source
+// compatibility; prefer the AcknowledgmentFilter constants.
+// EnrollmentFilterPriority and EnrollmentFilterNotificationClass (3 and 4)
+// are not defined by the standard.
 const (
 	EnrollmentFilterAll EnrollmentFilter = iota
 	EnrollmentFilterEventState
@@ -33,13 +45,20 @@ type GetEnrollmentSummaryRequest struct {
 	NotificationClassFilter *uint32
 }
 
-// EnrollmentSummaryEntry is one GetEnrollmentSummary ACK element.
+// EnrollmentSummaryEntry is one GetEnrollmentSummary ACK element:
+//
+//	objectIdentifier, eventType, eventState, priority Unsigned8,
+//	notificationClass Unsigned OPTIONAL
 type EnrollmentSummaryEntry struct {
 	Object            bacnet.ObjectIdentifier
 	EventType         uint32
 	EventState        uint32
 	Priority          uint32
 	NotificationClass uint32
+	// NotificationClassAbsent reports that the optional notificationClass was
+	// not on the wire (NotificationClass is then 0); set it to omit the field
+	// on encode.
+	NotificationClassAbsent bool
 }
 
 // GetEnrollmentSummaryACK is a GetEnrollmentSummary ComplexACK.
@@ -66,14 +85,20 @@ func EncodeGetEnrollmentSummary(req GetEnrollmentSummaryRequest) ([]byte, error)
 		}
 	}
 	if req.PriorityFilter != nil {
-		body := []bacnet.Element{
-			{Value: bacnet.UnsignedValue(uint64(req.PriorityFilter[0]))},
-			{Value: bacnet.UnsignedValue(uint64(req.PriorityFilter[1]))},
+		// priorityFilter [4] SEQUENCE { minPriority [0] Unsigned8, maxPriority [1] Unsigned8 }
+		if req.PriorityFilter[0] > 255 || req.PriorityFilter[1] > 255 {
+			return nil, fmt.Errorf("%w: GetEnrollmentSummary priority filter exceeds Unsigned8", bacnet.ErrMalformed)
 		}
-		dst, err = bacnet.AppendContextTagged(dst, 4, body)
+		dst = append(dst, 0x4E)
+		dst, err = bacnet.AppendContextUnsigned(dst, 0, uint64(req.PriorityFilter[0]))
 		if err != nil {
 			return nil, err
 		}
+		dst, err = bacnet.AppendContextUnsigned(dst, 1, uint64(req.PriorityFilter[1]))
+		if err != nil {
+			return nil, err
+		}
+		dst = append(dst, 0x4F)
 	}
 	if req.NotificationClassFilter != nil {
 		dst, err = bacnet.AppendContextUnsigned(dst, 5, uint64(*req.NotificationClassFilter))
@@ -93,38 +118,50 @@ func DecodeGetEnrollmentSummaryACK(payload []byte, limits bacnet.DecodeLimits) (
 	if n != len(payload) {
 		return GetEnrollmentSummaryACK{}, fmt.Errorf("%w: GetEnrollmentSummaryACK trailing", bacnet.ErrTrailingData)
 	}
-	if len(els)%5 != 0 {
-		return GetEnrollmentSummaryACK{}, fmt.Errorf("%w: GetEnrollmentSummaryACK length", bacnet.ErrMalformed)
-	}
-	out := GetEnrollmentSummaryACK{Entries: make([]EnrollmentSummaryEntry, 0, len(els)/5)}
-	for i := 0; i+4 < len(els); i += 5 {
+	// Each entry is four mandatory application values followed by an optional
+	// notificationClass Unsigned; the next entry starts at an ObjectIdentifier.
+	out := GetEnrollmentSummaryACK{Entries: make([]EnrollmentSummaryEntry, 0, len(els)/4)}
+	for i := 0; i < len(els); {
+		if len(els)-i < 4 {
+			return GetEnrollmentSummaryACK{}, fmt.Errorf("%w: GetEnrollmentSummaryACK length", bacnet.ErrMalformed)
+		}
+		for _, el := range els[i : i+4] {
+			if el.Context {
+				return GetEnrollmentSummaryACK{}, fmt.Errorf("%w: GetEnrollmentSummaryACK context tag", bacnet.ErrMalformed)
+			}
+		}
 		obj, err := bacnet.AsObjectID(els[i].Value)
 		if err != nil {
-			return GetEnrollmentSummaryACK{}, err
+			return GetEnrollmentSummaryACK{}, fmt.Errorf("%w: GetEnrollmentSummaryACK objectIdentifier", bacnet.ErrMalformed)
 		}
 		et, err := bacnet.AsEnumerated(els[i+1].Value)
 		if err != nil {
-			return GetEnrollmentSummaryACK{}, err
+			return GetEnrollmentSummaryACK{}, fmt.Errorf("%w: GetEnrollmentSummaryACK eventType", bacnet.ErrMalformed)
 		}
 		es, err := bacnet.AsEnumerated(els[i+2].Value)
 		if err != nil {
-			return GetEnrollmentSummaryACK{}, err
+			return GetEnrollmentSummaryACK{}, fmt.Errorf("%w: GetEnrollmentSummaryACK eventState", bacnet.ErrMalformed)
 		}
-		prio, err := bacnet.AsUnsigned(els[i+3].Value)
-		if err != nil {
-			return GetEnrollmentSummaryACK{}, err
+		if els[i+3].Value.Kind != bacnet.ValueUnsigned || els[i+3].Value.Unsigned > 255 {
+			return GetEnrollmentSummaryACK{}, fmt.Errorf("%w: GetEnrollmentSummaryACK priority", bacnet.ErrMalformed)
 		}
-		nc, err := bacnet.AsUnsigned(els[i+4].Value)
-		if err != nil {
-			return GetEnrollmentSummaryACK{}, err
+		entry := EnrollmentSummaryEntry{
+			Object:                  obj,
+			EventType:               et,
+			EventState:              es,
+			Priority:                uint32(els[i+3].Value.Unsigned),
+			NotificationClassAbsent: true,
 		}
-		out.Entries = append(out.Entries, EnrollmentSummaryEntry{
-			Object:            obj,
-			EventType:         uint32(et),
-			EventState:        uint32(es),
-			Priority:          uint32(prio),
-			NotificationClass: uint32(nc),
-		})
+		i += 4
+		if i < len(els) && !els[i].Context && els[i].Value.Kind == bacnet.ValueUnsigned {
+			if els[i].Value.Unsigned > 0xFFFFFFFF {
+				return GetEnrollmentSummaryACK{}, fmt.Errorf("%w: GetEnrollmentSummaryACK notificationClass", bacnet.ErrMalformed)
+			}
+			entry.NotificationClass = uint32(els[i].Value.Unsigned)
+			entry.NotificationClassAbsent = false
+			i++
+		}
+		out.Entries = append(out.Entries, entry)
 	}
 	return out, nil
 }
@@ -149,6 +186,9 @@ func EncodeGetEnrollmentSummaryACK(ack GetEnrollmentSummaryACK) ([]byte, error) 
 		dst, err = bacnet.AppendApplicationValue(dst, bacnet.UnsignedValue(uint64(e.Priority)))
 		if err != nil {
 			return nil, err
+		}
+		if e.NotificationClassAbsent {
+			continue
 		}
 		dst, err = bacnet.AppendApplicationValue(dst, bacnet.UnsignedValue(uint64(e.NotificationClass)))
 		if err != nil {

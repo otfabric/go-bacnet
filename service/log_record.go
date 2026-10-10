@@ -180,7 +180,7 @@ func contextLengthPrefix(n int) (lvt byte, prefix []byte) {
 		return byte(n), nil
 	case n < 254:
 		return 5, []byte{byte(n)}
-	case n < 65535:
+	case n <= 0xFFFF:
 		return 5, []byte{254, byte(n >> 8), byte(n)}
 	default:
 		return 5, []byte{255, byte(n >> 24), byte(n >> 16), byte(n >> 8), byte(n)}
@@ -211,6 +211,8 @@ func parseOneElement(raw []byte) ([]bacnet.Element, error) {
 }
 
 // DecodeLogRecords splits a flat itemData element stream into count LogRecords.
+// count must match the records actually present; a count larger than the
+// elements can hold returns an error wrapping ErrMalformed without allocating.
 func DecodeLogRecords(elements []bacnet.Element, count int) ([]LogRecord, error) {
 	if count < 0 {
 		return nil, fmt.Errorf("%w: LogRecord count", bacnet.ErrMalformed)
@@ -220,6 +222,12 @@ func DecodeLogRecords(elements []bacnet.Element, count int) ([]LogRecord, error)
 			return nil, fmt.Errorf("%w: LogRecord empty count with data", bacnet.ErrMalformed)
 		}
 		return nil, nil
+	}
+	// count is peer-controlled (ReadRange itemCount). Every record needs at
+	// least a timestamp and a logDatum element, so a count the elements
+	// cannot satisfy is rejected before it sizes an allocation.
+	if count > len(elements)/2 {
+		return nil, fmt.Errorf("%w: LogRecord count %d exceeds itemData", bacnet.ErrMalformed, count)
 	}
 	out := make([]LogRecord, 0, count)
 	off := 0
@@ -317,11 +325,11 @@ func decodeLogDatumValue(choice LogDatumChoice, el bacnet.Element) (bacnet.Appli
 		bits := binary.BigEndian.Uint32(el.Value.OctetString)
 		return bacnet.RealValue(math.Float32frombits(bits)), nil
 	case LogDatumEnumerated:
-		u, err := bacnet.ContextUnsigned(el)
+		u, err := bacnet.ContextUnsigned32(el)
 		if err != nil {
 			return bacnet.ApplicationValue{}, err
 		}
-		return bacnet.EnumValue(uint32(u)), nil
+		return bacnet.EnumValue(u), nil
 	case LogDatumUnsigned:
 		u, err := bacnet.ContextUnsigned(el)
 		if err != nil {

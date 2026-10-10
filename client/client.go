@@ -8,8 +8,10 @@ package client
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/otfabric/go-bacnet"
 	"github.com/otfabric/go-bacnet/apdu"
@@ -51,28 +53,52 @@ type Client struct {
 	bvlcOps bvlcOps
 }
 
-// New constructs a Client. Prefer WithTransport for tests; otherwise UDP is used.
+// New validates the options, opens the BACnet/IP UDP socket (unless
+// WithTransport supplies a transport) and starts the receive loop. With
+// WithForeignDevice it also starts registering with the BBMD in the
+// background; New does not wait for the result (see ForeignDeviceRegistered).
+//
+// An invalid option value fails with an error wrapping
+// bacnet.ErrInvalidConfig; a socket that cannot be opened fails with the
+// operating-system error. Close the returned Client to release the socket.
 func New(opts ...Option) (*Client, error) {
 	cfg := defaultConfig()
 	for _, opt := range opts {
 		opt(&cfg)
 	}
+	fail := func(err error) (*Client, error) {
+		if cfg.transport != nil {
+			_ = cfg.transport.Close()
+		}
+		return nil, err
+	}
+	if len(cfg.errs) > 0 {
+		return fail(errors.Join(cfg.errs...))
+	}
 	cfg.limits = cfg.limits.Normalize()
 	if cfg.clock == nil {
 		cfg.clock = clock.Real{}
 	}
-	if cfg.diag == nil {
-		cfg.diag = diag.Discard{}
-	}
+	cfg.diag = newDiagSink(cfg.logger, cfg.diagFn)
 	if err := validateAdvertisedMaxAPDU(cfg.advertisedMaxAPDU, cfg.limits.MaxAPDUSize); err != nil {
-		return nil, err
+		return fail(fmt.Errorf("%w: %w", bacnet.ErrInvalidConfig, err))
+	}
+	if cfg.eventDispatcher != nil && cfg.eventDispatcher.Handler == nil {
+		return fail(fmt.Errorf("%w: %w: EventDispatcher Handler required", bacnet.ErrInvalidConfig, bacnet.ErrMalformed))
+	}
+	var fd *fdState
+	if cfg.fd != nil {
+		var err error
+		if fd, err = newFDState(*cfg.fd, cfg.clock, cfg.diag); err != nil {
+			return fail(fmt.Errorf("%w: %w", bacnet.ErrInvalidConfig, err))
+		}
 	}
 
 	var tr Transport
-	var err error
 	if cfg.transport != nil {
 		tr = cfg.transport
 	} else {
+		var err error
 		tr, err = newUDPTransport(cfg)
 		if err != nil {
 			return nil, err
@@ -95,20 +121,9 @@ func New(opts ...Option) (*Client, error) {
 		eventHandler: cfg.eventHandler,
 	}
 	if cfg.eventDispatcher != nil {
-		if cfg.eventDispatcher.Handler == nil {
-			_ = tr.Close()
-			return nil, fmt.Errorf("%w: EventDispatcher Handler required", bacnet.ErrMalformed)
-		}
 		c.eventDispatcher = newEventDispatcher(*cfg.eventDispatcher, cfg.diag)
 	}
-	if cfg.fd != nil {
-		fd, fdErr := newFDState(*cfg.fd, cfg.clock, cfg.diag)
-		if fdErr != nil {
-			_ = tr.Close()
-			return nil, fdErr
-		}
-		c.fd = fd
-	}
+	c.fd = fd
 	c.wg.Add(1)
 	go c.recvLoop()
 	if c.fd != nil {
@@ -118,7 +133,16 @@ func New(opts ...Option) (*Client, error) {
 	return c, nil
 }
 
-// Close stops the client. It is idempotent.
+// Close stops the client and releases its socket. It is idempotent and safe
+// to call concurrently with any other method.
+//
+// Requests still waiting for a response return bacnet.ErrClosed, wrapped in
+// *bacnet.OutcomeUnknownError when the request was a write that had already
+// been sent. COV subscriptions end with a Closed event and are not cancelled
+// on the devices (they lapse with their lifetime); close each Subscription
+// first to cancel it. A foreign-device registration is left to expire with
+// its TTL. Close waits for the client's goroutines, so it must not be called
+// from an EventNotification handler or a diagnostic callback.
 func (c *Client) Close() error {
 	c.mu.Lock()
 	if c.closed {
@@ -159,27 +183,47 @@ func (c *Client) isClosed() bool {
 	return c.closed
 }
 
+// Receive-error backoff bounds. A transport that keeps failing (interface
+// down, socket error) must not turn the receive loop into a busy loop.
+const (
+	recvBackoffMin = 5 * time.Millisecond
+	recvBackoffMax = 500 * time.Millisecond
+)
+
 func (c *Client) recvLoop() {
 	defer c.wg.Done()
 	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	go func() {
-		<-c.closeCh
-		cancel()
+		select {
+		case <-c.closeCh:
+			cancel()
+		case <-ctx.Done():
+		}
 	}()
+	backoff := recvBackoffMin
 	for {
 		pkt, err := c.tr.Recv(ctx)
 		if err != nil {
+			if c.isClosed() {
+				return
+			}
+			c.diag.Report(diag.Event{
+				Kind:    diag.KindTransport,
+				Message: "receive failed",
+				Fields:  map[string]any{"error": err.Error(), "retry_in": backoff.String()},
+			})
 			select {
 			case <-c.closeCh:
 				return
-			default:
-				if c.isClosed() {
-					return
-				}
-				c.diag.Report(diag.Event{Kind: diag.KindMalformed, Message: err.Error()})
-				continue
+			case <-time.After(backoff):
 			}
+			if backoff *= 2; backoff > recvBackoffMax {
+				backoff = recvBackoffMax
+			}
+			continue
 		}
+		backoff = recvBackoffMin
 		c.handlePacket(pkt)
 	}
 }
@@ -305,11 +349,10 @@ func (c *Client) dispatchAPDU(pdu apdu.PDU, src packetSource, n npdu.NPDU) {
 		c.seg.handleSegmentACK(pdu.SegmentACK, src)
 	case apdu.TypeConfirmedRequest:
 		// Client may receive confirmed COV notifications.
-		c.handleConfirmedIndication(pdu.ConfirmedRequest, src)
+		c.handleConfirmedIndication(pdu.ConfirmedRequest, src, n.Destination)
 	default:
 		c.diag.Report(diag.Event{Kind: diag.KindUnexpectedAPDU, Message: fmt.Sprintf("type %v", pdu.Type)})
 	}
-	_ = n
 }
 
 func (c *Client) sendNPDU(ctx context.Context, dest bip.Endpoint, broadcast bool, n npdu.NPDU) error {
@@ -330,7 +373,18 @@ func (c *Client) sendNPDU(ctx context.Context, dest bip.Endpoint, broadcast bool
 	if err != nil {
 		return err
 	}
-	return c.tr.Send(ctx, OutboundPacket{Data: frame, Destination: dest, Broadcast: broadcast})
+	return c.send(ctx, OutboundPacket{Data: frame, Destination: dest, Broadcast: broadcast})
+}
+
+// send hands one datagram to the transport. Once the client is closed the
+// transport's own failure ("use of closed network connection") says nothing
+// a caller can act on: it is reported as bacnet.ErrClosed.
+func (c *Client) send(ctx context.Context, pkt OutboundPacket) error {
+	err := c.tr.Send(ctx, pkt)
+	if err != nil && ctx.Err() == nil && c.isClosed() {
+		return fmt.Errorf("%w: %v", bacnet.ErrClosed, err)
+	}
+	return err
 }
 
 func (c *Client) sendAPDU(ctx context.Context, dest bip.Endpoint, broadcast bool, destAddr bacnet.Address, expectingReply bool, apduBytes []byte) error {

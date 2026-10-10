@@ -96,7 +96,24 @@ func FuzzParseTag(f *testing.F) {
 	f.Add(enc)
 	f.Add([]byte{0x10})
 	f.Add([]byte{0x21, 0x01})
+	// Strictness boundaries: boolean LVT, extended tag numbers, bit strings,
+	// and a 32-bit extended length far beyond the input.
+	f.Add([]byte{0x15})
+	f.Add([]byte{0xF9, 0x0F, 0x07})
+	f.Add([]byte{0xF9, 0xFF, 0x00})
+	f.Add([]byte{0x82, 0x07, 0x80})
+	f.Add([]byte{0x65, 0xFF, 0x7F, 0xFF, 0xFF, 0xFF, 0x00})
 	f.Fuzz(func(t *testing.T, data []byte) {
-		_, _, _ = bacnet.ParseTag(data, bacnet.DefaultDecodeLimits())
+		el, n, err := bacnet.ParseTag(data, bacnet.DefaultDecodeLimits())
+		if err != nil {
+			return
+		}
+		if n <= 0 || n > len(data) {
+			t.Fatalf("consumed %d of %d", n, len(data))
+		}
+		// Whatever the decoder accepts, the encoder must be able to emit.
+		if _, err := bacnet.AppendTag(nil, el); err != nil {
+			t.Fatalf("re-encode of % X: %v", data[:n], err)
+		}
 	})
 }

@@ -133,14 +133,15 @@ func TestRequestDecodersRoundTrip(t *testing.T) {
 	}
 
 	alRaw, err := service.EncodeAuditLogQuery(service.AuditLogQueryRequest{
-		AuditLog: bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeAuditLog, Instance: 1},
-		Query:    []bacnet.Element{{Value: bacnet.UnsignedValue(1)}},
+		AuditLog:       bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeAuditLog, Instance: 1},
+		ByTarget:       &service.AuditQueryByTarget{TargetDevice: bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeDevice, Instance: 1}},
+		RequestedCount: 10,
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 	al, err := service.DecodeAuditLogQuery(alRaw, bacnet.DefaultDecodeLimits())
-	if err != nil || al.AuditLog.Instance != 1 || len(al.Query) != 1 {
+	if err != nil || al.AuditLog.Instance != 1 || al.ByTarget == nil || al.ByTarget.TargetDevice.Instance != 1 || al.RequestedCount != 10 {
 		t.Fatalf("%+v %v", al, err)
 	}
 

@@ -26,14 +26,3 @@ jobs:
       release-name-prefix: go-bacnet
       update-major-tag: false
     secrets: inherit
-
-  release-bacnetctl-binary:
-    needs: release-package
-    uses: otfabric/.github/.github/workflows/go-binary-release.yml@v2
-    with:
-      bump: none
-      binary-name: bacnetctl
-      main-path: ./cmd/bacnetctl
-      ldflags: "-s -w -X main.version=${VERSION} -X main.tag=${TAG} -X main.commit=${COMMIT} -X main.buildDate=${BUILD_DATE}"
-      run-tests: false
-    secrets: inherit

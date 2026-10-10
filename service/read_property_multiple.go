@@ -163,7 +163,7 @@ func decodeRPMPropertyResults(elements []bacnet.Element, limits bacnet.DecodeLim
 			if err := flush(); err != nil {
 				return nil, err
 			}
-			u, err := bacnet.ContextUnsigned(el)
+			u, err := bacnet.ContextUnsigned32(el)
 			if err != nil {
 				return nil, err
 			}
@@ -173,11 +173,10 @@ func decodeRPMPropertyResults(elements []bacnet.Element, limits bacnet.DecodeLim
 			if !haveProp {
 				return nil, fmt.Errorf("%w: arrayIndex without property", bacnet.ErrMalformed)
 			}
-			u, err := bacnet.ContextUnsigned(el)
+			idx, err := bacnet.ContextUnsigned32(el)
 			if err != nil {
 				return nil, err
 			}
-			idx := uint32(u)
 			cur.Property.ArrayIndex = &idx
 		case el.TagNumber == 4 && bacnet.IsContextConstructed(el):
 			if !haveProp {
@@ -186,9 +185,10 @@ func decodeRPMPropertyResults(elements []bacnet.Element, limits bacnet.DecodeLim
 			if haveOutcome {
 				return nil, fmt.Errorf("%w: duplicate property outcome", bacnet.ErrMalformed)
 			}
-			if len(el.Value.Elements) == 0 {
-				return nil, fmt.Errorf("%w: empty propertyValue wrapper", bacnet.ErrMalformed)
-			} else if len(el.Value.Elements) == 1 && !el.Value.Elements[0].Context {
+			// An empty wrapper is an empty list or array (a Device without
+			// address bindings, for example): it falls through to the
+			// constructed value with no elements.
+			if len(el.Value.Elements) == 1 && !el.Value.Elements[0].Context {
 				cur.Value = el.Value.Elements[0].Value.Clone()
 			} else {
 				cur.Value = bacnet.ApplicationValue{Kind: bacnet.ValueConstructed, Elements: el.Value.Elements}.Clone()

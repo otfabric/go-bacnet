@@ -14,22 +14,15 @@ import (
 	"github.com/otfabric/go-bacnet/service"
 )
 
-func TestDeliverCOVNotificationMultipleSynthesizes(t *testing.T) {
+func TestDeliverCOVNotificationMultipleWithoutSubscription(t *testing.T) {
 	env := newVirtualPair(t)
-	note := service.COVNotificationMultiple{
+	// Dropped: no subscription has process identifier 9.
+	env.Client.deliverCOVNotificationMultiple(service.COVNotificationMultiple{
 		SubscriberProcessIdentifier: 9,
-		InitiatingDevice:            bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeDevice, Instance: 1234},
-		TimeRemaining:               10,
 		Objects: []service.COVNotificationMultipleObject{{
 			Object: bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeAnalogValue, Instance: 1},
-			Values: []service.COVNotificationMultipleValue{{
-				Property: bacnet.PropertyReference{Identifier: bacnet.PropertyPresentValue},
-				Value:    bacnet.RealValue(22),
-			}},
 		}},
-	}
-	// Should not panic without matching subscription.
-	env.Client.deliverCOVNotificationMultiple(note, true, packetSource{})
+	}, true, packetSource{})
 }
 
 func TestGetAlarmSummaryProtocolViolation(t *testing.T) {

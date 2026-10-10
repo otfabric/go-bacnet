@@ -5,6 +5,7 @@ package client
 import (
 	"context"
 	"net/netip"
+	"time"
 
 	"github.com/otfabric/go-bacnet"
 	"github.com/otfabric/go-bacnet/apdu"
@@ -22,6 +23,11 @@ type DiscoveryOptions struct {
 	// Use RemoteBroadcast(dnet) with broadcast=false and dest=router to probe
 	// a remote BACnet network via a known next hop.
 	Address bacnet.Address
+	// Window is how long Discover collects I-Am replies. When positive,
+	// Discover returns the devices with a nil error once it has elapsed.
+	// Zero collects until ctx ends and returns ctx.Err(). SendWhoIs ignores
+	// it.
+	Window time.Duration
 }
 
 // SendWhoIs transmits a Who-Is request.
@@ -58,34 +64,57 @@ func (c *Client) SendWhoIs(ctx context.Context, dest bip.Endpoint, broadcast boo
 	return c.sendAPDU(ctx, dest, broadcast, destAddr, false, apduBytes)
 }
 
-// Discover sends a global-broadcast Who-Is and collects I-Am observations
-// until ctx is done. The returned slice contains only observations whose
-// LastSeen is at or after the start of this discovery window. Devices()
-// still returns the full retained registry snapshot.
+// Discover broadcasts a Who-Is and collects the I-Am replies. The returned
+// slice holds the devices seen since the call started, in no particular
+// order; Devices() returns everything the registry still retains.
 //
-// The returned error is typically context.Canceled or context.DeadlineExceeded
-// after a successful collection window.
+// With opts.Window set, Discover returns after that time with a nil error.
+// Without it, it collects until ctx ends and returns the devices together
+// with ctx.Err(). In both cases the devices gathered so far are returned
+// when ctx is cancelled or the client is closed (bacnet.ErrClosed).
 //
-// For directed discovery (e.g. Docker published UDP ports), call SendWhoIs
-// with broadcast=false and poll Devices() / registry observations.
+// The Who-Is is a global broadcast sent to the local IPv4 broadcast address
+// (see WithInterface), or through the BBMD when registered as a foreign
+// device. For peers a broadcast cannot reach, call SendWhoIs with their
+// address and read Devices().
 func (c *Client) Discover(ctx context.Context, opts DiscoveryOptions) ([]DeviceObservation, error) {
 	if c.isClosed() {
 		return nil, bacnet.ErrClosed
 	}
 	since := c.clock.Now()
+	if err := c.SendWhoIs(ctx, c.broadcastEndpoint(), true, opts); err != nil {
+		return nil, err
+	}
+	err := c.collect(ctx, opts.Window)
+	return c.reg.ObservationsSince(since), err
+}
+
+// broadcastEndpoint is the nominal destination of a local broadcast; the UDP
+// transport substitutes the interface broadcast address when one is set.
+func (c *Client) broadcastEndpoint() bip.Endpoint {
 	port := c.cfg.port
 	if port == 0 {
 		port = bip.DefaultPort
 	}
-	bcast := bip.NewEndpoint(netip.AddrPortFrom(netip.MustParseAddr("255.255.255.255"), uint16(port)))
-	if err := c.SendWhoIs(ctx, bcast, true, opts); err != nil {
-		return nil, err
+	return bip.NewEndpoint(netip.AddrPortFrom(netip.AddrFrom4([4]byte{255, 255, 255, 255}), uint16(port)))
+}
+
+// collect waits for the collection window of a discovery: window when
+// positive (nil), else the end of ctx (ctx.Err()).
+func (c *Client) collect(ctx context.Context, window time.Duration) error {
+	var elapsed <-chan time.Time
+	if window > 0 {
+		timer := c.clock.NewTimer(window)
+		defer timer.Stop()
+		elapsed = timer.C()
 	}
 	select {
+	case <-elapsed:
+		return nil
 	case <-ctx.Done():
-		return c.reg.ObservationsSince(since), ctx.Err()
+		return ctx.Err()
 	case <-c.closeCh:
-		return c.reg.ObservationsSince(since), bacnet.ErrClosed
+		return bacnet.ErrClosed
 	}
 }
 
@@ -162,11 +191,13 @@ func (c *Client) handleUnconfirmed(req *apdu.UnconfirmedRequest, src packetSourc
 		}
 		c.deliverEventNotification(note, false, src)
 	case apdu.ServiceUnconfirmedAuditNotification:
-		note, err := service.DecodeAuditNotification(req.Payload, c.limits)
+		notes, err := service.DecodeAuditNotificationRequest(req.Payload, c.limits)
 		if err != nil {
 			c.diag.Report(diag.Event{Kind: diag.KindMalformed, Message: err.Error()})
 			return
 		}
-		c.deliverAuditNotification(note, false)
+		for _, note := range notes {
+			c.deliverAuditNotification(note, false)
+		}
 	}
 }

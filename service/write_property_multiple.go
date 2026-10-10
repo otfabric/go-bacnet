@@ -187,9 +187,10 @@ func decodeWPMPropertyValues(elements []bacnet.Element, limits bacnet.DecodeLimi
 			if haveValue {
 				return nil, fmt.Errorf("%w: duplicate propertyValue", bacnet.ErrMalformed)
 			}
-			if len(el.Value.Elements) == 0 {
-				return nil, fmt.Errorf("%w: empty propertyValue wrapper", bacnet.ErrMalformed)
-			} else if len(el.Value.Elements) == 1 && !el.Value.Elements[0].Context {
+			// An empty wrapper is an empty list or array (a Device without
+			// address bindings, for example): it falls through to the
+			// constructed value with no elements.
+			if len(el.Value.Elements) == 1 && !el.Value.Elements[0].Context {
 				cur.Value = el.Value.Elements[0].Value.Clone()
 			} else {
 				cur.Value = bacnet.ApplicationValue{Kind: bacnet.ValueConstructed, Elements: el.Value.Elements}.Clone()
@@ -234,8 +235,16 @@ type WritePropertyMultipleError struct {
 }
 
 func (e *WritePropertyMultipleError) Error() string {
-	return fmt.Sprintf("bacnet: WritePropertyMultiple error class=%d code=%d first_failed=%v property=%d",
-		e.Class, e.Code, e.FirstFailed, e.FirstProperty.Identifier)
+	return fmt.Sprintf("bacnet: WritePropertyMultiple error class=%s(%d) code=%s(%d) first_failed=%v property=%v",
+		bacnet.ErrorClassName(e.Class), e.Class, bacnet.ErrorCodeName(e.Code), e.Code,
+		e.FirstFailed, e.FirstProperty.Identifier)
+}
+
+// Unwrap exposes the class and code as a *bacnet.ErrorResponse, so callers
+// that handle remote errors generically with errors.As also see
+// WritePropertyMultiple failures. The InvokeID of the result is zero.
+func (e *WritePropertyMultipleError) Unwrap() error {
+	return &bacnet.ErrorResponse{Service: apdu.ServiceWritePropertyMultiple, Class: e.Class, Code: e.Code}
 }
 
 // DecodeWritePropertyMultipleError decodes a WPM Error service payload

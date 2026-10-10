@@ -76,11 +76,12 @@ func TestAdvancedTrailingAndMalformed(t *testing.T) {
 		_, err := service.DecodeCreateObjectACK(b, bacnet.DefaultDecodeLimits())
 		return err
 	})
-	an, _ := service.EncodeAuditNotification(service.AuditNotification{
-		SourceDevice: bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeDevice, Instance: 1}, Operation: 1,
-	})
+	an, _ := service.EncodeAuditNotificationRequest([]service.AuditNotification{{
+		SourceDevice: service.AuditDevice(bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeDevice, Instance: 1}),
+		TargetDevice: service.AuditDevice(bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeDevice, Instance: 1}), Operation: 1,
+	}})
 	add("audit", an, func(b []byte) error {
-		_, err := service.DecodeAuditNotification(b, bacnet.DefaultDecodeLimits())
+		_, err := service.DecodeAuditNotificationRequest(b, bacnet.DefaultDecodeLimits())
 		return err
 	})
 	who, _ := service.EncodeWhoAmI(service.WhoAmI{VendorID: 1, ModelName: "m", SerialNumber: "s"})

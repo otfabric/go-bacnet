@@ -5,6 +5,7 @@ package client
 import (
 	"context"
 	"net/netip"
+	"sync"
 	"testing"
 	"time"
 
@@ -29,8 +30,23 @@ type virtualPair struct {
 	Target   Target
 }
 
+var parallelTests sync.Map // *testing.T -> struct{}
+
+// parallelOnce marks t parallel, once. Every test on a virtual pair has its
+// own client, transports and clock, so they all run in parallel: state shared
+// between clients then shows up as a data race under -race.
+func parallelOnce(t *testing.T) {
+	t.Helper()
+	if _, seen := parallelTests.LoadOrStore(t, struct{}{}); seen {
+		return
+	}
+	t.Cleanup(func() { parallelTests.Delete(t) })
+	t.Parallel()
+}
+
 func newVirtualPair(t *testing.T, opts ...Option) *virtualPair {
 	t.Helper()
+	parallelOnce(t)
 	clk := clock.NewManual(time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC))
 	local := bip.NewEndpoint(netip.MustParseAddrPort("10.0.0.1:47808"))
 	peerEP := bip.NewEndpoint(netip.MustParseAddrPort("10.0.0.2:47808"))

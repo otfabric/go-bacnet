@@ -15,10 +15,10 @@ import (
 
 // Abort reason codes used by the client receive path (ASHRAE 135).
 const (
-	abortReasonInvalidAPDU    uint8 = 2
-	abortReasonOutOfResources uint8 = 9
-	abortReasonTSMTimeout     uint8 = 10
-	abortReasonAPDUTooLong    uint8 = 11
+	abortReasonInvalidAPDU    = bacnet.AbortReasonInvalidAPDUInThisState
+	abortReasonOutOfResources = bacnet.AbortReasonOutOfResources
+	abortReasonTSMTimeout     = bacnet.AbortReasonTSMTimeout
+	abortReasonAPDUTooLong    = bacnet.AbortReasonAPDUTooLong
 )
 
 type segOutbound struct {

@@ -7,40 +7,47 @@
 [![Codecov](https://codecov.io/gh/otfabric/go-bacnet/graph/badge.svg)](https://codecov.io/gh/otfabric/go-bacnet)
 [![Release](https://img.shields.io/github/v/release/otfabric/go-bacnet?label=release)](https://github.com/otfabric/go-bacnet/releases)
 
-`go-bacnet` is a pure-Go BACnet/IP client for discovery, supervisory control,
-event handling, and device management. It implements BACnet/IP over IPv4 with
-routed addressing, segmentation, COV, alarm/event, file, object-management, and
-selected advanced application services.
+`go-bacnet` is a pure-Go BACnet/IP **client** library: discover devices, read
+and write properties, subscribe to change-of-value and alarm notifications,
+transfer files and manage objects on BACnet/IP (Annex J) over IPv4, including
+routed networks, foreign-device registration and segmentation. It has no
+dependencies outside the Go standard library.
 
 New to BACnet? Start with [PROTOCOL.md](PROTOCOL.md).
 
-**Status:** [v0.3.0](https://github.com/otfabric/go-bacnet/releases/tag/v0.3.0).
-The API is usable and extensively tested against four independent open-source
-BACnet stacks ([bacnet-interop v0.9.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.9.0)).
-Hardware interoperability testing is still incomplete
-([FIELD_VALIDATION.md](docs/FIELD_VALIDATION.md)).
+## Status
 
-### Capability groups
+Client only. The library is tested on every change against five independent
+open-source BACnet stacks running in containers (bacnet-stack, BACpypes3,
+BACnet4J, Worldiety, System.IO.BACnet; [INTEROP.md](INTEROP.md)) and its
+requests are checked against Wireshark's dissector. It has **not** been
+validated against physical controllers yet; the checklist for that is
+[docs/FIELD_VALIDATION.md](docs/FIELD_VALIDATION.md). The API is v0 and can
+still change between minor versions; [RELEASE.md](RELEASE.md) lists every
+change.
 
-1. **Transport and network** — BACnet/IP IPv4/UDP, BVLC/NPDU/APDU, routing,
-   Forwarded-NPDU, optional foreign-device registration, segmentation
-2. **Discovery and object access** — Who-Is/I-Am, Who-Has/I-Have, RP/RPM/WP/WPM,
-   ReadRange, list element mutation
-3. **Events, COV, and alarms** — SubscribeCOV, notifications, EventNotification,
-   AcknowledgeAlarm, GetEventInformation, GetAlarmSummary, GetEnrollmentSummary
-4. **File and object management** — AtomicRead/WriteFile, CreateObject,
-   DeleteObject
-5. **Advanced services** — PrivateTransfer, TextMessage, time synchronization,
-   WriteGroup, Who-Am-I/You-Are, LifeSafetyOperation, audit/VT codecs, opt-in
-   DCC/ReinitializeDevice
+## Scope
 
-Full matrix: [docs/CLIENT_SUPPORT.md](docs/CLIENT_SUPPORT.md).  
-Scenario-by-peer results: [INTEROP.md](INTEROP.md).
+| | |
+|---|---|
+| Transport and network | BACnet/IP over IPv4/UDP, BVLC, routed addressing (DNET/DADR), Forwarded-NPDU, foreign-device registration with one BBMD, BDT/FDT management, segmented requests and responses |
+| Discovery | Who-Is / I-Am, Who-Has / I-Have, Who-Is-Router-To-Network |
+| Object access | ReadProperty, ReadPropertyMultiple, WriteProperty, WritePropertyMultiple, ReadRange, Add/RemoveListElement, CreateObject, DeleteObject, AtomicRead/WriteFile |
+| Notifications | SubscribeCOV, SubscribeCOVProperty, SubscribeCOVPropertyMultiple, COV and EventNotification reception, AcknowledgeAlarm, GetEventInformation, GetAlarmSummary, GetEnrollmentSummary |
+| Other services | time synchronization, text message, private transfer, WriteGroup, LifeSafetyOperation, and (opt-in) DeviceCommunicationControl and ReinitializeDevice |
 
-**Out of scope:** convenience/supervisor package; MS/TP; BACnet/IPv6; BACnet/SC;
-BBMD server; full BACnet server/device model; BTL certification.
+The complete matrix, with how well each capability is validated, is
+[docs/CLIENT_SUPPORT.md](docs/CLIENT_SUPPORT.md).
 
-### Install
+**Not in scope:** a BACnet server or device object model, BBMD server,
+MS/TP, BACnet/IPv6, BACnet/SC, BTL certification. BACnet/IP has no
+authentication or encryption and this library adds none
+([SECURITY.md](SECURITY.md)).
+
+A command-line client built on this library lives in
+[otfabric/bacnetctl](https://github.com/otfabric/bacnetctl).
+
+## Install
 
 ```bash
 go get github.com/otfabric/go-bacnet@latest
@@ -48,7 +55,7 @@ go get github.com/otfabric/go-bacnet@latest
 
 Requires **Go 1.23** or newer.
 
-### Getting started
+## Getting started
 
 ```go
 package main
@@ -60,58 +67,92 @@ import (
 	"time"
 
 	"github.com/otfabric/go-bacnet"
-	"github.com/otfabric/go-bacnet/bip"
 	"github.com/otfabric/go-bacnet/client"
 )
 
 func main() {
-	c, err := client.New(client.WithPort(bip.DefaultPort)) // 47808 / 0xBAC0
+	c, err := client.New() // binds UDP port 47808
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer c.Close()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-
-	devices, err := c.Discover(ctx, client.DiscoveryOptions{})
-	// Discover returns when ctx ends; results are still useful.
-	_ = err
-	for _, d := range devices {
-		fmt.Printf("device %d at %s (%s)\n", d.Instance, d.Address, d.Origin)
-	}
-
-	if len(devices) == 0 {
-		return
-	}
-	d := devices[0]
-	target := client.Target{
-		Address:  d.Address,
-		Endpoint: d.ImmediatePeer,
-		Origin:   d.Origin,
-	}
-	obj := bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeDevice, Instance: d.Instance}
-	prop := bacnet.PropertyReference{Identifier: bacnet.PropertyObjectName}
-	val, err := c.ReadProperty(context.Background(), target, obj, prop)
+	ctx := context.Background()
+	devices, err := c.Discover(ctx, client.DiscoveryOptions{Window: 3 * time.Second})
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("object-name: %+v\n", val)
+	name := bacnet.PropertyReference{Identifier: bacnet.PropertyObjectName}
+	for _, d := range devices {
+		val, err := c.ReadProperty(ctx, d.Target(), d.DeviceID(), name)
+		if err != nil {
+			fmt.Printf("device %d at %s: %v\n", d.Instance, d.Address, err)
+			continue
+		}
+		fmt.Printf("device %d at %s: %s\n", d.Instance, d.Address, val.Character.Value)
+	}
 }
 ```
 
-Always check the error from `client.New` **before** `defer c.Close()`.
-BACnet/IP peers use `bip.Endpoint` (not a root type).
+A device whose address you already know needs no discovery:
 
-### Documentation
+```go
+c, err := client.New(client.WithLocalAddr("0.0.0.0:0")) // any free local port
+// ...
+target := client.Target{Endpoint: bip.NewEndpoint(netip.MustParseAddrPort("192.168.1.20:47808"))}
+av1 := bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeAnalogValue, Instance: 1}
+pv, err := c.ReadProperty(ctx, target, av1, bacnet.PropertyReference{Identifier: bacnet.PropertyPresentValue})
+```
+
+These and further examples (writing with a priority, COV subscriptions,
+logging) are compiled as part of the test suite: see
+[client/example_test.go](client/example_test.go) and [`examples/`](examples/).
+
+## Things to know before you use it
+
+- **One client, one socket.** A `Client` owns one UDP socket and is safe for
+  concurrent use; requests are multiplexed on it by invoke ID. Create one per
+  local interface and keep it; `Close` releases the socket and fails pending
+  requests with `bacnet.ErrClosed`.
+- **Port 47808.** Devices answer Who-Is with a *broadcast* to port 47808, so
+  discovery needs the client bound there (the default), and only one process
+  on a host can be. Unicast requests work from any port
+  (`WithLocalAddr("0.0.0.0:0")`).
+- **Broadcasts stop at routers.** A Who-Is goes to the broadcast address of
+  every local subnet. To discover devices on another IP subnet, register as a
+  foreign device with a BBMD there (`WithForeignDevice`) or send a unicast
+  Who-Is (`SendWhoIs`). `WithInterface` restricts broadcasts to one interface.
+- **Timeouts.** A request without an answer fails with `bacnet.ErrTimeout`
+  after the APDU timeout (3 s) times the attempts (reads are retransmitted
+  3 times; writes never). A context deadline or cancellation ends it earlier
+  and is preserved for `errors.Is`. See `WithTransactionOptions`.
+- **Writes can be ambiguous.** A write is sent once. If no answer arrives the
+  device may or may not have applied it: the call returns
+  `*bacnet.OutcomeUnknownError`, never a plain timeout. Read the value back
+  before repeating a write that is not idempotent.
+- **Errors are typed.** A device's Error, Reject and Abort PDUs come back as
+  `*bacnet.ErrorResponse`, `*bacnet.RejectError` and `*bacnet.AbortError`
+  with standard names; ReadPropertyMultiple reports per-property errors inside
+  its results. [ERRORS.md](ERRORS.md) has the whole taxonomy.
+- **Dangerous services are opt-in.** DeviceCommunicationControl,
+  ReinitializeDevice and Write-BDT fail locally unless enabled with
+  `WithDeviceManagementEnabled` / `WithNetworkManagementEnabled`.
+- **Silent by default.** No logging unless you pass `WithLogger`
+  ([OBSERVABILITY.md](OBSERVABILITY.md)).
+- **Character strings.** `CharacterString.Value` holds the octets as received.
+  Use `Text()` to get a Go string from devices that send UCS-2 or ISO 8859-1.
+
+## Documentation
 
 | Document | Contents |
 |----------|----------|
 | [PROTOCOL.md](PROTOCOL.md) | BACnet primer |
-| [API.md](API.md) | Client behavioural contract |
+| [API.md](API.md) | Client behavioural contract: lifecycle, ownership, timeouts, result models |
 | [ERRORS.md](ERRORS.md) | Sentinels, remote PDUs, outcome-unknown |
-| [docs/CLIENT_SUPPORT.md](docs/CLIENT_SUPPORT.md) | Capability and evidence levels |
-| [INTEROP.md](INTEROP.md) | Scenario-by-peer results |
+| [OBSERVABILITY.md](OBSERVABILITY.md) | Logging and diagnostics |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | Packages, dependency rules, client runtime |
+| [docs/CLIENT_SUPPORT.md](docs/CLIENT_SUPPORT.md) | Every capability and its evidence level |
+| [INTEROP.md](INTEROP.md) | Scenario-by-peer results and how to run them |
 | [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md) | Peer quirks and hardware results |
 | [docs/CLIENT_PROFILE.md](docs/CLIENT_PROFILE.md) | Descriptive standards profile |
 | [docs/STANDARD_BASELINE.md](docs/STANDARD_BASELINE.md) | Normative baseline |
@@ -120,8 +161,7 @@ BACnet/IP peers use `bip.Endpoint` (not a root type).
 | [RELEASE.md](RELEASE.md) | Release history |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Local checks and interop how-to |
 | [SECURITY.md](SECURITY.md) | Trust model and reporting |
-| [`examples/`](examples/) | Runnable samples |
 
-### License
+## License
 
 MIT — see [LICENSE](LICENSE).

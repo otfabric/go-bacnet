@@ -12,11 +12,13 @@ import (
 
 // ReadRangePageOptions bounds ReadRange paging helpers.
 type ReadRangePageOptions struct {
-	PageCount   int32 // items requested per page; default 50
-	MaxItems    int   // total items across pages; default 4096
-	MaxBytes    int   // approximate ItemData byte budget; 0 disables
-	MaxPages    int   // default 256
-	StopOnError bool  // stop and return partial + error (default true)
+	PageCount int32 // items requested per page; default 50
+	MaxItems  int   // total items across pages; default 4096
+	MaxBytes  int   // approximate ItemData byte budget; 0 disables
+	MaxPages  int   // default 256
+	// Deprecated: StopOnError has no effect. ReadRangeAll always stops at the
+	// first failed page and returns the pages read so far with the error.
+	StopOnError bool
 }
 
 // ReadRangePageResult aggregates paged ReadRange ACKs.
@@ -28,7 +30,9 @@ type ReadRangePageResult struct {
 	StoppedReason string
 }
 
-// ReadRangeAll pages ReadRange until LastItem, !MoreItems, or configured limits.
+// ReadRangeAll pages ReadRange until the peer reports LAST_ITEM, returns an
+// empty or short final page, or a configured limit is reached (Partial is then
+// set and StoppedReason names the limit).
 //
 // Only byPosition and bySequenceNumber are advanced automatically. byTime
 // paging requires the caller to supply successive ReferenceTime values via
@@ -52,14 +56,12 @@ func (c *Client) ReadRangeAll(ctx context.Context, target Target, req service.Re
 		cur.Count = opts.PageCount
 	}
 	approxBytes := 0
+	items := 0
 	for page := 0; page < opts.MaxPages; page++ {
 		ack, err := c.ReadRange(ctx, target, cur)
 		if err != nil {
 			out.Partial = true
 			out.StoppedReason = "request error"
-			if opts.StopOnError || len(out.Pages) == 0 {
-				return out, err
-			}
 			return out, err
 		}
 		out.Pages = append(out.Pages, ack)
@@ -68,7 +70,10 @@ func (c *Client) ReadRangeAll(ctx context.Context, target Target, req service.Re
 		for _, v := range ack.ItemData {
 			approxBytes += estimateValueBytes(v)
 		}
-		if len(out.Items) >= opts.MaxItems {
+		// Count records as the peer reports them: one log record decodes to
+		// several elements of ItemData.
+		items += int(ack.ItemCount)
+		if items >= opts.MaxItems {
 			out.Partial = true
 			out.StoppedReason = "MaxItems"
 			return out, nil
@@ -78,7 +83,13 @@ func (c *Client) ReadRangeAll(ctx context.Context, target Target, req service.Re
 			out.StoppedReason = "MaxBytes"
 			return out, nil
 		}
-		if ack.LastItem() || !ack.MoreItems() || ack.ItemCount == 0 {
+		// LAST_ITEM ends the list. MORE_ITEMS only says that items matching
+		// this one request did not fit in the reply; a page that returned
+		// everything it was asked for has it clear with records still to
+		// come, so it cannot end the paging. A short page without MORE_ITEMS
+		// can: the peer had nothing further.
+		short := cur.Count > 0 && ack.ItemCount < uint32(cur.Count)
+		if ack.LastItem() || ack.ItemCount == 0 || (short && !ack.MoreItems()) {
 			return out, nil
 		}
 		// Advance reference for the next page.

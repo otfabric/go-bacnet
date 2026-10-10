@@ -270,7 +270,7 @@ func decodePropertyReference(elements []bacnet.Element) (bacnet.PropertyReferenc
 		if bacnet.IsContextConstructed(el) || el.Opening || el.Closing {
 			return prop, fmt.Errorf("%w: nested constructed in property reference", bacnet.ErrMalformed)
 		}
-		u, err := bacnet.ContextUnsigned(el)
+		u, err := bacnet.ContextUnsigned32(el)
 		if err != nil {
 			return prop, err
 		}
@@ -285,10 +285,7 @@ func decodePropertyReference(elements []bacnet.Element) (bacnet.PropertyReferenc
 			if prop.ArrayIndex != nil {
 				return prop, fmt.Errorf("%w: duplicate arrayIndex", bacnet.ErrMalformed)
 			}
-			if u > 0xFFFFFFFF {
-				return prop, fmt.Errorf("%w: arrayIndex overflow", bacnet.ErrMalformed)
-			}
-			idx := uint32(u)
+			idx := u
 			prop.ArrayIndex = &idx
 		default:
 			return prop, fmt.Errorf("%w: unexpected property reference tag %d", bacnet.ErrMalformed, el.TagNumber)
@@ -309,10 +306,15 @@ type COVNotification struct {
 	Values            []PropertyValue
 }
 
-// PropertyValue is a property identifier + value pair in a COV notification.
+// PropertyValue is a BACnetPropertyValue: property identifier, optional array
+// index, value and optional priority. It appears in COV notifications and in
+// CreateObject initial values.
 type PropertyValue struct {
 	Property bacnet.PropertyReference
 	Value    bacnet.ApplicationValue
+	// Priority is the optional priority [3] (1..16). Peers may include it for
+	// commandable properties; nil means it was absent.
+	Priority *uint8
 }
 
 // DecodeCOVNotification decodes a COV notification payload.
@@ -391,47 +393,84 @@ func DecodeCOVNotification(payload []byte, limits bacnet.DecodeLimits) (COVNotif
 	return note, nil
 }
 
+// decodeCOVValues decodes SEQUENCE OF BACnetPropertyValue:
+//
+//	propertyIdentifier [0], propertyArrayIndex [1] OPTIONAL,
+//	value [2], priority [3] OPTIONAL
+//
+// Every entry must carry a value; fields must appear in tag order.
 func decodeCOVValues(elements []bacnet.Element) ([]PropertyValue, error) {
 	var out []PropertyValue
 	var cur PropertyValue
-	have := false
-	flush := func() {
-		if have {
-			out = append(out, cur)
-			cur = PropertyValue{}
-			have = false
+	var haveProp, haveIndex, haveValue, havePriority bool
+	flush := func() error {
+		if !haveProp {
+			return nil
 		}
+		if !haveValue {
+			return fmt.Errorf("%w: property value missing value", bacnet.ErrMalformed)
+		}
+		out = append(out, cur)
+		cur = PropertyValue{}
+		haveProp, haveIndex, haveValue, havePriority = false, false, false, false
+		return nil
 	}
 	for _, el := range elements {
 		switch {
 		case el.TagNumber == 0 && !bacnet.IsContextConstructed(el):
-			flush()
-			u, err := bacnet.ContextUnsigned(el)
+			if err := flush(); err != nil {
+				return nil, err
+			}
+			u, err := bacnet.ContextUnsigned32(el)
 			if err != nil {
 				return nil, err
 			}
 			cur.Property.Identifier = bacnet.PropertyIdentifier(u)
-			have = true
+			haveProp = true
 		case el.TagNumber == 1 && !bacnet.IsContextConstructed(el):
-			u, err := bacnet.ContextUnsigned(el)
+			if !haveProp || haveIndex || haveValue {
+				return nil, fmt.Errorf("%w: misplaced property array index", bacnet.ErrMalformed)
+			}
+			idx, err := bacnet.ContextUnsigned32(el)
 			if err != nil {
 				return nil, err
 			}
-			idx := uint32(u)
 			cur.Property.ArrayIndex = &idx
+			haveIndex = true
 		case el.TagNumber == 2 && bacnet.IsContextConstructed(el):
-			if len(el.Value.Elements) == 0 {
-				return nil, fmt.Errorf("%w: empty propertyValue wrapper", bacnet.ErrMalformed)
-			} else if len(el.Value.Elements) == 1 && !el.Value.Elements[0].Context {
+			if !haveProp || haveValue {
+				return nil, fmt.Errorf("%w: misplaced property value", bacnet.ErrMalformed)
+			}
+			// An empty wrapper is an empty list or array (a Device without
+			// address bindings, for example): it falls through to the
+			// constructed value with no elements.
+			if len(el.Value.Elements) == 1 && !el.Value.Elements[0].Context {
 				cur.Value = el.Value.Elements[0].Value.Clone()
 			} else {
 				cur.Value = bacnet.ApplicationValue{Kind: bacnet.ValueConstructed, Elements: el.Value.Elements}.Clone()
 			}
+			haveValue = true
+		case el.TagNumber == 3 && !bacnet.IsContextConstructed(el):
+			if !haveValue || havePriority {
+				return nil, fmt.Errorf("%w: misplaced property priority", bacnet.ErrMalformed)
+			}
+			u, err := bacnet.ContextUnsigned(el)
+			if err != nil {
+				return nil, err
+			}
+			if u < 1 || u > 16 {
+				return nil, fmt.Errorf("%w: property priority %d out of range", bacnet.ErrMalformed, u)
+			}
+			p := uint8(u)
+			cur.Priority = &p
+			havePriority = true
 		default:
 			return nil, fmt.Errorf("%w: unexpected COV value tag %d", bacnet.ErrMalformed, el.TagNumber)
 		}
 	}
-	flush()
+	if err := flush(); err != nil {
+		return nil, err
+	}
 	return out, nil
 }
 

@@ -5,6 +5,8 @@ package bacnet
 import (
 	"fmt"
 	"math"
+	"unicode/utf16"
+	"unicode/utf8"
 )
 
 // ApplicationTag numbers for BACnet application-tagged values.
@@ -29,10 +31,73 @@ const (
 	TagReserved15
 )
 
+// Character string encodings (ASHRAE 135 Clause 20.2.9).
+const (
+	CharacterEncodingUTF8     uint8 = 0 // ISO 10646 (UTF-8), formerly ANSI X3.4
+	CharacterEncodingDBCS     uint8 = 1 // IBM/Microsoft DBCS
+	CharacterEncodingJIS      uint8 = 2 // JIS X 0208
+	CharacterEncodingUCS4     uint8 = 3 // ISO 10646 (UCS-4), big-endian
+	CharacterEncodingUCS2     uint8 = 4 // ISO 10646 (UCS-2), big-endian
+	CharacterEncodingISO88591 uint8 = 5 // ISO 8859-1
+)
+
 // CharacterString holds a BACnet character string with encoding byte.
+//
+// Value holds the raw string octets exactly as they appear on the wire after
+// the encoding octet; it is only valid Go text when Encoding is
+// CharacterEncodingUTF8. Use Text to obtain a Go string for the other
+// supported encodings.
 type CharacterString struct {
 	Encoding uint8
 	Value    string
+}
+
+// Text converts the string octets to a Go (UTF-8) string.
+//
+// UTF-8 (0) is validated, UCS-4 (3) and UCS-2 (4) are decoded as big-endian
+// code units, and ISO 8859-1 (5) is mapped octet by octet. DBCS (1), JIS X
+// 0208 (2) and unknown encodings return an error wrapping ErrUnsupported;
+// octets that are not valid for the declared encoding return an error
+// wrapping ErrMalformed.
+func (c CharacterString) Text() (string, error) {
+	switch c.Encoding {
+	case CharacterEncodingUTF8:
+		if !utf8.ValidString(c.Value) {
+			return "", fmt.Errorf("%w: character string is not valid UTF-8", ErrMalformed)
+		}
+		return c.Value, nil
+	case CharacterEncodingUCS4:
+		if len(c.Value)%4 != 0 {
+			return "", fmt.Errorf("%w: UCS-4 character string length %d", ErrMalformed, len(c.Value))
+		}
+		out := make([]rune, 0, len(c.Value)/4)
+		for i := 0; i < len(c.Value); i += 4 {
+			u := uint32(c.Value[i])<<24 | uint32(c.Value[i+1])<<16 | uint32(c.Value[i+2])<<8 | uint32(c.Value[i+3])
+			if u > utf8.MaxRune || (u >= 0xD800 && u <= 0xDFFF) {
+				return "", fmt.Errorf("%w: UCS-4 code point %#x", ErrMalformed, u)
+			}
+			out = append(out, rune(u))
+		}
+		return string(out), nil
+	case CharacterEncodingUCS2:
+		if len(c.Value)%2 != 0 {
+			return "", fmt.Errorf("%w: UCS-2 character string length %d", ErrMalformed, len(c.Value))
+		}
+		units := make([]uint16, 0, len(c.Value)/2)
+		for i := 0; i < len(c.Value); i += 2 {
+			units = append(units, uint16(c.Value[i])<<8|uint16(c.Value[i+1]))
+		}
+		// Surrogate pairs are tolerated (peers commonly send UTF-16).
+		return string(utf16.Decode(units)), nil
+	case CharacterEncodingISO88591:
+		out := make([]rune, len(c.Value))
+		for i := 0; i < len(c.Value); i++ {
+			out[i] = rune(c.Value[i])
+		}
+		return string(out), nil
+	default:
+		return "", fmt.Errorf("%w: character string encoding %d", ErrUnsupported, c.Encoding)
+	}
 }
 
 // BitString holds a BACnet bit string.
@@ -75,7 +140,7 @@ const (
 	ValueTime
 	ValueObjectID
 	ValueConstructed
-	ValueContext // context-tagged primitive or opening; Elements hold nested data
+	ValueContext // context-tagged primitive; OctetString holds the raw content octets
 )
 
 // Element is a generic BACnet tag element (application or context).

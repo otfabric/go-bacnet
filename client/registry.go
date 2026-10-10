@@ -53,6 +53,30 @@ type DeviceObservation struct {
 	Capabilities  DeviceCapabilities
 }
 
+// Target returns the Target that addresses the observed device over the path
+// it was seen on, with the Max APDU it announced. For a device seen through a
+// BBMD (Forwarded-NPDU) requests go straight to the device's own address.
+func (o DeviceObservation) Target() Target {
+	t := Target{Address: o.Address, Endpoint: o.ImmediatePeer}
+	if o.Origin.IsValid() && !o.Origin.Equal(o.ImmediatePeer) {
+		switch o.Address.Scope() {
+		case bacnet.AddressRemoteStation, bacnet.AddressRemoteBroadcast:
+			// Routed: the immediate peer is the router and stays the next hop.
+		default:
+			t.Endpoint = o.Origin
+		}
+	}
+	if o.Capabilities.MaxAPDULengthAccepted.Known {
+		t.MaxAPDU = o.Capabilities.MaxAPDULengthAccepted.Value
+	}
+	return t
+}
+
+// DeviceID returns the Device object identifier of the observed device.
+func (o DeviceObservation) DeviceID() bacnet.ObjectIdentifier {
+	return bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeDevice, Instance: o.Instance}
+}
+
 type observationKey struct {
 	instance uint32
 	addr     string

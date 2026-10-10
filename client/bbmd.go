@@ -202,7 +202,7 @@ func (c *Client) registerFD(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	if err := c.tr.Send(ctx, OutboundPacket{Data: frame, Destination: f.bbmd}); err != nil {
+	if err := c.send(ctx, OutboundPacket{Data: frame, Destination: f.bbmd}); err != nil {
 		return err
 	}
 	timer := c.clock.NewTimer(c.cfg.apduTimeout)

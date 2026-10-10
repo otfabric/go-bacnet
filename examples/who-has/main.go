@@ -33,8 +33,7 @@ func main() {
 		log.Fatal("provide exactly one of -name or -object")
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), *timeout)
-	defer cancel()
+	ctx := context.Background()
 
 	c, err := client.New(client.WithPort(bip.DefaultPort))
 	if err != nil {
@@ -54,9 +53,11 @@ func main() {
 		opts.Object = &obj
 	}
 
+	opts.Window = *timeout
 	objects, err := c.DiscoverObjects(ctx, opts)
-	// DiscoverObjects returns when ctx ends; results are still useful.
-	_ = err
+	if err != nil {
+		log.Fatalf("DiscoverObjects: %v", err)
+	}
 	if len(objects) == 0 {
 		fmt.Println("no I-Have responses")
 		return

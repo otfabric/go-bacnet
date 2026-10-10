@@ -479,14 +479,79 @@ func AppendError(dst []byte, e ErrorPDU) []byte {
 	return append(dst, e.Payload...)
 }
 
-// DecodeErrorClassCode parses a BACnet-Error (context [0]/[1] or application ENUMERATED pair).
-func DecodeErrorClassCode(payload []byte, limits bacnet.DecodeLimits) (class, code uint16, err error) {
+// ErrorDetail is a decoded Error PDU service payload.
+//
+// Most services carry a bare Error (class and code). WritePropertyMultiple,
+// CreateObject, AddListElement, RemoveListElement, ConfirmedPrivateTransfer,
+// VT-Close and SubscribeCOVPropertyMultiple instead wrap it as error-type [0]
+// and append service-specific parameters; Wrapped reports that form and
+// Parameters holds the elements that follow the wrapper.
+type ErrorDetail struct {
+	Class uint16
+	Code  uint16
+	// Wrapped is true when the Error was carried as a constructed [0] wrapper.
+	Wrapped bool
+	// Parameters are the elements after the [0] wrapper, in wire order. They
+	// own their memory (deep copy) and are nil for a bare Error.
+	Parameters []bacnet.Element
+}
+
+// FirstFailedElementNumber returns first-failed-element-number [1] of a
+// CreateObject-Error or ChangeList-Error (AddListElement, RemoveListElement).
+// It reports false when the parameter is absent or not an Unsigned32. The
+// result is only meaningful for those services: other wrapped errors assign a
+// different meaning to context tag 1.
+func (d ErrorDetail) FirstFailedElementNumber() (uint32, bool) {
+	for _, el := range d.Parameters {
+		if el.Context && el.TagNumber == 1 && !bacnet.IsContextConstructed(el) {
+			n, err := bacnet.ContextUnsigned32(el)
+			return n, err == nil
+		}
+	}
+	return 0, false
+}
+
+// DecodeError parses an Error PDU service payload in either the bare form
+// (two application ENUMERATEDs, or the context [0]/[1] pair some peers emit)
+// or the wrapped form used by the services listed on ErrorDetail.
+func DecodeError(payload []byte, limits bacnet.DecodeLimits) (ErrorDetail, error) {
 	elements, n, err := bacnet.ParseSequence(payload, limits, -1)
+	if err != nil {
+		return ErrorDetail{}, err
+	}
+	if n != len(payload) {
+		return ErrorDetail{}, fmt.Errorf("%w: error payload trailing data", bacnet.ErrTrailingData)
+	}
+	if len(elements) > 0 && elements[0].TagNumber == 0 && bacnet.IsContextConstructed(elements[0]) {
+		class, code, err := bacnet.DecodeBACnetError(elements[0].Value.Elements)
+		if err != nil {
+			return ErrorDetail{}, err
+		}
+		d := ErrorDetail{Class: class, Code: code, Wrapped: true}
+		if rest := elements[1:]; len(rest) > 0 {
+			d.Parameters = make([]bacnet.Element, len(rest))
+			for i, el := range rest {
+				d.Parameters[i] = el
+				d.Parameters[i].Value = el.Value.Clone()
+			}
+		}
+		return d, nil
+	}
+	class, code, err := bacnet.DecodeBACnetError(elements)
+	if err != nil {
+		return ErrorDetail{}, err
+	}
+	return ErrorDetail{Class: class, Code: code}, nil
+}
+
+// DecodeErrorClassCode returns the Error Class and Error Code of an Error PDU
+// service payload. It accepts the bare Error (context [0]/[1] or application
+// ENUMERATED pair) and the wrapped error-type [0] forms; use DecodeError to
+// also obtain the service-specific parameters of a wrapped error.
+func DecodeErrorClassCode(payload []byte, limits bacnet.DecodeLimits) (class, code uint16, err error) {
+	d, err := DecodeError(payload, limits)
 	if err != nil {
 		return 0, 0, err
 	}
-	if n != len(payload) {
-		return 0, 0, fmt.Errorf("%w: error payload trailing data", bacnet.ErrTrailingData)
-	}
-	return bacnet.DecodeBACnetError(elements)
+	return d.Class, d.Code, nil
 }

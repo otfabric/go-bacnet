@@ -30,7 +30,7 @@ func deviceBaselineV5Path(t *testing.T) string {
 }
 
 // Peers with upstream-native CreateObject/DeleteObject for analog-value at current pins.
-// BACpypes3 0.0.106 and Worldiety have no Create/Delete server handlers.
+// BACpypes3 0.0.110 and Worldiety have no Create/Delete server handlers.
 func lifecyclePeers() []struct {
 	name  string
 	image string

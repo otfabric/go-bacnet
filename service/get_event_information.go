@@ -201,11 +201,11 @@ func decodeEventSummary(els []bacnet.Element) (EventSummary, error) {
 			s.Object = id
 			haveObj = true
 		case el.TagNumber == 1 && !bacnet.IsContextConstructed(el):
-			u, err := bacnet.ContextUnsigned(el)
+			u, err := bacnet.ContextUnsigned32(el)
 			if err != nil {
 				return s, err
 			}
-			s.EventState = uint32(u)
+			s.EventState = u
 			haveState = true
 		case el.TagNumber == 2 && !bacnet.IsContextConstructed(el):
 			bs, err := bacnet.ContextBitString(el)
@@ -218,11 +218,11 @@ func decodeEventSummary(els []bacnet.Element) (EventSummary, error) {
 			s.EventTimeStamps = bacnet.ApplicationValue{Kind: bacnet.ValueConstructed, Elements: el.Value.Elements}.Clone()
 			haveTS = true
 		case el.TagNumber == 4 && !bacnet.IsContextConstructed(el):
-			u, err := bacnet.ContextUnsigned(el)
+			u, err := bacnet.ContextUnsigned32(el)
 			if err != nil {
 				return s, err
 			}
-			s.NotifyType = uint32(u)
+			s.NotifyType = u
 			haveNotify = true
 		case el.TagNumber == 5 && !bacnet.IsContextConstructed(el):
 			bs, err := bacnet.ContextBitString(el)

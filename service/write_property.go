@@ -44,6 +44,9 @@ func EncodeWriteProperty(req WritePropertyRequest) ([]byte, error) {
 	dst = append(dst, body...)
 	dst = append(dst, 0x3F)
 	if req.Priority != nil {
+		if *req.Priority < 1 || *req.Priority > 16 {
+			return nil, fmt.Errorf("%w: WriteProperty priority out of range", bacnet.ErrMalformed)
+		}
 		dst, err = bacnet.AppendContextUnsigned(dst, 4, uint64(*req.Priority))
 	}
 	return dst, err
@@ -59,7 +62,7 @@ func DecodeWriteProperty(payload []byte, limits bacnet.DecodeLimits) (WritePrope
 		return WritePropertyRequest{}, fmt.Errorf("%w: WriteProperty trailing data", bacnet.ErrTrailingData)
 	}
 	var req WritePropertyRequest
-	var haveObject, haveProperty, haveValue bool
+	var haveObject, haveProperty, haveIndex, haveValue, havePriority bool
 	for _, el := range elements {
 		switch {
 		case el.TagNumber == 0 && !bacnet.IsContextConstructed(el):
@@ -72,22 +75,26 @@ func DecodeWriteProperty(payload []byte, limits bacnet.DecodeLimits) (WritePrope
 			if haveProperty {
 				return WritePropertyRequest{}, fmt.Errorf("%w: duplicate propertyIdentifier", bacnet.ErrMalformed)
 			}
-			var u uint64
-			u, err = bacnet.ContextUnsigned(el)
+			var u uint32
+			u, err = bacnet.ContextUnsigned32(el)
 			req.Property.Identifier = bacnet.PropertyIdentifier(u)
 			haveProperty = true
 		case el.TagNumber == 2 && !bacnet.IsContextConstructed(el):
-			var u uint64
-			u, err = bacnet.ContextUnsigned(el)
-			idx := uint32(u)
+			if haveIndex {
+				return WritePropertyRequest{}, fmt.Errorf("%w: duplicate arrayIndex", bacnet.ErrMalformed)
+			}
+			var idx uint32
+			idx, err = bacnet.ContextUnsigned32(el)
 			req.Property.ArrayIndex = &idx
+			haveIndex = true
 		case el.TagNumber == 3 && bacnet.IsContextConstructed(el):
 			if haveValue {
 				return WritePropertyRequest{}, fmt.Errorf("%w: duplicate propertyValue", bacnet.ErrMalformed)
 			}
-			if len(el.Value.Elements) == 0 {
-				return WritePropertyRequest{}, fmt.Errorf("%w: empty propertyValue wrapper", bacnet.ErrMalformed)
-			} else if len(el.Value.Elements) == 1 && !el.Value.Elements[0].Context {
+			// An empty wrapper is an empty list or array (a Device without
+			// address bindings, for example): it falls through to the
+			// constructed value with no elements.
+			if len(el.Value.Elements) == 1 && !el.Value.Elements[0].Context {
 				req.Value = el.Value.Elements[0].Value.Clone()
 			} else {
 				req.Value = bacnet.ApplicationValue{Kind: bacnet.ValueConstructed, Elements: el.Value.Elements}.Clone()
@@ -102,8 +109,12 @@ func DecodeWriteProperty(payload []byte, limits bacnet.DecodeLimits) (WritePrope
 			if u < 1 || u > 16 {
 				return WritePropertyRequest{}, fmt.Errorf("%w: WriteProperty priority out of range", bacnet.ErrMalformed)
 			}
+			if havePriority {
+				return WritePropertyRequest{}, fmt.Errorf("%w: duplicate priority", bacnet.ErrMalformed)
+			}
 			p := uint8(u)
 			req.Priority = &p
+			havePriority = true
 		default:
 			return WritePropertyRequest{}, fmt.Errorf("%w: unexpected WriteProperty tag %d", bacnet.ErrMalformed, el.TagNumber)
 		}

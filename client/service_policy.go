@@ -193,6 +193,9 @@ var confirmedCapabilities = map[uint8]ConfirmedServiceCapabilities{
 	apdu.ServiceAuthRequest:                  {RequestMaySegment: true, ResponseMaySegment: true},
 }
 
+// confirmedPolicies and confirmedCapabilities are read-only after package
+// initialization: every request reads them without a lock.
+
 // ConfirmedServicePolicyFor returns the execution policy for a service choice.
 func ConfirmedServicePolicyFor(serviceChoice uint8) (ConfirmedServicePolicy, bool) {
 	p, ok := confirmedPolicies[serviceChoice]
@@ -248,6 +251,10 @@ func (c *Client) checkOperationClass(serviceChoice uint8) error {
 	if err != nil {
 		return err
 	}
+	return c.checkPolicyClass(p)
+}
+
+func (c *Client) checkPolicyClass(p ConfirmedServicePolicy) error {
 	if !c.operationClassEnabled(p.OperationClass) {
 		switch p.OperationClass {
 		case OperationDeviceManagement:

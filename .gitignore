@@ -3,7 +3,6 @@
 /dist/
 *.exe
 *.test
-/cmd/bacnetctl/bacnetctl
 
 # Coverage
 coverage.out

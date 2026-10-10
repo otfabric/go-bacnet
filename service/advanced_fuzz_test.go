@@ -29,13 +29,14 @@ func FuzzDecodePrivateTransfer(f *testing.F) {
 }
 
 func FuzzDecodeAuditNotification(f *testing.F) {
-	raw, _ := service.EncodeAuditNotification(service.AuditNotification{
-		SourceDevice: bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeDevice, Instance: 1},
+	raw, _ := service.EncodeAuditNotificationRequest([]service.AuditNotification{{
+		SourceDevice: service.AuditDevice(bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeDevice, Instance: 1}),
+		TargetDevice: service.AuditDevice(bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeDevice, Instance: 1}),
 		Operation:    1,
-	})
+	}})
 	f.Add(raw)
 	f.Fuzz(func(t *testing.T, payload []byte) {
-		_, _ = service.DecodeAuditNotification(payload, bacnet.DefaultDecodeLimits())
+		_, _ = service.DecodeAuditNotificationRequest(payload, bacnet.DefaultDecodeLimits())
 	})
 }
 

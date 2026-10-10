@@ -178,30 +178,33 @@ func TestMessagingRoundTrip(t *testing.T) {
 func TestAuditIdentityRoundTrip(t *testing.T) {
 	td := bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeDevice, Instance: 2}
 	n := service.AuditNotification{
-		SourceDevice: bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeDevice, Instance: 1},
-		TargetDevice: &td,
+		SourceDevice: service.AuditDevice(bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeDevice, Instance: 1}),
+		TargetDevice: service.AuditDevice(td),
 		Operation:    5,
 	}
-	raw, err := service.EncodeAuditNotification(n)
+	raw, err := service.EncodeAuditNotificationRequest([]service.AuditNotification{n})
 	if err != nil {
 		t.Fatal(err)
 	}
-	got, err := service.DecodeAuditNotification(raw, bacnet.DefaultDecodeLimits())
-	if err != nil || got.Operation != 5 || got.TargetDevice == nil {
+	got, err := service.DecodeAuditNotificationRequest(raw, bacnet.DefaultDecodeLimits())
+	if err != nil || len(got) != 1 || got[0].Operation != 5 || got[0].TargetDevice.Device == nil || *got[0].TargetDevice.Device != td {
 		t.Fatalf("%v %+v", err, got)
 	}
-	qraw, err := service.EncodeAuditLogQuery(service.AuditLogQueryRequest{
+	if _, err := service.EncodeAuditLogQuery(service.AuditLogQueryRequest{
 		AuditLog: bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeAuditLog, Instance: 1},
-		Query:    []bacnet.Element{{Value: bacnet.UnsignedValue(1)}},
-	})
-	if err != nil {
+		ByTarget: &service.AuditQueryByTarget{TargetDevice: td},
+	}); err != nil {
 		t.Fatal(err)
 	}
-	ack, err := service.DecodeAuditLogQueryACK(qraw[0:0], bacnet.DefaultDecodeLimits()) // empty ACK
-	if err != nil || len(ack.Records) != 0 {
+	// An ACK needs audit-log, records and no-more-items; one without records
+	// is the shortest.
+	ack, err := service.DecodeAuditLogQueryACK([]byte{0x0c, 0x0f, 0x40, 0x00, 0x01, 0x1e, 0x1f, 0x29, 0x01}, bacnet.DefaultDecodeLimits())
+	if err != nil || len(ack.Records) != 0 || !ack.NoMoreItems {
 		t.Fatalf("%v %+v", err, ack)
 	}
-	_ = qraw
+	if _, err := service.DecodeAuditLogQueryACK(nil, bacnet.DefaultDecodeLimits()); err == nil {
+		t.Fatal("empty AuditLogQuery-ACK accepted")
+	}
 	w := service.WhoAmI{VendorID: 1, ModelName: "m", SerialNumber: "s"}
 	wraw, err := service.EncodeWhoAmI(w)
 	if err != nil {

@@ -4,6 +4,7 @@ package client
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -166,8 +167,9 @@ func TestRemoveListElementAndVTCloseData(t *testing.T) {
 	if err := env.Client.VTClose(ctx, env.Target, service.VTCloseRequest{RemoteVTSessionIdentifiers: []uint8{1}}); err != nil {
 		t.Fatal(err)
 	}
-	if err := env.Client.VTData(ctx, env.Target, service.VTDataRequest{VTSessionIdentifier: 1, VTNewData: []byte{9}, VTDataFlag: 0}); err != nil {
-		t.Fatal(err)
+	// VT-Data is answered with a ComplexACK; a SimpleACK is not a valid reply.
+	if _, err := env.Client.VTData(ctx, env.Target, service.VTDataRequest{VTSessionIdentifier: 1, VTNewData: []byte{9}, VTDataFlag: 0}); !errors.Is(err, bacnet.ErrProtocolViolation) {
+		t.Fatalf("VTData answered with SimpleACK: got %v, want ErrProtocolViolation", err)
 	}
 	if err := env.Client.AuthRequest(ctx, env.Target, service.AuthRequest{}); err != nil {
 		t.Fatal(err)
@@ -178,10 +180,11 @@ func TestConfirmedAuditNotificationReceive(t *testing.T) {
 	env := newVirtualPair(t)
 	stream := env.Client.OpenAuditStream(1)
 	defer stream.Close()
-	payload, err := service.EncodeAuditNotification(service.AuditNotification{
-		SourceDevice: bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeDevice, Instance: 1},
+	payload, err := service.EncodeAuditNotificationRequest([]service.AuditNotification{{
+		SourceDevice: service.AuditDevice(bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeDevice, Instance: 1}),
+		TargetDevice: service.AuditDevice(bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeDevice, Instance: 1}),
 		Operation:    9,
-	})
+	}})
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -4,6 +4,7 @@ package service
 
 import (
 	"errors"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -369,5 +370,59 @@ func TestReadRangeStrictDuplicates(t *testing.T) {
 	}
 	if _, err := DecodeReadRangeACK(badLog, limits); !errors.Is(err, bacnet.ErrMalformed) {
 		t.Fatalf("malformed LogRecord split: %v", err)
+	}
+}
+
+// A peer-supplied itemCount must not size an allocation beyond the records
+// actually present in itemData.
+func TestReadRangeACKLogBufferItemCountIsBounded(t *testing.T) {
+	// Trend Log 1, Log_Buffer, flags, itemCount, one record (timestamp + real).
+	payload := func(count uint32) []byte {
+		p := []byte{0x0C, 0x05, 0x00, 0x00, 0x01, 0x19, 0x83, 0x3A, 0x05, 0xE0, 0x4C, 0, 0, 0, 0,
+			0x5E, 0x0E, 0xA4, 0x7E, 0x0A, 0x0A, 0x06, 0xB4, 0x08, 0x00, 0x00, 0x00, 0x0F, 0x1E, 0x2C, 0x3F, 0x80, 0x00, 0x00, 0x1F, 0x5F}
+		p[11], p[12], p[13], p[14] = byte(count>>24), byte(count>>16), byte(count>>8), byte(count)
+		return p
+	}
+	ack, err := DecodeReadRangeACK(payload(1), bacnet.DefaultDecodeLimits())
+	if err != nil || len(ack.LogRecords) != 1 || ack.LogRecords[0].Datum.Real != 1 {
+		t.Fatalf("count=1: %+v err=%v", ack, err)
+	}
+	for _, count := range []uint32{2, 50_000_000, 0xFFFFFFFF} {
+		allocs := testing.AllocsPerRun(1, func() {
+			if _, err := DecodeReadRangeACK(payload(count), bacnet.DefaultDecodeLimits()); !errors.Is(err, bacnet.ErrMalformed) {
+				t.Fatalf("count=%d: err=%v", count, err)
+			}
+		})
+		// A handful of small parse allocations; never one sized by count.
+		if allocs > 64 {
+			t.Fatalf("count=%d: %v allocations", count, allocs)
+		}
+	}
+	var before, after runtime.MemStats
+	runtime.ReadMemStats(&before)
+	_, _ = DecodeReadRangeACK(payload(0xFFFFFFFF), bacnet.DefaultDecodeLimits())
+	runtime.ReadMemStats(&after)
+	if grew := after.TotalAlloc - before.TotalAlloc; grew > 1<<20 {
+		t.Fatalf("itemCount=0xFFFFFFFF allocated %d bytes", grew)
+	}
+}
+
+func TestDecodeLogRecordsCountBound(t *testing.T) {
+	rec := LogRecord{
+		Timestamp:   DateTime{Date: bacnet.Date{Year: 126, Month: 1, Day: 1, Weekday: 4}, Time: bacnet.Time{Hour: 12}},
+		DatumChoice: LogDatumReal,
+		Datum:       bacnet.RealValue(1),
+	}
+	els, err := EncodeLogRecord(rec)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if recs, err := DecodeLogRecords(els, 1); err != nil || len(recs) != 1 {
+		t.Fatalf("exact count: %d err=%v", len(recs), err)
+	}
+	for _, count := range []int{2, 1 << 30} {
+		if _, err := DecodeLogRecords(els, count); !errors.Is(err, bacnet.ErrMalformed) {
+			t.Fatalf("count=%d: err=%v", count, err)
+		}
 	}
 }

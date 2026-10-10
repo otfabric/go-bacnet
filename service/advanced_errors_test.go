@@ -60,7 +60,7 @@ func TestMessagingDecodeErrors(t *testing.T) {
 }
 
 func TestAuditLifeSafetyErrors(t *testing.T) {
-	if _, err := service.DecodeAuditNotification([]byte{0x21, 0x01}, bacnet.DefaultDecodeLimits()); err == nil {
+	if _, err := service.DecodeAuditNotificationRequest([]byte{0x21, 0x01}, bacnet.DefaultDecodeLimits()); err == nil {
 		t.Fatal("expected error")
 	}
 	if _, err := service.DecodeLifeSafetyOperation(nil, bacnet.DefaultDecodeLimits()); err == nil {

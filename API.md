@@ -23,7 +23,7 @@ Rules (enforced by `internal/imports`):
 - `service` may import root and `apdu` helpers as needed; it must not import `bvlc`, `npdu`, `bip`, or `client`.
 - `client` is the composition root for BACnet/IP client networking.
 
-See [docs/PACKAGE_DESIGN.md](docs/PACKAGE_DESIGN.md).
+See [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## Framing policy
 
@@ -74,23 +74,87 @@ if err != nil {
 defer c.Close()
 ```
 
-- One `Client` is one local BACnet/IP data-link endpoint.
-- `New` starts the receive loop (and optional foreign-device renewer).
-- `Close` is idempotent: aborts pending transactions with `ErrClosed`, closes
-  COV subscriptions, stops FD registration, closes the transport, waits for
-  goroutines.
-- Prefer `WithTransport` in tests; otherwise UDP binds to port 47808 unless
-  overridden with `WithPort` / `WithLocalAddr`.
+- One `Client` is one local BACnet/IP data-link endpoint: one UDP socket,
+  bound to port 47808 on all interfaces unless `WithPort` / `WithLocalAddr`
+  say otherwise.
+- `New` performs I/O: it validates the options (`ErrInvalidConfig`), opens
+  the socket and starts the receive loop and, with `WithForeignDevice`, the
+  registration loop. It does not wait for the registration; see
+  `ForeignDeviceRegistered`.
+- A `Client` is safe for concurrent use. Requests are multiplexed on the one
+  socket by invoke ID (up to 255 in flight); a request that finds none free
+  waits until its context ends.
+- `Close` is idempotent and safe to call concurrently with requests. Pending
+  requests return `ErrClosed` (wrapped in `OutcomeUnknownError` for a write
+  that was already sent), COV subscriptions end with a `Closed` event, the
+  socket is closed and all client goroutines have exited when it returns.
+  It does not cancel COV subscriptions on the devices and does not unregister
+  the foreign device; both lapse with their lifetime. Do not call `Close`
+  from an event handler or diagnostic callback.
+- `WithTransport` replaces the UDP socket (tests, custom data links). The
+  client owns the transport from then on: `Close` closes it, and so does a
+  failing `New`. The `Transport` contract is in its GoDoc.
 
-Confirmed calls take `client.Target` (`Address` + immediate `bip.Endpoint` +
-optional origin / MaxAPDU). Discovery populates `Devices()` observations.
+### Addressing a device
+
+Confirmed calls take a `client.Target`:
+
+| Device | `Address` | `Endpoint` |
+|---|---|---|
+| Directly reachable over BACnet/IP | leave zero (filled in from the endpoint) or `LocalStation(mac)` | the device's IP and port |
+| Behind a BACnet router | `RemoteStation(network, mac)` | the router's IP and port |
+
+`DeviceObservation.Target()` builds the right form from a discovery result,
+`ResolveTarget` fills in the router for a remote address from the route cache.
+`Target.MaxAPDU` overrides the size limit used for requests; zero uses what
+the device announced in its I-Am, or 480 octets if it was never seen.
+Responses are accepted only from the path the target describes; anything else
+is dropped and the request times out. A `Target` without a valid endpoint
+fails with `ErrMalformed` before anything is sent.
+
+### Timeouts and cancellation
+
+| Phase | Ends with |
+|---|---|
+| Waiting for a free invoke ID | `ctx.Err()` |
+| Sending | the transport error; for a write, wrapped in `OutcomeUnknownError` |
+| Waiting for the response | `ErrTimeout` after APDU timeout × attempts, or `ctx.Err()` |
+| Receiving a segmented response | `*AbortError` (tsm-timeout) when a segment is overdue |
+| `Close` during any phase | `ErrClosed` |
+
+Defaults: APDU timeout 3 s, 3 retransmissions, segment timeout 2 s
+(`WithTransactionOptions`). Only services that are safe to repeat are
+retransmitted (reads); a write is sent once. The timeouts are per client and
+per request: a deadline on one call never affects another. Cancelling a
+request releases its invoke ID after a quarantine of one APDU timeout, so a
+late answer cannot be taken for the answer to a later request; the socket and
+other requests are unaffected. For a write, cancellation or timeout after the
+send is reported as `OutcomeUnknownError`, and `errors.Is` still finds
+`context.Canceled`, `context.DeadlineExceeded` or `ErrTimeout` inside it.
+
+BVLC management calls (`ReadBroadcastDistributionTable` and the like) and the
+foreign-device registration use the APDU timeout once, without retries.
 
 ## Discovery
 
 - `SendWhoIs(ctx, dest, broadcast, opts)` — directed or broadcast Who-Is.
-- `Discover(ctx, opts)` — local-broadcast Who-Is until `ctx` ends (or client closes).
-  Returns only observations whose `LastSeen` falls in this discovery window;
-  `Devices()` returns the full retained registry snapshot.
+- `Discover(ctx, opts)` — broadcast Who-Is, then collect I-Am. With
+  `opts.Window` it returns after that time with a nil error; without it, it
+  collects until `ctx` ends and returns `ctx.Err()`. Either way it returns the
+  devices seen since the call started; `Devices()` returns the full retained
+  registry snapshot. Results are in no particular order.
+- Devices answer by broadcast to port 47808: a client bound to another port
+  only sees answers to a unicast `SendWhoIs`.
+- A broadcast is one datagram to the directed broadcast address of each
+  local IPv4 subnet (all interfaces that are up, or the one named with
+  `WithInterface`) plus one to 255.255.255.255 on each of those interfaces
+  (on Linux and macOS; elsewhere once, on the interface of the default
+  route). Devices differ in which of
+  the two their socket receives; one that receives both answers twice, which
+  the registry absorbs.
+- A device whose own broadcast address is misconfigured, or that sits behind
+  an IP router without a BBMD, is not reached by any broadcast: use
+  `SendWhoIs` with its address, or `WithForeignDevice`.
 - `WithRegistryOptions` bounds observation retention (global cap, per-instance
   path cap, TTL; defaults 4096 / 8 / 30m).
 - `DiscoveryOptions.Address` may override the NPDU destination:
@@ -109,7 +173,8 @@ Distribute-Broadcast-To-Network to the configured BBMD.
   specific hop (use unicast when the router IP is known, e.g. docker topology).
 - I-Am-Router-To-Network updates an internal next-hop cache.
 - `ResolveTarget(addr, direct)` — for remote addresses, fills `Target.Endpoint`
-  from the cache; if unknown and `direct` is invalid, returns `ErrUnsupported`.
+  from the cache; if unknown and `direct` is invalid, returns `ErrNoRoute`
+  (which wraps `ErrUnsupported`).
 
 Confirmed requests to `RemoteStation` / `RemoteBroadcast` encode DNET/DADR and
 send the BVLC frame to `Target.Endpoint` (the next hop).
@@ -163,13 +228,30 @@ transparently retried on another route.
 
 ## Adaptive helpers
 
-`ReadPropertyMultipleBatched` (read-only MaxAPDU planning),
-`WritePropertyMultipleBatched` (batch-level Completed/Failed/Unknown),
-`ReadObjectList` / `ReadPropertyList` / `WritePriority` / `RelinquishPriority`,
-`ReadFileStream` / `ReadFileRecords` / `WriteFileStream` (per-chunk ambiguity),
-`ReadRangeAll` (byPosition/bySequence paging with MaxItems/MaxBytes/MaxPages),
-and optional `device.ReadSnapshot` via `PropertyReader` (client does not import
-`device`).
+- `ReadPropertyMultipleBatched` splits a read into as many transactions as
+  the device's Max APDU requires (by property, also inside one object) and
+  returns one result per input specification, in input order. When the device
+  aborts because the *reply* did not fit, the batch is halved and retried.
+  On error the results gathered so far are returned with it.
+- `ReadObjectList` reads the whole Object_List and, when the device cannot
+  return it in one reply, falls back to reading it element by element
+  (ReadPropertyMultiple, or ReadProperty where that is unsupported).
+- `WritePropertyMultipleBatched` sends explicit batches and reports each as
+  Completed, Failed or Unknown; it stops at the first batch that did not
+  complete and never repeats one.
+- `WritePriority` / `RelinquishPriority` command and release one slot of the
+  priority array of Present_Value.
+- `ReadFileStream` / `ReadFileRecords` / `WriteFileStream` move a file in
+  chunks (`WriteFileStream` reports the outcome per chunk).
+- `ReadRangeAll` pages byPosition or bySequenceNumber until the device
+  reports LAST_ITEM or a limit (`MaxItems` in records, `MaxBytes`,
+  `MaxPages`) is reached; `Partial` and `StoppedReason` say which.
+- `device.ReadSnapshot` reads a device's identity and objects through a
+  `PropertyReader` (the client does not import `device`).
+
+`ReadProperty` accepts the Device wildcard `bacnet.AnyDevice()` (instance
+4194303): a device answers it with its own identifier, which is how to
+identify a device known only by address. Not every stack implements it.
 
 ## Event delivery
 
@@ -233,13 +315,26 @@ payload through send. See `client.InvokeConfirmed` GoDoc.
 
 ## Diagnostics
 
-`WithDiagnosticFunc(func(Diagnostic))` installs an optional **synchronous**
-callback on the receive and timeout paths. Callbacks must return promptly and
-must not panic. Nil/omitted is silent. There is no default logger.
+The client is silent by default. `WithLogger(*slog.Logger)` logs, and
+`WithDiagnosticFunc(func(Diagnostic))` reports, what the client notices that
+no caller is waiting for: dropped frames, route changes, failed registration,
+dropped notifications. Both run synchronously on the receive and timeout
+paths. Kinds, levels and callback rules are in
+[OBSERVABILITY.md](OBSERVABILITY.md).
+
+## Requests from devices
+
+The client answers confirmed requests only for the notifications it consumes
+(COV, COV-multiple, event, audit): they are acknowledged with a SimpleACK when
+they decode and rejected when they do not. Every other confirmed request is
+answered with Reject `unrecognized-service`, a segmented one with Abort
+`segmentation-not-supported`, so the sender's transaction ends instead of
+retrying. Requests in transit to another BACnet network are ignored.
 
 ## COV subscription
 
-`SubscribeCOV` / `SubscribeCOVProperty` return a `Subscription`:
+`SubscribeCOV` / `SubscribeCOVProperty` / `SubscribeCOVMultiple` return a
+`Subscription`:
 
 - `Events() <-chan SubscriptionEvent` — notifications, state changes, errors
 - `Close()` — best-effort unsubscribe; stops renewals
@@ -251,8 +346,19 @@ must not panic. Nil/omitted is silent. There is no default logger.
 | `Sequence` | Monotonic per subscription for successfully queued events |
 | `Gap` | Sticky loss indicator: true on the next delivered event after one or more drops |
 | `Notification` | Parsed COV notification when present |
+| `Multiple` | The whole COVNotificationMultiple when the device sent one: its timestamp, every object and value, each value's time of change |
 | `State` | Lifecycle state carried with the event |
 | `Err` | Optional error (drops, renew failure, close cause) |
+
+`SubscribeCOVMultiple` subscribes to several properties of several objects
+with one SubscribeCOVPropertyMultiple request
+(`[]service.COVMultipleSubscription`, per property an optional COV increment
+and `Timestamped`); `COVMultipleOptions` adds `MaxNotificationDelay`. Its
+notification events carry `Multiple` only. It is renewed and cancelled like
+the others; the cancellation is the request without
+issue-confirmed-notifications and lifetime. A device without the service
+answers Reject `unrecognized-service` and no subscription is returned.
+`SubscribeCOVPropertyMultiple` remains as the raw, unmanaged request.
 
 States: Pending → Active → Renewing / Degraded → Expired / Closed.
 Lifetime defaults to 60s; renewals run at half lifetime. The event channel soft

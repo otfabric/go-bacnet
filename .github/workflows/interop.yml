@@ -33,6 +33,9 @@ jobs:
             echo "bacnet4j=$(jq -r '.images.bacnet4j' "$pin")"
             echo "worldiety=$(jq -r '.images.worldiety' "$pin")"
             echo "bip_router=$(jq -r '.images["bip-router"]' "$pin")"
+            # New in bacnet-interop v0.10.0; "none" skips their scenarios on an older pin.
+            echo "sysiobacnet=$(jq -r '.images.sysiobacnet // "none"' "$pin")"
+            echo "bacnet_stack_router=$(jq -r '.images["bacnet-stack-router"] // "none"' "$pin")"
           } >> "$GITHUB_OUTPUT"
 
       - name: Checkout bacnet-interop (pinned)
@@ -55,6 +58,8 @@ jobs:
             echo "BACNET4J_IMAGE=${{ steps.pin.outputs.bacnet4j }}"
             echo "WORLDIETY_IMAGE=${{ steps.pin.outputs.worldiety }}"
             echo "BIP_ROUTER_IMAGE=${{ steps.pin.outputs.bip_router }}"
+            echo "SYSIOBACNET_IMAGE=${{ steps.pin.outputs.sysiobacnet }}"
+            echo "BACNET_STACK_ROUTER_IMAGE=${{ steps.pin.outputs.bacnet_stack_router }}"
           } | tee interop-evidence.txt
           echo "## Interop evidence (pinned)" >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
@@ -87,6 +92,8 @@ jobs:
           BACNET4J_IMAGE: ${{ steps.pin.outputs.bacnet4j }}
           WORLDIETY_IMAGE: ${{ steps.pin.outputs.worldiety }}
           BIP_ROUTER_IMAGE: ${{ steps.pin.outputs.bip_router }}
+          SYSIOBACNET_IMAGE: ${{ steps.pin.outputs.sysiobacnet }}
+          BACNET_STACK_ROUTER_IMAGE: ${{ steps.pin.outputs.bacnet_stack_router }}
         run: |
           set -euo pipefail
           docker pull "$BACNET_STACK_IMAGE"
@@ -94,6 +101,9 @@ jobs:
           docker pull "$BACNET4J_IMAGE"
           docker pull "$WORLDIETY_IMAGE"
           docker pull "$BIP_ROUTER_IMAGE"
+          for img in "$SYSIOBACNET_IMAGE" "$BACNET_STACK_ROUTER_IMAGE"; do
+            [ "$img" = none ] || docker pull "$img"
+          done
           # In-network re-exec uses golang:<go.mod major.minor>; pull before tests
           # so the first routed topology is not racing an image download.
           go_ver=$(go list -m -f '{{.GoVersion}}' | sed -E 's/^([0-9]+\.[0-9]+).*/\1/')
@@ -120,9 +130,35 @@ jobs:
           BACNET4J_IMAGE: ${{ steps.pin.outputs.bacnet4j }}
           WORLDIETY_IMAGE: ${{ steps.pin.outputs.worldiety }}
           BIP_ROUTER_IMAGE: ${{ steps.pin.outputs.bip_router }}
+          SYSIOBACNET_IMAGE: ${{ steps.pin.outputs.sysiobacnet }}
+          BACNET_STACK_ROUTER_IMAGE: ${{ steps.pin.outputs.bacnet_stack_router }}
           GOWORK: "off"
           CI: "true"
-        run: make interop
+        run: make interop INTEROP_TIMEOUT=60m
+
+  # Every request the client emits, dissected by Wireshark (no Docker, no peers).
+  dissector:
+    name: Wireshark dissector oracle
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout go-bacnet
+        uses: actions/checkout@v7
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      - name: Install tshark
+        run: |
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq tshark
+          tshark --version | head -1
+
+      - name: Dissector oracle
+        env:
+          GOWORK: "off"
+        run: make dissector
 
   # Detect upcoming breakage against bacnet-interop main (builds adapters from source).
   peer-interop-main:
@@ -199,6 +235,8 @@ jobs:
           BACNET4J_IMAGE: bacnet-interop-bacnet4j:local
           WORLDIETY_IMAGE: bacnet-interop-worldiety:local
           BIP_ROUTER_IMAGE: bacnet-interop-bip-router:local
+          SYSIOBACNET_IMAGE: bacnet-interop-sysiobacnet:local
+          BACNET_STACK_ROUTER_IMAGE: bacnet-interop-bacnet-stack-router:local
           GOWORK: "off"
           CI: "true"
-        run: make interop
+        run: make interop INTEROP_TIMEOUT=60m

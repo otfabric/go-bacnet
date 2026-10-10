@@ -75,7 +75,7 @@ func DecodeGetAlarmSummaryACK(payload []byte, limits bacnet.DecodeLimits) (GetAl
 		out.Entries = append(out.Entries, AlarmSummaryEntry{
 			Object:           obj,
 			AlarmState:       uint32(state),
-			AckedTransitions: els[i+2].Value.BitString,
+			AckedTransitions: els[i+2].Value.Clone().BitString,
 		})
 	}
 	return out, nil

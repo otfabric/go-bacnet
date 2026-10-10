@@ -61,7 +61,7 @@ func TestBacnetStackWhoAmIYouAre(t *testing.T) {
 }
 
 func TestBACnet4JWhoAmIYouAreUnsupported(t *testing.T) {
-	t.Skip("BACnet4J 6.1.0 has no WhoAmI/YouAre service classes; unsupported-upstream (B7e1)")
+	t.Skip("BACnet4J 6.1.1 has no WhoAmI/YouAre service classes; see bacnet-interop/PEER_SUPPORT.md")
 }
 
 func TestBACpypes3WhoAmIYouAreUnsupported(t *testing.T) {
@@ -72,18 +72,7 @@ func TestWorldietyWhoAmIYouAreUnsupported(t *testing.T) {
 	t.Skip("Worldiety Who-Am-I/You-Are unsupported-upstream; see bacnet-interop/PEER_SUPPORT.md")
 }
 
-func TestAuditNotificationUnsupported(t *testing.T) {
-	t.Skip("Audit notification: no native peer emitter at current pins; codec-only (B7e2)")
-}
-
-func TestAuditLogQueryUnsupported(t *testing.T) {
-	t.Skip("AuditLogQuery: all pinned peers unsupported-upstream; codec-only (B7e3)")
-}
-
-func TestAuthRequestUnsupported(t *testing.T) {
-	t.Skip("AuthRequest (choice 34): all pinned peers unsupported-upstream; codec-only (B7e4)")
-}
-
-func TestVTLifecycleUnsupported(t *testing.T) {
-	t.Skip("VT-Open/Close/Data: no native peer session execution at current pins; codec-only (B7g)")
-}
+// Audit notifications, AuditLogQuery, VT and AuthRequest used to be skip
+// stubs here. Their evidence is in audit_services_test.go, vt_services_test.go
+// (TestVTOpenUnrecognizedService, TestAuthRequestUnrecognizedService) and
+// cov_multiple_services_test.go.

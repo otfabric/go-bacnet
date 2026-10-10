@@ -139,7 +139,7 @@ func DecodeReadPropertyACK(payload []byte, limits bacnet.DecodeLimits) (ReadProp
 		return ReadPropertyACK{}, fmt.Errorf("%w: ReadPropertyACK trailing data", bacnet.ErrTrailingData)
 	}
 	var ack ReadPropertyACK
-	var haveObject, haveProperty, haveValue bool
+	var haveObject, haveProperty, haveIndex, haveValue bool
 	for _, el := range elements {
 		switch {
 		case el.TagNumber == 0 && !bacnet.IsContextConstructed(el):
@@ -152,22 +152,26 @@ func DecodeReadPropertyACK(payload []byte, limits bacnet.DecodeLimits) (ReadProp
 			if haveProperty {
 				return ReadPropertyACK{}, fmt.Errorf("%w: duplicate propertyIdentifier", bacnet.ErrMalformed)
 			}
-			var u uint64
-			u, err = bacnet.ContextUnsigned(el)
+			var u uint32
+			u, err = bacnet.ContextUnsigned32(el)
 			ack.Property.Identifier = bacnet.PropertyIdentifier(u)
 			haveProperty = true
 		case el.TagNumber == 2 && !bacnet.IsContextConstructed(el):
-			var u uint64
-			u, err = bacnet.ContextUnsigned(el)
-			idx := uint32(u)
+			if haveIndex {
+				return ReadPropertyACK{}, fmt.Errorf("%w: duplicate arrayIndex", bacnet.ErrMalformed)
+			}
+			var idx uint32
+			idx, err = bacnet.ContextUnsigned32(el)
 			ack.Property.ArrayIndex = &idx
+			haveIndex = true
 		case el.TagNumber == 3 && bacnet.IsContextConstructed(el):
 			if haveValue {
 				return ReadPropertyACK{}, fmt.Errorf("%w: duplicate propertyValue", bacnet.ErrMalformed)
 			}
-			if len(el.Value.Elements) == 0 {
-				return ReadPropertyACK{}, fmt.Errorf("%w: empty propertyValue wrapper", bacnet.ErrMalformed)
-			} else if len(el.Value.Elements) == 1 && !el.Value.Elements[0].Context {
+			// An empty wrapper is an empty list or array (a Device without
+			// address bindings, for example): it falls through to the
+			// constructed value with no elements.
+			if len(el.Value.Elements) == 1 && !el.Value.Elements[0].Context {
 				ack.Value = el.Value.Elements[0].Value.Clone()
 			} else {
 				ack.Value = bacnet.ApplicationValue{Kind: bacnet.ValueConstructed, Elements: el.Value.Elements}.Clone()
@@ -186,10 +190,11 @@ func DecodeReadPropertyACK(payload []byte, limits bacnet.DecodeLimits) (ReadProp
 	return ack, nil
 }
 
-// EncodeReadPropertyAPDU builds a confirmed ReadProperty APDU (invoke ID set by caller).
+// EncodeReadPropertyPayload encodes a ReadProperty service payload. It is an
+// alias of EncodeReadProperty; the caller frames it in a confirmed-request APDU.
 func EncodeReadPropertyPayload(req ReadPropertyRequest) ([]byte, error) {
 	return EncodeReadProperty(req)
 }
 
-// Service choice constant re-export convenience.
+// ServiceReadProperty re-exports the ReadProperty confirmed service choice.
 const ServiceReadProperty = apdu.ServiceReadProperty

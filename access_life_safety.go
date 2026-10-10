@@ -9,61 +9,51 @@ package bacnet
 type LifeSafetyMode uint32
 
 const (
-	LifeSafetyModeOff LifeSafetyMode = iota
-	LifeSafetyModeOn
-	LifeSafetyModeTest
-	LifeSafetyModeManned
-	LifeSafetyModeArmed
-	LifeSafetyModeDisarmed
-	LifeSafetyModePrearmed
-	LifeSafetyModeQuiet
-	LifeSafetyModeFaultSealed
-	LifeSafetyModeFaultUnsealed
-	LifeSafetyModeFaultImmediate
-	LifeSafetyModeFaultDelayed
-	LifeSafetyModePullActive
-	LifeSafetyModeManual
-	LifeSafetyModeInterlocked
-	LifeSafetyModeBlocked
-	LifeSafetyModeTamper
-	LifeSafetyModeTestActiveAlarm
-	LifeSafetyModeTestActiveFault
-	LifeSafetyModeTestActiveFaultAlarm
-	LifeSafetyModeTestHold
-	LifeSafetyModeTestHoldAlarm
-	LifeSafetyModeTestHoldFault
-	LifeSafetyModeTestHoldFaultAlarm
+	LifeSafetyModeOff                      LifeSafetyMode = 0
+	LifeSafetyModeOn                       LifeSafetyMode = 1
+	LifeSafetyModeTest                     LifeSafetyMode = 2
+	LifeSafetyModeManned                   LifeSafetyMode = 3
+	LifeSafetyModeUnmanned                 LifeSafetyMode = 4
+	LifeSafetyModeArmed                    LifeSafetyMode = 5
+	LifeSafetyModeDisarmed                 LifeSafetyMode = 6
+	LifeSafetyModePrearmed                 LifeSafetyMode = 7
+	LifeSafetyModeSlow                     LifeSafetyMode = 8
+	LifeSafetyModeFast                     LifeSafetyMode = 9
+	LifeSafetyModeDisconnected             LifeSafetyMode = 10
+	LifeSafetyModeEnabled                  LifeSafetyMode = 11
+	LifeSafetyModeDisabled                 LifeSafetyMode = 12
+	LifeSafetyModeAutomaticReleaseDisabled LifeSafetyMode = 13
+	LifeSafetyModeDefault                  LifeSafetyMode = 14
 )
 
 // LifeSafetyState is BACnetLifeSafetyState.
 type LifeSafetyState uint32
 
 const (
-	LifeSafetyStateQuiet LifeSafetyState = iota
-	LifeSafetyStatePreAlarm
-	LifeSafetyStateAlarm
-	LifeSafetyStateFault
-	LifeSafetyStateFaultPreAlarm
-	LifeSafetyStateFaultAlarm
-	LifeSafetyStateNotReady
-	LifeSafetyStateActive
-	LifeSafetyStateTamper
-	LifeSafetyStateTestAlarm
-	LifeSafetyStateTestActive
-	LifeSafetyStateTestFault
-	LifeSafetyStateTestFaultAlarm
-	LifeSafetyStateHoldup
-	LifeSafetyStateHoldupAlarm
-	LifeSafetyStateDuress
-	LifeSafetyStateTamperAlarm
-	LifeSafetyStateAbnormal
-	LifeSafetyStateEmergencyPower
-	LifeSafetyStateDelayed
-	LifeSafetyStateBlocked
-	LifeSafetyStateLocalAlarm
-	LifeSafetyStateGeneralAlarm
-	LifeSafetyStateSupervisory
-	LifeSafetyStateTestSupervisory
+	LifeSafetyStateQuiet           LifeSafetyState = 0
+	LifeSafetyStatePreAlarm        LifeSafetyState = 1
+	LifeSafetyStateAlarm           LifeSafetyState = 2
+	LifeSafetyStateFault           LifeSafetyState = 3
+	LifeSafetyStateFaultPreAlarm   LifeSafetyState = 4
+	LifeSafetyStateFaultAlarm      LifeSafetyState = 5
+	LifeSafetyStateNotReady        LifeSafetyState = 6
+	LifeSafetyStateActive          LifeSafetyState = 7
+	LifeSafetyStateTamper          LifeSafetyState = 8
+	LifeSafetyStateTestAlarm       LifeSafetyState = 9
+	LifeSafetyStateTestActive      LifeSafetyState = 10
+	LifeSafetyStateTestFault       LifeSafetyState = 11
+	LifeSafetyStateTestFaultAlarm  LifeSafetyState = 12
+	LifeSafetyStateHoldup          LifeSafetyState = 13
+	LifeSafetyStateDuress          LifeSafetyState = 14
+	LifeSafetyStateTamperAlarm     LifeSafetyState = 15
+	LifeSafetyStateAbnormal        LifeSafetyState = 16
+	LifeSafetyStateEmergencyPower  LifeSafetyState = 17
+	LifeSafetyStateDelayed         LifeSafetyState = 18
+	LifeSafetyStateBlocked         LifeSafetyState = 19
+	LifeSafetyStateLocalAlarm      LifeSafetyState = 20
+	LifeSafetyStateGeneralAlarm    LifeSafetyState = 21
+	LifeSafetyStateSupervisory     LifeSafetyState = 22
+	LifeSafetyStateTestSupervisory LifeSafetyState = 23
 )
 
 // LifeSafetyOperation is BACnetLifeSafetyOperation.
@@ -102,10 +92,9 @@ const (
 type LockStatus uint32
 
 const (
-	LockStatusLocked LockStatus = iota
-	LockStatusUnlocked
-	LockStatusFault
-	LockStatusUnknown
-	LockStatusLockedOut
-	LockStatusUnused
+	LockStatusLocked    LockStatus = 0
+	LockStatusUnlocked  LockStatus = 1
+	LockStatusLockFault LockStatus = 2
+	LockStatusUnused    LockStatus = 3
+	LockStatusUnknown   LockStatus = 4
 )

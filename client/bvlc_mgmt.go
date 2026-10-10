@@ -109,7 +109,7 @@ func (c *Client) bvlcExchange(ctx context.Context, peer bip.Endpoint, req bvlc.M
 	if err != nil {
 		return bvlc.Message{}, err
 	}
-	if err := c.tr.Send(ctx, OutboundPacket{Data: frame, Destination: peer}); err != nil {
+	if err := c.send(ctx, OutboundPacket{Data: frame, Destination: peer}); err != nil {
 		return bvlc.Message{}, err
 	}
 	timer := c.clock.NewTimer(c.cfg.apduTimeout)

@@ -189,7 +189,7 @@ func (c *Client) sendConfirmedSegments(ctx context.Context, target Target, tx *p
 	for highestAcked+1 < len(segments) {
 		for inFlight < int(window) && nextToSend < len(segments) {
 			// Mark before Send: a transport error does not prove non-delivery.
-			tx.sent = true
+			tx.sent.Store(true)
 			if err := c.sendAPDU(ctx, target.Endpoint, false, target.Address, true, segments[nextToSend]); err != nil {
 				return wrapOutcomeUnknown(serviceChoice, err)
 			}
@@ -274,4 +274,4 @@ func (c *Client) sendClientAbort(target Target, invokeID uint8, reason uint8) {
 	_ = c.sendAPDU(ctx, target.Endpoint, false, target.Address, false, bytes)
 }
 
-const abortReasonOther uint8 = 0
+const abortReasonOther = bacnet.AbortReasonOther

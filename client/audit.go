@@ -13,7 +13,9 @@ import (
 	"github.com/otfabric/go-bacnet/service"
 )
 
-// AuditStreamEvent is one queued audit notification.
+// AuditStreamEvent is one queued audit notification. A Confirmed or
+// UnconfirmedAuditNotification request carries a list of notifications; each
+// one is delivered as its own event, in the order of the request.
 type AuditStreamEvent struct {
 	Sequence     uint64
 	Notification service.AuditNotification

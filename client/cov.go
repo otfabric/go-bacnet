@@ -32,9 +32,17 @@ const (
 // Sequence is monotonic per subscription for successfully queued events.
 // Gap is sticky: when one or more events were dropped due to a full queue, the
 // next successfully delivered event has Gap=true so callers observe the loss.
+//
+// Notification is set for a COV notification of a SubscribeCOV or
+// SubscribeCOVProperty subscription. Multiple is set when the device sent a
+// COVNotificationMultiple: it is the whole notification, with its timestamp
+// and each value's time of change, and is all an event of a
+// SubscribeCOVMultiple subscription carries. Both point to values that are
+// not modified after delivery; Multiple may be shared between events.
 type SubscriptionEvent struct {
 	Sequence     uint64
 	Notification *service.COVNotification
+	Multiple     *service.COVNotificationMultiple
 	State        SubscriptionState
 	Gap          bool
 	Err          error
@@ -53,6 +61,8 @@ type subscription struct {
 	object       bacnet.ObjectIdentifier
 	property     *bacnet.PropertyReference
 	covIncrement *float32
+	multi        []service.COVMultipleSubscription // SubscribeCOVPropertyMultiple
+	maxDelay     *uint32
 	lifetime     uint32
 	confirmed    bool
 	capacity     int // soft capacity for notifications; +1 reserved for terminal
@@ -81,27 +91,7 @@ func (s *subscription) Close() error {
 		s.c.subs.unregister(s.id)
 
 		ctx, stop := clock.ContextWithTimeout(context.Background(), s.c.clock, s.c.cfg.apduTimeout)
-		if s.property != nil {
-			payload, e := service.EncodeSubscribeCOVProperty(service.SubscribeCOVPropertyRequest{
-				SubscribeCOVRequest: service.SubscribeCOVRequest{
-					ProcessIdentifier: s.id,
-					MonitoredObject:   s.object,
-					Cancellation:      true,
-				},
-				Property: *s.property,
-			})
-			if e == nil {
-				_, err = s.c.confirmedRequest(ctx, s.target, apdu.ServiceSubscribeCOVProperty, payload, DefaultRetransmitPolicy(apdu.ServiceSubscribeCOVProperty))
-			} else {
-				err = e
-			}
-		} else {
-			err = s.c.subscribeCOV(ctx, s.target, service.SubscribeCOVRequest{
-				ProcessIdentifier: s.id,
-				MonitoredObject:   s.object,
-				Cancellation:      true,
-			})
-		}
+		err = s.issue(ctx, true)
 		stop()
 
 		<-s.done
@@ -213,7 +203,7 @@ func (m *subscriptionManager) deliver(ev SubscriptionEvent, processID uint32, sr
 	m.mu.Lock()
 	s := m.byID[processID]
 	m.mu.Unlock()
-	if s == nil || ev.Notification == nil {
+	if s == nil || ev.Notification == nil || s.multi != nil {
 		return
 	}
 	note := ev.Notification
@@ -224,6 +214,71 @@ func (m *subscriptionManager) deliver(ev SubscriptionEvent, processID uint32, sr
 		return
 	}
 	s.send(ev)
+}
+
+// monitors reports whether a SubscribeCOVMultiple subscription covers object.
+func (s *subscription) monitors(object bacnet.ObjectIdentifier) bool {
+	for _, spec := range s.multi {
+		if spec.Object == object {
+			return true
+		}
+	}
+	return false
+}
+
+// deliverMultiple hands a COVNotificationMultiple to the subscription with
+// its process identifier. A SubscribeCOVMultiple subscription gets the
+// objects it subscribed to.
+// A single-object subscription gets one event per entry for its object, with
+// that entry as an ordinary notification next to the whole one.
+func (m *subscriptionManager) deliverMultiple(note *service.COVNotificationMultiple, src packetSource) {
+	m.mu.Lock()
+	s := m.byID[note.SubscriberProcessIdentifier]
+	m.mu.Unlock()
+	if s == nil || !matchTargetSource(s.target, src) {
+		return
+	}
+	if s.multi != nil {
+		// Only the objects this subscription asked for: a device may still
+		// hold a subscription of an earlier client with the same process
+		// identifier.
+		var kept []service.COVNotificationMultipleObject
+		for _, obj := range note.Objects {
+			if s.monitors(obj.Object) {
+				kept = append(kept, obj)
+			}
+		}
+		if len(kept) == 0 {
+			return
+		}
+		if len(kept) != len(note.Objects) {
+			filtered := *note
+			filtered.Objects = kept
+			note = &filtered
+		}
+		s.send(SubscriptionEvent{Multiple: note, State: SubscriptionActive})
+		return
+	}
+	for _, obj := range note.Objects {
+		if obj.Object != s.object {
+			continue
+		}
+		vals := make([]service.PropertyValue, 0, len(obj.Values))
+		for _, v := range obj.Values {
+			vals = append(vals, service.PropertyValue{Property: v.Property, Value: v.Value})
+		}
+		s.send(SubscriptionEvent{
+			Notification: &service.COVNotification{
+				ProcessIdentifier: note.SubscriberProcessIdentifier,
+				InitiatingDevice:  note.InitiatingDevice,
+				MonitoredObject:   obj.Object,
+				TimeRemaining:     note.TimeRemaining,
+				Values:            vals,
+			},
+			Multiple: note,
+			State:    SubscriptionActive,
+		})
+	}
 }
 
 func (m *subscriptionManager) closeAll() {
@@ -257,58 +312,30 @@ func (m *subscriptionManager) nextID() uint32 {
 
 // COVOptions configures a COV subscription.
 type COVOptions struct {
-	Lifetime       uint32 // seconds
+	// Lifetime is the subscription lifetime in seconds requested from the
+	// device. Zero selects 60. The client resubscribes at half the lifetime
+	// for as long as the Subscription is open; an indefinite (lifetime 0)
+	// subscription is not offered because it would outlive the client.
+	Lifetime uint32
+	// IssueConfirmed asks for confirmed notifications, which the client
+	// acknowledges on receipt.
 	IssueConfirmed bool
-	BufferSize     int
+	// BufferSize is the capacity of the Events channel (default 16). When
+	// the consumer falls behind, notifications are dropped and the next
+	// delivered event has Gap set.
+	BufferSize int
 }
 
-// SubscribeCOV starts a COV subscription.
+// SubscribeCOV subscribes to change-of-value notifications for object and
+// returns once the device has accepted the subscription.
+//
+// Read Events until it is closed. The first event reports the Active state;
+// later events carry notifications or state changes (Renewing, Degraded when
+// a renewal failed or events were dropped). Close cancels the subscription on
+// the device and ends the stream with a Closed event; closing the Client ends
+// it without cancelling. The Subscription is safe for concurrent use.
 func (c *Client) SubscribeCOV(ctx context.Context, target Target, object bacnet.ObjectIdentifier, opts COVOptions) (Subscription, error) {
-	if opts.Lifetime == 0 {
-		opts.Lifetime = 60
-	}
-	if opts.BufferSize <= 0 {
-		opts.BufferSize = 16
-	}
-	id := c.subs.nextID()
-	subCtx, cancel := context.WithCancel(context.Background())
-	s := &subscription{
-		c:         c,
-		id:        id,
-		target:    target,
-		object:    object,
-		lifetime:  opts.Lifetime,
-		confirmed: opts.IssueConfirmed,
-		capacity:  opts.BufferSize,
-		events:    make(chan SubscriptionEvent, opts.BufferSize+1), // +1 reserved for Closed
-		cancel:    cancel,
-		done:      make(chan struct{}),
-	}
-	s.state.Store(uint32(SubscriptionPending))
-	c.subs.register(s)
-
-	req := service.SubscribeCOVRequest{
-		ProcessIdentifier: id,
-		MonitoredObject:   object,
-		IssueConfirmed:    opts.IssueConfirmed,
-		Lifetime:          opts.Lifetime,
-	}
-	if err := c.subscribeCOV(ctx, target, req); err != nil {
-		c.subs.unregister(id)
-		cancel()
-		close(s.done)
-		s.mu.Lock()
-		s.closed = true
-		close(s.events)
-		s.mu.Unlock()
-		return nil, err
-	}
-	s.state.Store(uint32(SubscriptionActive))
-	s.send(SubscriptionEvent{State: SubscriptionActive})
-
-	c.wg.Add(1)
-	go s.renewLoop(subCtx)
-	return s, nil
+	return c.startSubscription(ctx, target, &subscription{object: object}, opts)
 }
 
 func (c *Client) subscribeCOV(ctx context.Context, target Target, req service.SubscribeCOVRequest) error {
@@ -328,84 +355,116 @@ func (c *Client) subscribeCOV(ctx context.Context, target Target, req service.Su
 
 // SubscribeCOVProperty starts a property-scoped COV subscription.
 func (c *Client) SubscribeCOVProperty(ctx context.Context, target Target, object bacnet.ObjectIdentifier, property bacnet.PropertyReference, opts COVOptions, covIncrement *float32) (Subscription, error) {
+	s := &subscription{object: object, property: &property}
+	if covIncrement != nil {
+		v := *covIncrement
+		s.covIncrement = &v
+	}
+	return c.startSubscription(ctx, target, s, opts)
+}
+
+// startSubscription completes s from opts, sends its subscription request
+// and, once the device has accepted it, starts the renewal loop.
+func (c *Client) startSubscription(ctx context.Context, target Target, s *subscription, opts COVOptions) (Subscription, error) {
+	// Notifications are matched against the stored target, so it must carry
+	// the same address a request would use.
+	target, err := normalizeTarget(target)
+	if err != nil {
+		return nil, err
+	}
 	if opts.Lifetime == 0 {
 		opts.Lifetime = 60
 	}
 	if opts.BufferSize <= 0 {
 		opts.BufferSize = 16
 	}
-	id := c.subs.nextID()
 	subCtx, cancel := context.WithCancel(context.Background())
-	prop := property
-	var incCopy *float32
-	if covIncrement != nil {
-		v := *covIncrement
-		incCopy = &v
-	}
-	s := &subscription{
-		c:            c,
-		id:           id,
-		target:       target,
-		object:       object,
-		property:     &prop,
-		covIncrement: incCopy,
-		lifetime:     opts.Lifetime,
-		confirmed:    opts.IssueConfirmed,
-		capacity:     opts.BufferSize,
-		events:       make(chan SubscriptionEvent, opts.BufferSize+1),
-		cancel:       cancel,
-		done:         make(chan struct{}),
-	}
+	s.c = c
+	s.id = c.subs.nextID()
+	s.target = target
+	s.lifetime = opts.Lifetime
+	s.confirmed = opts.IssueConfirmed
+	s.capacity = opts.BufferSize
+	s.events = make(chan SubscriptionEvent, opts.BufferSize+1) // +1 reserved for Closed
+	s.cancel = cancel
+	s.done = make(chan struct{})
 	s.state.Store(uint32(SubscriptionPending))
 	c.subs.register(s)
 
-	req := service.SubscribeCOVPropertyRequest{
-		SubscribeCOVRequest: service.SubscribeCOVRequest{
-			ProcessIdentifier: id,
-			MonitoredObject:   object,
-			IssueConfirmed:    opts.IssueConfirmed,
-			Lifetime:          opts.Lifetime,
-		},
-		Property:     property,
-		COVIncrement: incCopy,
-	}
-	payload, err := service.EncodeSubscribeCOVProperty(req)
-	if err != nil {
-		c.subs.unregister(id)
+	if err = s.issue(ctx, false); err != nil {
+		c.subs.unregister(s.id)
 		cancel()
 		close(s.done)
+		// Close of the client may be ending this subscription at the same
+		// moment (it waits for done, then publishes Closed).
 		s.mu.Lock()
-		s.closed = true
-		close(s.events)
+		if !s.closed {
+			s.closed = true
+			close(s.events)
+		}
 		s.mu.Unlock()
 		return nil, err
-	}
-	pdu, err := c.confirmedRequest(ctx, target, apdu.ServiceSubscribeCOVProperty, payload, DefaultRetransmitPolicy(apdu.ServiceSubscribeCOVProperty))
-	if err != nil {
-		c.subs.unregister(id)
-		cancel()
-		close(s.done)
-		s.mu.Lock()
-		s.closed = true
-		close(s.events)
-		s.mu.Unlock()
-		return nil, err
-	}
-	if pdu.Type != apdu.TypeSimpleACK {
-		c.subs.unregister(id)
-		cancel()
-		close(s.done)
-		s.mu.Lock()
-		s.closed = true
-		close(s.events)
-		s.mu.Unlock()
-		return nil, bacnet.ErrProtocolViolation
 	}
 	s.state.Store(uint32(SubscriptionActive))
 	s.send(SubscriptionEvent{State: SubscriptionActive})
+
 	c.wg.Add(1)
 	go s.renewLoop(subCtx)
 	return s, nil
+}
+
+// issue sends the request that establishes or renews s, or the one that
+// cancels it.
+func (s *subscription) issue(ctx context.Context, cancellation bool) error {
+	base := service.SubscribeCOVRequest{
+		ProcessIdentifier: s.id,
+		MonitoredObject:   s.object,
+		Cancellation:      cancellation,
+	}
+	if !cancellation {
+		base.IssueConfirmed = s.confirmed
+		base.Lifetime = s.lifetime
+	}
+	var (
+		choice  uint8
+		payload []byte
+		err     error
+	)
+	switch {
+	case s.multi != nil:
+		choice = apdu.ServiceSubscribeCOVPropertyMultiple
+		req := service.SubscribeCOVPropertyMultipleRequest{
+			SubscriberProcessIdentifier: s.id,
+			Cancellation:                cancellation,
+			Subscriptions:               s.multi,
+		}
+		if !cancellation {
+			req.IssueConfirmedNotifications = s.confirmed
+			req.LifetimeRemaining = &s.lifetime
+			req.MaxNotificationDelay = s.maxDelay
+		}
+		payload, err = service.EncodeSubscribeCOVPropertyMultiple(req)
+	case s.property != nil:
+		choice = apdu.ServiceSubscribeCOVProperty
+		req := service.SubscribeCOVPropertyRequest{SubscribeCOVRequest: base, Property: *s.property}
+		if !cancellation {
+			req.COVIncrement = s.covIncrement
+		}
+		payload, err = service.EncodeSubscribeCOVProperty(req)
+	default:
+		return s.c.subscribeCOV(ctx, s.target, base)
+	}
+	if err != nil {
+		return err
+	}
+	pdu, err := s.c.confirmedRequest(ctx, s.target, choice, payload, DefaultRetransmitPolicy(choice))
+	if err != nil {
+		return err
+	}
+	if !cancellation && pdu.Type != apdu.TypeSimpleACK {
+		return bacnet.ErrProtocolViolation
+	}
+	return nil
 }
 
 func (s *subscription) renewLoop(ctx context.Context) {
@@ -434,35 +493,7 @@ func (s *subscription) renewLoop(ctx context.Context) {
 			}
 			s.send(SubscriptionEvent{State: SubscriptionRenewing})
 			rctx, stop := clock.ContextWithTimeout(ctx, s.c.clock, s.c.cfg.apduTimeout)
-			var err error
-			var pdu apdu.PDU
-			if s.property != nil {
-				payload, e := service.EncodeSubscribeCOVProperty(service.SubscribeCOVPropertyRequest{
-					SubscribeCOVRequest: service.SubscribeCOVRequest{
-						ProcessIdentifier: s.id,
-						MonitoredObject:   s.object,
-						IssueConfirmed:    s.confirmed,
-						Lifetime:          s.lifetime,
-					},
-					Property:     *s.property,
-					COVIncrement: s.covIncrement,
-				})
-				if e != nil {
-					err = e
-				} else {
-					pdu, err = s.c.confirmedRequest(rctx, s.target, apdu.ServiceSubscribeCOVProperty, payload, DefaultRetransmitPolicy(apdu.ServiceSubscribeCOVProperty))
-					if err == nil && pdu.Type != apdu.TypeSimpleACK {
-						err = bacnet.ErrProtocolViolation
-					}
-				}
-			} else {
-				err = s.c.subscribeCOV(rctx, s.target, service.SubscribeCOVRequest{
-					ProcessIdentifier: s.id,
-					MonitoredObject:   s.object,
-					IssueConfirmed:    s.confirmed,
-					Lifetime:          s.lifetime,
-				})
-			}
+			err := s.issue(rctx, false)
 			stop()
 			if SubscriptionState(s.state.Load()) == SubscriptionClosed {
 				return

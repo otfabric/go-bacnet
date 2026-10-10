@@ -1,5 +1,295 @@
 # go-bacnet Releases
 
+## v0.4.0
+
+**Date:** unreleased  
+**Previous release:** [v0.3.0](https://github.com/otfabric/go-bacnet/releases/tag/v0.3.0)
+
+### Summary
+
+Review release. The client and the codecs were audited against the standard,
+against four peer stacks and against Wireshark's dissector; the defects found
+are fixed, the client reports invalid configuration instead of adjusting it,
+remote errors carry their standard names, and logging is available through
+`log/slog`. The `bacnetctl` command moved to its own repository,
+[otfabric/bacnetctl](https://github.com/otfabric/bacnetctl); this module is a
+library only again. Requires **Go 1.23+**.
+
+Tested against bacnet-stack 1.6.1, BACpypes3 0.0.110, BACnet4J 6.1.1,
+Worldiety `3cb2aa80` and System.IO.BACnet 4.0.0 (206 peer scenarios), and
+against Wireshark 4.2–4.6 for the request layouts.
+
+**Interop pin → [`bacnet-interop` v0.10.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.10.0)**
+(`interop/bacnet-interop-pin.json`, seven images by digest, two of them new:
+`sysiobacnet` and `bacnet-stack-router`). This version needs that release:
+five codec vectors of the fixture corpus were corrected together with the
+encoders they were derived from, so `internal/fixtures` fails against the
+v0.9.0 corpus.
+
+**This release changes behaviour and some exported identifiers.** Read
+"Changed" and "Removed" before upgrading. Still not validated against
+physical devices ([field validation](docs/FIELD_VALIDATION.md)).
+
+### Fixed
+
+Client:
+
+- **Closing the client while a subscription request was in flight** could
+  panic with "close of closed channel": `Close` and the failing subscribe both
+  ended the half-made subscription.
+- **A request overtaken by `Close`** could fail with the transport's error
+  ("use of closed network connection") instead of `ErrClosed`.
+- **Invoke-ID allocation** reserved nothing: two concurrent requests could be
+  given the same invoke ID when few were free, and more requests than the
+  configured maximum could be in flight. Allocation now reserves the ID.
+- **Data race** between a request being sent and `Close` (the "sent" flag).
+- **Receive loop** spun at full speed while the socket kept failing (interface
+  down). It now backs off (5 ms doubling to 500 ms) and reports a `transport`
+  diagnostic.
+- **ReadProperty of the Device wildcard** (`device,4194303`) failed with
+  `ErrProtocolViolation` because the reply names the real device instance.
+- **`ReadRangeAll`** stopped after the first page whenever a page returned all
+  the items it asked for (the device clears MORE_ITEMS then), and `MaxItems`
+  counted decoded elements instead of records. Found by the new peer tests,
+  on all three peers that serve ReadRange.
+- **`ReadPropertyMultipleBatched`** split by object only, so one object with
+  many properties was never split; retried after Abort reason 5
+  (security-error) instead of 1 (buffer-overflow) and 11 (apdu-too-long); and
+  returned results per batch instead of per input specification.
+- **A `Target` with only an endpoint** sent the request and then discarded the
+  answer as coming from the wrong source, ending in a timeout. The address of
+  a directly reachable device is now derived from the endpoint.
+- **Broadcasts went to 255.255.255.255 only.** Devices listen for the
+  broadcast address of their subnet, and many do not receive the limited
+  broadcast: of the four peer stacks, a broadcast Who-Is reached two. A
+  broadcast is now sent to the directed broadcast address of every local
+  subnet (or of the `WithInterface` interface) and to 255.255.255.255.
+  The operating system sends 255.255.255.255 on one interface only, that of
+  the default route: on a host with several interfaces a device that hears
+  only this form was not reached on the others. On Linux and macOS the
+  limited broadcast is now sent on each interface in turn (found by the peer
+  tests in CI, whose runner has a Docker bridge next to its uplink).
+  Found by running the CLI against the peers; the peer tests had only used
+  unicast Who-Is.
+- **A plain Error in answer to WritePropertyMultiple** (System.IO.BACnet
+  sends one instead of a WritePropertyMultiple-Error) was reported as a
+  malformed frame. It is now an `*ErrorResponse` with the device's class and
+  code.
+- **An Error PDU naming another service than the request** (BACnet4J answers
+  a refused SubscribeCOVPropertyMultiple with error-choice 127) was dropped,
+  so the caller got a timeout, or outcome-unknown for a write. Invoke ID and
+  source identify the transaction; the Error now completes the request.
+- **Unsolicited confirmed requests** were ignored, leaving the sender to
+  retry. They are answered with Reject (unrecognized-service), Abort
+  (segmentation-not-supported) for segmented ones, and Reject for a
+  notification that does not decode.
+
+Codecs (each with a regression test; layouts marked ✓ were also checked
+against Wireshark's dissector):
+
+- **NPDU Hop Count** was written and read directly after DADR. It belongs
+  after SADR, which matters whenever both a destination and a source network
+  address are present, e.g. an I-Am from a routed device answering a global
+  Who-Is: such frames were misparsed. ✓
+- **Router-Busy-To-Network and Router-Available-To-Network were swapped**
+  (`npdu.NetMsgRouterBusyToNetwork` is X'04', `…Available…` X'05'): a router
+  announcing congestion was treated as available again, and the reverse. ✓
+- **An empty list or array could not be read.** A property whose value is an
+  empty list (Device_Address_Binding or Active_COV_Subscriptions of a device
+  without any, for example) arrives as an empty value (`3E 3F`), which
+  ReadProperty refused as malformed; in a ReadPropertyMultiple reply it
+  discarded every other result too. It now decodes as a constructed value
+  without elements. Reproduced on bacnet-stack, BACnet4J, BACpypes3 and
+  System.IO.BACnet; found by the fifth peer's test suite.
+- **Audit services did not interoperate.** The audit notification request was
+  encoded and expected as three loose fields instead of
+  `notifications [0] SEQUENCE OF BACnetAuditNotification`, so notifications
+  from bacnet-stack and BACpypes3 produced no events; AuditLogQuery lacked the
+  required query parameters and BACpypes3 could not decode it. Both are
+  rewritten to Clause 21: the client now decodes the notifications and log
+  records of two independent upstream encoders, and BACpypes3 decodes the
+  query field by field. ✓
+- **ReadRange ACK**: a peer-controlled item count sized an allocation for
+  Log_Buffer records (up to hundreds of gigabytes requested from a 36-octet
+  datagram). The count is now bounded by the data present.
+- **Error PDUs with a structured body** (CreateObject, AddListElement,
+  RemoveListElement, ConfirmedPrivateTransfer, VT-Close,
+  SubscribeCOVPropertyMultiple) were reported as `ErrMalformed`; they now
+  yield `*ErrorResponse` with the device's class and code.
+- **COV notifications carrying a priority** (`BACnetPropertyValue.priority`)
+  were rejected as malformed and dropped.
+- **SubscribeCOVPropertyMultiple** request ✓, **GetEnrollmentSummary**
+  priority filter ✓, **COVNotificationMultiple** time-of-change, **HostNPort**,
+  out-of-range / floating-limit **notification parameters**: tags did not
+  follow the standard's ASN.1.
+- **The BACnet `Error` was encoded with context tags** (`09 02 19 20`) by
+  `EncodeBACnetError` and therefore by the ReadPropertyMultiple-ACK and
+  WritePropertyMultiple-Error encoders. It is two application ENUMERATEDs
+  (`91 02 91 20`). Only code that plays the server side (simulators, tests)
+  was affected; decoding always accepted the standard form and still accepts
+  the old one.
+- **CalendarEntry** date and weekNDay, **Date_List**, **Daily/WeeklySchedule**
+  could not decode real wire data.
+- **`AppendTag`** silently emitted an empty context tag for a typed value.
+- **Life-safety enumerations**: `LifeSafetyMode`, `LifeSafetyState` and
+  `LockStatus` had wrong values (see "Changed").
+- **Tag decoder**: non-canonical application Booleans, out-of-range BitString
+  unused-bit counts and invalid extended tag numbers were accepted; a length
+  check could overflow on 32-bit platforms.
+- Identifiers, array indexes and counts wider than 32 bits were truncated
+  instead of rejected; `EncodeWriteProperty` accepted priorities outside
+  1..16; several decoded values aliased the receive buffer.
+- **GetEnrollmentSummary ACK** entries without the optional notification
+  class, and **You-Are** with the optional MAC address or without a device
+  identifier, were rejected.
+
+### Added
+
+- `client.WithLogger(*slog.Logger)`: leveled logging of client diagnostics
+  ([OBSERVABILITY.md](OBSERVABILITY.md)). The client stays silent without it.
+- `bacnet.ErrInvalidConfig`; `client.New` validates options.
+- `bacnet.ErrorClassName`, `ErrorCodeName`, `RejectReasonName`,
+  `AbortReasonName` and constants for the standard values; remote error
+  messages now read `class=object(1) code=unknown-object(31)`.
+- `bacnet.AnyDevice`, `WildcardInstance`, `ObjectIdentifier.Matches`.
+- `DiscoveryOptions.Window` / `WhoHasOptions.Window`: `Discover` and
+  `DiscoverObjects` return a nil error after the window.
+- `DeviceObservation.Target()` and `.DeviceID()`.
+- `ReadObjectList` falls back to reading the list element by element when the
+  device cannot return it in one reply.
+- `client.ErrNoRoute` (wraps `ErrUnsupported`) from `ResolveTarget`;
+  `Client.AllRoutes()`.
+- `Client.SubscribeCOVMultiple`: a managed SubscribeCOVPropertyMultiple
+  subscription (renewed at half the lifetime, cancelled by `Close`) with
+  `COVMultipleOptions.MaxNotificationDelay`. `SubscriptionEvent.Multiple`
+  carries the whole COVNotificationMultiple, with its timestamp and each
+  value's time of change. `SubscribeCOVPropertyMultipleRequest.Cancellation`
+  encodes the cancellation (no issue-confirmed-notifications, no lifetime).
+  Before, a COVNotificationMultiple reached the caller only as per-object
+  notifications of a single-object subscription that happened to have the
+  same process identifier, without any time.
+- `service.VTDataACK`, `DecodeVTDataACK`, `EncodeVTDataACK`.
+- `bacnet.PropertyAll`, `PropertyRequired`, `PropertyOptional` (the special
+  identifiers of ReadPropertyMultiple).
+- `CharacterString.Text()` for UCS-2, UCS-4 and ISO 8859-1 strings and
+  `CharacterEncoding…` constants.
+- `apdu.DecodeError` / `ErrorDetail` (first-failed-element number of
+  structured errors); `service.PropertyValue.Priority`;
+  `SubscribeCOVPropertyMultipleRequest.MaxNotificationDelay`;
+  `COVNotificationMultipleValue.TimeOfChange`; `YouAre.MAC`;
+  `AcknowledgmentFilter…` constants; `bacnet.ContextUnsigned32`,
+  `ContextReal`, `ContextDate`, `AppendContextReal`; `HostNPort.None`.
+- `*service.WritePropertyMultipleError` unwraps to an `*ErrorResponse`.
+- Chaos tests for the client (`make chaos`, and at normal load in every
+  `go test -race`): concurrent requests, subscriptions and `Close` against
+  in-process devices that misbehave at random. The client's unit tests now
+  run in parallel. Both found the two `Close` races under "Fixed"; a test
+  that changed the shared service-policy table under running requests (a data
+  race in CI) no longer does.
+- `make interop-pinned` (pulls the pinned peer images and runs everything)
+  and `make dissector` (Wireshark oracle for every request the client emits).
+- Peer tests for the Device wildcard, endpoint-only targets, object lists,
+  batched ReadPropertyMultiple, priority writes and relinquish, device
+  snapshot, unknown-object and write-access-denied errors, unanswered
+  requests (timeout, retransmission count, outcome-unknown, context
+  deadline), ReadRange paging, GetEventInformation, AcknowledgeAlarm,
+  SubscribeCOVProperty, COV renewal past the lifetime, chunked file read and
+  write, and DCC "disable" being refused.
+- [ARCHITECTURE.md](ARCHITECTURE.md) (was `docs/PACKAGE_DESIGN.md`, now with
+  the client runtime), [OBSERVABILITY.md](OBSERVABILITY.md), compiled
+  examples in `client/example_test.go`.
+
+### Changed
+
+- **`client.New` fails on invalid options** instead of ignoring them:
+  `WithSegmentWindow` outside 1..127, negative `WithTransactionOptions`
+  values, `WithPort` outside 0..65535, and `WithDeviceManagementEnabled` /
+  `WithNetworkManagementEnabled` with a wrong confirmation string (previously
+  the option silently stayed off). Errors wrap `ErrInvalidConfig`; the ones
+  that already existed still also wrap `ErrMalformed`.
+- **`client.New` closes an injected transport when it fails.**
+- **`ReadPropertyMultipleBatched`** returns exactly one result per input
+  specification and rejects a specification without properties.
+- **`ResolveTarget`** returns `ErrNoRoute` (still `errors.Is`
+  `ErrUnsupported`).
+- **A `Target` without a valid endpoint** fails with `ErrMalformed` before
+  sending.
+- **Error texts** of `ErrorResponse`, `RejectError`, `AbortError` and
+  `WritePropertyMultipleError` include names. Do not parse them.
+- **Broadcast destinations** (see "Fixed"): a device that receives both the
+  directed and the limited broadcast answers a Who-Is twice.
+- **`npdu.NetMsgRouterBusyToNetwork` / `NetMsgRouterAvailableToNetwork`**
+  exchanged values.
+- **Diagnostics**: receive failures are reported with kind `transport`
+  (previously `malformed`).
+- **Life-safety enumerations follow the standard.** `LifeSafetyMode`: `Armed`
+  4→5, `Disarmed` 5→6, `Prearmed` 6→7; added `Unmanned`, `Slow`, `Fast`,
+  `Disconnected`, `Enabled`, `Disabled`, `AutomaticReleaseDisabled`,
+  `Default`. `LifeSafetyState`: `Duress` … `TestSupervisory` are each one
+  lower (14..23). `LockStatus`: `LockStatusFault` is now `LockStatusLockFault`,
+  `Unused` 5→3, `Unknown` 3→4.
+- **`Client.VTData` returns `(service.VTDataACK, error)`** instead of
+  `error`: the acknowledgement tells whether the device took all of the data,
+  and how much if not, which the caller needs in order to resend the rest. A
+  SimpleACK in reply to VT-Data is now `ErrProtocolViolation`.
+- **`DecodeSubscribeCOVPropertyMultiple`** reports a request without
+  issue-confirmed-notifications and lifetime as `Cancellation`.
+- **Wire bytes changed** for `EncodeSubscribeCOVPropertyMultiple`,
+  `EncodeGetEnrollmentSummary` (priority filter), `EncodeHostNPort`,
+  `EncodeCOVNotificationMultiple` (time-of-change), out-of-range and
+  floating-limit `EncodeNotificationParameters`, `EncodeYouAre` (a zero
+  device is omitted), `EncodeBACnetError` / `EncodeReadPropertyMultipleACK` /
+  `EncodeWritePropertyMultipleError`, and `npdu.Append` with both addresses.
+  `DecodeSubscribeCOVPropertyMultiple` rejects the pre-standard layout.
+- **Stricter decoding**: see the tag-decoder, NPDU (SNET 65535 rejected) and
+  32-bit items under "Fixed". `npdu.Append` ignores `Control` bits other than
+  expecting-reply and rejects remote network 0 / 65535.
+- `DecodeCalendarEntry` and `DecodeHostNPort` errors wrap `ErrMalformed`.
+
+- **Audit API (package `service`)**: `AuditNotification` carries the 17
+  fields of the standard (`SourceDevice` and `TargetDevice` are
+  `AuditRecipient`); `AuditLogQueryRequest` has `ByTarget` / `BySource`,
+  `StartAtSequenceNumber` and `RequestedCount` and needs exactly one of the
+  two queries; `AuditLogQueryACK.Records` is `[]AuditLogRecordResult`. One
+  request carrying several notifications yields one `AuditStreamEvent` each.
+  Client method signatures are unchanged.
+
+### Removed
+
+- `service.EncodeAuditNotification` / `DecodeAuditNotification` (use
+  `EncodeAuditNotificationRequest` / `DecodeAuditNotificationRequest`),
+  `AuditNotification.TimeStamp` and `.Remaining`, `AuditLogQueryRequest.Query`.
+- **`cmd/bacnetctl`** and its release binaries. Use
+  [otfabric/bacnetctl](https://github.com/otfabric/bacnetctl).
+- `LifeSafetyMode` constants that are not in the standard (`Quiet`,
+  `FaultSealed`, `FaultUnsealed`, `FaultImmediate`, `FaultDelayed`,
+  `PullActive`, `Manual`, `Interlocked`, `Blocked`, `Tamper`, `TestActive…`,
+  `TestHold…`), `LifeSafetyStateHoldupAlarm`, `LockStatusLockedOut`.
+
+### Deprecated
+
+- `ErrTransactionCapacity`, `ErrResponseSourceMismatch`, `ErrDeliveryDropped`:
+  never returned by any code path.
+- `ReadRangePageOptions.StopOnError`: had no effect.
+
+### Known limitations
+
+- AuthRequest has no implementation in any stable peer stack; its encoding is
+  an opaque `[0]` wrapper checked against nothing but Wireshark's outline.
+  All five peers refuse the service.
+- VT: the requests are decoded by BACpypes3's own classes, and its VT-Open
+  and VT-Data ACKs by the client; no stack executes a VT session and the
+  client does not handle VT-Data sent to it.
+- SubscribeCOVPropertyMultiple: no peer stack executes the subscription.
+  BACpypes3 decodes subscribe, renewal and cancellation; BACnet4J encodes the
+  notifications. Subscribe → change → notify has not been seen against one
+  device.
+- The audit *service frames* are confirmed by Wireshark and by adapter-declared
+  frames around the stacks' own data-type codecs; no stable stack has the
+  services themselves.
+- Proprietary network-layer message types (≥ 0x80) carry no vendor ID field.
+- The dissector oracle checks requests only.
+
 ## v0.3.0
 
 **Date:** 2026-08-03  

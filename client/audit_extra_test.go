@@ -14,18 +14,18 @@ func TestAuditStreamGapReplaceAndClosed(t *testing.T) {
 	env := newVirtualPair(t)
 	s1 := env.Client.OpenAuditStream(0) // default capacity
 	env.Client.deliverAuditNotification(service.AuditNotification{
-		SourceDevice: bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeDevice, Instance: 1}, Operation: 1,
+		SourceDevice: service.AuditDevice(bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeDevice, Instance: 1}), Operation: 1,
 	}, false)
 	env.Client.deliverAuditNotification(service.AuditNotification{
-		SourceDevice: bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeDevice, Instance: 1}, Operation: 2,
+		SourceDevice: service.AuditDevice(bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeDevice, Instance: 1}), Operation: 2,
 	}, false)
 	env.Client.deliverAuditNotification(service.AuditNotification{
-		SourceDevice: bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeDevice, Instance: 1}, Operation: 3,
+		SourceDevice: service.AuditDevice(bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeDevice, Instance: 1}), Operation: 3,
 	}, false)
 	s2 := env.Client.OpenAuditStream(2)
 	s1.Close()
 	env.Client.deliverAuditNotification(service.AuditNotification{
-		SourceDevice: bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeDevice, Instance: 1}, Operation: 4,
+		SourceDevice: service.AuditDevice(bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeDevice, Instance: 1}), Operation: 4,
 	}, true)
 	select {
 	case ev := <-s2.Events():
@@ -37,7 +37,7 @@ func TestAuditStreamGapReplaceAndClosed(t *testing.T) {
 	}
 	s2.Close()
 	env.Client.deliverAuditNotification(service.AuditNotification{
-		SourceDevice: bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeDevice, Instance: 1}, Operation: 5,
+		SourceDevice: service.AuditDevice(bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeDevice, Instance: 1}), Operation: 5,
 	}, false)
 }
 

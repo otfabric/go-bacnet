@@ -12,6 +12,20 @@ decide how to resolve conflicting observations.
 
 BACnet/SC is **out of scope** for this library.
 
+The client answers what it receives only in three ways: a SimpleACK to a
+well-formed COV, event or audit notification (before it knows whether the
+notification belongs to a subscription), SegmentACKs for a response it asked
+for, and a Reject or Abort to any other confirmed request. Each is one small
+datagram to the sender's address, never a broadcast. COV notifications are
+delivered to the application only when they match a subscription's process
+identifier, object and source path; event and audit notifications are
+delivered from any sender. A source address can be spoofed like everything
+else in BACnet/IP.
+
+DeviceCommunicationControl and ReinitializeDevice passwords are sent in clear
+text, as the protocol defines. The library never logs them
+([OBSERVABILITY.md](OBSERVABILITY.md)).
+
 ## Allocation limits
 
 All public parsers honour `bacnet.DecodeLimits` (datagram size, APDU size,

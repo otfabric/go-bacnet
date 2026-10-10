@@ -58,10 +58,11 @@ func TestUnconfirmedAuditNotificationReceive(t *testing.T) {
 	env := newVirtualPair(t)
 	stream := env.Client.OpenAuditStream(1)
 	defer stream.Close()
-	payload, err := service.EncodeAuditNotification(service.AuditNotification{
-		SourceDevice: bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeDevice, Instance: 1},
+	payload, err := service.EncodeAuditNotificationRequest([]service.AuditNotification{{
+		SourceDevice: service.AuditDevice(bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeDevice, Instance: 1}),
+		TargetDevice: service.AuditDevice(bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeDevice, Instance: 1}),
 		Operation:    3,
-	})
+	}})
 	if err != nil {
 		t.Fatal(err)
 	}

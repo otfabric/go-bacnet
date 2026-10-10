@@ -78,7 +78,7 @@ func TestCOVNeverOverwriteClosedWithDegraded(t *testing.T) {
 		events:   make(chan SubscriptionEvent, 2),
 	}
 	s.state.Store(uint32(SubscriptionClosed))
-	s.send(SubscriptionEvent{State: SubscriptionDegraded, Err: bacnet.ErrDeliveryDropped})
+	s.send(SubscriptionEvent{State: SubscriptionDegraded, Err: bacnet.ErrTimeout})
 	if SubscriptionState(s.state.Load()) != SubscriptionClosed {
 		t.Fatal("Degraded overwrote Closed")
 	}

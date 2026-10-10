@@ -2,6 +2,8 @@
 
 package bacnet
 
+import "fmt"
+
 // DecodePropertyValue optionally maps a known object/property combination to a
 // typed value. Unknown combinations return ok=false with no error so callers
 // keep the raw ApplicationValue.
@@ -41,16 +43,26 @@ func DecodePropertyValue(objectType ObjectType, property PropertyIdentifier, val
 		if objectType == ObjectTypeCalendar && (value.Kind == ValueConstructed || len(value.Elements) > 0) {
 			entries := make([]CalendarEntry, 0, len(value.Elements))
 			for _, el := range value.Elements {
-				if el.Value.Kind == ValueDate {
+				// Legacy in-memory shapes: a bare Date or a bare DateRange.
+				if !el.Context && el.Value.Kind == ValueDate {
 					entries = append(entries, CalendarEntry{Choice: CalendarEntryDate, Date: el.Value.Date})
 					continue
 				}
-				if dr, err := DecodeDateRange(el.Value); err == nil {
+				if !el.Context {
+					dr, err := DecodeDateRange(el.Value)
+					if err != nil {
+						return nil, true, fmt.Errorf("%w: Date_List entry", ErrMalformed)
+					}
 					entries = append(entries, CalendarEntry{Choice: CalendarEntryDateRange, DateRange: dr})
 					continue
 				}
-				// Preserve opaque element as date entry fallback failure.
-				return nil, true, ErrMalformed
+				// Wire form: SEQUENCE OF BACnetCalendarEntry, one context
+				// element per entry (date [0], dateRange [1], weekNDay [2]).
+				entry, err := decodeCalendarEntryElement(el)
+				if err != nil {
+					return nil, true, err
+				}
+				entries = append(entries, entry)
 			}
 			return entries, true, nil
 		}

@@ -65,11 +65,31 @@ func FuzzParseNPDU(f *testing.F) {
 		{0x01, 0x20, 0x00, 0x02, 0x06, 0x0a, 0x00, 0x00, 0x02, 0xba, 0xc0, 0xff, 0x10, 0x08},
 		{0x01, 0x80, 0x01, 0x00, 0x02},
 		{0x01, 0x84, 0x00},
+		// DNET and SNET together: hop count follows the source address.
+		{0x01, 0x28, 0xff, 0xff, 0x00, 0x07, 0xd1, 0x01, 0x0c, 0xfe, 0x10, 0x00},
+		// SNET 0xFFFF is never valid.
+		{0x01, 0x08, 0xff, 0xff, 0x01, 0x05, 0x10, 0x08},
 	}
 	for _, s := range seeds {
 		f.Add(s)
 	}
 	f.Fuzz(func(t *testing.T, data []byte) {
-		_, _, _ = npdu.Parse(data, bacnet.DefaultDecodeLimits())
+		n, _, err := npdu.Parse(data, bacnet.DefaultDecodeLimits())
+		if err != nil {
+			return
+		}
+		// Anything Parse accepts must re-encode to a frame Parse accepts,
+		// with the same addresses.
+		out, err := npdu.Append(nil, n)
+		if err != nil {
+			t.Fatalf("Append of parsed % X: %v", data, err)
+		}
+		again, _, err := npdu.Parse(out, bacnet.DefaultDecodeLimits())
+		if err != nil {
+			t.Fatalf("re-parse of % X (from % X): %v", out, data, err)
+		}
+		if !again.Destination.Equal(n.Destination) || !again.Source.Equal(n.Source) {
+			t.Fatalf("addresses changed: %v/%v -> %v/%v", n.Destination, n.Source, again.Destination, again.Source)
+		}
 	})
 }

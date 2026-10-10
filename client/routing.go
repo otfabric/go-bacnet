@@ -4,6 +4,8 @@ package client
 
 import (
 	"context"
+	"fmt"
+	"sort"
 	"sync"
 	"time"
 
@@ -302,6 +304,11 @@ func (c *Client) WhoIsRouterToNetworkAt(ctx context.Context, dest bip.Endpoint, 
 	return c.sendNPDU(ctx, dest, broadcast, n)
 }
 
+// ErrNoRoute is returned by ResolveTarget when no usable router to the
+// destination network is known. It wraps bacnet.ErrUnsupported, which earlier
+// releases returned bare.
+var ErrNoRoute = fmt.Errorf("%w: no route to network", bacnet.ErrUnsupported)
+
 // ResolveTarget fills Endpoint from the router cache when Address is remote.
 // Selection is fixed at call time for the subsequent transaction; route updates
 // do not change an in-flight transaction's immediate peer.
@@ -311,10 +318,30 @@ func (c *Client) ResolveTarget(addr bacnet.Address, direct bip.Endpoint) (Target
 		if hop, ok := c.routers.selectNextHop(addr.Network(), c.clock.Now()); ok {
 			t.Endpoint = hop
 		} else if !direct.IsValid() {
-			return Target{}, bacnet.ErrUnsupported
+			return Target{}, fmt.Errorf("%w: no known router to network %d (send WhoIsRouterToNetwork first, or pass the router endpoint)",
+				ErrNoRoute, addr.Network())
 		}
 	}
 	return t, nil
+}
+
+// AllRoutes returns a copy of every cached route, ordered by network number.
+func (c *Client) AllRoutes() []Route {
+	if c == nil || c.routers == nil {
+		return nil
+	}
+	c.routers.mu.RLock()
+	defer c.routers.mu.RUnlock()
+	nets := make([]int, 0, len(c.routers.byNet))
+	for n := range c.routers.byNet {
+		nets = append(nets, int(n))
+	}
+	sort.Ints(nets)
+	var out []Route
+	for _, n := range nets {
+		out = append(out, c.routers.byNet[uint16(n)]...)
+	}
+	return out
 }
 
 // Routes returns a copy of cached routes for network.

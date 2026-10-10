@@ -5,6 +5,14 @@ package bacnet
 // PropertyIdentifier is a BACnet property identifier (standard or proprietary).
 type PropertyIdentifier uint32
 
+// Special property identifiers of ReadPropertyMultiple: a device answers each
+// with every property of the object in that conformance class.
+const (
+	PropertyAll      PropertyIdentifier = 8
+	PropertyOptional PropertyIdentifier = 80
+	PropertyRequired PropertyIdentifier = 105
+)
+
 // Common property identifiers.
 const (
 	PropertyObjectIdentifier  PropertyIdentifier = 75

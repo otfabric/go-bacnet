@@ -16,6 +16,7 @@ import (
 	"github.com/otfabric/go-bacnet"
 )
 
+// Version1 is the only defined BACnet network layer protocol version.
 const Version1 = 1
 
 // Control bits.
@@ -35,8 +36,8 @@ const (
 	NetMsgIAmRouterToNetwork            = 0x01
 	NetMsgICouldBeRouterToNetwork       = 0x02
 	NetMsgRejectMessageToNetwork        = 0x03
-	NetMsgRouterAvailableToNetwork      = 0x04
-	NetMsgRouterBusyToNetwork           = 0x05
+	NetMsgRouterBusyToNetwork           = 0x04
+	NetMsgRouterAvailableToNetwork      = 0x05
 	NetMsgInitializeRoutingTable        = 0x06
 	NetMsgInitializeRoutingTableAck     = 0x07
 	NetMsgEstablishConnectionToNetwork  = 0x08
@@ -134,11 +135,6 @@ func Parse(data []byte, limits bacnet.DecodeLimits) (NPDU, int, error) {
 			}
 			n.Destination = bacnet.RemoteStation(dnet, mac)
 		}
-		if off >= len(data) {
-			return NPDU{}, 0, fmt.Errorf("%w: hop count truncated", bacnet.ErrMalformed)
-		}
-		n.HopCount = data[off]
-		off++
 	}
 
 	if hasSrc {
@@ -163,11 +159,26 @@ func Parse(data []byte, limits bacnet.DecodeLimits) (NPDU, int, error) {
 			return NPDU{}, 0, err
 		}
 		off += slen
+		// SNET identifies one network; the global broadcast network number
+		// is never a valid source (Clause 6.2.2).
+		if snet == 0xFFFF {
+			return NPDU{}, 0, fmt.Errorf("%w: SNET 0xFFFF", bacnet.ErrMalformed)
+		}
 		if snet == 0 {
 			n.Source = bacnet.LocalStation(mac)
 		} else {
 			n.Source = bacnet.RemoteStation(snet, mac)
 		}
+	}
+
+	// Hop Count is present whenever DNET is, and follows the source address
+	// fields (Clause 6.2.2, Figure 6-1: DNET DLEN DADR SNET SLEN SADR Hop).
+	if hasDst {
+		if off >= len(data) {
+			return NPDU{}, 0, fmt.Errorf("%w: hop count truncated", bacnet.ErrMalformed)
+		}
+		n.HopCount = data[off]
+		off++
 	}
 
 	if n.NetworkMessage {
@@ -204,6 +215,13 @@ func validateNetworkMessageData(msgType uint8, data []byte) error {
 		if len(data) < 2 {
 			return fmt.Errorf("%w: Network-Number-Is truncated", bacnet.ErrMalformed)
 		}
+	}
+	return nil
+}
+
+func validateRemoteNetwork(role string, network uint16) error {
+	if network == 0 || network == 0xFFFF {
+		return fmt.Errorf("%w: remote %s network %d", bacnet.ErrMalformed, role, network)
 	}
 	return nil
 }
@@ -249,38 +267,66 @@ func DecodeICouldBeRouterToNetwork(data []byte) (network uint16, perf uint8, err
 
 // Append encodes an NPDU. For application messages, set APDU; for network
 // messages set NetworkMessage, NetMsgType and NetMsgData.
+//
+// The control octet is built from the typed fields: NetworkMessage,
+// ExpectingReply (or the ControlExpectingReply bit of Control), Priority, and
+// the Destination and Source addresses. Every other bit of Control —
+// including the reserved bits and the DNET/SNET-present bits — is ignored, so
+// a stale Control value cannot produce a frame that disagrees with its
+// address fields.
+//
+// A remote destination or source must name a real network: network numbers 0
+// and 0xFFFF are rejected, as is a remote station without a MAC address.
 func Append(dst []byte, n NPDU) ([]byte, error) {
 	if n.Version == 0 {
 		n.Version = Version1
 	}
-	control := n.Control
+	var control uint8
 	if n.NetworkMessage {
 		control |= ControlNetworkMessage
-	} else {
-		control &^= ControlNetworkMessage
 	}
-	if n.ExpectingReply {
+	if n.ExpectingReply || n.Control&ControlExpectingReply != 0 {
 		control |= ControlExpectingReply
 	}
-	control = (control &^ ControlPriorityMask) | (n.Priority & ControlPriorityMask)
+	control |= n.Priority & ControlPriorityMask
 
 	hasDst := false
 	hasSrc := false
 	switch n.Destination.Scope() {
-	case bacnet.AddressRemoteStation, bacnet.AddressRemoteBroadcast, bacnet.AddressGlobalBroadcast:
+	case bacnet.AddressRemoteStation:
+		if err := validateRemoteNetwork("destination", n.Destination.Network()); err != nil {
+			return dst, err
+		}
+		if n.Destination.MAC().IsZero() {
+			return dst, fmt.Errorf("%w: remote station destination without MAC", bacnet.ErrMalformed)
+		}
 		hasDst = true
-		control |= ControlDestinationSpec
+	case bacnet.AddressRemoteBroadcast:
+		if err := validateRemoteNetwork("destination", n.Destination.Network()); err != nil {
+			return dst, err
+		}
+		hasDst = true
+	case bacnet.AddressGlobalBroadcast:
+		hasDst = true
 	default:
-		control &^= ControlDestinationSpec
+		// Local destinations carry no DNET/DADR.
+	}
+	if hasDst {
+		control |= ControlDestinationSpec
 	}
 	switch n.Source.Scope() {
 	case bacnet.AddressLocalStation, bacnet.AddressRemoteStation:
 		if !n.Source.MAC().IsZero() {
+			if n.Source.Scope() == bacnet.AddressRemoteStation {
+				if err := validateRemoteNetwork("source", n.Source.Network()); err != nil {
+					return dst, err
+				}
+			}
 			hasSrc = true
 			control |= ControlSourceSpec
 		}
 	default:
-		control &^= ControlSourceSpec
+		// Broadcast scopes are not valid sources and are not encoded.
 	}
 
 	dst = append(dst, n.Version, control)
@@ -302,11 +348,6 @@ func Append(dst []byte, n NPDU) ([]byte, error) {
 		default:
 			return dst, fmt.Errorf("%w: unsupported destination scope %d", bacnet.ErrUnsupported, n.Destination.Scope())
 		}
-		hop := n.HopCount
-		if hop == 0 {
-			hop = 255
-		}
-		dst = append(dst, hop)
 	}
 
 	if hasSrc {
@@ -317,6 +358,15 @@ func Append(dst []byte, n NPDU) ([]byte, error) {
 		}
 		dst = append(dst, byte(snet>>8), byte(snet), byte(len(mac)))
 		dst = append(dst, mac...)
+	}
+
+	// Hop Count follows the source address fields (Clause 6.2.2).
+	if hasDst {
+		hop := n.HopCount
+		if hop == 0 {
+			hop = 255
+		}
+		dst = append(dst, hop)
 	}
 
 	if n.NetworkMessage {

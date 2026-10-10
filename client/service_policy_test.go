@@ -95,16 +95,12 @@ func TestRequireServicePolicyAndOperationClass(t *testing.T) {
 	if err := env.Client.checkOperationClass(apdu.ServiceDeviceCommunicationControl); !errors.Is(err, bacnet.ErrDeviceManagementDisabled) {
 		t.Fatalf("got %v", err)
 	}
-	confirmedPolicies[0xfe] = ConfirmedServicePolicy{Name: "tmp-net", OperationClass: OperationNetworkManagement}
-	confirmedPolicies[0xfd] = ConfirmedServicePolicy{Name: "tmp-other", OperationClass: OperationClass(99)}
-	defer func() {
-		delete(confirmedPolicies, 0xfe)
-		delete(confirmedPolicies, 0xfd)
-	}()
-	if err := env.Client.checkOperationClass(0xfe); !errors.Is(err, ErrNetworkManagementDisabled) {
+	// The policy table is shared by every client and read without a lock, so
+	// it is not extended here: the classes are checked on policies of their own.
+	if err := env.Client.checkPolicyClass(ConfirmedServicePolicy{Name: "tmp-net", OperationClass: OperationNetworkManagement}); !errors.Is(err, ErrNetworkManagementDisabled) {
 		t.Fatalf("network: %v", err)
 	}
-	if err := env.Client.checkOperationClass(0xfd); err == nil {
+	if err := env.Client.checkPolicyClass(ConfirmedServicePolicy{Name: "tmp-other", OperationClass: OperationClass(99)}); err == nil {
 		t.Fatal("expected unknown class disabled")
 	}
 }

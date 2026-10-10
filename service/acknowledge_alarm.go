@@ -61,21 +61,21 @@ func DecodeAcknowledgeAlarm(payload []byte, limits bacnet.DecodeLimits) (Acknowl
 	for _, el := range elements {
 		switch {
 		case el.TagNumber == 0 && !bacnet.IsContextConstructed(el):
-			u, err := bacnet.ContextUnsigned(el)
+			u, err := bacnet.ContextUnsigned32(el)
 			if err != nil {
 				return AcknowledgeAlarmRequest{}, err
 			}
-			req.ProcessIdentifier = uint32(u)
+			req.ProcessIdentifier = u
 			havePID = true
 		case el.TagNumber == 1 && !bacnet.IsContextConstructed(el):
 			req.EventObject, err = bacnet.ContextObjectID(el)
 			haveObj = true
 		case el.TagNumber == 2 && !bacnet.IsContextConstructed(el):
-			u, err := bacnet.ContextUnsigned(el)
+			u, err := bacnet.ContextUnsigned32(el)
 			if err != nil {
 				return AcknowledgeAlarmRequest{}, err
 			}
-			req.EventStateAcked = uint32(u)
+			req.EventStateAcked = u
 			haveState = true
 		case el.TagNumber == 3 && bacnet.IsContextConstructed(el):
 			if len(el.Value.Elements) != 1 {

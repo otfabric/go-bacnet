@@ -71,7 +71,7 @@ func TestWritePropertyMultipleDecodeBranches(t *testing.T) {
 		t.Fatalf("priority: %v", err)
 	}
 
-	// empty propertyValue wrapper
+	// empty propertyValue wrapper: an empty list
 	prop, err := bacnet.AppendContextUnsigned(nil, 0, 85)
 	if err != nil {
 		t.Fatal(err)
@@ -88,8 +88,11 @@ func TestWritePropertyMultipleDecodeBranches(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := service.DecodeWritePropertyMultiple(raw, limits); !errors.Is(err, bacnet.ErrMalformed) {
-		t.Fatalf("empty value: %v", err)
+	// An empty wrapper writes an empty list.
+	if specs, err := service.DecodeWritePropertyMultiple(raw, limits); err != nil || len(specs) != 1 ||
+		len(specs[0].Properties) != 1 || specs[0].Properties[0].Value.Kind != bacnet.ValueConstructed ||
+		len(specs[0].Properties[0].Value.Elements) != 0 {
+		t.Fatalf("empty value: %+v, %v", specs, err)
 	}
 
 	// priority out of range

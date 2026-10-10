@@ -25,8 +25,8 @@ func TestReinitializeDeviceSimpleACK(t *testing.T) {
 	}
 }
 
-func TestDeviceManagementWrongConfirm(t *testing.T) {
-	env := newVirtualPair(t, WithDeviceManagementEnabled("nope"))
+func TestDeviceManagementDisabledByDefault(t *testing.T) {
+	env := newVirtualPair(t)
 	if err := env.Client.DeviceCommunicationControl(context.Background(), env.Target, service.DeviceCommunicationControlRequest{
 		EnableDisable: service.EnableDisableEnable,
 	}); !errors.Is(err, bacnet.ErrDeviceManagementDisabled) {

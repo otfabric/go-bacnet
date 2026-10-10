@@ -90,8 +90,10 @@ func TestDecodeWritePropertyMalformedBranches(t *testing.T) {
 		t.Fatal(err)
 	}
 	emptyValue = append(emptyValue, 0x3E, 0x3F)
-	if _, err := service.DecodeWriteProperty(emptyValue, limits); !errors.Is(err, bacnet.ErrMalformed) {
-		t.Fatalf("empty value wrapper: %v", err)
+	// An empty wrapper is an empty list, not a malformed request.
+	if req, err := service.DecodeWriteProperty(emptyValue, limits); err != nil ||
+		req.Value.Kind != bacnet.ValueConstructed || len(req.Value.Elements) != 0 {
+		t.Fatalf("empty value wrapper: %+v, %v", req.Value, err)
 	}
 
 	prio := uint8(8)
@@ -212,8 +214,10 @@ func TestDecodeReadPropertyACKMalformed(t *testing.T) {
 		t.Fatal(err)
 	}
 	emptyValue = append(emptyValue, 0x3E, 0x3F)
-	if _, err := service.DecodeReadPropertyACK(emptyValue, limits); !errors.Is(err, bacnet.ErrMalformed) {
-		t.Fatalf("empty value: %v", err)
+	// An empty wrapper is an empty list (see TestEmptyListPropertyValues).
+	if ack, err := service.DecodeReadPropertyACK(emptyValue, limits); err != nil ||
+		ack.Value.Kind != bacnet.ValueConstructed || len(ack.Value.Elements) != 0 {
+		t.Fatalf("empty value: %+v, %v", ack.Value, err)
 	}
 }
 
@@ -414,17 +418,6 @@ func TestDecodeRPMACKMalformedExtra(t *testing.T) {
 			name: "ContextObjectID fail",
 			build: func(t *testing.T) []byte {
 				return []byte{0x1A, 0x00, 0x01}
-			},
-			wantErr: bacnet.ErrMalformed,
-		},
-		{
-			name: "empty propertyValue wrapper",
-			build: func(t *testing.T) []byte {
-				p, err := bacnet.AppendContextObjectID(nil, 0, obj)
-				if err != nil {
-					t.Fatal(err)
-				}
-				return append(p, 0x1E, 0x29, 0x75, 0x4E, 0x4F, 0x1F)
 			},
 			wantErr: bacnet.ErrMalformed,
 		},

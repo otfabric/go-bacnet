@@ -8,6 +8,8 @@ import "fmt"
 // for the constants exported by this module. Unknown numeric values format as
 // "ObjectType(n)" / "PropertyIdentifier(n)" so proprietary IDs remain usable.
 
+// String returns the standard object type name (for example "analog-input"),
+// or "ObjectType(n)" for values this module does not name.
 func (t ObjectType) String() string {
 	if s, ok := objectTypeNames[t]; ok {
 		return s
@@ -15,6 +17,8 @@ func (t ObjectType) String() string {
 	return fmt.Sprintf("ObjectType(%d)", uint16(t))
 }
 
+// String returns the standard property name (for example "present-value"),
+// or "PropertyIdentifier(n)" for values this module does not name.
 func (p PropertyIdentifier) String() string {
 	if s, ok := propertyIdentifierNames[p]; ok {
 		return s

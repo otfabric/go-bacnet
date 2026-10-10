@@ -57,10 +57,10 @@ func DecodePrivateTransfer(payload []byte, limits bacnet.DecodeLimits) (PrivateT
 				haveVendor = true
 			}
 		case el.TagNumber == 1 && !bacnet.IsContextConstructed(el):
-			u, e := bacnet.ContextUnsigned(el)
+			u, e := bacnet.ContextUnsigned32(el)
 			err = e
 			if err == nil {
-				p.ServiceNumber = uint32(u)
+				p.ServiceNumber = u
 				haveSvc = true
 			}
 		case el.TagNumber == 2 && bacnet.IsContextConstructed(el):
@@ -138,10 +138,10 @@ func DecodeTextMessage(payload []byte, limits bacnet.DecodeLimits) (TextMessage,
 			// CHOICE numeric [0] Unsigned (character [1] not exposed on this struct).
 			for _, inner := range el.Value.Elements {
 				if inner.TagNumber == 0 && !bacnet.IsContextConstructed(inner) {
-					u, e := bacnet.ContextUnsigned(inner)
+					u, e := bacnet.ContextUnsigned32(inner)
 					err = e
 					if err == nil {
-						v := uint32(u)
+						v := u
 						m.MessageClass = &v
 					}
 					break
@@ -149,10 +149,10 @@ func DecodeTextMessage(payload []byte, limits bacnet.DecodeLimits) (TextMessage,
 			}
 		case el.TagNumber == 1 && !bacnet.IsContextConstructed(el):
 			// Legacy numeric-only encode (pre-CHOICE).
-			u, e := bacnet.ContextUnsigned(el)
+			u, e := bacnet.ContextUnsigned32(el)
 			err = e
 			if err == nil {
-				v := uint32(u)
+				v := u
 				m.MessageClass = &v
 			}
 		case el.TagNumber == 2 && !bacnet.IsContextConstructed(el):
@@ -265,10 +265,10 @@ func DecodeWriteGroup(payload []byte, limits bacnet.DecodeLimits) (WriteGroup, e
 	for _, el := range els {
 		switch {
 		case el.TagNumber == 0 && !bacnet.IsContextConstructed(el):
-			u, e := bacnet.ContextUnsigned(el)
+			u, e := bacnet.ContextUnsigned32(el)
 			err = e
 			if err == nil {
-				w.GroupNumber = uint32(u)
+				w.GroupNumber = u
 				haveGroup = true
 			}
 		case el.TagNumber == 1 && !bacnet.IsContextConstructed(el):

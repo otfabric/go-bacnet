@@ -58,18 +58,20 @@ func (c *Client) VTClose(ctx context.Context, target Target, req service.VTClose
 	return nil
 }
 
-// VTData performs VT-Data.
-func (c *Client) VTData(ctx context.Context, target Target, req service.VTDataRequest) error {
+// VTData performs VT-Data and returns the device's acknowledgement: whether
+// it accepted all of VTNewData and, if not, how many octets it took. Data the
+// device did not accept has to be sent again.
+func (c *Client) VTData(ctx context.Context, target Target, req service.VTDataRequest) (service.VTDataACK, error) {
 	payload, err := service.EncodeVTData(req)
 	if err != nil {
-		return err
+		return service.VTDataACK{}, err
 	}
 	pdu, err := c.confirmedRequest(ctx, target, apdu.ServiceVTData, payload, DefaultRetransmitPolicy(apdu.ServiceVTData))
 	if err != nil {
-		return err
+		return service.VTDataACK{}, err
 	}
-	if pdu.Type != apdu.TypeSimpleACK && pdu.Type != apdu.TypeComplexACK {
-		return bacnet.ErrProtocolViolation
+	if pdu.Type != apdu.TypeComplexACK || pdu.ComplexACK == nil {
+		return service.VTDataACK{}, bacnet.ErrProtocolViolation
 	}
-	return nil
+	return service.DecodeVTDataACK(pdu.ComplexACK.Payload, c.limits)
 }

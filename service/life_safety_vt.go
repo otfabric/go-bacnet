@@ -53,10 +53,10 @@ func DecodeLifeSafetyOperation(payload []byte, limits bacnet.DecodeLimits) (Life
 	for _, el := range els {
 		switch {
 		case el.TagNumber == 0 && !bacnet.IsContextConstructed(el):
-			u, e := bacnet.ContextUnsigned(el)
+			u, e := bacnet.ContextUnsigned32(el)
 			err = e
 			if err == nil {
-				req.RequestingProcessIdentifier = uint32(u)
+				req.RequestingProcessIdentifier = u
 				havePID = true
 			}
 		case el.TagNumber == 1 && !bacnet.IsContextConstructed(el):
@@ -67,10 +67,10 @@ func DecodeLifeSafetyOperation(payload []byte, limits bacnet.DecodeLimits) (Life
 				haveSrc = true
 			}
 		case el.TagNumber == 2 && !bacnet.IsContextConstructed(el):
-			u, e := bacnet.ContextUnsigned(el)
+			u, e := bacnet.ContextUnsigned32(el)
 			err = e
 			if err == nil {
-				req.Request = uint32(u)
+				req.Request = u
 				haveReq = true
 			}
 		case el.TagNumber == 3 && !bacnet.IsContextConstructed(el):
@@ -207,4 +207,58 @@ func DecodeVTData(payload []byte, limits bacnet.DecodeLimits) (VTDataRequest, er
 		VTNewData:           append([]byte(nil), els[1].Value.OctetString...),
 		VTDataFlag:          uint8(flag),
 	}, nil
+}
+
+// VTDataACK is the VT-Data ComplexACK:
+//
+//	all-new-data-accepted [0] BOOLEAN
+//	accepted-octet-count  [1] Unsigned OPTIONAL
+//
+// AcceptedOctetCount is present only when the device did not accept all of
+// the data; it tells how many octets of VTNewData it took. Some stacks send
+// it in either case.
+type VTDataACK struct {
+	AllNewDataAccepted bool
+	AcceptedOctetCount *uint32
+}
+
+// DecodeVTDataACK decodes a VT-Data ACK.
+func DecodeVTDataACK(payload []byte, limits bacnet.DecodeLimits) (VTDataACK, error) {
+	els, n, err := bacnet.ParseSequence(payload, limits, -1)
+	if err != nil {
+		return VTDataACK{}, err
+	}
+	if n != len(payload) {
+		return VTDataACK{}, fmt.Errorf("%w: VTDataACK trailing", bacnet.ErrTrailingData)
+	}
+	if len(els) < 1 || len(els) > 2 || els[0].TagNumber != 0 || bacnet.IsContextConstructed(els[0]) {
+		return VTDataACK{}, fmt.Errorf("%w: VTDataACK all-new-data-accepted", bacnet.ErrMalformed)
+	}
+	var ack VTDataACK
+	if ack.AllNewDataAccepted, err = bacnet.ContextBool(els[0]); err != nil {
+		return VTDataACK{}, err
+	}
+	if len(els) == 2 {
+		if els[1].TagNumber != 1 || bacnet.IsContextConstructed(els[1]) {
+			return VTDataACK{}, fmt.Errorf("%w: VTDataACK accepted-octet-count", bacnet.ErrMalformed)
+		}
+		count, err := bacnet.ContextUnsigned32(els[1])
+		if err != nil {
+			return VTDataACK{}, err
+		}
+		ack.AcceptedOctetCount = &count
+	}
+	return ack, nil
+}
+
+// EncodeVTDataACK encodes a VT-Data ACK.
+func EncodeVTDataACK(ack VTDataACK) ([]byte, error) {
+	dst, err := bacnet.AppendContextBool(nil, 0, ack.AllNewDataAccepted)
+	if err != nil {
+		return nil, err
+	}
+	if ack.AcceptedOctetCount != nil {
+		return bacnet.AppendContextUnsigned(dst, 1, uint64(*ack.AcceptedOctetCount))
+	}
+	return dst, nil
 }

@@ -9,21 +9,31 @@ import (
 
 // Local/runtime sentinels.
 var (
-	ErrClosed                 = errors.New("bacnet: client closed")
-	ErrTimeout                = errors.New("bacnet: request timeout")
-	ErrTransactionCapacity    = errors.New("bacnet: transaction capacity exhausted")
-	ErrMalformed              = errors.New("bacnet: malformed encoding")
-	ErrUnsupported            = errors.New("bacnet: unsupported")
+	ErrClosed  = errors.New("bacnet: client closed")
+	ErrTimeout = errors.New("bacnet: request timeout")
+	// Deprecated: ErrTransactionCapacity is never returned. A request that
+	// finds all invoke IDs in use waits for one until its context ends.
+	ErrTransactionCapacity = errors.New("bacnet: transaction capacity exhausted")
+	ErrMalformed           = errors.New("bacnet: malformed encoding")
+	ErrUnsupported         = errors.New("bacnet: unsupported")
+	// Deprecated: ErrResponseSourceMismatch is never returned. A response
+	// from an unexpected source is dropped (diagnostic "wrong_source") and
+	// the request runs into its timeout.
 	ErrResponseSourceMismatch = errors.New("bacnet: response source mismatch")
 	ErrProtocolViolation      = errors.New("bacnet: protocol violation")
 	ErrAPDUTooLarge           = errors.New("bacnet: APDU exceeds remote capability")
 	ErrTrailingData           = errors.New("bacnet: unexpected trailing data")
 	ErrLimitExceeded          = errors.New("bacnet: decode limit exceeded")
-	ErrDeliveryDropped        = errors.New("bacnet: delivery dropped")
+	// Deprecated: ErrDeliveryDropped is never returned. Dropped notifications
+	// are signalled by SubscriptionEvent.Gap and EventStreamEvent.Gap.
+	ErrDeliveryDropped = errors.New("bacnet: delivery dropped")
 	// ErrDeviceManagementDisabled is returned when DeviceCommunicationControl
 	// or ReinitializeDevice is called without WithDeviceManagementEnabled.
 	ErrDeviceManagementDisabled = errors.New("bacnet: device management API disabled")
 	ErrBusy                     = errors.New("bacnet: operation already in progress")
+	// ErrInvalidConfig is returned by client.New when an option carries a
+	// value the client cannot run with.
+	ErrInvalidConfig = errors.New("bacnet: invalid configuration")
 )
 
 // APDUTooLargeError reports a request that would exceed the remote max APDU
@@ -50,8 +60,8 @@ type ErrorResponse struct {
 }
 
 func (e *ErrorResponse) Error() string {
-	return fmt.Sprintf("bacnet: error invoke=%d service=%d class=%d code=%d",
-		e.InvokeID, e.Service, e.Class, e.Code)
+	return fmt.Sprintf("bacnet: error invoke=%d service=%d class=%s(%d) code=%s(%d)",
+		e.InvokeID, e.Service, ErrorClassName(e.Class), e.Class, ErrorCodeName(e.Code), e.Code)
 }
 
 // RejectError is a remote BACnet Reject PDU.
@@ -61,7 +71,7 @@ type RejectError struct {
 }
 
 func (e *RejectError) Error() string {
-	return fmt.Sprintf("bacnet: reject invoke=%d reason=%d", e.InvokeID, e.Reason)
+	return fmt.Sprintf("bacnet: reject invoke=%d reason=%s(%d)", e.InvokeID, RejectReasonName(e.Reason), e.Reason)
 }
 
 // AbortError is a remote BACnet Abort PDU.
@@ -72,8 +82,8 @@ type AbortError struct {
 }
 
 func (e *AbortError) Error() string {
-	return fmt.Sprintf("bacnet: abort invoke=%d server=%v reason=%d",
-		e.InvokeID, e.Server, e.Reason)
+	return fmt.Sprintf("bacnet: abort invoke=%d server=%v reason=%s(%d)",
+		e.InvokeID, e.Server, AbortReasonName(e.Reason), e.Reason)
 }
 
 // OutcomeUnknownError indicates a request may have been executed remotely but

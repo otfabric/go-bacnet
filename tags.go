@@ -8,6 +8,10 @@ import (
 	"math"
 )
 
+// tagNumberReserved is the extended tag number reserved by ASHRAE 135
+// (Clause 20.2.1.2); it is never valid on the wire.
+const tagNumberReserved = 255
+
 // ParseTag parses one BACnet tag from data and returns the element, bytes
 // consumed, and error. Application primitive values may alias data.
 func ParseTag(data []byte, limits DecodeLimits) (Element, int, error) {
@@ -20,12 +24,17 @@ func ParseTag(data []byte, limits DecodeLimits) (Element, int, error) {
 	tagNumber := b0 >> 4
 	off := 1
 
-	if tagNumber == 0x0F {
+	extended := tagNumber == 0x0F
+	if extended {
 		if off >= len(data) {
 			return Element{}, 0, fmt.Errorf("%w: truncated extended tag number", ErrMalformed)
 		}
 		tagNumber = data[off]
 		off++
+		// Tag numbers 0..14 use the initial octet; 255 is reserved.
+		if tagNumber < 0x0F || tagNumber == tagNumberReserved {
+			return Element{}, 0, fmt.Errorf("%w: invalid extended tag number %d", ErrMalformed, tagNumber)
+		}
 	}
 
 	// Opening / closing tags (context, LVT = 6 or 7).
@@ -37,11 +46,15 @@ func ParseTag(data []byte, limits DecodeLimits) (Element, int, error) {
 		return Element{Context: true, TagNumber: tagNumber, Closing: true}, off, nil
 	}
 
-	// Application BOOLEAN encodes the value in LVT with zero value octets.
+	// Application BOOLEAN encodes the value in LVT with zero value octets;
+	// only 0 (FALSE) and 1 (TRUE) are defined (Clause 20.2.3).
 	if !context && ApplicationTag(tagNumber) == TagBoolean {
+		if lvt > 1 {
+			return Element{}, 0, fmt.Errorf("%w: boolean length/value/type %d", ErrMalformed, lvt)
+		}
 		return Element{
 			TagNumber: tagNumber,
-			Value:     BoolValue(lvt != 0),
+			Value:     BoolValue(lvt == 1),
 		}, off, nil
 	}
 
@@ -50,7 +63,9 @@ func ParseTag(data []byte, limits DecodeLimits) (Element, int, error) {
 		return Element{}, 0, err
 	}
 	off += n
-	if off+length > len(data) {
+	// Compare against the remaining length so a hostile 32-bit extended
+	// length cannot overflow off+length where int is 32 bits wide.
+	if length > len(data)-off {
 		return Element{}, 0, fmt.Errorf("%w: truncated tag value", ErrMalformed)
 	}
 	valueBytes := data[off : off+length]
@@ -121,14 +136,12 @@ func decodeApplicationValue(tag ApplicationTag, data []byte, lvt uint8, limits D
 		}
 		return NullValue(), nil
 	case TagBoolean:
-		// Boolean may encode value in LVT (0/1) with length 0, or as 1-byte.
-		if len(data) == 0 {
-			return BoolValue(lvt != 0), nil
-		}
-		if len(data) != 1 {
+		// ParseTag handles application BOOLEAN before reading a length; this
+		// arm only guards direct callers.
+		if len(data) != 0 || lvt > 1 {
 			return ApplicationValue{}, fmt.Errorf("%w: boolean length", ErrMalformed)
 		}
-		return BoolValue(data[0] != 0), nil
+		return BoolValue(lvt == 1), nil
 	case TagUnsigned:
 		u, err := decodeUnsigned(data)
 		if err != nil {
@@ -177,6 +190,9 @@ func decodeApplicationValue(tag ApplicationTag, data []byte, lvt uint8, limits D
 			return ApplicationValue{}, fmt.Errorf("%w: bit string truncated", ErrMalformed)
 		}
 		unused := data[0]
+		if err := validateBitString(unused, len(data)-1); err != nil {
+			return ApplicationValue{}, err
+		}
 		bits := (len(data) - 1) * 8
 		if bits > limits.MaxBitStringBits {
 			return ApplicationValue{}, fmt.Errorf("%w: bit string", ErrLimitExceeded)
@@ -222,6 +238,19 @@ func decodeApplicationValue(tag ApplicationTag, data []byte, lvt uint8, limits D
 	}
 }
 
+// validateBitString checks the unused-bits octet of a BIT STRING against the
+// number of data octets: 0..7 unused bits, and 0 when there are no data octets
+// (Clause 20.2.10).
+func validateBitString(unused uint8, octets int) error {
+	if unused > 7 {
+		return fmt.Errorf("%w: bit string unused bits %d", ErrMalformed, unused)
+	}
+	if octets == 0 && unused != 0 {
+		return fmt.Errorf("%w: empty bit string with %d unused bits", ErrMalformed, unused)
+	}
+	return nil
+}
+
 func decodeUnsigned(data []byte) (uint64, error) {
 	if len(data) == 0 || len(data) > 8 {
 		return 0, fmt.Errorf("%w: unsigned length %d", ErrMalformed, len(data))
@@ -247,7 +276,17 @@ func decodeSigned(data []byte) (int64, error) {
 }
 
 // AppendTag appends a deterministic encoding of el to dst.
+//
+// A context element whose Value is a typed primitive (for example
+// Element{Context: true, TagNumber: 1, Value: RealValue(1)}) is encoded as a
+// context-tagged primitive carrying that value's content octets; a context
+// BOOLEAN is one octet. A ValueContext value contributes its raw OctetString.
+// A value that cannot be encoded returns an error; nothing is dropped
+// silently.
 func AppendTag(dst []byte, el Element) ([]byte, error) {
+	if (el.Opening || el.Closing || el.Context) && el.TagNumber == tagNumberReserved {
+		return dst, fmt.Errorf("%w: tag number 255 is reserved", ErrMalformed)
+	}
 	if el.Opening {
 		return appendContextOpenClose(dst, el.TagNumber, true), nil
 	}
@@ -258,9 +297,72 @@ func AppendTag(dst []byte, el Element) ([]byte, error) {
 		return AppendContextTagged(dst, el.TagNumber, el.Value.Elements)
 	}
 	if el.Context {
-		return appendContextPrimitive(dst, el.TagNumber, el.Value.OctetString)
+		raw, err := contextContentOctets(el.Value)
+		if err != nil {
+			return dst, err
+		}
+		return appendContextPrimitive(dst, el.TagNumber, raw)
 	}
 	return AppendApplicationValue(dst, el.Value)
+}
+
+// contextContentOctets returns the content octets of a primitive value as
+// they appear under a context tag (Clause 20.2.1.3.1): the application
+// encoding without its tag, with BOOLEAN as a single 0/1 octet.
+func contextContentOctets(v ApplicationValue) ([]byte, error) {
+	switch v.Kind {
+	case ValueContext:
+		if len(v.Elements) != 0 {
+			return nil, fmt.Errorf("%w: context primitive with nested elements", ErrUnsupported)
+		}
+		return v.OctetString, nil
+	case ValueNull:
+		// The zero Kind doubles as "raw octets" for elements built without a
+		// Kind; a true Null has no content octets.
+		return v.OctetString, nil
+	case ValueBoolean:
+		if v.Boolean {
+			return []byte{1}, nil
+		}
+		return []byte{0}, nil
+	case ValueUnsigned:
+		return encodeUnsigned(v.Unsigned), nil
+	case ValueSigned:
+		return encodeSigned(v.Signed), nil
+	case ValueReal:
+		var buf [4]byte
+		binary.BigEndian.PutUint32(buf[:], math.Float32bits(v.Real))
+		return buf[:], nil
+	case ValueDouble:
+		var buf [8]byte
+		binary.BigEndian.PutUint64(buf[:], math.Float64bits(v.Double))
+		return buf[:], nil
+	case ValueOctetString:
+		return v.OctetString, nil
+	case ValueCharacterString:
+		return append([]byte{v.Character.Encoding}, v.Character.Value...), nil
+	case ValueBitString:
+		if err := validateBitString(v.BitString.UnusedBits, len(v.BitString.Bytes)); err != nil {
+			return nil, err
+		}
+		return append([]byte{v.BitString.UnusedBits}, v.BitString.Bytes...), nil
+	case ValueEnumerated:
+		return encodeUnsigned(uint64(v.Enumerated)), nil
+	case ValueDate:
+		return []byte{v.Date.Year, v.Date.Month, v.Date.Day, v.Date.Weekday}, nil
+	case ValueTime:
+		return []byte{v.Time.Hour, v.Time.Minute, v.Time.Second, v.Time.Hundredths}, nil
+	case ValueObjectID:
+		enc, err := EncodeObjectIdentifier(v.ObjectID)
+		if err != nil {
+			return nil, err
+		}
+		var buf [4]byte
+		binary.BigEndian.PutUint32(buf[:], enc)
+		return buf[:], nil
+	default:
+		return nil, fmt.Errorf("%w: cannot encode value kind %d under a context tag", ErrUnsupported, v.Kind)
+	}
 }
 
 // AppendContextBool appends a context-tagged BOOLEAN as one value octet (0 or 1).
@@ -308,7 +410,10 @@ func appendContextOpenClose(dst []byte, tagNumber uint8, opening bool) []byte {
 }
 
 func appendContextPrimitive(dst []byte, tagNumber uint8, value []byte) ([]byte, error) {
-	hdr, err := encodeTagHeader(true, tagNumber, len(value), 0)
+	if tagNumber == tagNumberReserved {
+		return dst, fmt.Errorf("%w: tag number 255 is reserved", ErrMalformed)
+	}
+	hdr, err := encodeTagHeader(true, tagNumber, len(value))
 	if err != nil {
 		return dst, err
 	}
@@ -346,6 +451,9 @@ func AppendApplicationValue(dst []byte, v ApplicationValue) ([]byte, error) {
 		raw := append([]byte{v.Character.Encoding}, v.Character.Value...)
 		return appendAppPrimitive(dst, TagCharacterString, raw)
 	case ValueBitString:
+		if err := validateBitString(v.BitString.UnusedBits, len(v.BitString.Bytes)); err != nil {
+			return dst, err
+		}
 		raw := append([]byte{v.BitString.UnusedBits}, v.BitString.Bytes...)
 		return appendAppPrimitive(dst, TagBitString, raw)
 	case ValueEnumerated:
@@ -378,7 +486,7 @@ func AppendApplicationValue(dst []byte, v ApplicationValue) ([]byte, error) {
 }
 
 func appendAppPrimitive(dst []byte, tag ApplicationTag, value []byte) ([]byte, error) {
-	hdr, err := encodeTagHeader(false, uint8(tag), len(value), 0)
+	hdr, err := encodeTagHeader(false, uint8(tag), len(value))
 	if err != nil {
 		return dst, err
 	}
@@ -386,7 +494,10 @@ func appendAppPrimitive(dst []byte, tag ApplicationTag, value []byte) ([]byte, e
 	return append(dst, value...), nil
 }
 
-func encodeTagHeader(context bool, tagNumber uint8, length int, boolLVT byte) ([]byte, error) {
+func encodeTagHeader(context bool, tagNumber uint8, length int) ([]byte, error) {
+	if uint64(length) > math.MaxUint32 {
+		return nil, fmt.Errorf("%w: tag value length %d", ErrLimitExceeded, length)
+	}
 	var b0 byte
 	extTag := false
 	if tagNumber < 15 {
@@ -412,8 +523,6 @@ func encodeTagHeader(context bool, tagNumber uint8, length int, boolLVT byte) ([
 		b0 |= 5
 		lengthBytes = []byte{255, byte(length >> 24), byte(length >> 16), byte(length >> 8), byte(length)}
 	}
-	// Boolean special-case handled by caller via length 0 and LVT.
-	_ = boolLVT
 	out := []byte{b0}
 	if extTag {
 		out = append(out, tagNumber)

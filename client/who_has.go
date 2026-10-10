@@ -4,7 +4,7 @@ package client
 
 import (
 	"context"
-	"net/netip"
+	"time"
 
 	"github.com/otfabric/go-bacnet"
 	"github.com/otfabric/go-bacnet/apdu"
@@ -23,6 +23,9 @@ type WhoHasOptions struct {
 	Object    *bacnet.ObjectIdentifier
 	Name      *bacnet.CharacterString
 	Address   bacnet.Address
+	// Window is how long DiscoverObjects collects I-Have replies; see
+	// DiscoveryOptions.Window.
+	Window time.Duration
 }
 
 // SendWhoHas transmits a Who-Has request.
@@ -57,29 +60,20 @@ func (c *Client) SendWhoHas(ctx context.Context, dest bip.Endpoint, broadcast bo
 	return c.sendAPDU(ctx, dest, broadcast, destAddr, false, apduBytes)
 }
 
-// DiscoverObjects sends a global-broadcast Who-Has and collects I-Have
-// observations until ctx is done. The returned slice contains only observations
-// whose LastSeen is at or after the start of this discovery window.
-// Objects() still returns the full retained object-observation snapshot.
+// DiscoverObjects broadcasts a Who-Has and collects the I-Have replies seen
+// since the call started. The collection window, the returned error and the
+// broadcast path follow Discover. Objects() returns everything the registry
+// still retains.
 func (c *Client) DiscoverObjects(ctx context.Context, opts WhoHasOptions) ([]ObjectObservation, error) {
 	if c.isClosed() {
 		return nil, bacnet.ErrClosed
 	}
 	since := c.clock.Now()
-	port := c.cfg.port
-	if port == 0 {
-		port = bip.DefaultPort
-	}
-	bcast := bip.NewEndpoint(netip.AddrPortFrom(netip.MustParseAddr("255.255.255.255"), uint16(port)))
-	if err := c.SendWhoHas(ctx, bcast, true, opts); err != nil {
+	if err := c.SendWhoHas(ctx, c.broadcastEndpoint(), true, opts); err != nil {
 		return nil, err
 	}
-	select {
-	case <-ctx.Done():
-		return c.objReg.ObservationsSince(since), ctx.Err()
-	case <-c.closeCh:
-		return c.objReg.ObservationsSince(since), bacnet.ErrClosed
-	}
+	err := c.collect(ctx, opts.Window)
+	return c.objReg.ObservationsSince(since), err
 }
 
 // Objects returns the I-Have object observation registry snapshot.

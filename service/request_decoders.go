@@ -37,37 +37,37 @@ func DecodeGetEnrollmentSummary(payload []byte, limits bacnet.DecodeLimits) (Get
 				haveAck = true
 			}
 		case el.TagNumber == 2 && !bacnet.IsContextConstructed(el):
-			u, e := bacnet.ContextUnsigned(el)
+			u, e := bacnet.ContextUnsigned32(el)
 			err = e
 			if err == nil {
-				v := uint32(u)
+				v := u
 				req.EventStateFilter = &v
 			}
 		case el.TagNumber == 3 && !bacnet.IsContextConstructed(el):
-			u, e := bacnet.ContextUnsigned(el)
+			u, e := bacnet.ContextUnsigned32(el)
 			err = e
 			if err == nil {
-				v := uint32(u)
+				v := u
 				req.EventTypeFilter = &v
 			}
 		case el.TagNumber == 4 && bacnet.IsContextConstructed(el):
-			if len(el.Value.Elements) == 2 {
-				a, e1 := bacnet.AsUnsigned(el.Value.Elements[0].Value)
-				b, e2 := bacnet.AsUnsigned(el.Value.Elements[1].Value)
-				if e1 == nil && e2 == nil {
-					pri := [2]uint32{uint32(a), uint32(b)}
-					req.PriorityFilter = &pri
-				} else if e1 != nil {
-					err = e1
-				} else {
-					err = e2
-				}
+			// priorityFilter [4] SEQUENCE { minPriority [0] Unsigned8, maxPriority [1] Unsigned8 }
+			inner := el.Value.Elements
+			if len(inner) != 2 || inner[0].TagNumber != 0 || inner[1].TagNumber != 1 {
+				return GetEnrollmentSummaryRequest{}, fmt.Errorf("%w: GetEnrollmentSummary priorityFilter", bacnet.ErrMalformed)
 			}
+			lo, e1 := bacnet.ContextUnsigned(inner[0])
+			hi, e2 := bacnet.ContextUnsigned(inner[1])
+			if e1 != nil || e2 != nil || lo > 255 || hi > 255 {
+				return GetEnrollmentSummaryRequest{}, fmt.Errorf("%w: GetEnrollmentSummary priorityFilter", bacnet.ErrMalformed)
+			}
+			pri := [2]uint32{uint32(lo), uint32(hi)}
+			req.PriorityFilter = &pri
 		case el.TagNumber == 5 && !bacnet.IsContextConstructed(el):
-			u, e := bacnet.ContextUnsigned(el)
+			u, e := bacnet.ContextUnsigned32(el)
 			err = e
 			if err == nil {
-				v := uint32(u)
+				v := u
 				req.NotificationClassFilter = &v
 			}
 		}
@@ -296,6 +296,8 @@ func DecodeCreateObject(payload []byte, limits bacnet.DecodeLimits) (CreateObjec
 }
 
 // DecodeSubscribeCOVPropertyMultiple decodes SubscribeCOVPropertyMultiple.
+// The non-standard layout this library emitted up to v0.3.0 (subscription
+// list at context [3]) is rejected as malformed.
 func DecodeSubscribeCOVPropertyMultiple(payload []byte, limits bacnet.DecodeLimits) (SubscribeCOVPropertyMultipleRequest, error) {
 	els, n, err := bacnet.ParseSequence(payload, limits, -1)
 	if err != nil {
@@ -305,27 +307,31 @@ func DecodeSubscribeCOVPropertyMultiple(payload []byte, limits bacnet.DecodeLimi
 		return SubscribeCOVPropertyMultipleRequest{}, fmt.Errorf("%w: SubscribeCOVPropertyMultiple trailing", bacnet.ErrTrailingData)
 	}
 	var req SubscribeCOVPropertyMultipleRequest
-	var havePID, haveIssue, haveSubs bool
+	var havePID, haveSubs, haveConfirmed bool
 	for _, el := range els {
 		switch {
 		case el.TagNumber == 0 && !bacnet.IsContextConstructed(el):
-			u, e := bacnet.ContextUnsigned(el)
-			err = e
-			if err == nil {
-				req.SubscriberProcessIdentifier = uint32(u)
-				havePID = true
-			}
+			req.SubscriberProcessIdentifier, err = bacnet.ContextUnsigned32(el)
+			havePID = true
 		case el.TagNumber == 1 && !bacnet.IsContextConstructed(el):
 			req.IssueConfirmedNotifications, err = bacnet.ContextBool(el)
-			haveIssue = true
+			haveConfirmed = true
 		case el.TagNumber == 2 && !bacnet.IsContextConstructed(el):
-			u, e := bacnet.ContextUnsigned(el)
+			v, e := bacnet.ContextUnsigned32(el)
 			err = e
 			if err == nil {
-				v := uint32(u)
 				req.LifetimeRemaining = &v
 			}
-		case el.TagNumber == 3 && bacnet.IsContextConstructed(el):
+		case el.TagNumber == 3 && !bacnet.IsContextConstructed(el):
+			v, e := bacnet.ContextUnsigned32(el)
+			err = e
+			if err == nil {
+				req.MaxNotificationDelay = &v
+			}
+		case el.TagNumber == 4 && bacnet.IsContextConstructed(el):
+			if haveSubs {
+				return SubscribeCOVPropertyMultipleRequest{}, fmt.Errorf("%w: duplicate subscription list", bacnet.ErrMalformed)
+			}
 			req.Subscriptions, err = decodeCOVMultipleSubscriptions(el.Value.Elements)
 			haveSubs = true
 		default:
@@ -335,9 +341,10 @@ func DecodeSubscribeCOVPropertyMultiple(payload []byte, limits bacnet.DecodeLimi
 			return SubscribeCOVPropertyMultipleRequest{}, err
 		}
 	}
-	if !havePID || !haveIssue || !haveSubs {
+	if !havePID || !haveSubs {
 		return SubscribeCOVPropertyMultipleRequest{}, fmt.Errorf("%w: SubscribeCOVPropertyMultiple missing fields", bacnet.ErrMalformed)
 	}
+	req.Cancellation = !haveConfirmed && req.LifetimeRemaining == nil
 	return req, nil
 }
 
@@ -357,7 +364,7 @@ func decodeCOVMultipleSubscriptions(els []bacnet.Element) ([]COVMultipleSubscrip
 		if i >= len(els) || els[i].TagNumber != 1 || !bacnet.IsContextConstructed(els[i]) {
 			return nil, fmt.Errorf("%w: listOfCOVReferences", bacnet.ErrMalformed)
 		}
-		props, err := decodeCOVPropertyReferences(els[i].Value.Elements)
+		props, err := decodeCOVReferences(els[i].Value.Elements)
 		if err != nil {
 			return nil, err
 		}
@@ -370,57 +377,53 @@ func decodeCOVMultipleSubscriptions(els []bacnet.Element) ([]COVMultipleSubscrip
 	return out, nil
 }
 
-func decodeCOVPropertyReferences(els []bacnet.Element) ([]COVPropertyReference, error) {
+// decodeCOVReferences decodes the standard list-of-cov-references: each entry
+// is monitored-property [0] (constructed BACnetPropertyReference), optional
+// cov-increment [1] REAL and optional timestamped [2] BOOLEAN (default FALSE).
+func decodeCOVReferences(els []bacnet.Element) ([]COVPropertyReference, error) {
 	var out []COVPropertyReference
-	var cur COVPropertyReference
-	var haveProp bool
-	flush := func() {
-		if haveProp {
-			out = append(out, cur)
-			cur = COVPropertyReference{}
-			haveProp = false
-		}
-	}
+	var haveInc, haveStamp bool
 	for _, el := range els {
 		switch {
-		case el.TagNumber == 0 && !bacnet.IsContextConstructed(el):
-			flush()
-			u, err := bacnet.ContextUnsigned(el)
+		case el.TagNumber == 0 && bacnet.IsContextConstructed(el):
+			prop, err := decodePropertyReference(el.Value.Elements)
 			if err != nil {
 				return nil, err
 			}
-			cur.Property.Identifier = bacnet.PropertyIdentifier(u)
-			haveProp = true
+			out = append(out, COVPropertyReference{Property: prop})
+			haveInc, haveStamp = false, false
 		case el.TagNumber == 1 && !bacnet.IsContextConstructed(el):
-			u, err := bacnet.ContextUnsigned(el)
+			if len(out) == 0 || haveInc || haveStamp {
+				return nil, fmt.Errorf("%w: misplaced cov-increment", bacnet.ErrMalformed)
+			}
+			inc, err := bacnet.ContextReal(el)
 			if err != nil {
 				return nil, err
 			}
-			idx := uint32(u)
-			cur.Property.ArrayIndex = &idx
-		case el.TagNumber == 2 && bacnet.IsContextConstructed(el):
-			if len(el.Value.Elements) == 1 {
-				if r, err := bacnet.AsReal(el.Value.Elements[0].Value); err == nil {
-					inc := float32(r)
-					cur.COVIncrement = &inc
-				}
+			out[len(out)-1].COVIncrement = &inc
+			haveInc = true
+		case el.TagNumber == 2 && !bacnet.IsContextConstructed(el):
+			if len(out) == 0 || haveStamp {
+				return nil, fmt.Errorf("%w: misplaced timestamped", bacnet.ErrMalformed)
 			}
-		case el.TagNumber == 3 && !bacnet.IsContextConstructed(el):
 			b, err := bacnet.ContextBool(el)
 			if err != nil {
 				return nil, err
 			}
-			cur.Timestamped = b
+			out[len(out)-1].Timestamped = b
+			haveStamp = true
+		default:
+			return nil, fmt.Errorf("%w: unexpected COV reference tag %d", bacnet.ErrMalformed, el.TagNumber)
 		}
 	}
-	flush()
 	if len(out) == 0 {
 		return nil, fmt.Errorf("%w: COV property references", bacnet.ErrMalformed)
 	}
 	return out, nil
 }
 
-// DecodeAuditLogQuery decodes an AuditLogQuery request.
+// DecodeAuditLogQuery decodes an AuditLogQuery request (see
+// AuditLogQueryRequest for the layout).
 func DecodeAuditLogQuery(payload []byte, limits bacnet.DecodeLimits) (AuditLogQueryRequest, error) {
 	els, n, err := bacnet.ParseSequence(payload, limits, -1)
 	if err != nil {
@@ -430,25 +433,133 @@ func DecodeAuditLogQuery(payload []byte, limits bacnet.DecodeLimits) (AuditLogQu
 		return AuditLogQueryRequest{}, fmt.Errorf("%w: AuditLogQuery trailing", bacnet.ErrTrailingData)
 	}
 	var req AuditLogQueryRequest
-	var haveLog bool
+	var haveLog, haveQuery, haveCount bool
 	for _, el := range els {
+		constructed := bacnet.IsContextConstructed(el)
 		switch {
-		case el.TagNumber == 0 && !bacnet.IsContextConstructed(el):
+		case !el.Context:
+			err = fmt.Errorf("%w: AuditLogQuery application-tagged field", bacnet.ErrMalformed)
+		case el.TagNumber == 0 && !constructed:
 			req.AuditLog, err = bacnet.ContextObjectID(el)
 			haveLog = true
-		case el.TagNumber == 1 && bacnet.IsContextConstructed(el):
-			req.Query = cloneElements(el.Value.Elements)
+		case el.TagNumber == 1 && constructed:
+			err = decodeAuditQueryParameters(el.Value.Elements, &req)
+			haveQuery = true
+		case el.TagNumber == 2 && !constructed:
+			var seq uint64
+			seq, err = bacnet.ContextUnsigned(el)
+			req.StartAtSequenceNumber = &seq
+		case el.TagNumber == 3 && !constructed:
+			var count uint32
+			count, err = bacnet.ContextUnsigned32(el)
+			if err == nil && count > 0xFFFF {
+				err = fmt.Errorf("%w: AuditLogQuery requested-count", bacnet.ErrMalformed)
+			}
+			req.RequestedCount = uint16(count)
+			haveCount = true
 		default:
-			return AuditLogQueryRequest{}, fmt.Errorf("%w: AuditLogQuery tag %d", bacnet.ErrMalformed, el.TagNumber)
+			err = fmt.Errorf("%w: AuditLogQuery tag %d", bacnet.ErrMalformed, el.TagNumber)
 		}
 		if err != nil {
 			return AuditLogQueryRequest{}, err
 		}
 	}
-	if !haveLog {
-		return AuditLogQueryRequest{}, fmt.Errorf("%w: AuditLogQuery missing audit log", bacnet.ErrMalformed)
+	if !haveLog || !haveQuery || !haveCount {
+		return AuditLogQueryRequest{}, fmt.Errorf("%w: AuditLogQuery missing audit-log, query-parameters or requested-count", bacnet.ErrMalformed)
 	}
 	return req, nil
+}
+
+func decodeAuditQueryParameters(els []bacnet.Element, req *AuditLogQueryRequest) error {
+	bad := fmt.Errorf("%w: AuditLogQuery query-parameters", bacnet.ErrMalformed)
+	if len(els) != 1 || !bacnet.IsContextConstructed(els[0]) || els[0].TagNumber > 1 {
+		return bad
+	}
+	byTarget := els[0].TagNumber == 0
+	var target AuditQueryByTarget
+	var source AuditQueryBySource
+	var haveDevice, haveFilter bool
+	// Tags of the by-target fields; by-source has no property, index or priority.
+	const (
+		fDevice = iota
+		fAddress
+		fObject
+		fProperty
+		fIndex
+		fPriority
+		fOperations
+		fFilter
+	)
+	for _, el := range els[0].Value.Elements {
+		if !el.Context {
+			return bad
+		}
+		field := int(el.TagNumber)
+		if !byTarget && field >= 3 {
+			field += 3
+		}
+		constructed := bacnet.IsContextConstructed(el)
+		if constructed != (field == fAddress) {
+			return bad
+		}
+		var err error
+		switch field {
+		case fDevice:
+			var id bacnet.ObjectIdentifier
+			id, err = bacnet.ContextObjectID(el)
+			target.TargetDevice, source.SourceDevice = id, id
+			haveDevice = true
+		case fAddress:
+			var addr AuditAddress
+			addr, err = decodeAuditAddress(el.Value.Elements)
+			target.TargetAddress, source.SourceAddress = &addr, &addr
+		case fObject:
+			var id bacnet.ObjectIdentifier
+			id, err = bacnet.ContextObjectID(el)
+			target.TargetObject, source.SourceObject = &id, &id
+		case fProperty:
+			var u uint32
+			u, err = bacnet.ContextUnsigned32(el)
+			prop := bacnet.PropertyIdentifier(u)
+			target.TargetProperty = &prop
+		case fIndex:
+			var u uint32
+			u, err = bacnet.ContextUnsigned32(el)
+			target.TargetArrayIndex = &u
+		case fPriority:
+			var u uint32
+			u, err = bacnet.ContextUnsigned32(el)
+			if err == nil && u > 0xFF {
+				err = bad
+			}
+			p := uint8(u)
+			target.TargetPriority = &p
+		case fOperations:
+			var bs bacnet.BitString
+			bs, err = bacnet.ContextBitString(el)
+			bs.Bytes = append([]byte{}, bs.Bytes...)
+			target.Operations, source.Operations = &bs, &bs
+		case fFilter:
+			var u uint32
+			u, err = bacnet.ContextUnsigned32(el)
+			target.SuccessFilter, source.SuccessFilter = AuditSuccessFilter(u), AuditSuccessFilter(u)
+			haveFilter = true
+		default:
+			return bad
+		}
+		if err != nil {
+			return err
+		}
+	}
+	if !haveDevice || !haveFilter {
+		return bad
+	}
+	if byTarget {
+		req.ByTarget = &target
+	} else {
+		req.BySource = &source
+	}
+	return nil
 }
 
 // DecodeVTOpen decodes a VT-Open request.

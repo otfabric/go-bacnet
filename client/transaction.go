@@ -4,6 +4,7 @@ package client
 
 import (
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/otfabric/go-bacnet"
@@ -50,7 +51,8 @@ type pendingTx struct {
 		Stop() bool
 		Reset(d time.Duration) bool
 	}
-	sent  bool
+	// sent is set by the requesting goroutine and read by Close (abortAll).
+	sent  atomic.Bool
 	phase txPhase
 }
 
@@ -64,6 +66,7 @@ type txManager struct {
 	mu         sync.Mutex
 	nextID     uint8
 	inUse      map[uint8]*pendingTx
+	reserved   map[uint8]struct{}  // allocated, not yet registered
 	quarantine map[uint8]time.Time // invoke ID -> reusable after
 	max        int
 	clockNow   func() time.Time
@@ -75,14 +78,18 @@ func newTxManager(max int, now func() time.Time) *txManager {
 	}
 	return &txManager{
 		inUse:      make(map[uint8]*pendingTx),
+		reserved:   make(map[uint8]struct{}),
 		quarantine: make(map[uint8]time.Time),
 		max:        max,
 		clockNow:   now,
 	}
 }
 
+// tryAllocLocked reserves a free invoke ID. The reservation counts against
+// capacity and is skipped by later allocations until register claims it, so
+// concurrent requests can never be handed the same ID.
 func (m *txManager) tryAllocLocked() (uint8, bool) {
-	if len(m.inUse) >= m.max {
+	if len(m.inUse)+len(m.reserved) >= m.max {
 		return 0, false
 	}
 	now := m.clockNow()
@@ -92,10 +99,14 @@ func (m *txManager) tryAllocLocked() (uint8, bool) {
 		if _, used := m.inUse[id]; used {
 			continue
 		}
+		if _, held := m.reserved[id]; held {
+			continue
+		}
 		if until, q := m.quarantine[id]; q && now.Before(until) {
 			continue
 		}
 		delete(m.quarantine, id)
+		m.reserved[id] = struct{}{}
 		return id, true
 	}
 	return 0, false
@@ -103,6 +114,7 @@ func (m *txManager) tryAllocLocked() (uint8, bool) {
 
 func (m *txManager) register(tx *pendingTx) {
 	m.mu.Lock()
+	delete(m.reserved, tx.invokeID)
 	m.inUse[tx.invokeID] = tx
 	m.mu.Unlock()
 }
@@ -248,7 +260,7 @@ func (m *txManager) abortAll(err error) {
 			tx.timer.Stop()
 		}
 		resErr := err
-		if tx.sent {
+		if tx.sent.Load() {
 			resErr = wrapOutcomeUnknown(tx.service, err)
 		}
 		select {

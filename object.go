@@ -44,10 +44,31 @@ const (
 // MaxObjectInstance is the largest valid object instance (22 bits).
 const MaxObjectInstance = 0x3FFFFF
 
+// WildcardInstance is the "unknown instance" value. A Device object
+// identifier carrying it addresses whichever device receives the request, and
+// the reply names the device's real instance.
+const WildcardInstance = MaxObjectInstance
+
 // ObjectIdentifier identifies a BACnet object.
 type ObjectIdentifier struct {
 	Type     ObjectType
 	Instance uint32
+}
+
+// AnyDevice returns the Device object identifier with the wildcard instance.
+// Reading it from a known address is the standard way to learn the instance
+// of a device that was not discovered with Who-Is.
+func AnyDevice() ObjectIdentifier {
+	return ObjectIdentifier{Type: ObjectTypeDevice, Instance: WildcardInstance}
+}
+
+// Matches reports whether a reply naming got answers a request for id: the
+// identifiers are equal, or id is the Device wildcard and got is a Device.
+func (id ObjectIdentifier) Matches(got ObjectIdentifier) bool {
+	if id == got {
+		return true
+	}
+	return id.Type == ObjectTypeDevice && id.Instance == WildcardInstance && got.Type == ObjectTypeDevice
 }
 
 // EncodeObjectIdentifier packs type and instance into a 4-octet value.

@@ -110,7 +110,7 @@ func TestBacnetStackReadAnalogValue(t *testing.T) {
 	}
 }
 
-// bacnet-stack 1.6.0 builds with BBMD_ENABLED; dlenv seeds a self BDT entry and
+// bacnet-stack 1.6.1 builds with BBMD_ENABLED; dlenv seeds a self BDT entry and
 // accepts foreign-device registration without a special adapter env var.
 func TestBacnetStackForeignDeviceWhoIsReadProperty(t *testing.T) {
 	dev := loadDeviceFixture(t)

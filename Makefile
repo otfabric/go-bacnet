@@ -5,23 +5,11 @@ export GOWORK := off
 
 PKGS     := ./...
 FUZZTIME ?= 5s
-BIN_DIR  := bin
 
-VERSION    ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
-TAG        ?= $(shell git describe --tags --exact-match 2>/dev/null || echo none)
-COMMIT     ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo unknown)
-BUILD_DATE ?= $(shell date -u '+%Y-%m-%dT%H:%M:%SZ')
-LDFLAGS    := -s -w -X main.version=$(VERSION) -X main.tag=$(TAG) -X main.commit=$(COMMIT) -X main.buildDate=$(BUILD_DATE)
-
-.PHONY: help build-cmd test test-race vet lint lint-ci fmt tidy vuln coverage check fuzz imports interop clean
+.PHONY: help test test-race chaos vet lint lint-ci fmt tidy vuln coverage check fuzz imports interop interop-required interop-pinned dissector clean
 
 help: ## Show available targets
 	@awk 'BEGIN {FS = ":.*## "}; /^[a-zA-Z0-9_.-]+:.*## / {printf "%-14s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
-
-build-cmd: ## Build bacnetctl with version ldflags
-	@echo "Building bacnetctl ($(VERSION))"
-	@mkdir -p $(BIN_DIR)
-	@go build -ldflags "$(LDFLAGS)" -o "$(BIN_DIR)/bacnetctl" ./cmd/bacnetctl/
 
 test: ## Run unit tests
 	@echo "Running unit tests..."
@@ -30,6 +18,10 @@ test: ## Run unit tests
 test-race: ## Run tests with race detector
 	@echo "Running tests with race detector..."
 	@go test -race $(PKGS)
+
+chaos: ## Client chaos tests under the race detector, at 5x load, repeated
+	@echo "Running chaos tests (BACNET_CHAOS_SEED=<n> pins a seed)..."
+	@BACNET_CHAOS_SCALE=$${BACNET_CHAOS_SCALE:-5} go test -race -count=3 -timeout 20m -run '^TestChaos' ./client
 
 vet: ## Run go vet
 	@echo "Running go vet..."
@@ -56,13 +48,13 @@ vuln: ## Run govulncheck
 	@echo "Running govulncheck..."
 	@govulncheck $(PKGS)
 
-# Library coverage tests exclude CLI, examples, and Docker interop packages.
+# Library coverage tests exclude examples and the Docker interop package.
 # The percentage gate also excludes internal/fixtures: corpus tests still run
 # (and cover codecs/client via fixtures_test), but the loader's Root() walk is
 # environment-sensitive (BACNET_INTEROP_ROOT short-circuits) and pulled CI
 # below 90% while local sibling checkouts measured ~90.2%.
-COVER_TEST_PKGS := $(shell go list ./... | grep -v '/cmd/' | grep -v '/examples/' | grep -v '/interop$$')
-COVER_GATE_PKGS := $(shell go list ./... | grep -v '/cmd/' | grep -v '/examples/' | grep -v '/interop$$' | grep -v '/internal/fixtures$$')
+COVER_TEST_PKGS := $(shell go list ./... | grep -v '/examples/' | grep -v '/interop$$')
+COVER_GATE_PKGS := $(shell go list ./... | grep -v '/examples/' | grep -v '/interop$$' | grep -v '/internal/fixtures$$')
 COVERAGE_MIN ?= 90
 
 coverage: ## Write coverage.out; fail if library total < COVERAGE_MIN%
@@ -94,17 +86,49 @@ fuzz: ## Run short fuzz targets (override FUZZTIME; nightly uses 5m)
 	  done; \
 	done
 
-interop: ## Peer assertions (-tags=interop); images from bacnet-interop
-	@echo "Interop: go test -tags=interop ./interop/... (see INTEROP.md)"
-	@go test -tags=interop -count=1 ./interop/...
+# Interop needs Docker, the peer images and a bacnet-interop checkout (sibling
+# directory or BACNET_INTEROP_ROOT). `interop` uses whatever images the
+# *_IMAGE variables name (default: locally built `:local` tags) and skips when
+# they are missing; `interop-pinned` takes the digests from the pin file, pulls
+# what is absent and fails instead of skipping. That is what CI runs. Images a
+# pin does not list yet (sysiobacnet and bacnet-stack-router exist from
+# bacnet-interop v0.10.0) are passed as "none": their scenarios skip.
+INTEROP_PIN     := interop/bacnet-interop-pin.json
+INTEROP_TIMEOUT ?= 30m
+INTEROP_RUN     ?=
+INTEROP_FLAGS   := -tags=interop -count=1 -timeout $(INTEROP_TIMEOUT) $(if $(INTEROP_RUN),-run '$(INTEROP_RUN)',)
+
+interop: ## Peer assertions (-tags=interop); images from *_IMAGE or :local builds
+	@echo "Interop: go test $(INTEROP_FLAGS) ./interop/... (see INTEROP.md)"
+	@go test $(INTEROP_FLAGS) ./interop/...
 
 interop-required: ## Fail if Docker/images/fixtures are missing (CI)
 	@BACNET_INTEROP_REQUIRED=1 $(MAKE) interop
 
+interop-pinned: ## Pull the pinned peer images and run interop against them (needs jq)
+	@command -v jq >/dev/null || { echo "interop-pinned: jq is required"; exit 1; }
+	@set -euo pipefail; \
+	pin() { jq -er --arg k "$$1" '.images[$$k]' $(INTEROP_PIN); }; \
+	opt() { jq -r --arg k "$$1" '.images[$$k] // "none"' $(INTEROP_PIN); }; \
+	export BACNET_STACK_IMAGE="$$(pin bacnet-stack)" BACPYPES3_IMAGE="$$(pin bacpypes3)" \
+	       BACNET4J_IMAGE="$$(pin bacnet4j)" WORLDIETY_IMAGE="$$(pin worldiety)" \
+	       BIP_ROUTER_IMAGE="$$(pin bip-router)" \
+	       SYSIOBACNET_IMAGE="$$(opt sysiobacnet)" BACNET_STACK_ROUTER_IMAGE="$$(opt bacnet-stack-router)"; \
+	for img in "$$BACNET_STACK_IMAGE" "$$BACPYPES3_IMAGE" "$$BACNET4J_IMAGE" "$$WORLDIETY_IMAGE" "$$BIP_ROUTER_IMAGE" \
+	           "$$SYSIOBACNET_IMAGE" "$$BACNET_STACK_ROUTER_IMAGE"; do \
+	  [ "$$img" = none ] && continue; \
+	  docker image inspect "$$img" >/dev/null 2>&1 || docker pull "$$img"; \
+	done; \
+	echo "Interop against bacnet-interop $$(jq -r .ref $(INTEROP_PIN))"; \
+	BACNET_INTEROP_REQUIRED=1 go test $(INTEROP_FLAGS) ./interop/...
+
+dissector: ## Check every client request against Wireshark's dissector (needs tshark)
+	@echo "Dissector oracle: go test -tags=dissector ./interop/"
+	@BACNET_DISSECTOR_REQUIRED=1 go test -tags=dissector -count=1 -run '^TestDissector' ./interop/
+
 check: fmt tidy vet lint lint-ci vuln test test-race coverage imports ## Aggregate local release checks (includes CI linters)
 	@echo "check: ok"
 
-clean: ## Remove coverage artifacts, binaries, and test cache
+clean: ## Remove coverage artifacts and test cache
 	@rm -f coverage.out coverage.txt coverage.html cover*.out
-	@rm -rf $(BIN_DIR)
 	@go clean -testcache

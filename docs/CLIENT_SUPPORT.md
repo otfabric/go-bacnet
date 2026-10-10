@@ -4,8 +4,8 @@ Authoritative declaration of BACnet client capabilities in `go-bacnet` and how
 well each is validated. Per-peer results live in [INTEROP.md](../INTEROP.md).
 Behavioural contracts live in [API.md](../API.md) and [ERRORS.md](../ERRORS.md).
 
-**Library version:** [v0.3.0](https://github.com/otfabric/go-bacnet/releases/tag/v0.3.0)  
-**Interop pin:** [bacnet-interop v0.9.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.9.0)
+**Library version:** v0.4.0 (unreleased; previous release [v0.3.0](https://github.com/otfabric/go-bacnet/releases/tag/v0.3.0))  
+**Interop pin:** bacnet-interop v0.10.0 (five peer stacks; see [INTEROP.md](../INTEROP.md))
 
 | Client support | Meaning |
 |---|---|
@@ -17,7 +17,9 @@ Behavioural contracts live in [API.md](../API.md) and [ERRORS.md](../ERRORS.md).
 |---|---|
 | Multi-peer | Live test against two or more independent stacks |
 | Single-peer | Live test against one stack |
+| Codec evidence | A peer stack's own decoder or encoder agrees with the client's bytes; no stack executes the service |
 | Codec/unit | Unit, codec, or fixture evidence only |
+| Dissector | No peer serves it; the request layout is checked against Wireshark (`make dissector`) |
 | Not yet exercised | Implemented but no dedicated interop scenario yet |
 
 ---
@@ -61,8 +63,9 @@ Behavioural contracts live in [API.md](../API.md) and [ERRORS.md](../ERRORS.md).
 | Error / Reject / Abort | Implemented | Multi-peer | |
 | Segmented confirmed-request send | Implemented | Single-peer | BACpypes3 live; BACnet4J rejects |
 | Segmented ComplexACK receive | Implemented | Multi-peer | Window 1; Worldiety continuation deviation |
-| Timeout and cancellation | Implemented | Codec/unit | See API.md |
-| Outcome-unknown after send | Implemented | Codec/unit | Policy registry; side-effecting services |
+| Timeout and cancellation | Implemented | Single-peer | An unused port, and BACnet4J muted with DeviceCommunicationControl; see API.md |
+| Outcome-unknown after send | Implemented | Single-peer | Unanswered write; policy registry covers all side-effecting services |
+| Rejecting unserved confirmed requests | Implemented | Codec/unit | Reject / Abort to requests a client does not serve |
 | Event dispatcher (async) | Implemented | Codec/unit | Opt-in `WithEventDispatcher`; sync handler default |
 
 ## Object and property services
@@ -73,9 +76,12 @@ Behavioural contracts live in [API.md](../API.md) and [ERRORS.md](../ERRORS.md).
 | ReadPropertyMultiple | Implemented | Multi-peer | |
 | WriteProperty | Implemented | Multi-peer | Priority + NULL relinquish |
 | WritePropertyMultiple | Implemented | Multi-peer | First-failed Error model |
-| ReadRange | Implemented | Multi-peer | byPosition / sequence / time; typed LogRecord |
-| ReadRangeAll pager | Implemented | Codec/unit | byPosition / bySequence; MaxItems/MaxBytes/MaxPages |
-| ReadPropertyMultipleBatched | Implemented | Codec/unit | Read-only MaxAPDU planning + shrink |
+| ReadRange | Implemented | Multi-peer | By position, sequence number and time on bacnet-stack and BACnet4J; typed LogRecord |
+| ReadProperty of the Device wildcard | Implemented | Multi-peer | bacnet-stack, BACnet4J; not implemented by BACpypes3 / Worldiety adapter |
+| ReadRangeAll pager | Implemented | Multi-peer | By position and by sequence number to LAST_ITEM; MaxItems/MaxBytes/MaxPages |
+| ReadPropertyMultipleBatched | Implemented | Multi-peer | Split by property and merge; shrink after Abort on bacnet-stack |
+| ReadObjectList / ReadPropertyList | Implemented | Multi-peer | Element-by-element fallback on bacnet-stack (47 entries, 50-octet APDU) |
+| WritePriority / RelinquishPriority | Implemented | Multi-peer | BACpypes3, BACnet4J, System.IO.BACnet |
 | WritePropertyMultipleBatched | Implemented | Codec/unit | Batch Completed/Failed/Unknown |
 | AddListElement / RemoveListElement | Implemented | Multi-peer | Notification Class list |
 | CreateObject / DeleteObject | Implemented | Multi-peer | |
@@ -86,21 +92,21 @@ Behavioural contracts live in [API.md](../API.md) and [ERRORS.md](../ERRORS.md).
 |---|---|---|---|
 | Who-Is / I-Am | Implemented | Multi-peer | |
 | Who-Has / I-Have | Implemented | Multi-peer | |
-| Who-Am-I / You-Are | Implemented | Single-peer | bacnet-stack only at pin |
+| Who-Am-I / You-Are | Implemented | Codec evidence | bacnet-stack decodes both |
 
 ## COV and event / alarm
 
 | Capability | Client support | Interop evidence | Notes |
 |---|---|---|---|
-| SubscribeCOV | Implemented | Multi-peer | Subscribe / notify / cancel; renew single-peer |
-| SubscribeCOVProperty | Implemented | Codec/unit | |
-| SubscribeCOVPropertyMultiple | Implemented | Codec/unit | No peer server support at pin |
+| SubscribeCOV | Implemented | Multi-peer | Subscribe / notify / cancel / renew |
+| SubscribeCOVProperty | Implemented | Multi-peer | BACnet4J, System.IO.BACnet |
+| SubscribeCOVPropertyMultiple | Implemented | Codec evidence | `SubscribeCOVMultiple` is the managed subscription: subscribe, renewal and cancellation decoded by BACpypes3, the request and cancellation parsed by BACnet4J. No stack executes the subscription |
 | COVNotification / ConfirmedCOVNotification | Implemented | Multi-peer | |
-| COVNotificationMultiple | Implemented | Codec/unit | No peer emit at pin |
+| COVNotificationMultiple | Implemented | Codec evidence | BACnet4J's encoder, confirmed and unconfirmed. Delivered whole (`SubscriptionEvent.Multiple`) with timestamp and time-of-change |
 | EventNotification receive | Implemented | Multi-peer | Practical NotificationParameters typed (incl. life-safety/extended) |
 | AcknowledgeAlarm | Implemented | Multi-peer | |
 | GetAlarmSummary | Implemented | Multi-peer | |
-| GetEnrollmentSummary | Implemented | Single-peer | BACnet4J only |
+| GetEnrollmentSummary | Implemented | Multi-peer | BACnet4J executes it; BACpypes3 decodes every filter (adapter handler) |
 | GetEventInformation | Implemented | Multi-peer | |
 
 ## Files
@@ -109,23 +115,26 @@ Behavioural contracts live in [API.md](../API.md) and [ERRORS.md](../ERRORS.md).
 |---|---|---|---|
 | AtomicReadFile stream / record | Implemented | Multi-peer | |
 | AtomicWriteFile stream / record | Implemented | Multi-peer | |
-| ReadFileStream / ReadFileRecords | Implemented | Codec/unit | Bounded helpers over AtomicReadFile |
-| WriteFileStream | Implemented | Codec/unit | Per-chunk outcome-unknown |
+| ReadFileStream | Implemented | Multi-peer | Chunked read to end of file |
+| ReadFileRecords | Implemented | Codec/unit | |
+| WriteFileStream | Implemented | Multi-peer | Chunked write + readback; per-chunk outcome-unknown unit-tested |
 
 ## Device management and advanced services
 
 | Capability | Client support | Interop evidence | Notes |
 |---|---|---|---|
-| DeviceCommunicationControl | Implemented | Single-peer | Explicit opt-in |
+| DeviceCommunicationControl | Implemented | Multi-peer | Explicit opt-in. BACnet4J goes silent on disable; bacnet-stack refuses it; BACpypes3 acknowledges without enforcing it |
 | ReinitializeDevice | Implemented | Multi-peer | Explicit opt-in |
 | PrivateTransfer | Implemented | Multi-peer | Confirmed path peer-dependent |
 | TextMessage | Implemented | Multi-peer | |
 | TimeSynchronization / UTCTimeSynchronization | Implemented | Multi-peer | |
 | WriteGroup | Implemented | Multi-peer | Not on BACnet4J at pin |
-| AuditLogQuery | Implemented | Codec/unit | |
-| AuthRequest | Implemented | Codec/unit | |
+| AuditLogQuery | Implemented | Codec evidence | BACpypes3 decodes the query; records from bacnet-stack and BACpypes3 encoders decoded |
+| Audit notifications (receive) | Implemented | Codec evidence | bacnet-stack and BACpypes3 encoders |
+| AuthRequest | Partial | Codec/unit | Opaque payload; no stable stack implements the service: all five peers refuse it (three Reject unrecognized-service, Worldiety Reject other, BACpypes3 does not answer) |
 | LifeSafetyOperation | Implemented | Multi-peer | |
-| VT-Open / VT-Close / VT-Data | Implemented | Codec/unit | |
+| VT-Open / VT-Close / VT-Data | Partial | Codec evidence | BACpypes3 decodes the requests and encodes the VT-Open and VT-Data ACKs, which the client decodes; no session anywhere; inbound VT-Data is not handled |
+| device.ReadSnapshot | Implemented | Multi-peer | All five peers |
 
 ## Explicitly out of scope
 

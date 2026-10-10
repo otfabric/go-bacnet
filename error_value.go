@@ -7,10 +7,10 @@ import "fmt"
 // DecodeBACnetError parses a BACnet-Error structure.
 //
 // Two encodings appear on the wire:
-//  1. Context [0] class / [1] code (unsigned or enumerated content) — used by
-//     this library's encoder and some goldens;
-//  2. Application ENUMERATED class then ENUMERATED code — used by bacnet-stack
-//     and BACpypes3 Error PDUs and RPM propertyAccessError.
+//  1. Application ENUMERATED class then ENUMERATED code — the standard form,
+//     sent by every peer stack and by this library's encoder;
+//  2. Context [0] class / [1] code (unsigned or enumerated content) — a
+//     non-standard form this library emitted up to v0.3.0, still accepted.
 func DecodeBACnetError(elements []Element) (class, code uint16, err error) {
 	if len(elements) == 0 {
 		return 0, 0, fmt.Errorf("%w: empty BACnet-Error", ErrMalformed)
@@ -113,12 +113,17 @@ func errorFieldUint(el Element) (uint16, error) {
 	}
 }
 
-// EncodeBACnetError encodes Error Class/Code as context [0]/[1].
+// EncodeBACnetError encodes the BACnet Error production,
+//
+//	Error ::= SEQUENCE { error-class ENUMERATED, error-code ENUMERATED }
+//
+// as two application-tagged ENUMERATEDs (class 2, code 32 → 91 02 91 20).
+// Releases up to v0.3.0 emitted context tags [0] and [1] instead, which no
+// other stack produces; DecodeBACnetError still reads that form.
 func EncodeBACnetError(dst []byte, class, code uint16) ([]byte, error) {
-	var err error
-	dst, err = AppendContextUnsigned(dst, 0, uint64(class))
+	dst, err := AppendApplicationValue(dst, EnumValue(uint32(class)))
 	if err != nil {
 		return dst, err
 	}
-	return AppendContextUnsigned(dst, 1, uint64(code))
+	return AppendApplicationValue(dst, EnumValue(uint32(code)))
 }

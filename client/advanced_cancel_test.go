@@ -57,7 +57,9 @@ func TestAdvancedServicesCanceledContext(t *testing.T) {
 		}},
 		{"audit", func() error {
 			_, err := env.Client.AuditLogQuery(ctx, env.Target, service.AuditLogQueryRequest{
-				AuditLog: bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeAuditLog, Instance: 1},
+				AuditLog:       bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeAuditLog, Instance: 1},
+				ByTarget:       &service.AuditQueryByTarget{TargetDevice: bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeDevice, Instance: 1}},
+				RequestedCount: 10,
 			})
 			return err
 		}},
@@ -77,7 +79,8 @@ func TestAdvancedServicesCanceledContext(t *testing.T) {
 			return env.Client.VTClose(ctx, env.Target, service.VTCloseRequest{RemoteVTSessionIdentifiers: []uint8{1}})
 		}},
 		{"vt-data", func() error {
-			return env.Client.VTData(ctx, env.Target, service.VTDataRequest{VTSessionIdentifier: 1, VTNewData: []byte{1}})
+			_, err := env.Client.VTData(ctx, env.Target, service.VTDataRequest{VTSessionIdentifier: 1, VTNewData: []byte{1}})
+			return err
 		}},
 		{"whoami", func() error {
 			return env.Client.WhoAmI(ctx, env.Target.Endpoint, true, service.WhoAmI{VendorID: 1})

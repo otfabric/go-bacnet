@@ -54,9 +54,10 @@ func TestDecodeRejectsTrailingData(t *testing.T) {
 			return service.EncodeYouAre(service.YouAre{VendorID: 1, Device: id})
 		}), func(b []byte) error { _, e := service.DecodeYouAre(b, bacnet.DefaultDecodeLimits()); return e }},
 		{"audit", mustEncode(t, func() ([]byte, error) {
-			return service.EncodeAuditNotification(service.AuditNotification{SourceDevice: id, Operation: 1})
+			return service.EncodeAuditNotificationRequest([]service.AuditNotification{{
+				SourceDevice: service.AuditDevice(id), TargetDevice: service.AuditDevice(id), Operation: 1}})
 		}), func(b []byte) error {
-			_, e := service.DecodeAuditNotification(b, bacnet.DefaultDecodeLimits())
+			_, e := service.DecodeAuditNotificationRequest(b, bacnet.DefaultDecodeLimits())
 			return e
 		}},
 		{"life", mustEncode(t, func() ([]byte, error) {
@@ -126,7 +127,8 @@ func TestEncodeRejectsBadObjectIdentifiers(t *testing.T) {
 	if _, err := service.EncodeYouAre(service.YouAre{Device: bad}); err == nil {
 		t.Fatal("you")
 	}
-	if _, err := service.EncodeAuditNotification(service.AuditNotification{SourceDevice: bad, Operation: 1}); err == nil {
+	if _, err := service.EncodeAuditNotificationRequest([]service.AuditNotification{{
+		SourceDevice: service.AuditDevice(bad), TargetDevice: service.AuditDevice(bad), Operation: 1}}); err == nil {
 		t.Fatal("audit")
 	}
 	if _, err := service.EncodeLifeSafetyOperation(service.LifeSafetyOperationRequest{

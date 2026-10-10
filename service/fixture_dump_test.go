@@ -126,7 +126,9 @@ func TestDumpCodecFixtureHex(t *testing.T) {
 	})
 	dump("audit-log-query", func() ([]byte, error) {
 		return service.EncodeAuditLogQuery(service.AuditLogQueryRequest{
-			AuditLog: bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeAuditLog, Instance: 1},
+			AuditLog:       bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeAuditLog, Instance: 1},
+			ByTarget:       &service.AuditQueryByTarget{TargetDevice: bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeDevice, Instance: 1234}},
+			RequestedCount: 10,
 		})
 	})
 	dump("who-am-i", func() ([]byte, error) {

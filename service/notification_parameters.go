@@ -46,7 +46,11 @@ type ChangeOfBitstringParams struct {
 }
 
 // ChangeOfValueParams is NotificationParameters change-of-value [2].
-// NewValue is the CHOICE body under context tag 0 (changed-bits or changed-value).
+//
+// On decode NewValue is the constructed CHOICE body under context tag 0
+// (changed-bits [0] or changed-value [1]). On encode it may also be a typed
+// BitString (changed-bits) or Real (changed-value); any other kind is an
+// error.
 type ChangeOfValueParams struct {
 	NewValue    bacnet.ApplicationValue
 	StatusFlags bacnet.BitString
@@ -178,9 +182,11 @@ func encodeNotificationInner(p NotificationParameters) ([]bacnet.Element, Notifi
 		}
 		return els, NotificationChangeOfBitstring, nil
 	case p.ChangeOfValue != nil:
-		body := []bacnet.Element{{
-			Context: true, TagNumber: 0, Value: p.ChangeOfValue.NewValue,
-		}}
+		newValue, err := changeOfValueNewValue(p.ChangeOfValue.NewValue)
+		if err != nil {
+			return nil, 0, err
+		}
+		body := []bacnet.Element{newValue}
 		flags, err := parseContextBitStringElement(1, p.ChangeOfValue.StatusFlags)
 		if err != nil {
 			return nil, 0, err
@@ -281,17 +287,37 @@ func encodeExtended(p ExtendedParams) ([]bacnet.Element, error) {
 	return body, nil
 }
 
+// encodeFloatingLimit encodes floating-limit [4]: reference-value [0] REAL,
+// status-flags [1], setpoint-value [2] REAL, error-limit [3] REAL. The REAL
+// fields are context-tagged primitives.
 func encodeFloatingLimit(p FloatingLimitParams) ([]bacnet.Element, error) {
-	flags, err := parseContextBitStringElement(1, p.StatusFlags)
+	return encodeRealFlagsRealReal(p.ReferenceValue, p.StatusFlags, p.SetPointValue, p.ErrorLimit, "floating-limit")
+}
+
+// encodeRealFlagsRealReal encodes the shared shape of floating-limit and
+// out-of-range: [0] REAL, [1] BACnetStatusFlags, [2] REAL, [3] REAL.
+func encodeRealFlagsRealReal(v0 float32, flags bacnet.BitString, v2, v3 float32, what string) ([]bacnet.Element, error) {
+	raw, err := bacnet.AppendContextReal(nil, 0, v0)
 	if err != nil {
 		return nil, err
 	}
-	return []bacnet.Element{
-		{Context: true, TagNumber: 0, Value: bacnet.ApplicationValue{Kind: bacnet.ValueConstructed, Elements: []bacnet.Element{{Value: bacnet.RealValue(p.ReferenceValue)}}}},
-		flags,
-		{Context: true, TagNumber: 2, Value: bacnet.ApplicationValue{Kind: bacnet.ValueConstructed, Elements: []bacnet.Element{{Value: bacnet.RealValue(p.SetPointValue)}}}},
-		{Context: true, TagNumber: 3, Value: bacnet.ApplicationValue{Kind: bacnet.ValueConstructed, Elements: []bacnet.Element{{Value: bacnet.RealValue(p.ErrorLimit)}}}},
-	}, nil
+	raw, err = bacnet.AppendContextBitString(raw, 1, flags)
+	if err != nil {
+		return nil, err
+	}
+	raw, err = bacnet.AppendContextReal(raw, 2, v2)
+	if err != nil {
+		return nil, err
+	}
+	raw, err = bacnet.AppendContextReal(raw, 3, v3)
+	if err != nil {
+		return nil, err
+	}
+	parsed, n, err := bacnet.ParseSequence(raw, bacnet.DefaultDecodeLimits(), -1)
+	if err != nil || n != len(raw) {
+		return nil, fmt.Errorf("%w: %s", bacnet.ErrMalformed, what)
+	}
+	return parsed, nil
 }
 
 func parseContextUnsignedElement(tag uint8, v uint64) (bacnet.Element, error) {
@@ -318,28 +344,32 @@ func parseContextBitStringElement(tag uint8, bs bacnet.BitString) (bacnet.Elemen
 	return el, nil
 }
 
+// encodeOutOfRange encodes out-of-range [5]: exceeding-value [0] REAL,
+// status-flags [1], deadband [2] REAL, exceeded-limit [3] REAL. The REAL
+// fields are context-tagged primitives.
 func encodeOutOfRange(p OutOfRangeParams) ([]bacnet.Element, error) {
-	raw, err := bacnet.AppendContextTagged(nil, 0, []bacnet.Element{{Value: bacnet.RealValue(p.ExceedingValue)}})
-	if err != nil {
-		return nil, err
+	return encodeRealFlagsRealReal(p.ExceedingValue, p.StatusFlags, p.Deadband, p.ExceededLimit, "out-of-range")
+}
+
+// changeOfValueNewValue returns the element for change-of-value new-value
+// [0], a CHOICE { changed-bits [0] BIT STRING, changed-value [1] REAL }.
+// A typed BitString or Real selects the alternative; a constructed value is
+// used as the CHOICE body as decoded.
+func changeOfValueNewValue(v bacnet.ApplicationValue) (bacnet.Element, error) {
+	var choice bacnet.Element
+	switch v.Kind {
+	case bacnet.ValueConstructed:
+		return bacnet.Element{Context: true, TagNumber: 0, Value: v}, nil
+	case bacnet.ValueBitString:
+		choice = bacnet.Element{Context: true, TagNumber: 0, Value: v}
+	case bacnet.ValueReal:
+		choice = bacnet.Element{Context: true, TagNumber: 1, Value: v}
+	default:
+		return bacnet.Element{}, fmt.Errorf("%w: change-of-value new-value kind %d", bacnet.ErrUnsupported, v.Kind)
 	}
-	raw, err = bacnet.AppendContextBitString(raw, 1, p.StatusFlags)
-	if err != nil {
-		return nil, err
-	}
-	raw, err = bacnet.AppendContextTagged(raw, 2, []bacnet.Element{{Value: bacnet.RealValue(p.Deadband)}})
-	if err != nil {
-		return nil, err
-	}
-	raw, err = bacnet.AppendContextTagged(raw, 3, []bacnet.Element{{Value: bacnet.RealValue(p.ExceededLimit)}})
-	if err != nil {
-		return nil, err
-	}
-	parsed, n, err := bacnet.ParseSequence(raw, bacnet.DefaultDecodeLimits(), -1)
-	if err != nil || n != len(raw) {
-		return nil, fmt.Errorf("%w: out-of-range", bacnet.ErrMalformed)
-	}
-	return parsed, nil
+	return bacnet.Element{Context: true, TagNumber: 0, Value: bacnet.ApplicationValue{
+		Kind: bacnet.ValueConstructed, Elements: []bacnet.Element{choice},
+	}}, nil
 }
 
 func encodePropertyStates(ps PropertyStates) ([]bacnet.Element, error) {
@@ -464,11 +494,11 @@ func decodeChangeOfLifeSafety(els []bacnet.Element) (ChangeOfLifeSafetyParams, e
 	if len(els) != 4 {
 		return ChangeOfLifeSafetyParams{}, fmt.Errorf("%w: change-of-life-safety fields", bacnet.ErrMalformed)
 	}
-	st, err := bacnet.ContextUnsigned(els[0])
+	st, err := bacnet.ContextUnsigned32(els[0])
 	if err != nil {
 		return ChangeOfLifeSafetyParams{}, err
 	}
-	mode, err := bacnet.ContextUnsigned(els[1])
+	mode, err := bacnet.ContextUnsigned32(els[1])
 	if err != nil {
 		return ChangeOfLifeSafetyParams{}, err
 	}
@@ -476,12 +506,12 @@ func decodeChangeOfLifeSafety(els []bacnet.Element) (ChangeOfLifeSafetyParams, e
 	if err != nil {
 		return ChangeOfLifeSafetyParams{}, err
 	}
-	op, err := bacnet.ContextUnsigned(els[3])
+	op, err := bacnet.ContextUnsigned32(els[3])
 	if err != nil {
 		return ChangeOfLifeSafetyParams{}, err
 	}
 	return ChangeOfLifeSafetyParams{
-		NewState: uint32(st), NewMode: uint32(mode), StatusFlags: flags, OperationExpected: uint32(op),
+		NewState: st, NewMode: mode, StatusFlags: flags, OperationExpected: op,
 	}, nil
 }
 
@@ -496,11 +526,11 @@ func decodeExtended(els []bacnet.Element) (ExtendedParams, error) {
 			}
 			ext.VendorID = uint16(u)
 		case el.TagNumber == 1 && !bacnet.IsContextConstructed(el):
-			u, err := bacnet.ContextUnsigned(el)
+			u, err := bacnet.ContextUnsigned32(el)
 			if err != nil {
 				return ExtendedParams{}, err
 			}
-			ext.ExtendedEventType = uint32(u)
+			ext.ExtendedEventType = u
 		case el.TagNumber == 2 && bacnet.IsContextConstructed(el):
 			ext.Parameters = cloneElements(el.Value.Elements)
 		}
@@ -516,7 +546,8 @@ func decodeCommandFailure(els []bacnet.Element) (CommandFailureParams, error) {
 	if err != nil {
 		return CommandFailureParams{}, err
 	}
-	return CommandFailureParams{CommandValue: els[0].Value, StatusFlags: flags, FeedbackValue: els[2].Value}, nil
+	// Values own their memory: the payload buffer may be reused by the caller.
+	return CommandFailureParams{CommandValue: els[0].Value.Clone(), StatusFlags: flags, FeedbackValue: els[2].Value.Clone()}, nil
 }
 
 func decodeFloatingLimit(els []bacnet.Element) (FloatingLimitParams, error) {
@@ -547,19 +578,21 @@ func decodeBufferReady(els []bacnet.Element) (BufferReadyParams, error) {
 	for _, el := range els {
 		switch {
 		case el.TagNumber == 0:
-			br.BufferProperty = append(br.BufferProperty, el)
+			owned := el
+			owned.Value = el.Value.Clone()
+			br.BufferProperty = append(br.BufferProperty, owned)
 		case el.TagNumber == 1 && !bacnet.IsContextConstructed(el):
-			u, err := bacnet.ContextUnsigned(el)
+			u, err := bacnet.ContextUnsigned32(el)
 			if err != nil {
 				return BufferReadyParams{}, err
 			}
-			br.PreviousCount = uint32(u)
+			br.PreviousCount = u
 		case el.TagNumber == 2 && !bacnet.IsContextConstructed(el):
-			u, err := bacnet.ContextUnsigned(el)
+			u, err := bacnet.ContextUnsigned32(el)
 			if err != nil {
 				return BufferReadyParams{}, err
 			}
-			br.CurrentCount = uint32(u)
+			br.CurrentCount = u
 		}
 	}
 	return br, nil
@@ -569,7 +602,7 @@ func decodeUnsignedRange(els []bacnet.Element) (UnsignedRangeParams, error) {
 	if len(els) != 3 {
 		return UnsignedRangeParams{}, fmt.Errorf("%w: unsigned-range fields", bacnet.ErrMalformed)
 	}
-	u0, err := bacnet.ContextUnsigned(els[0])
+	u0, err := bacnet.ContextUnsigned32(els[0])
 	if err != nil {
 		return UnsignedRangeParams{}, err
 	}
@@ -577,11 +610,11 @@ func decodeUnsignedRange(els []bacnet.Element) (UnsignedRangeParams, error) {
 	if err != nil {
 		return UnsignedRangeParams{}, err
 	}
-	u2, err := bacnet.ContextUnsigned(els[2])
+	u2, err := bacnet.ContextUnsigned32(els[2])
 	if err != nil {
 		return UnsignedRangeParams{}, err
 	}
-	return UnsignedRangeParams{ExceedingValue: uint32(u0), StatusFlags: flags, ExceededLimit: uint32(u2)}, nil
+	return UnsignedRangeParams{ExceedingValue: u0, StatusFlags: flags, ExceededLimit: u2}, nil
 }
 
 func decodeChangeOfState(els []bacnet.Element) (ChangeOfStateParams, error) {
@@ -601,8 +634,8 @@ func decodeChangeOfState(els []bacnet.Element) (ChangeOfStateParams, error) {
 	ps := PropertyStates{Choice: psEl.TagNumber}
 	switch {
 	case !bacnet.IsContextConstructed(psEl):
-		if u, err := bacnet.ContextUnsigned(psEl); err == nil {
-			ps.Value = bacnet.EnumValue(uint32(u))
+		if u, err := bacnet.ContextUnsigned32(psEl); err == nil {
+			ps.Value = bacnet.EnumValue(u)
 		} else if b, err := bacnet.ContextBool(psEl); err == nil {
 			ps.Value = bacnet.BoolValue(b)
 		} else {

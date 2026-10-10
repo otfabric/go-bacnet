@@ -4,6 +4,7 @@ package client
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/otfabric/go-bacnet"
 	"github.com/otfabric/go-bacnet/apdu"
@@ -11,6 +12,10 @@ import (
 )
 
 // ReadProperty performs a confirmed ReadProperty.
+//
+// A primitive property comes back as that value. A list, array or constructed
+// property comes back with Kind ValueConstructed and its items in Elements.
+// The Device wildcard (bacnet.AnyDevice) is accepted as object.
 func (c *Client) ReadProperty(ctx context.Context, target Target, object bacnet.ObjectIdentifier, property bacnet.PropertyReference) (bacnet.ApplicationValue, error) {
 	payload, err := service.EncodeReadProperty(service.ReadPropertyRequest{
 		Object:   object,
@@ -30,8 +35,9 @@ func (c *Client) ReadProperty(ctx context.Context, target Target, object bacnet.
 	if err != nil {
 		return bacnet.ApplicationValue{}, err
 	}
-	if ack.Object != object || !ack.Property.Equal(property) {
-		return bacnet.ApplicationValue{}, bacnet.ErrProtocolViolation
+	if !object.Matches(ack.Object) || !ack.Property.Equal(property) {
+		return bacnet.ApplicationValue{}, fmt.Errorf("%w: ReadProperty ACK is for %v %v, requested %v %v",
+			bacnet.ErrProtocolViolation, ack.Object, ack.Property.Identifier, object, property.Identifier)
 	}
 	return ack.Value, nil
 }

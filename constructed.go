@@ -2,7 +2,11 @@
 
 package bacnet
 
-import "fmt"
+import (
+	"encoding/binary"
+	"fmt"
+	"math"
+)
 
 // ParseSequence parses a sequence of tags until data is exhausted or a closing
 // tag matching closeTag is seen (if closeTag >= 0). Consumed length is returned.
@@ -64,6 +68,9 @@ func parseSequence(data []byte, limits DecodeLimits, closeTag int, depth int, bu
 
 // AppendContextTagged appends opening tag, body tags, and closing tag.
 func AppendContextTagged(dst []byte, tagNumber uint8, body []Element) ([]byte, error) {
+	if tagNumber == tagNumberReserved {
+		return dst, fmt.Errorf("%w: tag number 255 is reserved", ErrMalformed)
+	}
 	dst = appendContextOpenClose(dst, tagNumber, true)
 	for _, el := range body {
 		var err error
@@ -107,6 +114,9 @@ func AppendContextSigned(dst []byte, tagNumber uint8, v int64) ([]byte, error) {
 
 // AppendContextBitString appends a context-tagged bit string.
 func AppendContextBitString(dst []byte, tagNumber uint8, v BitString) ([]byte, error) {
+	if err := validateBitString(v.UnusedBits, len(v.Bytes)); err != nil {
+		return dst, err
+	}
 	raw := append([]byte{v.UnusedBits}, v.Bytes...)
 	return appendContextPrimitive(dst, tagNumber, raw)
 }
@@ -138,6 +148,50 @@ func ContextTime(el Element) (Time, error) {
 	}, nil
 }
 
+// AppendContextReal appends a context-tagged REAL (4 content octets).
+func AppendContextReal(dst []byte, tagNumber uint8, v float32) ([]byte, error) {
+	var buf [4]byte
+	binary.BigEndian.PutUint32(buf[:], math.Float32bits(v))
+	return appendContextPrimitive(dst, tagNumber, buf[:])
+}
+
+// ContextReal extracts a REAL from a context primitive element.
+func ContextReal(el Element) (float32, error) {
+	if !el.Context || el.Opening || el.Closing || el.Value.Kind == ValueConstructed {
+		return 0, fmt.Errorf("%w: not context primitive", ErrMalformed)
+	}
+	if len(el.Value.OctetString) != 4 {
+		return 0, fmt.Errorf("%w: context real length", ErrMalformed)
+	}
+	return math.Float32frombits(binary.BigEndian.Uint32(el.Value.OctetString)), nil
+}
+
+// ContextDate extracts a Date from a context primitive element.
+func ContextDate(el Element) (Date, error) {
+	if !el.Context || el.Opening || el.Closing || el.Value.Kind == ValueConstructed {
+		return Date{}, fmt.Errorf("%w: not context primitive", ErrMalformed)
+	}
+	b := el.Value.OctetString
+	if len(b) != 4 {
+		return Date{}, fmt.Errorf("%w: context date length", ErrMalformed)
+	}
+	return Date{Year: b[0], Month: b[1], Day: b[2], Weekday: b[3]}, nil
+}
+
+// ContextUnsigned32 extracts an unsigned from a context primitive element and
+// rejects values that do not fit in 32 bits, so identifiers, indexes and
+// counts are never truncated silently.
+func ContextUnsigned32(el Element) (uint32, error) {
+	u, err := ContextUnsigned(el)
+	if err != nil {
+		return 0, err
+	}
+	if u > math.MaxUint32 {
+		return 0, fmt.Errorf("%w: context unsigned %d exceeds 32 bits", ErrMalformed, u)
+	}
+	return uint32(u), nil
+}
+
 // ContextUnsigned extracts an unsigned from a context primitive element.
 func ContextUnsigned(el Element) (uint64, error) {
 	if !el.Context || el.Opening || el.Closing || el.Value.Kind == ValueConstructed {
@@ -161,6 +215,9 @@ func ContextBitString(el Element) (BitString, error) {
 	}
 	if len(el.Value.OctetString) < 1 {
 		return BitString{}, fmt.Errorf("%w: empty context bit string", ErrMalformed)
+	}
+	if err := validateBitString(el.Value.OctetString[0], len(el.Value.OctetString)-1); err != nil {
+		return BitString{}, err
 	}
 	return BitString{
 		UnusedBits: el.Value.OctetString[0],

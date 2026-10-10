@@ -10,7 +10,7 @@ import (
 	"testing"
 )
 
-// Enforces PACKAGE_DESIGN dependency direction.
+// Enforces the dependency direction of ARCHITECTURE.md.
 func TestImportBoundaries(t *testing.T) {
 	root := filepath.Join("..", "..")
 	forbidden := map[string][]string{

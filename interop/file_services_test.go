@@ -31,7 +31,7 @@ func deviceBaselineV4Path(t *testing.T) string {
 }
 
 // Peers with upstream-native File + AtomicReadFile server support at current pins.
-// BACpypes3 0.0.106 and Worldiety do not implement File servers — do not invent shims here.
+// BACpypes3 0.0.110 and Worldiety do not implement File servers — do not invent shims here.
 func fileServicePeers() []struct {
 	name  string
 	image string
