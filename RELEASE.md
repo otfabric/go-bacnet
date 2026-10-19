@@ -2,13 +2,13 @@
 
 ## v0.4.0
 
-**Date:** unreleased  
+**Date:** 2026-10-10  
 **Previous release:** [v0.3.0](https://github.com/otfabric/go-bacnet/releases/tag/v0.3.0)
 
 ### Summary
 
 Review release. The client and the codecs were audited against the standard,
-against four peer stacks and against Wireshark's dissector; the defects found
+against five peer stacks and against Wireshark's dissector; the defects found
 are fixed, the client reports invalid configuration instead of adjusting it,
 remote errors carry their standard names, and logging is available through
 `log/slog`. The `bacnetctl` command moved to its own repository,

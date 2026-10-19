@@ -155,8 +155,10 @@ foreign-device registration use the APDU timeout once, without retries.
 - A device whose own broadcast address is misconfigured, or that sits behind
   an IP router without a BBMD, is not reached by any broadcast: use
   `SendWhoIs` with its address, or `WithForeignDevice`.
-- `WithRegistryOptions` bounds observation retention (global cap, per-instance
-  path cap, TTL; defaults 4096 / 8 / 30m).
+- `WithRegistryOptions(opts RegistryOptions) Option` bounds observation
+  retention (`RegistryOptions{MaxObservations, MaxPathsPerInstance,
+  ObservationTTL}`: global cap, per-instance path cap, TTL; zero fields take
+  the defaults 4096 / 8 / 30m).
 - `DiscoveryOptions.Address` may override the NPDU destination:
   - unset → GlobalBroadcast when `broadcast` is true; no DNET when false
   - `RemoteBroadcast(dnet)` with `broadcast=false` and `dest=router` probes a
@@ -181,8 +183,9 @@ send the BVLC frame to `Target.Endpoint` (the next hop).
 
 ## Foreign device / Forwarded-NPDU
 
-- `WithForeignDevice(ForeignDeviceConfig{BBMD, TTL})` enables registration with
-  one BBMD and starts a renewer loop.
+- `WithForeignDevice(fd ForeignDeviceConfig) Option`, with
+  `ForeignDeviceConfig{BBMD bip.Endpoint; TTL time.Duration}`, enables
+  registration with one BBMD and starts a renewer loop.
 - TTL must be a whole number of seconds and at least 2s (0 → default 60s). Wire
   TTL and renew scheduling use the same normalized duration.
 - BVLC-Result correlation is by pending attempt + BBMD peer only: the wire has
@@ -212,7 +215,13 @@ Exact-APDU **retransmission** is owned by the client transaction manager and is
 distinct from any application-level **retry**. Defaults come from the policy
 registry (reads typically enabled; writes / COV / device management disabled).
 
+```go
+func WithTransactionOptions(apduTimeout time.Duration, retryCount int, segmentTimeout time.Duration) Option
+```
+
 `WithTransactionOptions` sets APDU timeout, retransmit count and segment timeout.
+A zero timeout keeps its default; `retryCount` 0 disables retransmission; a
+negative value makes `New` fail with `ErrInvalidConfig`.
 Retries after `OutcomeUnknownError` must treat execution as possibly applied.
 
 ## BVLC BDT/FDT and routing
@@ -262,6 +271,10 @@ are still SimpleACK'd before enqueue. `OpenEventStream` remains an independent
 bounded consumer.
 
 ## RPM result model
+
+```go
+func (c *Client) ReadPropertyMultiple(ctx context.Context, target Target, specs []service.ReadAccessSpecification) ([]service.ReadAccessResult, error)
+```
 
 `ReadPropertyMultiple` returns `[]service.ReadAccessResult`.
 
