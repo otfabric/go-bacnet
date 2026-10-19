@@ -61,7 +61,7 @@ Client:
   a directly reachable device is now derived from the endpoint.
 - **Broadcasts went to 255.255.255.255 only.** Devices listen for the
   broadcast address of their subnet, and many do not receive the limited
-  broadcast: of the four peer stacks, a broadcast Who-Is reached two. A
+  broadcast: of the five peer stacks, a broadcast Who-Is reached two. A
   broadcast is now sent to the directed broadcast address of every local
   subnet (or of the `WithInterface` interface) and to 255.255.255.255.
   The operating system sends 255.255.255.255 on one interface only, that of
