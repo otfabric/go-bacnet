@@ -290,6 +290,8 @@ against Wireshark's dissector):
 - Proprietary network-layer message types (≥ 0x80) carry no vendor ID field.
 - The dissector oracle checks requests only.
 
+---
+
 ## v0.3.0
 
 **Date:** 2026-08-03  
