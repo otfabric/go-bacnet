@@ -47,7 +47,7 @@ BACnet/IP endpoints are IPv4-only. Custom transports that inject IPv6
 Report security vulnerabilities **privately** — do not open a public GitHub
 issue.
 
-Send a report to: **security@otfabric.com**
+Send a report to: **security@otfabric.io**
 
 Include:
 
