@@ -421,6 +421,8 @@ Requires **Go 1.23+**.
 | Pinned interop `v0.8.0` | green | [30773312737](https://github.com/otfabric/go-bacnet/actions/runs/30773312737) |
 | Pin | [`bacnet-interop` v0.8.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.8.0) @ `34f42dc` | `interop/bacnet-interop-pin.json` |
 
+---
+
 ## v0.2.4
 
 **Date:** 2026-08-03  
