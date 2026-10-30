@@ -14,8 +14,11 @@ permissions:
 
 jobs:
   ci:
-    uses: otfabric/.github/.github/workflows/go-ci.yml@v2
+    uses: otfabric/.github/.github/workflows/go-ci.yml@v2.1.0
     with:
+      run-govulncheck: true
+      coverage-min: "90"
+      fuzz-time: 10s
       codecov-name: go-bacnet
       go-versions: '["1.23", "1.24", "1.25", "1.26"]'
     secrets: inherit
@@ -65,22 +68,3 @@ jobs:
             coverage.txt
           retention-days: 30
           if-no-files-found: ignore
-
-  # Short fixed-duration fuzz on every PR/push (longer sessions stay local/nightly).
-  fuzz:
-    name: PR fuzz
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout go-bacnet
-        uses: actions/checkout@v7
-
-      - name: Set up Go
-        uses: actions/setup-go@v7
-        with:
-          go-version-file: go.mod
-
-      - name: Short fuzz targets
-        env:
-          GOWORK: "off"
-          FUZZTIME: 15s
-        run: make fuzz
