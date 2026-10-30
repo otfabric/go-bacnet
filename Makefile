@@ -6,7 +6,7 @@ export GOWORK := off
 PKGS     := ./...
 FUZZTIME ?= 5s
 
-.PHONY: help test test-race chaos vet lint lint-ci fmt tidy vuln coverage check fuzz imports interop interop-required interop-pinned dissector clean
+.PHONY: help test test-race chaos vet lint lint-ci fmt tidy vuln coverage coverage-check check fuzz bench cross imports interop interop-required interop-pinned dissector clean
 
 help: ## Show available targets
 	@awk 'BEGIN {FS = ":.*## "}; /^[a-zA-Z0-9_.-]+:.*## / {printf "%-14s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -65,6 +65,8 @@ coverage: ## Write coverage.out; fail if library total < COVERAGE_MIN%
 	@total=$$(go tool cover -func=coverage.out | awk '/^total:/ {gsub(/%/,"",$$NF); print $$NF}'); \
 	awk -v t="$$total" -v m="$(COVERAGE_MIN)" 'BEGIN { if ((t+0) < (m+0)) { printf "coverage %.1f%% < %s%%\n", t, m; exit 1 } else { printf "coverage %.1f%% >= %s%%\n", t, m } }'
 
+coverage-check: coverage ## Alias of coverage, which already enforces COVERAGE_MIN
+
 imports: ## Enforce package import boundaries
 	@echo "Checking import boundaries..."
 	@go test ./internal/imports/...
@@ -84,6 +86,17 @@ fuzz: ## Run short fuzz targets (override FUZZTIME; nightly uses 5m)
 	    echo "==> $$pkg $$t"; \
 	    go test -run='^$$' -fuzz="^$${t}$$" -fuzztime=$(FUZZTIME) "$$pkg"; \
 	  done; \
+	done
+
+bench: ## Run the codec benchmarks
+	@echo "Running benchmarks..."
+	@go test -run='^$$' -bench=. -benchmem $(PKGS)
+
+cross: ## Cross-compile without cgo for the supported platforms
+	@echo "Cross-compiling..."
+	@set -e; for p in linux/amd64 linux/arm64 linux/arm darwin/arm64 windows/amd64; do \
+	  echo "==> $$p"; \
+	  CGO_ENABLED=0 GOOS=$${p%/*} GOARCH=$${p#*/} go build $(PKGS); \
 	done
 
 # Interop needs Docker, the peer images and a bacnet-interop checkout (sibling
