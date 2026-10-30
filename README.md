@@ -160,6 +160,7 @@ logging) are compiled as part of the test suite: see
 | [PLAN.md](PLAN.md) | Forward plan |
 | [RELEASE.md](RELEASE.md) | Release history |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Local checks and interop how-to |
+| [LIMITATIONS.md](LIMITATIONS.md) | What is not implemented or not verified |
 | [SECURITY.md](SECURITY.md) | Trust model and reporting |
 
 ## License
