@@ -73,6 +73,7 @@ func TestReadPropertyVirtual(t *testing.T) {
 	clientTr := virtual.New(local, clk, 32)
 	peerTr := virtual.New(peerEP, clk, 32)
 	virtual.Link(clientTr, peerTr)
+	defer func() { _ = peerTr.Close() }() // ends the responder
 
 	c, err := New(
 		WithTransport(AdaptVirtual(clientTr)),
