@@ -6,7 +6,7 @@ Pure Go BACnet/IP client library (ANSI/ASHRAE 135-2024 baseline, Annex J over IP
 
 ## Organisation standards
 
-This repository follows **otfabric/engineering policy 1.1**, profile **protocol-library** (`.otfabric/policy.yaml`, mode `enforce`): API design, errors, logging, documentation and testing guidance live in otfabric/engineering `standards/`, not here. Where this file and the organisation standards disagree, this file wins here — say so in your report.
+This repository follows **otfabric/engineering policy 1.2**, profile **protocol-library** (`.otfabric/policy.yaml`, mode `enforce`): API design, errors, logging, documentation and testing guidance live in otfabric/engineering `standards/`, not here. Where this file and the organisation standards disagree, this file wins here — say so in your report.
 
 ## Where the truth lives
 
