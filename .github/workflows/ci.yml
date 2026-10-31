@@ -23,7 +23,7 @@ jobs:
       go-versions: '["1.23", "1.24", "1.25", "1.26"]'
     secrets: inherit
 
-  # Hermetic library coverage gate (Makefile COVER_PKGS + COVERAGE_MIN).
+  # Hermetic library coverage gates (COVERAGE_MIN, COVER_PKG_MIN per package).
   library-coverage:
     name: Library coverage gate
     runs-on: ubuntu-latest
@@ -56,7 +56,7 @@ jobs:
           BACNET_INTEROP_ROOT: ${{ github.workspace }}/bacnet-interop
           BACNET_INTEROP_REQUIRED: "1"
           GOWORK: "off"
-        run: make coverage
+        run: make coverage coverage-pkg-check
 
       - name: Upload coverage artifacts
         if: always()

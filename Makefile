@@ -6,7 +6,7 @@ export GOWORK := off
 PKGS     := ./...
 FUZZTIME ?= 5s
 
-.PHONY: help test test-race chaos vet lint lint-ci fmt tidy vuln coverage coverage-check check fuzz bench cross imports interop interop-required interop-pinned dissector clean
+.PHONY: help test test-race chaos vet lint lint-ci fmt tidy vuln coverage coverage-check coverage-pkg-check e2e check fuzz bench cross imports interop interop-required interop-pinned dissector clean
 
 help: ## Show available targets
 	@awk 'BEGIN {FS = ":.*## "}; /^[a-zA-Z0-9_.-]+:.*## / {printf "%-14s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -54,8 +54,10 @@ vuln: ## Run govulncheck
 # environment-sensitive (BACNET_INTEROP_ROOT short-circuits) and pulled CI
 # below 90% while local sibling checkouts measured ~90.2%.
 COVER_TEST_PKGS := $(shell go list ./... | grep -v '/examples/' | grep -v '/interop$$')
-COVER_GATE_PKGS := $(shell go list ./... | grep -v '/examples/' | grep -v '/interop$$' | grep -v '/internal/fixtures$$')
+COVER_GATE_PKGS := $(shell go list ./... | grep -v '/examples/' | grep -v '/interop$$' | grep -v '/e2e$$' | grep -v '/internal/fixtures$$' | grep -v '/internal/leak$$')
 COVERAGE_MIN ?= 90
+# Per-package floor (TEST-012); needs the -coverpkg coverage.out of `make coverage`.
+COVER_PKG_MIN := 85
 
 coverage: ## Write coverage.out; fail if library total < COVERAGE_MIN%
 	@echo "Running coverage (min $(COVERAGE_MIN)%)..."
@@ -66,6 +68,14 @@ coverage: ## Write coverage.out; fail if library total < COVERAGE_MIN%
 	awk -v t="$$total" -v m="$(COVERAGE_MIN)" 'BEGIN { if ((t+0) < (m+0)) { printf "coverage %.1f%% < %s%%\n", t, m; exit 1 } else { printf "coverage %.1f%% >= %s%%\n", t, m } }'
 
 coverage-check: coverage ## Alias of coverage, which already enforces COVERAGE_MIN
+
+coverage-pkg-check: coverage ## Fail when a package is below COVER_PKG_MIN
+	@awk -v m="$(COVER_PKG_MIN)" 'NR > 1 { n[$$1] = $$2; if ($$3 > 0) h[$$1] = 1 } \
+	END { for (k in n) { p = k; sub(/\/[^\/]*$$/, "", p); s[p] += n[k]; if (k in h) c[p] += n[k] } \
+	for (p in s) { v = 100 * c[p] / s[p]; if (v < m) { printf "%s: %.1f%% < %s%%\n", p, v, m; bad = 1 } } exit bad }' coverage.out
+
+e2e: ## End-to-end suite: the client against a device over loopback UDP
+	@go test -count=1 -race ./e2e
 
 imports: ## Enforce package import boundaries
 	@echo "Checking import boundaries..."
@@ -139,7 +149,7 @@ dissector: ## Check every client request against Wireshark's dissector (needs ts
 	@echo "Dissector oracle: go test -tags=dissector ./interop/"
 	@BACNET_DISSECTOR_REQUIRED=1 go test -tags=dissector -count=1 -run '^TestDissector' ./interop/
 
-check: fmt tidy vet lint lint-ci vuln test test-race coverage imports ## Aggregate local release checks (includes CI linters)
+check: fmt tidy vet lint lint-ci vuln test test-race coverage coverage-pkg-check imports ## Aggregate local release checks (includes CI linters)
 	@echo "check: ok"
 
 clean: ## Remove coverage artifacts and test cache

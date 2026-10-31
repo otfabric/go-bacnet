@@ -1,0 +1,14 @@
+# Recorded exceptions to otfabric/engineering rules (docs/exceptions/ there).
+exceptions:
+  - rule: INTEROP-003
+    scope: interop/bacnet-interop-pin.json
+    justification: >-
+      The rule is met; the checker cannot see it. Every peer image is pinned
+      by sha256 digest in interop/bacnet-interop-pin.json, and the interop
+      workflow and `make interop-pinned` read the images from that file. The
+      checker counts digests in Dockerfiles, YAML and _test.go files only, and
+      this repository has no Dockerfile of its own to pin.
+    owner: bartvanbos
+    reviewed: "2026-10-31"
+    reconsider: "when otfabric-policy counts digests in JSON pin files"
+    ref: interop/bacnet-interop-pin.json
