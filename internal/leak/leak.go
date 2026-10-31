@@ -8,6 +8,7 @@ package leak
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"os"
 	"regexp"
 	"runtime"
@@ -19,7 +20,7 @@ import (
 
 // grace is how long goroutines get to finish after a test has closed what it
 // started: a closed socket wakes a read loop at the scheduler's convenience.
-const grace = 5 * time.Second
+var grace = 5 * time.Second
 
 // Check records the goroutines running now and fails the test if a goroutine
 // started since is still running after a grace period when the test ends.
@@ -40,16 +41,19 @@ func Check(t testing.TB) {
 // goroutine they started is still running after them:
 //
 //	func TestMain(m *testing.M) { leak.VerifyNoLeaks(m) }
-func VerifyNoLeaks(m *testing.M) {
+func VerifyNoLeaks(m *testing.M) { os.Exit(verify(m.Run, os.Stderr)) }
+
+// verify runs the tests and returns the exit code of the run.
+func verify(run func() int, report io.Writer) int {
 	before := ids(stacks())
-	code := m.Run()
+	code := run()
 	if code == 0 {
 		if left := wait(before); left != "" {
-			fmt.Fprintf(os.Stderr, "goroutine leak after the tests:\n%s\n", left)
-			code = 1
+			_, _ = fmt.Fprintf(report, "goroutine leak after the tests:\n%s\n", left)
+			return 1
 		}
 	}
-	os.Exit(code)
+	return code
 }
 
 // wait returns the stacks of the goroutines not in before that are still
@@ -65,9 +69,12 @@ func wait(before map[int]bool) string {
 	}
 }
 
+// stackBuffer is the first size stacks tries.
+var stackBuffer = 1 << 20
+
 // stacks returns the stack of every goroutine, one element each.
 func stacks() []string {
-	buf := make([]byte, 1<<20)
+	buf := make([]byte, stackBuffer)
 	for {
 		n := runtime.Stack(buf, true)
 		if n < len(buf) {
