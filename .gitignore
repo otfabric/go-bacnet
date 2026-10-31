@@ -24,3 +24,12 @@ vendor/
 
 # Generated coverage profiles
 cover*.out
+
+# Build artefacts live in /bin/ and /release/ (otfabric/engineering REPO-005)
+/release/
+
+# Output of a bare `go build`, anchored so it can never hide a source folder
+/examples/events/events
+/examples/read-range/read-range
+/examples/who-has/who-has
+/examples/write-multiple/write-multiple
