@@ -38,10 +38,14 @@ func validateAdvertisedMaxAPDU(advertised uint16, parserMax int) error {
 func (c *Client) advertisedMaxAPDU() (uint16, error) {
 	localMax := c.cfg.advertisedMaxAPDU
 	if localMax == 0 {
-		if c.limits.MaxAPDUSize > math.MaxUint16 {
+		size := c.limits.MaxAPDUSize
+		if size > math.MaxUint16 {
 			return 0, fmt.Errorf("%w: DecodeLimits.MaxAPDUSize exceeds uint16", bacnet.ErrMalformed)
 		}
-		localMax = uint16(c.limits.MaxAPDUSize)
+		if size < 0 {
+			return 0, fmt.Errorf("%w: DecodeLimits.MaxAPDUSize %d is negative", bacnet.ErrMalformed, size)
+		}
+		localMax = uint16(size)
 	}
 	if localMax == 0 {
 		localMax = 1476

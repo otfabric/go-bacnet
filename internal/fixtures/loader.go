@@ -99,7 +99,14 @@ func LoadAll() ([]Meta, error) {
 	if err != nil {
 		return nil, err
 	}
-	raw, err := os.ReadFile(filepath.Join(root, "fixtures", "manifest.json"))
+	// Every read goes through an os.Root on fixtures/, so a manifest entry
+	// (or a symlink) cannot reach a file outside it.
+	fsRoot, err := os.OpenRoot(fixturesRoot)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = fsRoot.Close() }()
+	raw, err := fsRoot.ReadFile("manifest.json")
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +124,11 @@ func LoadAll() ([]Meta, error) {
 		if !strings.HasPrefix(abs, fixturesRoot+string(os.PathSeparator)) && abs != fixturesRoot {
 			return nil, fmt.Errorf("fixtures: %s escapes fixtures/", e.Path)
 		}
-		b, err := os.ReadFile(abs)
+		rel, err := filepath.Rel(fixturesRoot, abs)
+		if err != nil {
+			return nil, fmt.Errorf("fixtures: %s: %w", e.Path, err)
+		}
+		b, err := fsRoot.ReadFile(rel)
 		if err != nil {
 			return nil, fmt.Errorf("fixtures: %s: %w", e.Path, err)
 		}

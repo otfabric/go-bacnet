@@ -26,6 +26,8 @@ jobs:
             pkg: ./apdu
           - target: FuzzParseNPDU
             pkg: ./npdu
+          - target: FuzzClientReceive
+            pkg: ./client
           - target: FuzzDecodeWhoIs
             pkg: ./service
           - target: FuzzDecodeIAm

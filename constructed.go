@@ -95,10 +95,7 @@ func AppendContextObjectID(dst []byte, tagNumber uint8, id ObjectIdentifier) ([]
 		return dst, err
 	}
 	var buf [4]byte
-	buf[0] = byte(enc >> 24)
-	buf[1] = byte(enc >> 16)
-	buf[2] = byte(enc >> 8)
-	buf[3] = byte(enc)
+	binary.BigEndian.PutUint32(buf[:], enc)
 	return appendContextPrimitive(dst, tagNumber, buf[:])
 }
 

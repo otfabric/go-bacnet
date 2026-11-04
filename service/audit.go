@@ -291,12 +291,16 @@ func decodeAuditRecipient(el bacnet.Element) (AuditRecipient, error) {
 
 func decodeAuditAddress(els []bacnet.Element) (AuditAddress, error) {
 	if len(els) != 2 || els[0].Context || els[1].Context ||
-		els[0].Value.Kind != bacnet.ValueUnsigned || els[0].Value.Unsigned > 0xFFFF ||
+		els[0].Value.Kind != bacnet.ValueUnsigned ||
 		els[1].Value.Kind != bacnet.ValueOctetString {
 		return AuditAddress{}, fmt.Errorf("%w: BACnetAddress", bacnet.ErrMalformed)
 	}
+	network, err := narrowU16(els[0].Value.Unsigned, "BACnetAddress network-number")
+	if err != nil {
+		return AuditAddress{}, err
+	}
 	return AuditAddress{
-		Network: uint16(els[0].Value.Unsigned),
+		Network: network,
 		MAC:     append([]byte{}, els[1].Value.OctetString...),
 	}, nil
 }
@@ -400,7 +404,10 @@ func decodeAuditNotification(els []bacnet.Element) (AuditNotification, error) {
 			if err != nil {
 				return fail(err)
 			}
-			b := uint8(u)
+			b, err := narrowU8(uint64(u), "AuditNotification field")
+			if err != nil {
+				return fail(err)
+			}
 			switch el.TagNumber {
 			case 7:
 				note.InvokeID = &b
@@ -414,7 +421,10 @@ func decodeAuditNotification(els []bacnet.Element) (AuditNotification, error) {
 			if err != nil {
 				return fail(err)
 			}
-			id := uint16(u)
+			id, err := narrowU16(uint64(u), "AuditNotification source-user-id")
+			if err != nil {
+				return fail(err)
+			}
 			note.SourceUserID = &id
 		case 12:
 			ref, err := decodeAuditPropertyReference(el)

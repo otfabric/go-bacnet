@@ -8,6 +8,7 @@ package client
 
 import (
 	"context"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"sync"
@@ -335,7 +336,7 @@ func bipMACAddress(ep bip.Endpoint) (bacnet.Address, bool) {
 	}
 	ip := ep.Addr.Addr().As4()
 	port := ep.Addr.Port()
-	mac := []byte{ip[0], ip[1], ip[2], ip[3], byte(port >> 8), byte(port)}
+	mac := binary.BigEndian.AppendUint16([]byte{ip[0], ip[1], ip[2], ip[3]}, port)
 	return bacnet.LocalStation(bacnet.MustMAC(mac)), true
 }
 

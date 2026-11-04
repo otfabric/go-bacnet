@@ -84,7 +84,7 @@ imports: ## Enforce package import boundaries
 # Packages that own native fuzz targets. Discovery avoids hand-maintained name
 # lists and always uses ^Name$ so -fuzz never matches a longer sibling
 # (e.g. FuzzDecodeWritePropertyMultiple vs …Error).
-FUZZ_PKGS ?= . ./bvlc ./apdu ./npdu ./service
+FUZZ_PKGS ?= . ./bvlc ./apdu ./npdu ./service ./client
 
 fuzz: ## Run short fuzz targets (override FUZZTIME; nightly uses 5m)
 	@echo "Fuzzing (FUZZTIME=$(FUZZTIME))..."

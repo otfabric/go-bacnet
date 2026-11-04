@@ -223,8 +223,28 @@ func (c *Client) sendConfirmedSegments(ctx context.Context, target Target, tx *p
 						c.sendClientAbort(target, tx.invokeID, abortReasonTSMTimeout)
 						return wrapOutcomeUnknown(serviceChoice, bacnet.ErrTimeout)
 					}
-					// Sequence numbers are mod 256; NAK 255 means restart at 0.
-					nextToSend = int(uint8(ack.SequenceNumber + 1))
+					// The NAK names the last segment received in order; resend
+					// from the one after it. Sequence numbers are mod 256, so
+					// NAK 255 before any ACK means restart at 0.
+					resume := int(ack.SequenceNumber+1) % 256
+					if resume == 0 && highestAcked >= 0 {
+						// After progress, 255 is the 256th segment, not a restart.
+						resume = 256
+					}
+					if resume > nextToSend {
+						// Names a segment that was never sent.
+						segTimer.Stop()
+						c.sendClientAbort(target, tx.invokeID, abortReasonInvalidAPDU)
+						return bacnet.ErrProtocolViolation
+					}
+					if resume <= highestAcked {
+						// Rewinds behind segments already acknowledged: a stale
+						// or inconsistent NAK. Ignore it like a duplicate ACK;
+						// the segment timer keeps running, so a device that only
+						// sends these ends in a timeout rather than a livelock.
+						continue
+					}
+					nextToSend = resume
 					highestAcked = nextToSend - 1
 					inFlight = 0
 					segTimer.Stop()

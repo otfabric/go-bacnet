@@ -4,6 +4,7 @@ package client
 
 import (
 	"context"
+	"math"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -83,7 +84,7 @@ func (s *subscription) Events() <-chan SubscriptionEvent { return s.events }
 func (s *subscription) Close() error {
 	var err error
 	s.closeOnce.Do(func() {
-		prev := SubscriptionState(s.state.Swap(uint32(SubscriptionClosed)))
+		prev := stateOf(s.state.Swap(uint32(SubscriptionClosed)))
 		if prev == SubscriptionClosed {
 			return
 		}
@@ -107,7 +108,7 @@ func (s *subscription) publishClosed(cause error) {
 func (s *subscription) tryMarkDegraded() {
 	for {
 		cur := s.state.Load()
-		st := SubscriptionState(cur)
+		st := stateOf(cur)
 		if st == SubscriptionClosed || st == SubscriptionDegraded {
 			return
 		}
@@ -120,7 +121,7 @@ func (s *subscription) tryMarkDegraded() {
 func (s *subscription) tryStoreState(next SubscriptionState) bool {
 	for {
 		cur := s.state.Load()
-		if SubscriptionState(cur) == SubscriptionClosed {
+		if stateOf(cur) == SubscriptionClosed {
 			return false
 		}
 		if s.state.CompareAndSwap(cur, uint32(next)) {
@@ -137,7 +138,7 @@ func (s *subscription) send(ev SubscriptionEvent) {
 	}
 
 	isTerminal := ev.State == SubscriptionClosed
-	cur := SubscriptionState(s.state.Load())
+	cur := stateOf(s.state.Load())
 	if cur == SubscriptionClosed && !isTerminal {
 		// Never replace Closed with Degraded or other non-terminal states.
 		return
@@ -482,7 +483,7 @@ func (s *subscription) renewLoop(ctx context.Context) {
 			timer.Stop()
 			return
 		case <-timer.C():
-			if SubscriptionState(s.state.Load()) == SubscriptionClosed {
+			if stateOf(s.state.Load()) == SubscriptionClosed {
 				return
 			}
 			if !s.tryStoreState(SubscriptionRenewing) {
@@ -492,7 +493,7 @@ func (s *subscription) renewLoop(ctx context.Context) {
 			rctx, stop := clock.ContextWithTimeout(ctx, s.c.clock, s.c.cfg.apduTimeout)
 			err := s.issue(rctx, false)
 			stop()
-			if SubscriptionState(s.state.Load()) == SubscriptionClosed {
+			if stateOf(s.state.Load()) == SubscriptionClosed {
 				return
 			}
 			if err != nil {
@@ -514,4 +515,14 @@ func decodeCOVNotification(payload []byte, limits bacnet.DecodeLimits) (*service
 		return nil, err
 	}
 	return &n, nil
+}
+
+// stateOf reads a SubscriptionState back from the atomic word that holds it.
+// Only SubscriptionState values are ever stored; anything wider reads as
+// Closed rather than as a truncated state.
+func stateOf(v uint32) SubscriptionState {
+	if v > math.MaxUint8 {
+		return SubscriptionClosed
+	}
+	return SubscriptionState(v)
 }

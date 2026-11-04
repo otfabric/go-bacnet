@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 
 	"github.com/otfabric/go-bacnet"
 	"github.com/otfabric/go-bacnet/service"
@@ -46,20 +47,19 @@ func (c *Client) readObjectListByIndex(ctx context.Context, target Target, objec
 	if err != nil {
 		return nil, fmt.Errorf("%w: object-list length: %v", bacnet.ErrMalformed, err)
 	}
-	if count > uint64(maxItems) {
-		count = uint64(maxItems)
-	}
-	out := make([]bacnet.ObjectIdentifier, 0, count)
-	if count == 0 {
+	n := objectListLength(count, maxItems)
+	// The device states the length; do not let it size the allocation.
+	out := make([]bacnet.ObjectIdentifier, 0, min(n, 1024))
+	if n == 0 {
 		return out, nil
 	}
 
 	spec := service.ReadAccessSpecification{Object: object}
-	for i := uint32(1); uint64(i) <= count; i++ {
+	for i := uint32(1); i <= n; i++ {
 		spec.Properties = append(spec.Properties, indexed(i))
 	}
 	results, err := c.ReadPropertyMultipleBatched(ctx, target, []service.ReadAccessSpecification{spec}, RPMBatchOptions{
-		MaxBatches: int(count), // worst case: one entry per transaction
+		MaxBatches: len(spec.Properties), // worst case: one entry per transaction
 	})
 	var reject *bacnet.RejectError
 	switch {
@@ -80,7 +80,7 @@ func (c *Client) readObjectListByIndex(ctx context.Context, target Target, objec
 	default:
 		return out, err
 	}
-	for i := uint32(1); uint64(i) <= count; i++ {
+	for i := uint32(1); i <= n; i++ {
 		v, e := c.ReadProperty(ctx, target, object, indexed(i))
 		if e != nil {
 			return out, fmt.Errorf("object-list element %d: %w", i, e)
@@ -171,4 +171,15 @@ func DecodePropertyIdentifierList(val bacnet.ApplicationValue, maxItems int, lim
 		out = append(out, bacnet.PropertyIdentifier(n))
 	}
 	return out, nil
+}
+
+// objectListLength is how many object-list entries to read by index: the
+// length the device reports, capped by maxItems and kept below 2^32-1 so
+// that the uint32 index loop ends.
+func objectListLength(count uint64, maxItems int) uint32 {
+	if maxItems <= 0 {
+		return 0
+	}
+	limit := uint32(max(min(int64(maxItems), math.MaxUint32-1), 0))
+	return min(uint32(min(count, math.MaxUint32-1)), limit)
 }

@@ -174,3 +174,21 @@ otherwise successful ACK. See [API.md](API.md#rpm-result-model).
 
 Peer-advertised sizes never override application `DecodeLimits`. Exceeding
 limits yields `ErrLimitExceeded` (or a wrap thereof), not unbounded allocation.
+
+## Out-of-range values
+
+A field whose Go type is narrower than its wire encoding is range-checked
+when it is decoded; a value that does not fit yields `ErrMalformed`, never its
+low bits. This covers 8-bit fields (VT session identifiers, VT data flag,
+message and write priorities, acknowledgment filter), 16-bit fields (vendor
+identifiers, network numbers, object types, audit counts) and 32-bit fields
+(file start positions and counts, ReadRange indexes and counts).
+`device.ReadSnapshot` records an out-of-range Vendor_Identifier (above
+Unsigned16), Protocol_Revision or Max_APDU_Length_Accepted (above 32 bits) in
+`PartialErrors` and leaves the field zero.
+
+The file helpers (`ReadFileStream`, `ReadFileRecords`, `WriteFileStream`)
+return `ErrProtocolViolation` when the device reports a position or count
+whose next position would leave the signed 32-bit range, and
+`WriteFileStream` returns `ErrLimitExceeded` before sending anything when the
+data would end past octet 2^31-1.

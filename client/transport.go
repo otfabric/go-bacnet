@@ -98,7 +98,7 @@ func newUDPTransport(cfg config) (*udpTransport, error) {
 			_ = conn.Close()
 			return nil, fmt.Errorf("bacnet client: local address: %w", err)
 		}
-		local = netip.AddrPortFrom(ip, uint16(laddr.Port))
+		local = netip.AddrPortFrom(ip, laddr.AddrPort().Port())
 	}
 	t := &udpTransport{
 		conn:  conn,
@@ -336,7 +336,7 @@ func (t *udpTransport) Recv(ctx context.Context) (InboundPacket, error) {
 		copy(data, buf[:n])
 		return InboundPacket{
 			Data:          data,
-			ImmediatePeer: bip.NewEndpoint(netip.AddrPortFrom(ip, uint16(addr.Port))),
+			ImmediatePeer: bip.NewEndpoint(netip.AddrPortFrom(ip, addr.AddrPort().Port())),
 			ReceivedAt:    time.Now(),
 		}, nil
 	}

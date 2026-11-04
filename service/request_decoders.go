@@ -33,8 +33,11 @@ func DecodeGetEnrollmentSummary(payload []byte, limits bacnet.DecodeLimits) (Get
 			u, e := bacnet.ContextUnsigned(el)
 			err = e
 			if err == nil {
-				req.AcknowledgmentFilter = EnrollmentFilter(u)
-				haveAck = true
+				var v uint8
+				if v, err = narrowU8(u, "acknowledgmentFilter"); err == nil {
+					req.AcknowledgmentFilter = EnrollmentFilter(v)
+					haveAck = true
+				}
 			}
 		case el.TagNumber == 2 && !bacnet.IsContextConstructed(el):
 			u, e := bacnet.ContextUnsigned32(el)
@@ -138,13 +141,17 @@ func decodeFileAccessParams(els []bacnet.Element, req *AtomicReadFileRequest) er
 	if els[0].Context || els[0].Value.Kind != bacnet.ValueSigned {
 		return fmt.Errorf("%w: start position", bacnet.ErrMalformed)
 	}
-	req.StartPosition = int32(els[0].Value.Signed)
+	pos, err := narrowS32(els[0].Value.Signed, "start position")
+	if err != nil {
+		return err
+	}
+	req.StartPosition = pos
 	u, err := bacnet.AsUnsigned(els[1].Value)
 	if err != nil {
 		return fmt.Errorf("%w: count", bacnet.ErrMalformed)
 	}
-	req.Count = uint32(u)
-	return nil
+	req.Count, err = narrowU32(u, "count")
+	return err
 }
 
 // DecodeAtomicWriteFile decodes an AtomicWriteFile request.
@@ -202,7 +209,11 @@ func decodeWriteStreamParams(els []bacnet.Element, req *AtomicWriteFileRequest) 
 	if els[0].Context || els[0].Value.Kind != bacnet.ValueSigned {
 		return fmt.Errorf("%w: start position", bacnet.ErrMalformed)
 	}
-	req.StartPosition = int32(els[0].Value.Signed)
+	pos, err := narrowS32(els[0].Value.Signed, "start position")
+	if err != nil {
+		return err
+	}
+	req.StartPosition = pos
 	if els[1].Context || els[1].Value.Kind != bacnet.ValueOctetString {
 		return fmt.Errorf("%w: fileData", bacnet.ErrMalformed)
 	}
@@ -217,7 +228,11 @@ func decodeWriteRecordParams(els []bacnet.Element, req *AtomicWriteFileRequest) 
 	if els[0].Context || els[0].Value.Kind != bacnet.ValueSigned {
 		return fmt.Errorf("%w: start position", bacnet.ErrMalformed)
 	}
-	req.StartPosition = int32(els[0].Value.Signed)
+	pos, err := narrowS32(els[0].Value.Signed, "start position")
+	if err != nil {
+		return err
+	}
+	req.StartPosition = pos
 	count, err := bacnet.AsUnsigned(els[1].Value)
 	if err != nil {
 		return fmt.Errorf("%w: recordCount", bacnet.ErrMalformed)
@@ -265,8 +280,14 @@ func DecodeCreateObject(payload []byte, limits bacnet.DecodeLimits) (CreateObjec
 			case choice.TagNumber == 0 && !bacnet.IsContextConstructed(choice):
 				u, e := bacnet.ContextUnsigned(choice)
 				err = e
+				if err == nil && u > 0x3FF {
+					// BACnetObjectType is the 10-bit type field of an object identifier.
+					err = fmt.Errorf("%w: CreateObject object-type %d exceeds 10 bits", bacnet.ErrMalformed, u)
+				}
 				if err == nil {
-					ot := bacnet.ObjectType(u)
+					var v uint16
+					v, err = narrowU16(u, "CreateObject object-type")
+					ot := bacnet.ObjectType(v)
 					req.ObjectType = &ot
 					haveSpec = true
 				}
@@ -452,10 +473,9 @@ func DecodeAuditLogQuery(payload []byte, limits bacnet.DecodeLimits) (AuditLogQu
 		case el.TagNumber == 3 && !constructed:
 			var count uint32
 			count, err = bacnet.ContextUnsigned32(el)
-			if err == nil && count > 0xFFFF {
-				err = fmt.Errorf("%w: AuditLogQuery requested-count", bacnet.ErrMalformed)
+			if err == nil {
+				req.RequestedCount, err = narrowU16(uint64(count), "AuditLogQuery requested-count")
 			}
-			req.RequestedCount = uint16(count)
 			haveCount = true
 		default:
 			err = fmt.Errorf("%w: AuditLogQuery tag %d", bacnet.ErrMalformed, el.TagNumber)
@@ -532,7 +552,10 @@ func decodeAuditQueryParameters(els []bacnet.Element, req *AuditLogQueryRequest)
 			if err == nil && u > 0xFF {
 				err = bad
 			}
-			p := uint8(u)
+			p, e := narrowU8(uint64(u), "target priority")
+			if err == nil {
+				err = e
+			}
 			target.TargetPriority = &p
 		case fOperations:
 			var bs bacnet.BitString
@@ -582,5 +605,9 @@ func DecodeVTOpen(payload []byte, limits bacnet.DecodeLimits) (VTOpenRequest, er
 	if err != nil {
 		return VTOpenRequest{}, err
 	}
-	return VTOpenRequest{VTClass: uint32(cls), LocalVTSessionIdentifier: uint8(sid)}, nil
+	sid8, err := narrowU8(sid, "localVTSessionIdentifier")
+	if err != nil {
+		return VTOpenRequest{}, err
+	}
+	return VTOpenRequest{VTClass: cls, LocalVTSessionIdentifier: sid8}, nil
 }

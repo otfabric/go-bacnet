@@ -4,6 +4,7 @@ package service
 
 import (
 	"fmt"
+	"math"
 
 	"github.com/otfabric/go-bacnet"
 )
@@ -115,7 +116,11 @@ func decodeFileStreamResult(els []bacnet.Element, ack *AtomicReadFileACK) error 
 	if els[0].Context || els[0].Value.Kind != bacnet.ValueSigned {
 		return fmt.Errorf("%w: fileStartPosition", bacnet.ErrMalformed)
 	}
-	ack.StartPosition = int32(els[0].Value.Signed)
+	pos, err := narrowS32(els[0].Value.Signed, "fileStartPosition")
+	if err != nil {
+		return err
+	}
+	ack.StartPosition = pos
 	if els[1].Context || els[1].Value.Kind != bacnet.ValueOctetString {
 		return fmt.Errorf("%w: fileData", bacnet.ErrMalformed)
 	}
@@ -130,12 +135,18 @@ func decodeFileRecordResult(els []bacnet.Element, ack *AtomicReadFileACK) error 
 	if els[0].Context || els[0].Value.Kind != bacnet.ValueSigned {
 		return fmt.Errorf("%w: fileStartRecord", bacnet.ErrMalformed)
 	}
-	ack.StartPosition = int32(els[0].Value.Signed)
+	pos, err := narrowS32(els[0].Value.Signed, "fileStartRecord")
+	if err != nil {
+		return err
+	}
+	ack.StartPosition = pos
 	u, err := bacnet.AsUnsigned(els[1].Value)
 	if err != nil {
 		return fmt.Errorf("%w: returnedRecordCount", bacnet.ErrMalformed)
 	}
-	ack.RecordCount = uint32(u)
+	if ack.RecordCount, err = narrowU32(u, "returnedRecordCount"); err != nil {
+		return err
+	}
 	for _, el := range els[2:] {
 		if el.Context || el.Value.Kind != bacnet.ValueOctetString {
 			return fmt.Errorf("%w: fileRecordData", bacnet.ErrMalformed)
@@ -222,7 +233,9 @@ func DecodeAtomicWriteFileACK(payload []byte, limits bacnet.DecodeLimits) (Atomi
 	if err != nil {
 		return AtomicWriteFileACK{}, fmt.Errorf("%w: start position", bacnet.ErrMalformed)
 	}
-	ack.StartPosition = int32(pos)
+	if ack.StartPosition, err = narrowS32(pos, "start position"); err != nil {
+		return AtomicWriteFileACK{}, err
+	}
 	return ack, nil
 }
 
@@ -244,7 +257,7 @@ func FileChunkBounds(fileLen, start int32, want uint32) (pos int32, count uint32
 	if int64(start) >= int64(fileLen) {
 		return start, 0, true
 	}
-	remain := uint32(fileLen - start)
+	remain := uint32(max(min(int64(fileLen)-int64(start), math.MaxInt32), 0))
 	if want == 0 || want > remain {
 		want = remain
 	}

@@ -128,7 +128,11 @@ func DecodeVTOpenACK(payload []byte, limits bacnet.DecodeLimits) (VTOpenACK, err
 	if err != nil {
 		return VTOpenACK{}, err
 	}
-	return VTOpenACK{RemoteVTSessionIdentifier: uint8(u)}, nil
+	id, err := narrowU8(u, "remoteVTSessionIdentifier")
+	if err != nil {
+		return VTOpenACK{}, err
+	}
+	return VTOpenACK{RemoteVTSessionIdentifier: id}, nil
 }
 
 // EncodeVTOpenACK encodes VT-Open ACK.
@@ -202,10 +206,18 @@ func DecodeVTData(payload []byte, limits bacnet.DecodeLimits) (VTDataRequest, er
 	if err != nil {
 		return VTDataRequest{}, err
 	}
+	sid8, err := narrowU8(sid, "vtSessionIdentifier")
+	if err != nil {
+		return VTDataRequest{}, err
+	}
+	flag8, err := narrowU8(flag, "vtDataFlag")
+	if err != nil {
+		return VTDataRequest{}, err
+	}
 	return VTDataRequest{
-		VTSessionIdentifier: uint8(sid),
+		VTSessionIdentifier: sid8,
 		VTNewData:           append([]byte(nil), els[1].Value.OctetString...),
-		VTDataFlag:          uint8(flag),
+		VTDataFlag:          flag8,
 	}, nil
 }
 

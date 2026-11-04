@@ -266,13 +266,16 @@ func decodeSigned(data []byte) (int64, error) {
 	if len(data) == 0 || len(data) > 8 {
 		return 0, fmt.Errorf("%w: signed length %d", ErrMalformed, len(data))
 	}
-	var u uint64
-	for _, b := range data {
-		u = (u << 8) | uint64(b)
+	// Two's complement, most significant octet first: sign-extend the first
+	// octet, then shift the others in.
+	s := int64(data[0])
+	if s >= 0x80 {
+		s -= 0x100
 	}
-	// Sign-extend.
-	shift := uint((8 - len(data)) * 8)
-	return int64(u<<shift) >> shift, nil
+	for _, b := range data[1:] {
+		s = s<<8 | int64(b)
+	}
+	return s, nil
 }
 
 // AppendTag appends a deterministic encoding of el to dst.
@@ -495,8 +498,11 @@ func appendAppPrimitive(dst []byte, tag ApplicationTag, value []byte) ([]byte, e
 }
 
 func encodeTagHeader(context bool, tagNumber uint8, length int) ([]byte, error) {
-	if uint64(length) > math.MaxUint32 {
+	if int64(length) > math.MaxUint32 {
 		return nil, fmt.Errorf("%w: tag value length %d", ErrLimitExceeded, length)
+	}
+	if length < 0 {
+		return nil, fmt.Errorf("%w: tag value length %d", ErrMalformed, length)
 	}
 	var b0 byte
 	extTag := false
@@ -516,12 +522,12 @@ func encodeTagHeader(context bool, tagNumber uint8, length int) ([]byte, error) 
 	case length < 254:
 		b0 |= 5
 		lengthBytes = []byte{byte(length)}
-	case length <= 0xFFFF:
+	case length <= math.MaxUint16:
 		b0 |= 5
-		lengthBytes = []byte{254, byte(length >> 8), byte(length)}
+		lengthBytes = binary.BigEndian.AppendUint16([]byte{254}, uint16(length))
 	default:
 		b0 |= 5
-		lengthBytes = []byte{255, byte(length >> 24), byte(length >> 16), byte(length >> 8), byte(length)}
+		lengthBytes = binary.BigEndian.AppendUint32([]byte{255}, uint32(length))
 	}
 	out := []byte{b0}
 	if extTag {
@@ -539,7 +545,7 @@ func encodeUnsigned(u uint64) []byte {
 	n := 0
 	for i := 7; i >= 0; i-- {
 		shift := uint(i * 8)
-		b := byte(u >> shift)
+		b := byte(u >> shift & 0xFF)
 		if n > 0 || b != 0 {
 			tmp[n] = b
 			n++
@@ -549,20 +555,19 @@ func encodeUnsigned(u uint64) []byte {
 }
 
 func encodeSigned(v int64) []byte {
-	// Minimal two's-complement encoding (1..8 octets).
-	u := uint64(v)
+	// Minimal two's-complement encoding (1..8 octets): the fewest octets whose
+	// signed range [-2^(8w-1), 2^(8w-1)-1] holds v.
 	width := 1
 	for width < 8 {
-		shift := uint((8 - width) * 8)
-		s := int64(u<<shift) >> shift
-		if s == v {
+		limit := int64(1) << uint(8*width-1)
+		if v >= -limit && v < limit {
 			break
 		}
 		width++
 	}
 	out := make([]byte, width)
 	for i := 0; i < width; i++ {
-		out[i] = byte(u >> uint((width-1-i)*8))
+		out[i] = byte(v >> uint((width-1-i)*8) & 0xFF)
 	}
 	return out
 }

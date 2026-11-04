@@ -7,6 +7,7 @@ package device
 import (
 	"context"
 	"fmt"
+	"math"
 
 	"github.com/otfabric/go-bacnet"
 	"github.com/otfabric/go-bacnet/client"
@@ -81,15 +82,28 @@ func ReadSnapshot(ctx context.Context, r PropertyReader, target client.Target, d
 					snap.ObjectName = pr.Value.Character.Value
 				}
 			case bacnet.PropertyVendorIdentifier:
+				// Vendor_Identifier is Unsigned16 (clause 12.11).
 				if n, e := bacnet.AsUnsigned(pr.Value); e == nil {
+					if n > math.MaxUint16 {
+						snap.PartialErrors = append(snap.PartialErrors, fmt.Errorf("%w: %s %d exceeds 16 bits", bacnet.ErrMalformed, pr.Property.Identifier, n))
+						continue
+					}
 					snap.VendorID = uint32(n)
 				}
 			case bacnet.PropertyProtocolRevision:
 				if n, e := bacnet.AsUnsigned(pr.Value); e == nil {
+					if n > math.MaxUint32 {
+						snap.PartialErrors = append(snap.PartialErrors, fmt.Errorf("%w: %s %d exceeds 32 bits", bacnet.ErrMalformed, pr.Property.Identifier, n))
+						continue
+					}
 					snap.ProtocolRev = uint32(n)
 				}
 			case bacnet.PropertyMaxAPDULength:
 				if n, e := bacnet.AsUnsigned(pr.Value); e == nil {
+					if n > math.MaxUint32 {
+						snap.PartialErrors = append(snap.PartialErrors, fmt.Errorf("%w: %s %d exceeds 32 bits", bacnet.ErrMalformed, pr.Property.Identifier, n))
+						continue
+					}
 					snap.MaxAPDU = uint32(n)
 				}
 			case bacnet.PropertyObjectList:

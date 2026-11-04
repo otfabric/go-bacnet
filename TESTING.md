@@ -24,11 +24,17 @@ The library is a client with no BACnet server of its own. `e2e/` runs it on a
 real UDP socket against a device on another, over loopback; that device is
 built in the test from the public codecs (`bvlc`, `npdu`, `apdu`, `service`),
 and covers discovery, reads, writes, device errors, timeouts, COV and
-concurrent requests. `client` tests run against scripted in-process devices on
+concurrent requests. `e2e/hostile_test.go` replaces that device with a hostile
+one: malformed frames ahead of a valid answer, out-of-range values in ACKs and
+I-Ams, I-Am and COV floods, unsolicited junk and endless or broken
+segmentation; the client must refuse or ignore each, within its timeout and
+with bounded memory. `client` tests run against scripted in-process devices on
 the in-memory transport (`internal/virtual`), and `make chaos` adds faults
-(`client/chaos_test.go`, described in
-[CONTRIBUTING.md](CONTRIBUTING.md#concurrency-tests)). Independent devices are
-reached through the interop tier.
+(`client/chaos_test.go` and `client/chaos_segack_test.go` for the segmented
+request path, described in
+[CONTRIBUTING.md](CONTRIBUTING.md#concurrency-tests)). `FuzzClientReceive`
+feeds raw datagrams to the client while a request is pending. Independent
+devices are reached through the interop tier.
 
 `internal/leak` fails `client`, `internal/clock` and `e2e` when a test leaves a
 goroutine behind; it compares goroutine stacks, so the failure names it.
