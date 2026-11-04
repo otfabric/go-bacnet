@@ -768,7 +768,7 @@ func junkFrames(t testing.TB) [][]byte {
 
 func TestHostileUnsolicitedJunk(t *testing.T) {
 	h := startHostile(t, answerReads)
-	c := newHostileClient(t)
+	c := newHostileClient(t, floodRetries)
 	ctx := ctxT(t)
 	to := udpAddr(c.LocalEndpoint())
 	for round := 0; round < 50; round++ {
