@@ -28,9 +28,9 @@ import (
 
 func main() {
 	addr := flag.String("addr", "127.0.0.1:47808", "peer BACnet/IP host:port")
-	instance := uint32Flag("instance", 1001, "remote device instance")
-	object := uint32Flag("object", 1, "Trend Log object instance")
-	count := int32Flag("count", 4, "ReadRange byPosition count")
+	instance := uint32Flag(flag.CommandLine, "instance", 1001, "remote device instance")
+	object := uint32Flag(flag.CommandLine, "object", 1, "Trend Log object instance")
+	count := int32Flag(flag.CommandLine, "count", 4, "ReadRange byPosition count")
 	flag.Parse()
 
 	target, err := parseTarget(*addr)
@@ -97,10 +97,10 @@ func parseTarget(addr string) (client.Target, error) {
 	}, nil
 }
 
-// uint32Flag defines a decimal flag that must fit 32 bits.
-func uint32Flag(name string, def uint32, usage string) *uint32 {
+// uint32Flag defines a decimal flag on fs that must fit 32 bits.
+func uint32Flag(fs *flag.FlagSet, name string, def uint32, usage string) *uint32 {
 	v := def
-	flag.Func(name, fmt.Sprintf("%s (default %d)", usage, def), func(s string) error {
+	fs.Func(name, fmt.Sprintf("%s (default %d)", usage, def), func(s string) error {
 		u, err := strconv.ParseUint(s, 10, 32)
 		if err != nil {
 			return err
@@ -111,10 +111,10 @@ func uint32Flag(name string, def uint32, usage string) *uint32 {
 	return &v
 }
 
-// int32Flag defines a decimal flag that must fit 32 signed bits.
-func int32Flag(name string, def int32, usage string) *int32 {
+// int32Flag defines a decimal flag on fs that must fit 32 signed bits.
+func int32Flag(fs *flag.FlagSet, name string, def int32, usage string) *int32 {
 	v := def
-	flag.Func(name, fmt.Sprintf("%s (default %d)", usage, def), func(s string) error {
+	fs.Func(name, fmt.Sprintf("%s (default %d)", usage, def), func(s string) error {
 		n, err := strconv.ParseInt(s, 10, 32)
 		if err != nil {
 			return err

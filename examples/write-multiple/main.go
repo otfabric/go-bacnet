@@ -28,7 +28,7 @@ import (
 
 func main() {
 	addr := flag.String("addr", "127.0.0.1:47808", "peer BACnet/IP host:port")
-	instance := uint32Flag("instance", 1001, "remote device instance")
+	instance := uint32Flag(flag.CommandLine, "instance", 1001, "remote device instance")
 	object := flag.String("object", "2:1", "object type:instance (default analog-value:1)")
 	value := flag.Float64("value", 22.5, "present-value to write")
 	flag.Parse()
@@ -109,10 +109,10 @@ func parseObject(s string) (bacnet.ObjectIdentifier, error) {
 	return bacnet.ObjectIdentifier{Type: bacnet.ObjectType(t), Instance: uint32(inst)}, nil
 }
 
-// uint32Flag defines a decimal flag that must fit 32 bits.
-func uint32Flag(name string, def uint32, usage string) *uint32 {
+// uint32Flag defines a decimal flag on fs that must fit 32 bits.
+func uint32Flag(fs *flag.FlagSet, name string, def uint32, usage string) *uint32 {
 	v := def
-	flag.Func(name, fmt.Sprintf("%s (default %d)", usage, def), func(s string) error {
+	fs.Func(name, fmt.Sprintf("%s (default %d)", usage, def), func(s string) error {
 		u, err := strconv.ParseUint(s, 10, 32)
 		if err != nil {
 			return err

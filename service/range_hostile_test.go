@@ -3,6 +3,7 @@
 package service_test
 
 import (
+	"errors"
 	"math"
 	"testing"
 
@@ -390,5 +391,27 @@ func TestRangeIAmObjectInstance(t *testing.T) {
 	payload = appValue(t, payload, bacnet.UnsignedValue(1))
 	if m, err := service.DecodeIAm(payload, rangeLimits); err == nil {
 		t.Fatalf("5-byte object identifier accepted: %+v", m)
+	}
+}
+
+func TestDecodeCreateObjectRejectsWideObjectType(t *testing.T) {
+	// objectSpecifier [0] { object-type [0] }: 0x3FF is the widest 10-bit type.
+	for _, tc := range []struct {
+		raw []byte
+		ok  bool
+	}{
+		{[]byte{0x0E, 0x0A, 0x03, 0xFF, 0x0F}, true},
+		{[]byte{0x0E, 0x0A, 0x04, 0x00, 0x0F}, false},
+	} {
+		req, err := service.DecodeCreateObject(tc.raw, bacnet.DefaultDecodeLimits())
+		if tc.ok {
+			if err != nil || req.ObjectType == nil || *req.ObjectType != 0x3FF {
+				t.Fatalf("% x: req=%+v err=%v", tc.raw, req, err)
+			}
+			continue
+		}
+		if !errors.Is(err, bacnet.ErrMalformed) {
+			t.Fatalf("% x: err=%v, want ErrMalformed", tc.raw, err)
+		}
 	}
 }
