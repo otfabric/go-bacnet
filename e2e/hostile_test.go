@@ -602,10 +602,16 @@ func TestHostileIAmOutOfRange(t *testing.T) {
 	}
 }
 
+// floodRetries lets the reads between flood bursts retry. A burst can overrun
+// the socket receive buffer, so the kernel may drop the reply to the read that
+// follows it (seen under -race on CI); that is UDP, not a client defect. The
+// read is idempotent and hangBound still caps the wait.
+var floodRetries = client.WithTransactionOptions(hostileAPDUTimeout, 3, time.Second)
+
 func TestHostileIAmFloodIsBounded(t *testing.T) {
 	const maxObs = 32
 	h := startHostile(t, answerReads)
-	c := newHostileClient(t, client.WithRegistryOptions(client.RegistryOptions{MaxObservations: maxObs, MaxPathsPerInstance: 2}))
+	c := newHostileClient(t, floodRetries, client.WithRegistryOptions(client.RegistryOptions{MaxObservations: maxObs, MaxPathsPerInstance: 2}))
 	ctx := ctxT(t)
 	to := udpAddr(c.LocalEndpoint())
 
@@ -665,7 +671,7 @@ func TestHostileCOVFloodIsBounded(t *testing.T) {
 			answerReads(h, req, from)
 		}
 	})
-	c := newHostileClient(t)
+	c := newHostileClient(t, floodRetries)
 	ctx := ctxT(t)
 	const buffer = 4
 	sub, err := c.SubscribeCOV(ctx, h.target(), analogValue, client.COVOptions{Lifetime: 60, BufferSize: buffer})
