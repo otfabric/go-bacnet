@@ -4,6 +4,7 @@ package service
 
 import (
 	"errors"
+	"strconv"
 	"testing"
 
 	"github.com/otfabric/go-bacnet"
@@ -258,5 +259,25 @@ func TestLogRecordEncodeDatumKindMismatches(t *testing.T) {
 		if _, err := encodeLogDatum(tc.choice, tc.val); !errors.Is(err, bacnet.ErrMalformed) {
 			t.Fatalf("choice %d: %v", tc.choice, err)
 		}
+	}
+}
+
+func TestContextLengthPrefixFourOctetAndBounds(t *testing.T) {
+	lvt, prefix := contextLengthPrefix(0x10000)
+	if lvt != 5 || len(prefix) != 5 || prefix[0] != 255 || prefix[1] != 0 || prefix[2] != 1 || prefix[3] != 0 || prefix[4] != 0 {
+		t.Fatalf("0x10000: lvt=%d prefix=% x", lvt, prefix)
+	}
+	if lvt, prefix := contextLengthPrefix(-1); lvt != 0 || prefix != nil {
+		t.Fatalf("-1: lvt=%d prefix=% x", lvt, prefix)
+	}
+	if strconv.IntSize == 64 {
+		shift := 33 // a variable, so 32-bit builds compile the skipped branch
+		big := int(int64(1) << shift)
+		if lvt, prefix := contextLengthPrefix(big); lvt != 5 || len(prefix) != 5 || prefix[1] != 0xFF {
+			t.Fatalf("2^33: lvt=%d prefix=% x", lvt, prefix)
+		}
+	}
+	if _, err := appendContextOctets(nil, 15, []byte{1}); err == nil {
+		t.Fatal("tag 15 needs the extended form and must be refused")
 	}
 }

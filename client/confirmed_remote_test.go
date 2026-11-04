@@ -246,7 +246,8 @@ func TestRetransmitSendFailureDiagnostics(t *testing.T) {
 		clk.Advance(25 * time.Millisecond)
 	}
 	select {
-	case <-errCh:
+	case err := <-errCh:
+		_ = err // the outcome is irrelevant; only that the request ended
 	case <-time.After(2 * time.Second):
 		t.Fatal("request did not finish")
 	}
