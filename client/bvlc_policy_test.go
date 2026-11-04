@@ -4,6 +4,7 @@ package client
 
 import (
 	"net/netip"
+	"slices"
 	"sync"
 	"testing"
 	"time"
@@ -54,13 +55,7 @@ func TestInboundIPv6PeerDoesNotPanic(t *testing.T) {
 
 	mu.Lock()
 	defer mu.Unlock()
-	found := false
-	for _, k := range kinds {
-		if k == string(diag.KindBVLC) {
-			found = true
-			break
-		}
-	}
+	found := slices.Contains(kinds, string(diag.KindBVLC))
 	if !found {
 		t.Fatalf("expected BVLC diagnostic, got %#v", kinds)
 	}
@@ -114,13 +109,7 @@ func TestInboundDBTNIgnored(t *testing.T) {
 	}
 	mu.Lock()
 	defer mu.Unlock()
-	found := false
-	for _, k := range kinds {
-		if k == string(diag.KindBVLC) {
-			found = true
-			break
-		}
-	}
+	found := slices.Contains(kinds, string(diag.KindBVLC))
 	if !found {
 		t.Fatalf("expected BVLC diagnostic for inbound DBTN, got %#v", kinds)
 	}

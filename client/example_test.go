@@ -92,8 +92,7 @@ func ExampleClient_WritePriority() {
 	ctx := context.Background()
 
 	err = c.WritePriority(ctx, target, ao1, 8, bacnet.RealValue(21.5))
-	var unknown *bacnet.OutcomeUnknownError
-	if errors.As(err, &unknown) {
+	if _, ok := errors.AsType[*bacnet.OutcomeUnknownError](err); ok {
 		// Sent, not acknowledged: read the value back before writing again.
 		log.Fatalf("write may or may not have been applied: %v", err)
 	}

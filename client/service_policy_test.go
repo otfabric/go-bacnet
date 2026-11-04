@@ -5,7 +5,7 @@ package client
 import (
 	"context"
 	"errors"
-	"sort"
+	"slices"
 	"testing"
 	"time"
 
@@ -66,7 +66,7 @@ func TestConfirmedServicePolicyCompleteness(t *testing.T) {
 	}
 	got := TypedConfirmedServices()
 	if len(got) != len(required) {
-		sort.Slice(got, func(i, j int) bool { return got[i] < got[j] })
+		slices.Sort(got)
 		t.Fatalf("registry size=%d want %d: %v", len(got), len(required), got)
 	}
 }

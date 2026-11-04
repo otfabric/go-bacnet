@@ -84,8 +84,7 @@ func TestGetEnrollmentSummaryComplexACK(t *testing.T) {
 
 func TestSubscribeCOVPropertyMultipleSimpleACK(t *testing.T) {
 	env := newVirtualPair(t)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	go serveSimpleACK(ctx, env.PeerTr, env.Local)
 	life := uint32(60)
 	err := env.Client.SubscribeCOVPropertyMultiple(ctx, env.Target, service.SubscribeCOVPropertyMultipleRequest{

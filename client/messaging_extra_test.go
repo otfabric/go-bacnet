@@ -43,8 +43,7 @@ func TestAtomicWriteFileComplexACK(t *testing.T) {
 
 func TestConfirmedPrivateTransferAndText(t *testing.T) {
 	env := newVirtualPair(t)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	go serveSimpleACK(ctx, env.PeerTr, env.Local)
 	if err := env.Client.ConfirmedPrivateTransfer(ctx, env.Target, service.PrivateTransfer{VendorID: 1, ServiceNumber: 2}); err != nil {
 		t.Fatal(err)
@@ -154,8 +153,7 @@ func TestUnconfirmedMessagingSends(t *testing.T) {
 
 func TestRemoveListElementAndVTCloseData(t *testing.T) {
 	env := newVirtualPair(t)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	go serveSimpleACK(ctx, env.PeerTr, env.Local)
 	if err := env.Client.RemoveListElement(ctx, env.Target, service.ListElementRequest{
 		Object:   bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeDevice, Instance: 1},

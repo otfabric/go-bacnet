@@ -15,8 +15,7 @@ import (
 
 func TestReinitializeDeviceSimpleACK(t *testing.T) {
 	env := newVirtualPair(t, WithDeviceManagementEnabled(DeviceManagementConfirm))
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	go serveSimpleACK(ctx, env.PeerTr, env.Local)
 	if err := env.Client.ReinitializeDevice(ctx, env.Target, service.ReinitializeDeviceRequest{
 		State: service.ReinitializedWarmstart,
@@ -58,8 +57,7 @@ func TestAcknowledgeAlarmProtocolViolation(t *testing.T) {
 
 func TestGetEventInformationProtocolViolation(t *testing.T) {
 	env := newVirtualPair(t)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	go serveSimpleACK(ctx, env.PeerTr, env.Local)
 	_, err := env.Client.GetEventInformation(ctx, env.Target, service.GetEventInformationRequest{})
 	if !errors.Is(err, bacnet.ErrProtocolViolation) {

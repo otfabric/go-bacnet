@@ -17,8 +17,7 @@ import (
 
 func TestSubscribeCOVPropertyAndConfirmedNotification(t *testing.T) {
 	env := newVirtualPair(t)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	go serveSimpleACK(ctx, env.PeerTr, env.Local)
 
 	obj := bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeAnalogValue, Instance: 2}
@@ -132,8 +131,7 @@ func TestSubscribeCOVInitialFailureClosesChannel(t *testing.T) {
 
 func TestClientCloseClosesSubscriptions(t *testing.T) {
 	env := newVirtualPair(t)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	go serveSimpleACK(ctx, env.PeerTr, env.Local)
 
 	obj := bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeAnalogValue, Instance: 3}
@@ -161,8 +159,7 @@ func TestClientCloseClosesSubscriptions(t *testing.T) {
 
 func TestSubscribeCOVRenewal(t *testing.T) {
 	env := newVirtualPair(t)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	go serveSimpleACK(ctx, env.PeerTr, env.Local)
 
 	obj := bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeBinaryValue, Instance: 1}

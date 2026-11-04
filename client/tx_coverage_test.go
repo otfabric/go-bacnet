@@ -82,7 +82,7 @@ func TestTryAllocQuarantineAndExhausted(t *testing.T) {
 	}
 	// Fill all invoke IDs used or quarantined to force exhaustion path.
 	m.max = 255
-	for i := 0; i < 256; i++ {
+	for i := range 256 {
 		m.inUse[uint8(i)] = &pendingTx{invokeID: uint8(i), result: make(chan txResult, 1)}
 	}
 	if _, ok := m.tryAllocLocked(); ok {

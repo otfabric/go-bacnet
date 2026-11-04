@@ -67,8 +67,8 @@ func TestImportBoundaries(t *testing.T) {
 				continue
 			}
 			check := line
-			if strings.HasPrefix(line, "import ") {
-				check = strings.TrimPrefix(line, "import ")
+			if after, ok0 := strings.CutPrefix(line, "import "); ok0 {
+				check = after
 			} else if !inImport {
 				continue
 			}

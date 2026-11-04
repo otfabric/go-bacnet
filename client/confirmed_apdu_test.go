@@ -18,8 +18,7 @@ func TestReadPropertyAPDUTooLarge(t *testing.T) {
 	target.MaxAPDU = 10
 
 	_, err := env.Client.ReadProperty(context.Background(), target, obj, prop)
-	var tooLarge *bacnet.APDUTooLargeError
-	if !errors.As(err, &tooLarge) {
+	if _, ok := errors.AsType[*bacnet.APDUTooLargeError](err); !ok {
 		t.Fatalf("expected APDUTooLargeError, got %v", err)
 	}
 }

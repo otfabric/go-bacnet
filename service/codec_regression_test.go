@@ -11,8 +11,6 @@ import (
 	"github.com/otfabric/go-bacnet/service"
 )
 
-func ptr[T any](v T) *T { return &v }
-
 var regLimits = bacnet.DefaultDecodeLimits()
 
 // BACnetPropertyValue.priority [3] is optional and must not fail the whole
@@ -61,7 +59,7 @@ func TestCreateObjectInitialValuePriorityRoundTrip(t *testing.T) {
 	req := service.CreateObjectRequest{ObjectType: &ot, InitialValues: []service.PropertyValue{{
 		Property: bacnet.PropertyReference{Identifier: bacnet.PropertyPresentValue},
 		Value:    bacnet.RealValue(1),
-		Priority: ptr(uint8(8)),
+		Priority: new(uint8(8)),
 	}}}
 	raw, err := service.EncodeCreateObject(req)
 	if err != nil {
@@ -75,7 +73,7 @@ func TestCreateObjectInitialValuePriorityRoundTrip(t *testing.T) {
 	if err != nil || len(got.InitialValues) != 1 || got.InitialValues[0].Priority == nil || *got.InitialValues[0].Priority != 8 {
 		t.Fatalf("%+v err=%v", got, err)
 	}
-	req.InitialValues[0].Priority = ptr(uint8(17))
+	req.InitialValues[0].Priority = new(uint8(17))
 	if _, err := service.EncodeCreateObject(req); !errors.Is(err, bacnet.ErrMalformed) {
 		t.Fatalf("priority 17: %v", err)
 	}
@@ -85,12 +83,12 @@ func TestSubscribeCOVPropertyMultipleStandardLayout(t *testing.T) {
 	req := service.SubscribeCOVPropertyMultipleRequest{
 		SubscriberProcessIdentifier: 1,
 		IssueConfirmedNotifications: true,
-		LifetimeRemaining:           ptr(uint32(60)),
+		LifetimeRemaining:           new(uint32(60)),
 		Subscriptions: []service.COVMultipleSubscription{{
 			Object: bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeAnalogInput, Instance: 1},
 			Properties: []service.COVPropertyReference{{
 				Property:     bacnet.PropertyReference{Identifier: bacnet.PropertyPresentValue},
-				COVIncrement: ptr(float32(1)),
+				COVIncrement: new(float32(1)),
 				Timestamped:  true,
 			}},
 		}},
@@ -118,9 +116,9 @@ func TestSubscribeCOVPropertyMultipleStandardLayout(t *testing.T) {
 	}
 
 	// max-notification-delay [3], an array index, and two references.
-	req.MaxNotificationDelay = ptr(uint32(5))
+	req.MaxNotificationDelay = new(uint32(5))
 	req.Subscriptions[0].Properties = []service.COVPropertyReference{
-		{Property: bacnet.PropertyReference{Identifier: bacnet.PropertyPriorityArray, ArrayIndex: ptr(uint32(8))}},
+		{Property: bacnet.PropertyReference{Identifier: bacnet.PropertyPriorityArray, ArrayIndex: new(uint32(8))}},
 		{Property: bacnet.PropertyReference{Identifier: bacnet.PropertyStatusFlags}, Timestamped: true},
 	}
 	raw, err = service.EncodeSubscribeCOVPropertyMultiple(req)
@@ -454,13 +452,13 @@ func TestWritePropertyPriorityRange(t *testing.T) {
 		Value:    bacnet.RealValue(1),
 	}
 	for _, p := range []uint8{0, 17, 255} {
-		req.Priority = ptr(p)
+		req.Priority = new(p)
 		if _, err := service.EncodeWriteProperty(req); !errors.Is(err, bacnet.ErrMalformed) {
 			t.Fatalf("priority %d: err=%v", p, err)
 		}
 	}
 	for _, p := range []uint8{1, 16} {
-		req.Priority = ptr(p)
+		req.Priority = new(p)
 		raw, err := service.EncodeWriteProperty(req)
 		if err != nil || raw[len(raw)-2] != 0x49 || raw[len(raw)-1] != p {
 			t.Fatalf("priority %d: % X err=%v", p, raw, err)

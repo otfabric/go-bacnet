@@ -18,8 +18,7 @@ import (
 
 func TestAcknowledgeAlarmSimpleACK(t *testing.T) {
 	env := newVirtualPair(t)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	go serveSimpleACK(ctx, env.PeerTr, env.Local)
 
 	err := env.Client.AcknowledgeAlarm(ctx, env.Target, service.AcknowledgeAlarmRequest{
@@ -95,8 +94,7 @@ func TestDeviceManagementOptIn(t *testing.T) {
 	}
 
 	env2 := newVirtualPair(t, WithDeviceManagementEnabled(DeviceManagementConfirm))
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	go serveSimpleACK(ctx, env2.PeerTr, env2.Local)
 	if err := env2.Client.DeviceCommunicationControl(ctx, env2.Target, service.DeviceCommunicationControlRequest{
 		EnableDisable: service.EnableDisableEnable,

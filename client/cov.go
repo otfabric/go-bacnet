@@ -471,10 +471,7 @@ func (s *subscription) renewLoop(ctx context.Context) {
 	defer s.c.wg.Done()
 	defer close(s.done)
 
-	interval := time.Duration(s.lifetime) * time.Second / 2
-	if interval < time.Second {
-		interval = time.Second
-	}
+	interval := max(time.Duration(s.lifetime)*time.Second/2, time.Second)
 	for {
 		timer := s.c.clock.NewTimer(interval)
 		select {

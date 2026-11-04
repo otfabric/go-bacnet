@@ -116,10 +116,7 @@ func (c *Client) WriteFileStream(ctx context.Context, target Target, file bacnet
 	var outcomes []FileChunkOutcome
 	pos := startPosition
 	for len(data) > 0 {
-		n := int(opts.ChunkSize)
-		if n > len(data) {
-			n = len(data)
-		}
+		n := min(int(opts.ChunkSize), len(data))
 		chunk := data[:n]
 		data = data[n:]
 		outcome := FileChunkOutcome{StartPosition: pos, ByteCount: n}

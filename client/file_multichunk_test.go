@@ -14,8 +14,7 @@ import (
 
 func TestReadFileStreamMultiChunk(t *testing.T) {
 	env := newVirtualPair(t)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	file := bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeFile, Instance: 1}
 	var n atomic.Int64
 	go serveComplexACK(ctx, env.PeerTr, env.Local, func(choice uint8) ([]byte, error) {

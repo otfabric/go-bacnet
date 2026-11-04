@@ -31,7 +31,6 @@ func TestInteropCorpusDecodes(t *testing.T) {
 	}
 	limits := bacnet.DefaultDecodeLimits()
 	for _, meta := range all {
-		meta := meta
 		t.Run(meta.ID, func(t *testing.T) {
 			raw, err := meta.Bytes()
 			if err != nil {

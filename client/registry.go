@@ -3,6 +3,7 @@
 package client
 
 import (
+	"slices"
 	"sync"
 	"time"
 
@@ -154,13 +155,7 @@ func (r *Registry) Upsert(o DeviceObservation) {
 		r.enforceCapacityLocked(o.Instance, &events)
 	}
 	r.byKey[k] = o
-	found := false
-	for _, pk := range r.byInstance[o.Instance] {
-		if pk == k {
-			found = true
-			break
-		}
-	}
+	found := slices.Contains(r.byInstance[o.Instance], k)
 	if !found {
 		r.byInstance[o.Instance] = append(r.byInstance[o.Instance], k)
 	}

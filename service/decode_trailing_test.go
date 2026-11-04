@@ -136,9 +136,7 @@ func TestEncodeRejectsBadObjectIdentifiers(t *testing.T) {
 	}); err == nil {
 		t.Fatal("life")
 	}
-	if _, err := service.EncodeWriteGroup(service.WriteGroup{GroupNumber: 1, WritePriority: 1, ChangeList: []bacnet.Element{{Value: bacnet.UnsignedValue(1)}}, InhibitDelay: boolPtr(true)}); err != nil {
+	if _, err := service.EncodeWriteGroup(service.WriteGroup{GroupNumber: 1, WritePriority: 1, ChangeList: []bacnet.Element{{Value: bacnet.UnsignedValue(1)}}, InhibitDelay: new(true)}); err != nil {
 		t.Fatal(err)
 	}
 }
-
-func boolPtr(b bool) *bool { return &b }

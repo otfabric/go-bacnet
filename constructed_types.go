@@ -307,7 +307,7 @@ func DecodeDailySchedule(v ApplicationValue) (DailySchedule, error) {
 // EncodeWeeklySchedule encodes ARRAY[7] OF DailySchedule as seven constructed days.
 func EncodeWeeklySchedule(w WeeklySchedule) ApplicationValue {
 	els := make([]Element, 7)
-	for i := 0; i < 7; i++ {
+	for i := range 7 {
 		els[i] = Element{Value: EncodeDailySchedule(w[i])}
 	}
 	return ApplicationValue{Kind: ValueConstructed, Elements: els}
@@ -321,7 +321,7 @@ func DecodeWeeklySchedule(v ApplicationValue) (WeeklySchedule, error) {
 	if len(v.Elements) != 7 {
 		return w, fmt.Errorf("%w: WeeklySchedule needs 7 days", ErrMalformed)
 	}
-	for i := 0; i < 7; i++ {
+	for i := range 7 {
 		day := v.Elements[i].Value
 		if IsContextConstructed(v.Elements[i]) {
 			day = ApplicationValue{Kind: ValueConstructed, Elements: []Element{v.Elements[i]}}

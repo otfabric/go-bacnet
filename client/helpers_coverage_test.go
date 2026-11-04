@@ -72,8 +72,7 @@ func TestWritePriorityValidation(t *testing.T) {
 
 func TestWritePriorityAndRelinquish(t *testing.T) {
 	env := newVirtualPair(t)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	go serveSimpleACK(ctx, env.PeerTr, env.Local)
 	obj := bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeAnalogValue, Instance: 1}
 	if err := env.Client.WritePriority(ctx, env.Target, obj, 8, bacnet.RealValue(21)); err != nil {
@@ -98,8 +97,7 @@ func TestReadObjectListAndPropertyListErrors(t *testing.T) {
 
 func TestReadObjectListAndPropertyList(t *testing.T) {
 	env := newVirtualPair(t)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	obj := bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeDevice, Instance: 1}
 	av := bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeAnalogValue, Instance: 2}
 	go serveComplexACK(ctx, env.PeerTr, env.Local, func(choice uint8) ([]byte, error) {
@@ -121,8 +119,7 @@ func TestReadObjectListAndPropertyList(t *testing.T) {
 	}
 
 	env2 := newVirtualPair(t)
-	ctx2, cancel2 := context.WithCancel(context.Background())
-	defer cancel2()
+	ctx2 := t.Context()
 	go serveComplexACK(ctx2, env2.PeerTr, env2.Local, func(choice uint8) ([]byte, error) {
 		return service.EncodeReadPropertyACK(service.ReadPropertyACK{
 			Object:   obj,
@@ -141,8 +138,7 @@ func TestReadObjectListAndPropertyList(t *testing.T) {
 
 func TestReadFileStreamAndRecords(t *testing.T) {
 	env := newVirtualPair(t)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	file := bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeFile, Instance: 1}
 	go serveComplexACK(ctx, env.PeerTr, env.Local, func(choice uint8) ([]byte, error) {
 		switch choice {
@@ -160,8 +156,7 @@ func TestReadFileStreamAndRecords(t *testing.T) {
 	}
 
 	env2 := newVirtualPair(t)
-	ctx2, cancel2 := context.WithCancel(context.Background())
-	defer cancel2()
+	ctx2 := t.Context()
 	go serveComplexACK(ctx2, env2.PeerTr, env2.Local, func(choice uint8) ([]byte, error) {
 		return service.EncodeAtomicReadFileACK(service.AtomicReadFileACK{
 			EndOfFile: true, Access: service.FileAccessRecord,
@@ -176,8 +171,7 @@ func TestReadFileStreamAndRecords(t *testing.T) {
 
 func TestWriteFileStream(t *testing.T) {
 	env := newVirtualPair(t)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	file := bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeFile, Instance: 1}
 	go serveComplexACK(ctx, env.PeerTr, env.Local, func(choice uint8) ([]byte, error) {
 		return service.EncodeAtomicWriteFileACK(service.AtomicWriteFileACK{
@@ -192,8 +186,7 @@ func TestWriteFileStream(t *testing.T) {
 
 func TestReadRangeAllPages(t *testing.T) {
 	env := newVirtualPair(t)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	obj := bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeDevice, Instance: 1}
 	prop := bacnet.PropertyReference{Identifier: bacnet.PropertyObjectList}
 	n := 0
@@ -220,8 +213,7 @@ func TestRPMBatchedEmptyAndSingle(t *testing.T) {
 	if _, err := env.Client.ReadPropertyMultipleBatched(context.Background(), env.Target, nil, RPMBatchOptions{}); err == nil {
 		t.Fatal("expected empty error")
 	}
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	obj := bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeAnalogValue, Instance: 1}
 	go serveComplexACK(ctx, env.PeerTr, env.Local, func(choice uint8) ([]byte, error) {
 		return service.EncodeReadPropertyMultipleACK([]service.ReadAccessResult{{
@@ -246,8 +238,7 @@ func TestWPMBatched(t *testing.T) {
 	if _, err := env.Client.WritePropertyMultipleBatched(context.Background(), env.Target, nil, WPMBatchOptions{}); err == nil {
 		t.Fatal("expected empty")
 	}
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	go serveSimpleACK(ctx, env.PeerTr, env.Local)
 	obj := bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeAnalogValue, Instance: 1}
 	res, err := env.Client.WritePropertyMultipleBatched(ctx, env.Target, []service.WriteAccessSpecification{{

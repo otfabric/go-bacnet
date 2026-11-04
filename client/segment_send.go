@@ -142,10 +142,7 @@ func buildConfirmedSegments(req apdu.ConfirmedRequest, remoteMax int, proposedWi
 		if seq == 0 {
 			max = firstMax
 		}
-		end := off + max
-		if end > len(payload) {
-			end = len(payload)
-		}
+		end := min(off+max, len(payload))
 		more := end < len(payload)
 		seg := apdu.AppendConfirmedRequest(nil, apdu.ConfirmedRequest{
 			SegmentedMessage:          true,

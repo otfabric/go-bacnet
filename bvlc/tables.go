@@ -90,7 +90,7 @@ func DecodeBDTEntries(payload []byte, limits bacnet.DecodeLimits) ([]BDTEntry, e
 		return nil, fmt.Errorf("%w: BDT entry count", bacnet.ErrLimitExceeded)
 	}
 	out := make([]BDTEntry, 0, n)
-	for i := 0; i < n; i++ {
+	for i := range n {
 		off := i * 10
 		var ip [4]byte
 		copy(ip[:], payload[off:off+4])
@@ -133,7 +133,7 @@ func DecodeFDTEntries(payload []byte, limits bacnet.DecodeLimits) ([]FDTEntry, e
 		return nil, fmt.Errorf("%w: FDT entry count", bacnet.ErrLimitExceeded)
 	}
 	out := make([]FDTEntry, 0, n)
-	for i := 0; i < n; i++ {
+	for i := range n {
 		off := i * 10
 		var ip [4]byte
 		copy(ip[:], payload[off:off+4])

@@ -124,7 +124,7 @@ func TestRouterCacheMaxPerNet(t *testing.T) {
 	r.maxPerNet = 2
 	r.maxGlobal = 100
 	now := time.Now()
-	for i := 0; i < 4; i++ {
+	for i := range 4 {
 		ep := bip.NewEndpoint(netip.MustParseAddrPort(netip.AddrFrom4([4]byte{10, 0, 0, byte(i + 1)}).String() + ":47808"))
 		r.upsertLearned(1, ep, bip.Endpoint{}, now.Add(time.Duration(i)*time.Second))
 	}

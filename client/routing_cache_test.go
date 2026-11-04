@@ -20,7 +20,7 @@ func TestRouterCacheEnforceGlobalAndExpiry(t *testing.T) {
 	r.maxPerNet = 8
 	r.ttl = time.Minute
 	now := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		ep := bip.NewEndpoint(netip.MustParseAddrPort(netip.AddrFrom4([4]byte{10, 0, 0, byte(i + 1)}).String() + ":47808"))
 		r.upsertLearned(uint16(i+1), ep, bip.Endpoint{}, now.Add(time.Duration(i)*time.Second))
 	}

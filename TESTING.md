@@ -8,11 +8,11 @@ capability in [docs/CLIENT_SUPPORT.md](docs/CLIENT_SUPPORT.md).
 
 | Tier | Command | Prerequisites | CI |
 |---|---|---|---|
-| Unit | `make test` | none | `ci.yml`, shared go-ci on Go 1.23–1.26 |
+| Unit | `make test` | none | `ci.yml`, shared go-ci on Go 1.26–1.27 |
 | Race | `make test-race` | none | `ci.yml` |
 | Coverage gate | `make coverage` (`make coverage-check` is an alias) | a `bacnet-interop` checkout, for the fixture corpus (below) | `ci.yml`, job Library coverage gate |
 | Import boundaries | `make imports` | none | part of the unit tier (`internal/imports`) |
-| End to end | `make e2e` | none | part of the unit tier, on Go 1.23–1.26 |
+| End to end | `make e2e` | none | part of the unit tier, on Go 1.26–1.27 |
 | Chaos | `make chaos` | none | the `TestChaos` tests also run at default load in the unit tier |
 | Fuzz | `make fuzz` (`FUZZTIME`, default 5s) | none | 10s per target in `ci.yml`; 5m per listed target in `fuzz-nightly.yml` |
 | Benchmarks | `make bench` | none | not run in CI |

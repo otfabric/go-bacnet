@@ -46,8 +46,7 @@ func TestSubscribeCOVPropertyInitialTimeout(t *testing.T) {
 
 func TestSubscribeCOVPropertyDefaults(t *testing.T) {
 	env := newVirtualPair(t)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	go serveSimpleACK(ctx, env.PeerTr, env.Local)
 
 	obj := bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeAnalogValue, Instance: 12}
@@ -104,8 +103,7 @@ func TestSubscribeCOVPropertyDefaults(t *testing.T) {
 
 func TestSubscribeCOVPropertyRenewal(t *testing.T) {
 	env := newVirtualPair(t)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	go serveSimpleACK(ctx, env.PeerTr, env.Local)
 
 	obj := bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeAnalogValue, Instance: 13}
@@ -207,8 +205,7 @@ func TestSubscribeCOVPropertyRenewalDegrade(t *testing.T) {
 
 func TestSubscribeCOVPropertyCloseCancellation(t *testing.T) {
 	env := newVirtualPair(t)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	go serveSimpleACK(ctx, env.PeerTr, env.Local)
 
 	obj := bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeAnalogValue, Instance: 15}
@@ -235,8 +232,7 @@ func TestSubscribeCOVPropertyCloseCancellation(t *testing.T) {
 
 func TestClientCloseClosesPropertySubscriptions(t *testing.T) {
 	env := newVirtualPair(t)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	go serveSimpleACK(ctx, env.PeerTr, env.Local)
 
 	obj := bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeAnalogValue, Instance: 16}

@@ -4,6 +4,7 @@
 package clock
 
 import (
+	"slices"
 	"sync"
 	"time"
 )
@@ -94,10 +95,8 @@ func (m *Manual) Advance(d time.Duration) {
 }
 
 func (m *Manual) trackLocked(t *manualTimer) {
-	for _, existing := range m.timers {
-		if existing == t {
-			return
-		}
+	if slices.Contains(m.timers, t) {
+		return
 	}
 	m.timers = append(m.timers, t)
 }

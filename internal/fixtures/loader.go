@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 )
 
@@ -69,7 +70,7 @@ func Root() (string, error) {
 	seen := map[string]bool{}
 	for _, start := range starts {
 		dir := start
-		for i := 0; i < 8; i++ {
+		for range 8 {
 			cand := filepath.Join(dir, "..", "bacnet-interop")
 			abs, err := filepath.Abs(cand)
 			if err == nil && !seen[abs] {
@@ -148,12 +149,7 @@ func (m Meta) Bytes() ([]byte, error) {
 
 // HasTag reports whether m carries tag.
 func (m Meta) HasTag(tag string) bool {
-	for _, t := range m.Tags {
-		if t == tag {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(m.Tags, tag)
 }
 
 // Malformed reports malformed-constructed license status.

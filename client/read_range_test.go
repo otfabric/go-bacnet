@@ -14,8 +14,7 @@ import (
 
 func TestReadRangeComplexACK(t *testing.T) {
 	env := newVirtualPair(t)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	obj := bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeTrendLog, Instance: 1}
 	prop := bacnet.PropertyReference{Identifier: bacnet.PropertyPresentValue}
@@ -56,8 +55,7 @@ func TestDefaultRetransmitPolicyReadRange(t *testing.T) {
 
 func TestReadRangeRejectsWrongObjectEcho(t *testing.T) {
 	env := newVirtualPair(t)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	reqObj := bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeTrendLog, Instance: 1}
 	wrong := bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeTrendLog, Instance: 9}
 	prop := bacnet.PropertyReference{Identifier: bacnet.PropertyLogBuffer}
@@ -89,8 +87,7 @@ func TestReadRangeEncodeError(t *testing.T) {
 
 func TestReadRangeSimpleACKIsProtocolViolation(t *testing.T) {
 	env := newVirtualPair(t)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	go serveSimpleACK(ctx, env.PeerTr, env.Local)
 	_, err := env.Client.ReadRange(ctx, env.Target, service.ReadRangeRequest{
 		Object:   bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeTrendLog, Instance: 1},

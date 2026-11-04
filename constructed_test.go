@@ -14,7 +14,7 @@ func TestParseSequenceDepthLimit(t *testing.T) {
 	// Build nested opening tags deeper than MaxConstructedDepth.
 	limits := bacnet.DecodeLimits{MaxConstructedDepth: 3, MaxElements: 64}
 	var data []byte
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		data = append(data, 0x0E) // opening context 0
 	}
 	_, _, err := bacnet.ParseSequence(data, limits, -1)

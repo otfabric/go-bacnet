@@ -231,7 +231,7 @@ func DecodeLogRecords(elements []bacnet.Element, count int) ([]LogRecord, error)
 	}
 	out := make([]LogRecord, 0, count)
 	off := 0
-	for i := 0; i < count; i++ {
+	for range count {
 		rec, n, err := decodeLogRecord(elements[off:])
 		if err != nil {
 			return nil, err

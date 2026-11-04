@@ -72,8 +72,7 @@ func TestCreateObjectComplexACK(t *testing.T) {
 
 func TestDeleteObjectAndListElementSimpleACK(t *testing.T) {
 	env := newVirtualPair(t)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	go serveSimpleACK(ctx, env.PeerTr, env.Local)
 	if err := env.Client.DeleteObject(ctx, env.Target, service.DeleteObjectRequest{
 		Object: bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeAnalogValue, Instance: 9},
@@ -130,8 +129,7 @@ func TestAuditStreamAndQuery(t *testing.T) {
 
 func TestLifeSafetySimpleACK(t *testing.T) {
 	env := newVirtualPair(t)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	go serveSimpleACK(ctx, env.PeerTr, env.Local)
 	if err := env.Client.LifeSafetyOperation(ctx, env.Target, service.LifeSafetyOperationRequest{
 		RequestingProcessIdentifier: 1, RequestingSource: "ops", Request: 1,

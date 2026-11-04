@@ -61,8 +61,7 @@ func TestConfirmedCOVRepliesToRemoteSource(t *testing.T) {
 	remote := bacnet.RemoteStation(2, remoteMAC)
 
 	obj := bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeAnalogValue, Instance: 11}
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	go serveSimpleACK(ctx, env.PeerTr, env.Local)
 	sub, err := env.Client.SubscribeCOVProperty(context.Background(), env.Target, obj, bacnet.PropertyReference{Identifier: bacnet.PropertyPresentValue}, COVOptions{Lifetime: 60, BufferSize: 4, IssueConfirmed: true}, nil)
 	if err != nil {

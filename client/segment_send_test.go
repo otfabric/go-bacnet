@@ -122,8 +122,7 @@ func TestSegmentedWritePropertyMultipleSimpleACK(t *testing.T) {
 	env := newVirtualPair(t, WithTransactionOptions(time.Second, 0, time.Second), WithSegmentWindow(1))
 	seedPeerSegmentation(env, 50, segmentationReceive)
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	go serveSegmentedConfirmedSimpleACK(ctx, env.PeerTr, env.Local)
 
 	// Force segmentation: small remote max + large WPM payload.
@@ -132,7 +131,7 @@ func TestSegmentedWritePropertyMultipleSimpleACK(t *testing.T) {
 
 	obj := bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeAnalogOutput, Instance: 1}
 	props := make([]service.WritePropertyValue, 0, 8)
-	for i := 0; i < 8; i++ {
+	for range 8 {
 		props = append(props, service.WritePropertyValue{
 			Property: bacnet.PropertyReference{Identifier: bacnet.PropertyPresentValue},
 			Value: bacnet.ApplicationValue{
@@ -152,8 +151,7 @@ func TestSegmentedWritePropertyMultipleWindow4(t *testing.T) {
 	env := newVirtualPair(t, WithTransactionOptions(time.Second, 0, time.Second), WithSegmentWindow(4))
 	seedPeerSegmentation(env, 50, segmentationReceive)
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	go serveSegmentedConfirmedWindowedACK(ctx, env.PeerTr, env.Local, 4)
 
 	target := env.Target
@@ -161,7 +159,7 @@ func TestSegmentedWritePropertyMultipleWindow4(t *testing.T) {
 
 	obj := bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeAnalogOutput, Instance: 1}
 	props := make([]service.WritePropertyValue, 0, 8)
-	for i := 0; i < 8; i++ {
+	for range 8 {
 		props = append(props, service.WritePropertyValue{
 			Property: bacnet.PropertyReference{Identifier: bacnet.PropertyPresentValue},
 			Value: bacnet.ApplicationValue{
@@ -185,7 +183,7 @@ func TestSegmentedSendTimeoutAborts(t *testing.T) {
 
 	obj := bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeAnalogOutput, Instance: 1}
 	props := make([]service.WritePropertyValue, 0, 8)
-	for i := 0; i < 8; i++ {
+	for range 8 {
 		props = append(props, service.WritePropertyValue{
 			Property: bacnet.PropertyReference{Identifier: bacnet.PropertyPresentValue},
 			Value: bacnet.ApplicationValue{
@@ -270,7 +268,7 @@ func TestSegmentedRequestRefusedWithoutPeerCapability(t *testing.T) {
 
 	obj := bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeAnalogOutput, Instance: 1}
 	props := make([]service.WritePropertyValue, 0, 8)
-	for i := 0; i < 8; i++ {
+	for range 8 {
 		props = append(props, service.WritePropertyValue{
 			Property: bacnet.PropertyReference{Identifier: bacnet.PropertyPresentValue},
 			Value: bacnet.ApplicationValue{
@@ -297,13 +295,12 @@ func TestSegmentedSendNAKThenSucceeds(t *testing.T) {
 	target := env.Target
 	target.MaxAPDU = 50
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	go serveSegmentedConfirmedSimpleACKOnceNAK(ctx, env.PeerTr, env.Local)
 
 	obj := bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeAnalogOutput, Instance: 1}
 	props := make([]service.WritePropertyValue, 0, 8)
-	for i := 0; i < 8; i++ {
+	for range 8 {
 		props = append(props, service.WritePropertyValue{
 			Property: bacnet.PropertyReference{Identifier: bacnet.PropertyPresentValue},
 			Value: bacnet.ApplicationValue{
@@ -327,7 +324,7 @@ func TestSegmentedSendClosedDuringWait(t *testing.T) {
 
 	obj := bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeAnalogOutput, Instance: 1}
 	props := make([]service.WritePropertyValue, 0, 8)
-	for i := 0; i < 8; i++ {
+	for range 8 {
 		props = append(props, service.WritePropertyValue{
 			Property: bacnet.PropertyReference{Identifier: bacnet.PropertyPresentValue},
 			Value: bacnet.ApplicationValue{
@@ -359,7 +356,7 @@ func TestSegmentedSendCancelOutcomeUnknown(t *testing.T) {
 
 	obj := bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeAnalogOutput, Instance: 1}
 	props := make([]service.WritePropertyValue, 0, 8)
-	for i := 0; i < 8; i++ {
+	for range 8 {
 		props = append(props, service.WritePropertyValue{
 			Property: bacnet.PropertyReference{Identifier: bacnet.PropertyPresentValue},
 			Value: bacnet.ApplicationValue{
@@ -379,8 +376,7 @@ func TestSegmentedSendCancelOutcomeUnknown(t *testing.T) {
 	_, _ = waitConfirmedInvokeID(t, env.ClientTr, time.Second)
 	cancel()
 	err := <-errCh
-	var unknown *bacnet.OutcomeUnknownError
-	if !errors.As(err, &unknown) {
+	if _, ok := errors.AsType[*bacnet.OutcomeUnknownError](err); !ok {
 		t.Fatalf("expected outcome-unknown, got %v", err)
 	}
 }
@@ -395,7 +391,7 @@ func TestSegmentedSendExceedsMaxSegments(t *testing.T) {
 
 	obj := bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeAnalogOutput, Instance: 1}
 	props := make([]service.WritePropertyValue, 0, 8)
-	for i := 0; i < 8; i++ {
+	for range 8 {
 		props = append(props, service.WritePropertyValue{
 			Property: bacnet.PropertyReference{Identifier: bacnet.PropertyPresentValue},
 			Value: bacnet.ApplicationValue{
