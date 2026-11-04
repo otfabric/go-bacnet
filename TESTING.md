@@ -8,11 +8,11 @@ capability in [docs/CLIENT_SUPPORT.md](docs/CLIENT_SUPPORT.md).
 
 | Tier | Command | Prerequisites | CI |
 |---|---|---|---|
-| Unit | `make test` | none | `ci.yml`, shared go-ci on Go 1.23–1.26 |
+| Unit | `make test` | none | `ci.yml`, shared go-ci on Go 1.26–1.27 |
 | Race | `make test-race` | none | `ci.yml` |
 | Coverage gate | `make coverage` (`make coverage-check` is an alias) | a `bacnet-interop` checkout, for the fixture corpus (below) | `ci.yml`, job Library coverage gate |
 | Import boundaries | `make imports` | none | part of the unit tier (`internal/imports`) |
-| End to end | `make e2e` | none | part of the unit tier, on Go 1.23–1.26 |
+| End to end | `make e2e` | none | part of the unit tier, on Go 1.26–1.27 |
 | Chaos | `make chaos` | none | the `TestChaos` tests also run at default load in the unit tier |
 | Fuzz | `make fuzz` (`FUZZTIME`, default 5s) | none | 10s per target in `ci.yml`; 5m per listed target in `fuzz-nightly.yml` |
 | Benchmarks | `make bench` | none | not run in CI |
@@ -24,11 +24,17 @@ The library is a client with no BACnet server of its own. `e2e/` runs it on a
 real UDP socket against a device on another, over loopback; that device is
 built in the test from the public codecs (`bvlc`, `npdu`, `apdu`, `service`),
 and covers discovery, reads, writes, device errors, timeouts, COV and
-concurrent requests. `client` tests run against scripted in-process devices on
+concurrent requests. `e2e/hostile_test.go` replaces that device with a hostile
+one: malformed frames ahead of a valid answer, out-of-range values in ACKs and
+I-Ams, I-Am and COV floods, unsolicited junk and endless or broken
+segmentation; the client must refuse or ignore each, within its timeout and
+with bounded memory. `client` tests run against scripted in-process devices on
 the in-memory transport (`internal/virtual`), and `make chaos` adds faults
-(`client/chaos_test.go`, described in
-[CONTRIBUTING.md](CONTRIBUTING.md#concurrency-tests)). Independent devices are
-reached through the interop tier.
+(`client/chaos_test.go` and `client/chaos_segack_test.go` for the segmented
+request path, described in
+[CONTRIBUTING.md](CONTRIBUTING.md#concurrency-tests)). `FuzzClientReceive`
+feeds raw datagrams to the client while a request is pending. Independent
+devices are reached through the interop tier.
 
 `internal/leak` fails `client`, `internal/clock` and `e2e` when a test leaves a
 goroutine behind; it compares goroutine stacks, so the failure names it.

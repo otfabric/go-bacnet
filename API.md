@@ -251,7 +251,9 @@ transparently retried on another route.
 - `WritePriority` / `RelinquishPriority` command and release one slot of the
   priority array of Present_Value.
 - `ReadFileStream` / `ReadFileRecords` / `WriteFileStream` move a file in
-  chunks (`WriteFileStream` reports the outcome per chunk).
+  chunks (`WriteFileStream` reports the outcome per chunk). With a negative
+  start position (end of file) each `WriteFileStream` chunk after the first
+  goes to the position the device's ACK reported plus the chunk length.
 - `ReadRangeAll` pages byPosition or bySequenceNumber until the device
   reports LAST_ITEM or a limit (`MaxItems` in records, `MaxBytes`,
   `MaxPages`) is reached; `Partial` and `StoppedReason` say which.

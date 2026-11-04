@@ -116,7 +116,7 @@ func newChaosNet() *chaosNet {
 		in:    make(chan InboundPacket, 64),
 		done:  make(chan struct{}),
 	}
-	for i := 0; i < chaosDevices; i++ {
+	for i := range chaosDevices {
 		n.devices = append(n.devices, bip.NewEndpoint(netip.AddrPortFrom(netip.AddrFrom4([4]byte{10, 9, 0, byte(10 + i)}), 47808)))
 	}
 	return n
@@ -407,17 +407,11 @@ func (w *chaosWorld) onSend(pkt OutboundPacket) {
 // broken damages the sequence: a missing, repeated or reordered segment, or
 // one that never ends.
 func (w *chaosWorld) segments(req *apdu.ConfirmedRequest, payload []byte, broken bool) [][]byte {
-	count := 2 + w.rnd.Intn(4)
-	if count > len(payload) {
-		count = len(payload)
-	}
+	count := min(2+w.rnd.Intn(4), len(payload))
 	size := (len(payload) + count - 1) / count
 	var frames [][]byte
 	for seq := 0; seq*size < len(payload); seq++ {
-		end := (seq + 1) * size
-		if end > len(payload) {
-			end = len(payload)
-		}
+		end := min((seq+1)*size, len(payload))
 		frames = append(frames, chaosFrame(apdu.AppendComplexACK(nil, apdu.ComplexACK{
 			SegmentedMessage:   true,
 			MoreFollows:        end < len(payload),
@@ -590,12 +584,10 @@ func (w *chaosWorld) noise(from bip.Endpoint) {
 func chaosGo(t *testing.T, what string, n int, limit time.Duration, fn func(worker int)) {
 	t.Helper()
 	var wg sync.WaitGroup
-	for i := 0; i < n; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+	for i := range n {
+		wg.Go(func() {
 			fn(i)
-		}()
+		})
 	}
 	done := make(chan struct{})
 	go func() { wg.Wait(); close(done) }()
@@ -735,7 +727,7 @@ func TestChaosConcurrentRequests(t *testing.T) {
 		var tally chaosTally
 
 		chaosGo(t, "requests", workers, 120*time.Second, func(int) {
-			for i := 0; i < perWorker; i++ {
+			for range perWorker {
 				ctx, cancel := context.WithCancel(context.Background())
 				switch w.rnd.Intn(10) {
 				case 0, 1: // a deadline that may fall anywhere in the transaction
@@ -757,7 +749,7 @@ func TestChaosConcurrentRequests(t *testing.T) {
 		// The devices behave again: so must the client.
 		w.mix.Store(&chaosHonest)
 		time.Sleep(4 * chaosAPDUTimeout) // late replies of the chaos phase
-		for i := 0; i < 50; i++ {
+		for i := range 50 {
 			if err := chaosRead(t, context.Background(), w, c, instance.Add(1), &tally); err != nil {
 				t.Fatalf("read %d after the chaos: %v", i, err)
 			}
@@ -809,10 +801,8 @@ func TestChaosSubscriptions(t *testing.T) {
 
 		stop := make(chan struct{})
 		var flood sync.WaitGroup
-		for i := 0; i < 3; i++ {
-			flood.Add(1)
-			go func() {
-				defer flood.Done()
+		for range 3 {
+			flood.Go(func() {
 				for {
 					select {
 					case <-stop:
@@ -822,13 +812,13 @@ func TestChaosSubscriptions(t *testing.T) {
 						time.Sleep(w.ms(1))
 					}
 				}
-			}()
+			})
 		}
 
 		var opened, delivered, gaps atomic.Int64
 		rounds := 12 * chaosScale()
 		chaosGo(t, "subscribers", 16, 120*time.Second, func(worker int) {
-			for round := 0; round < rounds; round++ {
+			for round := range rounds {
 				dev := w.rnd.Intn(chaosDevices)
 				object := bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeAnalogValue, Instance: uint32(worker*1000 + round)}
 				pv := bacnet.PropertyReference{Identifier: bacnet.PropertyPresentValue}
@@ -967,7 +957,7 @@ func TestChaosCloseDuringTraffic(t *testing.T) {
 
 			go func() {
 				time.Sleep(w.ms(120))
-				for i := 0; i < 3; i++ {
+				for range 3 {
 					go func() { _ = c.Close() }()
 				}
 			}()
@@ -1048,10 +1038,8 @@ func TestChaosInboundStorm(t *testing.T) {
 
 		stop := make(chan struct{})
 		var storm sync.WaitGroup
-		for i := 0; i < 4; i++ {
-			storm.Add(1)
-			go func() {
-				defer storm.Done()
+		for i := range 4 {
+			storm.Go(func() {
 				for {
 					select {
 					case <-stop:
@@ -1067,11 +1055,11 @@ func TestChaosInboundStorm(t *testing.T) {
 					w.noise(from)
 					time.Sleep(w.ms(1) / 4)
 				}
-			}()
+			})
 		}
 		perWorker := 60 * chaosScale()
 		chaosGo(t, "requests in the storm", 16, 120*time.Second, func(int) {
-			for i := 0; i < perWorker; i++ {
+			for range perWorker {
 				_ = chaosRead(t, context.Background(), w, c, instance.Add(1), &tally)
 			}
 		})
@@ -1084,7 +1072,7 @@ func TestChaosInboundStorm(t *testing.T) {
 
 		time.Sleep(4 * chaosAPDUTimeout) // reassemblies the storm started time out
 		chaosIdle(t, c)
-		for i := 0; i < 50; i++ {
+		for i := range 50 {
 			if err := chaosRead(t, context.Background(), w, c, instance.Add(1), &tally); err != nil {
 				t.Fatalf("read %d after the storm: %v", i, err)
 			}
@@ -1105,10 +1093,8 @@ func TestChaosStrangersCannotEndTransactions(t *testing.T) {
 
 		stop := make(chan struct{})
 		var storm sync.WaitGroup
-		for i := 0; i < 4; i++ {
-			storm.Add(1)
-			go func() {
-				defer storm.Done()
+		for range 4 {
+			storm.Go(func() {
 				for {
 					select {
 					case <-stop:
@@ -1118,11 +1104,11 @@ func TestChaosStrangersCannotEndTransactions(t *testing.T) {
 						time.Sleep(w.ms(1) / 4)
 					}
 				}
-			}()
+			})
 		}
 		perWorker := 60 * chaosScale()
 		chaosGo(t, "requests", 16, 120*time.Second, func(int) {
-			for i := 0; i < perWorker; i++ {
+			for range perWorker {
 				if err := chaosRead(t, context.Background(), w, c, instance.Add(1), &tally); err != nil {
 					t.Errorf("a read failed although only strangers interfered: %v", err)
 				}

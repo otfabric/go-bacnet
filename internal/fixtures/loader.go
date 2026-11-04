@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 )
 
@@ -69,7 +70,7 @@ func Root() (string, error) {
 	seen := map[string]bool{}
 	for _, start := range starts {
 		dir := start
-		for i := 0; i < 8; i++ {
+		for range 8 {
 			cand := filepath.Join(dir, "..", "bacnet-interop")
 			abs, err := filepath.Abs(cand)
 			if err == nil && !seen[abs] {
@@ -98,7 +99,14 @@ func LoadAll() ([]Meta, error) {
 	if err != nil {
 		return nil, err
 	}
-	raw, err := os.ReadFile(filepath.Join(root, "fixtures", "manifest.json"))
+	// Every read goes through an os.Root on fixtures/, so a manifest entry
+	// (or a symlink) cannot reach a file outside it.
+	fsRoot, err := os.OpenRoot(fixturesRoot)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = fsRoot.Close() }()
+	raw, err := fsRoot.ReadFile("manifest.json")
 	if err != nil {
 		return nil, err
 	}
@@ -116,7 +124,11 @@ func LoadAll() ([]Meta, error) {
 		if !strings.HasPrefix(abs, fixturesRoot+string(os.PathSeparator)) && abs != fixturesRoot {
 			return nil, fmt.Errorf("fixtures: %s escapes fixtures/", e.Path)
 		}
-		b, err := os.ReadFile(abs)
+		rel, err := filepath.Rel(fixturesRoot, abs)
+		if err != nil {
+			return nil, fmt.Errorf("fixtures: %s: %w", e.Path, err)
+		}
+		b, err := fsRoot.ReadFile(rel)
 		if err != nil {
 			return nil, fmt.Errorf("fixtures: %s: %w", e.Path, err)
 		}
@@ -148,12 +160,7 @@ func (m Meta) Bytes() ([]byte, error) {
 
 // HasTag reports whether m carries tag.
 func (m Meta) HasTag(tag string) bool {
-	for _, t := range m.Tags {
-		if t == tag {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(m.Tags, tag)
 }
 
 // Malformed reports malformed-constructed license status.

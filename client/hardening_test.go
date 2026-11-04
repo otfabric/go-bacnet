@@ -267,8 +267,7 @@ func TestRoutedConfirmedRequestIsIgnored(t *testing.T) {
 
 func TestReadPropertyDeviceWildcard(t *testing.T) {
 	env := newVirtualPair(t)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	real := bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeDevice, Instance: 1234}
 	prop := bacnet.PropertyReference{Identifier: bacnet.PropertyObjectIdentifier}
 	go servePeer(ctx, env, func(req *apdu.ConfirmedRequest) []byte {
@@ -348,8 +347,7 @@ func TestReadObjectListFallsBackToIndexedReads(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			env := newVirtualPair(t)
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
+			ctx := t.Context()
 			const n = 45
 			// The peer returns at most 10 entries per reply, forcing shrinks.
 			go servePeer(ctx, env, objectListPeer(env, n, tc.rpm, tc.reason, 10))
@@ -377,8 +375,7 @@ func TestReadObjectListFallsBackToIndexedReads(t *testing.T) {
 // An Abort that does not mean "reply too large" must not trigger the fallback.
 func TestReadObjectListKeepsOtherAborts(t *testing.T) {
 	env := newVirtualPair(t)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	go servePeer(ctx, env, func(req *apdu.ConfirmedRequest) []byte {
 		return apdu.AppendAbort(nil, apdu.AbortPDU{Server: true, InvokeID: req.InvokeID, Reason: bacnet.AbortReasonSecurityError})
 	})
@@ -395,8 +392,7 @@ func TestReadObjectListKeepsOtherAborts(t *testing.T) {
 
 func TestRPMBatchedSplitsLargeSpecAndMergesResults(t *testing.T) {
 	env := newVirtualPair(t)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	var requests atomic.Int32
 	limits := bacnet.DefaultDecodeLimits()
 	go servePeer(ctx, env, func(req *apdu.ConfirmedRequest) []byte {
@@ -603,8 +599,7 @@ func TestDiscoverWindowReturnsNilError(t *testing.T) {
 // the reply carries the device's BACnet/IP address, not a zero one.
 func TestEndpointOnlyTarget(t *testing.T) {
 	env := newVirtualPair(t)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	obj := bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeAnalogValue, Instance: 1}
 	prop := bacnet.PropertyReference{Identifier: bacnet.PropertyPresentValue}
 	go servePeer(ctx, env, func(req *apdu.ConfirmedRequest) []byte {
@@ -639,8 +634,7 @@ func TestResolveTargetNoRoute(t *testing.T) {
 // MaxItems counts records, not the elements a record decodes into.
 func TestReadRangeAllPagesUntilLastItem(t *testing.T) {
 	env := newVirtualPair(t)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	obj := bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeAnalogValue, Instance: 1}
 	prop := bacnet.PropertyReference{Identifier: bacnet.PropertyPriorityArray}
 	const total = 5
@@ -724,8 +718,7 @@ func TestRouterBusyAndAvailableWireTypes(t *testing.T) {
 // (91 02 91 28): the class and code must still reach the caller.
 func TestWritePropertyMultiplePlainErrorBody(t *testing.T) {
 	env := newVirtualPair(t)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	go servePeer(ctx, env, func(req *apdu.ConfirmedRequest) []byte {
 		return []byte{0x50, req.InvokeID, apdu.ServiceWritePropertyMultiple, 0x91, 0x02, 0x91, 0x28}
 	})
@@ -744,12 +737,10 @@ func TestWritePropertyMultiplePlainErrorBody(t *testing.T) {
 		remote.Service != apdu.ServiceWritePropertyMultiple {
 		t.Fatalf("%+v", remote)
 	}
-	var wpm *service.WritePropertyMultipleError
-	if errors.As(err, &wpm) {
+	if wpm, ok := errors.AsType[*service.WritePropertyMultipleError](err); ok {
 		t.Fatalf("a plain Error carries no first-failed write: %+v", wpm)
 	}
-	var unknown *bacnet.OutcomeUnknownError
-	if errors.As(err, &unknown) {
+	if _, ok := errors.AsType[*bacnet.OutcomeUnknownError](err); ok {
 		t.Fatalf("a definite refusal reported as outcome-unknown: %v", err)
 	}
 }
@@ -761,8 +752,7 @@ func TestWritePropertyMultiplePlainErrorBody(t *testing.T) {
 // timeout. An acknowledgement for another service is still dropped.
 func TestErrorWithForeignServiceChoiceCompletesTheRequest(t *testing.T) {
 	env := newVirtualPair(t)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	go servePeer(ctx, env, func(req *apdu.ConfirmedRequest) []byte {
 		if req.ServiceChoice == apdu.ServiceWriteProperty {
 			return []byte{0x50, req.InvokeID, 127, 0x91, 0x02, 0x91, 0x28} // property / write-access-denied
@@ -781,8 +771,7 @@ func TestErrorWithForeignServiceChoiceCompletesTheRequest(t *testing.T) {
 	if remote.Class != bacnet.ErrorClassProperty || remote.Code != bacnet.ErrorCodeWriteAccessDenied || remote.Service != 127 {
 		t.Fatalf("%+v", remote)
 	}
-	var unknown *bacnet.OutcomeUnknownError
-	if errors.As(err, &unknown) {
+	if _, ok := errors.AsType[*bacnet.OutcomeUnknownError](err); ok {
 		t.Fatalf("a definite refusal reported as outcome-unknown: %v", err)
 	}
 

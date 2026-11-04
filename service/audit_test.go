@@ -62,17 +62,17 @@ func interopAuditFull() service.AuditNotification {
 		SourceDevice:   service.AuditDevice(dev),
 		SourceObject:   &dev,
 		Operation:      1,
-		SourceComment:  ptr("interop-source"),
-		TargetComment:  ptr("interop-target"),
-		InvokeID:       ptr(uint8(5)),
-		SourceUserID:   ptr(uint16(1001)),
-		SourceUserRole: ptr(uint8(3)),
+		SourceComment:  new("interop-source"),
+		TargetComment:  new("interop-target"),
+		InvokeID:       new(uint8(5)),
+		SourceUserID:   new(uint16(1001)),
+		SourceUserRole: new(uint8(3)),
 		TargetDevice:   service.AuditDevice(dev),
 		TargetObject:   &bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeAnalogValue, Instance: 1},
 		TargetProperty: &bacnet.PropertyReference{Identifier: bacnet.PropertyPresentValue},
-		TargetPriority: ptr(uint8(8)),
-		TargetValue:    ptr(bacnet.RealValue(42.5)),
-		CurrentValue:   ptr(bacnet.RealValue(21.5)),
+		TargetPriority: new(uint8(8)),
+		TargetValue:    new(bacnet.RealValue(42.5)),
+		CurrentValue:   new(bacnet.RealValue(21.5)),
 		Result:         &service.AuditResult{Class: 2, Code: 40},
 	}
 }
@@ -166,7 +166,7 @@ func TestAuditNotificationConstructedValue(t *testing.T) {
 	n := interopAuditMinimal()
 	n.TargetValue = &bacnet.ApplicationValue{Kind: bacnet.ValueConstructed, Elements: []bacnet.Element{
 		{Value: bacnet.UnsignedValue(1)}, {Value: bacnet.UnsignedValue(2)}}}
-	n.TargetProperty = &bacnet.PropertyReference{Identifier: bacnet.PropertyPriorityArray, ArrayIndex: ptr(uint32(8))}
+	n.TargetProperty = &bacnet.PropertyReference{Identifier: bacnet.PropertyPriorityArray, ArrayIndex: new(uint32(8))}
 	raw, err := service.EncodeAuditNotificationRequest([]service.AuditNotification{n})
 	if err != nil {
 		t.Fatal(err)
@@ -198,13 +198,13 @@ func TestAuditLogQueryByTargetBytes(t *testing.T) {
 		ByTarget: &service.AuditQueryByTarget{
 			TargetDevice:     bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeDevice, Instance: 1234},
 			TargetObject:     &bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeAnalogValue, Instance: 1},
-			TargetProperty:   ptr(bacnet.PropertyPresentValue),
-			TargetArrayIndex: ptr(uint32(2)),
-			TargetPriority:   ptr(uint8(8)),
+			TargetProperty:   new(bacnet.PropertyPresentValue),
+			TargetArrayIndex: new(uint32(2)),
+			TargetPriority:   new(uint8(8)),
 			Operations:       &bacnet.BitString{UnusedBits: 6, Bytes: []byte{0x40}},
 			SuccessFilter:    service.AuditSuccessSuccessesOnly,
 		},
-		StartAtSequenceNumber: ptr(uint64(100)),
+		StartAtSequenceNumber: new(uint64(100)),
 		RequestedCount:        10,
 	}
 	want := mustHex(t, "0c0f400001"+ // audit-log [0] audit-log:1
@@ -310,7 +310,7 @@ func TestAuditLogQueryACKFromBacnetStack(t *testing.T) {
 		Records: []service.AuditLogRecordResult{
 			{SequenceNumber: 100, Timestamp: stamp(0), LogStatus: &bacnet.BitString{UnusedBits: 5, Bytes: []byte{0x40}}},
 			{SequenceNumber: 101, Timestamp: stamp(1), Notification: &note},
-			{SequenceNumber: 102, Timestamp: stamp(2), TimeChange: ptr(float32(1.5))},
+			{SequenceNumber: 102, Timestamp: stamp(2), TimeChange: new(float32(1.5))},
 		},
 		NoMoreItems: true,
 	}

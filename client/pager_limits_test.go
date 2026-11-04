@@ -17,8 +17,7 @@ import (
 
 func TestReadRangeAllMaxItems(t *testing.T) {
 	env := newVirtualPair(t)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	obj := bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeDevice, Instance: 1}
 	prop := bacnet.PropertyReference{Identifier: bacnet.PropertyObjectList}
 	go serveComplexACK(ctx, env.PeerTr, env.Local, func(choice uint8) ([]byte, error) {
@@ -49,8 +48,7 @@ func TestReadRangeAllErrorAndSequenceAdvance(t *testing.T) {
 	}
 
 	env2 := newVirtualPair(t)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	seq := uint32(100)
 	n := 0
 	go serveComplexACK(ctx, env2.PeerTr, env2.Local, func(choice uint8) ([]byte, error) {

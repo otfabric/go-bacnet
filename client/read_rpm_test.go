@@ -3,7 +3,6 @@
 package client
 
 import (
-	"context"
 	"testing"
 
 	"github.com/otfabric/go-bacnet"
@@ -13,8 +12,7 @@ import (
 
 func TestReadPropertyMultipleComplexACK(t *testing.T) {
 	env := newVirtualPair(t)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	obj := bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeDevice, Instance: 1}
 	specs := []service.ReadAccessSpecification{{

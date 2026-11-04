@@ -11,6 +11,7 @@
 package npdu
 
 import (
+	"encoding/binary"
 	"fmt"
 
 	"github.com/otfabric/go-bacnet"
@@ -337,11 +338,15 @@ func Append(dst []byte, n NPDU) ([]byte, error) {
 			dst = append(dst, 0xFF, 0xFF, 0) // DNET=0xFFFF, DLEN=0
 		case bacnet.AddressRemoteBroadcast:
 			dnet := n.Destination.Network()
-			dst = append(dst, byte(dnet>>8), byte(dnet), 0)
+			dst = append(binary.BigEndian.AppendUint16(dst, dnet), 0)
 		case bacnet.AddressRemoteStation:
 			dnet := n.Destination.Network()
 			mac := n.Destination.MAC().Bytes()
-			dst = append(dst, byte(dnet>>8), byte(dnet), byte(len(mac)))
+			dlen, err := macLength(mac)
+			if err != nil {
+				return dst, err
+			}
+			dst = append(binary.BigEndian.AppendUint16(dst, dnet), dlen)
 			dst = append(dst, mac...)
 		case bacnet.AddressLocalStation, bacnet.AddressLocalBroadcast:
 			// Local destinations do not encode DNET/DADR; hasDst should be false.
@@ -356,7 +361,11 @@ func Append(dst []byte, n NPDU) ([]byte, error) {
 		if n.Source.Scope() == bacnet.AddressLocalStation {
 			snet = 0
 		}
-		dst = append(dst, byte(snet>>8), byte(snet), byte(len(mac)))
+		slen, err := macLength(mac)
+		if err != nil {
+			return dst, err
+		}
+		dst = append(binary.BigEndian.AppendUint16(dst, snet), slen)
 		dst = append(dst, mac...)
 	}
 
@@ -375,4 +384,16 @@ func Append(dst []byte, n NPDU) ([]byte, error) {
 		return dst, nil
 	}
 	return append(dst, n.APDU...), nil
+}
+
+// macLength returns the DLEN/SLEN octet for mac (clause 6.2.2).
+func macLength(mac []byte) (byte, error) {
+	n := len(mac)
+	if n > bacnet.MaxMACLength {
+		return 0, fmt.Errorf("%w: MAC length %d exceeds %d", bacnet.ErrMalformed, n, bacnet.MaxMACLength)
+	}
+	if n < 0 {
+		return 0, fmt.Errorf("%w: MAC length %d", bacnet.ErrMalformed, n)
+	}
+	return byte(n), nil
 }

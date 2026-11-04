@@ -19,11 +19,12 @@ type MAC struct {
 
 // NewMAC copies b into a MAC. Empty input yields a zero MAC.
 func NewMAC(b []byte) (MAC, error) {
-	if len(b) > MaxMACLength {
-		return MAC{}, fmt.Errorf("%w: MAC length %d exceeds %d", ErrMalformed, len(b), MaxMACLength)
+	n := len(b)
+	if n > MaxMACLength {
+		return MAC{}, fmt.Errorf("%w: MAC length %d exceeds %d", ErrMalformed, n, MaxMACLength)
 	}
 	var m MAC
-	m.length = uint8(len(b))
+	m.length = uint8(n)
 	copy(m.bytes[:], b)
 	return m, nil
 }

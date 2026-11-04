@@ -274,7 +274,7 @@ func TestWritePropertyMultipleErrorDecodeBranches(t *testing.T) {
 	e := service.WritePropertyMultipleError{
 		Class: 2, Code: 32,
 		FirstFailed:   bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeAnalogValue, Instance: 1},
-		FirstProperty: bacnet.PropertyReference{Identifier: bacnet.PropertyPresentValue, ArrayIndex: uint32Ptr(1)},
+		FirstProperty: bacnet.PropertyReference{Identifier: bacnet.PropertyPresentValue, ArrayIndex: new(uint32(1))},
 	}
 	raw, err := service.EncodeWritePropertyMultipleError(e)
 	if err != nil {
@@ -324,8 +324,6 @@ func TestWritePropertyMultipleErrorDecodeBranches(t *testing.T) {
 		t.Fatalf("bad encode object: %v", err)
 	}
 }
-
-func uint32Ptr(v uint32) *uint32 { return &v }
 
 func mustParseEls(t *testing.T, raw []byte) []bacnet.Element {
 	t.Helper()

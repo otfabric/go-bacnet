@@ -101,8 +101,7 @@ func injectCOVMultiple(t *testing.T, env *virtualPair, note service.COVNotificat
 // included), and Close sends the cancellation form.
 func TestSubscribeCOVMultipleLifecycle(t *testing.T) {
 	env := newVirtualPair(t)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	go serveSimpleACK(ctx, env.PeerTr, env.Local)
 
 	increment := float32(0.5)
@@ -200,8 +199,7 @@ func TestSubscribeCOVMultipleLifecycle(t *testing.T) {
 // with the whole notification next to it.
 func TestCOVNotificationMultipleToSingleObjectSubscription(t *testing.T) {
 	env := newVirtualPair(t)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	go serveSimpleACK(ctx, env.PeerTr, env.Local)
 
 	av := bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeAnalogValue, Instance: 1}
@@ -264,8 +262,7 @@ func TestSubscribeCOVMultipleRefused(t *testing.T) {
 
 func TestVTDataACK(t *testing.T) {
 	env := newVirtualPair(t)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	count := uint32(2)
 	go serveComplexACK(ctx, env.PeerTr, env.Local, func(uint8) ([]byte, error) {
 		return service.EncodeVTDataACK(service.VTDataACK{AcceptedOctetCount: &count})

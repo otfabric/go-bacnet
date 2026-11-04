@@ -69,10 +69,7 @@ func TestSegmentedComplexACKReassembly(t *testing.T) {
 			if err != nil {
 				return
 			}
-			mid := len(ackPayload) / 2
-			if mid < 1 {
-				mid = 1
-			}
+			mid := max(len(ackPayload)/2, 1)
 			send := func(apduBytes []byte) {
 				raw, _ := npdu.Append(nil, npdu.NPDU{Version: npdu.Version1, APDU: apduBytes})
 				frame, _ := bvlc.Append(nil, bvlc.Message{Function: bvlc.FunctionOriginalUnicastNPDU, Payload: raw})
@@ -177,10 +174,7 @@ func TestSegmentedDuplicateSequenceACK(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	mid := len(ackPayload) / 2
-	if mid < 1 {
-		mid = 1
-	}
+	mid := max(len(ackPayload)/2, 1)
 
 	errCh := make(chan error, 1)
 	go func() {

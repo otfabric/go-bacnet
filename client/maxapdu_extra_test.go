@@ -3,6 +3,7 @@
 package client
 
 import (
+	"errors"
 	"math"
 	"net/netip"
 	"testing"
@@ -46,5 +47,15 @@ func TestValidateAdvertisedMaxAPDURejectsNonEncodable(t *testing.T) {
 func TestValidateAdvertisedMaxAPDURejectsHugeParser(t *testing.T) {
 	if err := validateAdvertisedMaxAPDU(480, math.MaxInt32); err == nil {
 		t.Fatal("expected parser max uint16 overflow error")
+	}
+}
+
+func TestAdvertisedMaxAPDURejectsNegativeLimit(t *testing.T) {
+	env := newVirtualPair(t)
+	limits := env.Client.limits
+	limits.MaxAPDUSize = -1
+	env.Client.limits = limits
+	if _, err := env.Client.advertisedMaxAPDU(); !errors.Is(err, bacnet.ErrMalformed) {
+		t.Fatalf("err=%v, want ErrMalformed", err)
 	}
 }

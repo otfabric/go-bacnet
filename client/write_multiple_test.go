@@ -15,8 +15,7 @@ import (
 
 func TestWritePropertyMultipleSimpleACK(t *testing.T) {
 	env := newVirtualPair(t)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	go serveSimpleACK(ctx, env.PeerTr, env.Local)
 
 	specs := []service.WriteAccessSpecification{{

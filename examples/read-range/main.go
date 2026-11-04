@@ -11,11 +11,13 @@ package main
 
 import (
 	"context"
+	"encoding/binary"
 	"flag"
 	"fmt"
 	"log"
 	"net/netip"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/otfabric/go-bacnet"
@@ -26,9 +28,9 @@ import (
 
 func main() {
 	addr := flag.String("addr", "127.0.0.1:47808", "peer BACnet/IP host:port")
-	instance := flag.Uint("instance", 1001, "remote device instance")
-	object := flag.Uint("object", 1, "Trend Log object instance")
-	count := flag.Int("count", 4, "ReadRange byPosition count")
+	instance := uint32Flag(flag.CommandLine, "instance", 1001, "remote device instance")
+	object := uint32Flag(flag.CommandLine, "object", 1, "Trend Log object instance")
+	count := int32Flag(flag.CommandLine, "count", 4, "ReadRange byPosition count")
 	flag.Parse()
 
 	target, err := parseTarget(*addr)
@@ -45,7 +47,7 @@ func main() {
 	}
 	defer func() { _ = c.Close() }()
 
-	low, high := uint32(*instance), uint32(*instance)
+	low, high := *instance, *instance
 	if err := c.SendWhoIs(ctx, target.Endpoint, false, client.DiscoveryOptions{
 		LowLimit: &low, HighLimit: &high,
 	}); err != nil {
@@ -54,11 +56,11 @@ func main() {
 	time.Sleep(500 * time.Millisecond)
 
 	req := service.ReadRangeRequest{
-		Object:         bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeTrendLog, Instance: uint32(*object)},
+		Object:         bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeTrendLog, Instance: *object},
 		Property:       bacnet.PropertyReference{Identifier: bacnet.PropertyLogBuffer},
 		By:             service.ReadRangeByPosition,
 		ReferenceIndex: 1,
-		Count:          int32(*count),
+		Count:          *count,
 	}
 	ack, err := c.ReadRange(ctx, target, req)
 	if err != nil {
@@ -88,9 +90,37 @@ func parseTarget(addr string) (client.Target, error) {
 	}
 	ip := ap.Addr().As4()
 	ep := bip.NewEndpoint(ap)
-	mac := []byte{ip[0], ip[1], ip[2], ip[3], byte(ap.Port() >> 8), byte(ap.Port())}
+	mac := binary.BigEndian.AppendUint16([]byte{ip[0], ip[1], ip[2], ip[3]}, ap.Port())
 	return client.Target{
 		Address:  bacnet.LocalStation(bacnet.MustMAC(mac)),
 		Endpoint: ep,
 	}, nil
+}
+
+// uint32Flag defines a decimal flag on fs that must fit 32 bits.
+func uint32Flag(fs *flag.FlagSet, name string, def uint32, usage string) *uint32 {
+	v := def
+	fs.Func(name, fmt.Sprintf("%s (default %d)", usage, def), func(s string) error {
+		u, err := strconv.ParseUint(s, 10, 32)
+		if err != nil {
+			return err
+		}
+		v = uint32(u)
+		return nil
+	})
+	return &v
+}
+
+// int32Flag defines a decimal flag on fs that must fit 32 signed bits.
+func int32Flag(fs *flag.FlagSet, name string, def int32, usage string) *int32 {
+	v := def
+	fs.Func(name, fmt.Sprintf("%s (default %d)", usage, def), func(s string) error {
+		n, err := strconv.ParseInt(s, 10, 32)
+		if err != nil {
+			return err
+		}
+		v = int32(n)
+		return nil
+	})
+	return &v
 }

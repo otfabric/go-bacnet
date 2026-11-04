@@ -61,8 +61,7 @@ func TestConfirmedCOVRepliesToRemoteSource(t *testing.T) {
 	remote := bacnet.RemoteStation(2, remoteMAC)
 
 	obj := bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeAnalogValue, Instance: 11}
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	go serveSimpleACK(ctx, env.PeerTr, env.Local)
 	sub, err := env.Client.SubscribeCOVProperty(context.Background(), env.Target, obj, bacnet.PropertyReference{Identifier: bacnet.PropertyPresentValue}, COVOptions{Lifetime: 60, BufferSize: 4, IssueConfirmed: true}, nil)
 	if err != nil {
@@ -247,7 +246,8 @@ func TestRetransmitSendFailureDiagnostics(t *testing.T) {
 		clk.Advance(25 * time.Millisecond)
 	}
 	select {
-	case <-errCh:
+	case err := <-errCh:
+		_ = err // the outcome is irrelevant; only that the request ended
 	case <-time.After(2 * time.Second):
 		t.Fatal("request did not finish")
 	}

@@ -4,6 +4,7 @@ package service
 
 import (
 	"fmt"
+	"math"
 
 	"github.com/otfabric/go-bacnet"
 	"github.com/otfabric/go-bacnet/apdu"
@@ -244,19 +245,18 @@ func decodeIndexCount(els []bacnet.Element) (uint32, int32, error) {
 	if els[0].Context || els[0].Value.Kind != bacnet.ValueUnsigned {
 		return 0, 0, fmt.Errorf("%w: ReadRange reference index must be Unsigned", bacnet.ErrMalformed)
 	}
-	if els[0].Value.Unsigned > 0xFFFFFFFF {
-		return 0, 0, fmt.Errorf("%w: ReadRange reference index overflow", bacnet.ErrMalformed)
+	index, err := narrowU32(els[0].Value.Unsigned, "ReadRange reference index")
+	if err != nil {
+		return 0, 0, err
 	}
 	if els[1].Context || els[1].Value.Kind != bacnet.ValueSigned {
 		return 0, 0, fmt.Errorf("%w: ReadRange count must be Signed", bacnet.ErrMalformed)
 	}
-	if els[1].Value.Signed < -0x7FFFFFFF || els[1].Value.Signed > 0x7FFFFFFF {
-		return 0, 0, fmt.Errorf("%w: ReadRange count overflow", bacnet.ErrMalformed)
+	count, err := readRangeCount(els[1].Value.Signed)
+	if err != nil {
+		return 0, 0, err
 	}
-	if els[1].Value.Signed == 0 {
-		return 0, 0, fmt.Errorf("%w: ReadRange count must be non-zero", bacnet.ErrMalformed)
-	}
-	return uint32(els[0].Value.Unsigned), int32(els[1].Value.Signed), nil
+	return index, count, nil
 }
 
 func decodeTimeCount(els []bacnet.Element) (DateTime, int32, error) {
@@ -272,13 +272,23 @@ func decodeTimeCount(els []bacnet.Element) (DateTime, int32, error) {
 	if els[2].Context || els[2].Value.Kind != bacnet.ValueSigned {
 		return DateTime{}, 0, fmt.Errorf("%w: ReadRange count must be Signed", bacnet.ErrMalformed)
 	}
-	if els[2].Value.Signed == 0 {
-		return DateTime{}, 0, fmt.Errorf("%w: ReadRange count must be non-zero", bacnet.ErrMalformed)
+	count, err := readRangeCount(els[2].Value.Signed)
+	if err != nil {
+		return DateTime{}, 0, err
 	}
-	if els[2].Value.Signed < -0x7FFFFFFF || els[2].Value.Signed > 0x7FFFFFFF {
-		return DateTime{}, 0, fmt.Errorf("%w: ReadRange count overflow", bacnet.ErrMalformed)
+	return DateTime{Date: els[0].Value.Date, Time: els[1].Value.Time}, count, nil
+}
+
+// readRangeCount checks a ReadRange count: non-zero, and within ±(2^31-1)
+// so that its magnitude is representable (-2^31 has no positive twin).
+func readRangeCount(v int64) (int32, error) {
+	if v == 0 {
+		return 0, fmt.Errorf("%w: ReadRange count must be non-zero", bacnet.ErrMalformed)
 	}
-	return DateTime{Date: els[0].Value.Date, Time: els[1].Value.Time}, int32(els[2].Value.Signed), nil
+	if v < -math.MaxInt32 || v > math.MaxInt32 {
+		return 0, fmt.Errorf("%w: ReadRange count overflow", bacnet.ErrMalformed)
+	}
+	return int32(v), nil
 }
 
 // EncodeReadRangeACK encodes a ReadRange ACK payload (tests/helpers).

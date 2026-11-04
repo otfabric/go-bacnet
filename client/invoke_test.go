@@ -13,8 +13,7 @@ import (
 
 func TestInvokeConfirmedReadProperty(t *testing.T) {
 	env := newVirtualPair(t)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	obj := bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeAnalogInput, Instance: 3}
 	prop := bacnet.PropertyReference{Identifier: bacnet.PropertyPresentValue}

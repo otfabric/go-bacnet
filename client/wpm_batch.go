@@ -54,10 +54,7 @@ func (c *Client) WritePropertyMultipleBatched(ctx context.Context, target Target
 		opts.MaxSpecsPerBatch = 16
 	}
 	for i := 0; i < len(specs); {
-		end := i + opts.MaxSpecsPerBatch
-		if end > len(specs) {
-			end = len(specs)
-		}
+		end := min(i+opts.MaxSpecsPerBatch, len(specs))
 		batch := specs[i:end]
 		refs := writeRefs(batch)
 		err := c.WritePropertyMultiple(ctx, target, batch)
@@ -65,8 +62,7 @@ func (c *Client) WritePropertyMultipleBatched(ctx context.Context, target Target
 		if err == nil {
 			outcome.State = BatchWriteCompleted
 		} else {
-			var unknown *bacnet.OutcomeUnknownError
-			if errors.As(err, &unknown) {
+			if _, ok := errors.AsType[*bacnet.OutcomeUnknownError](err); ok {
 				outcome.State = BatchWriteUnknown
 			} else {
 				outcome.State = BatchWriteFailed

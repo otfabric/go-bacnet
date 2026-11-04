@@ -524,7 +524,9 @@ func decodeExtended(els []bacnet.Element) (ExtendedParams, error) {
 			if err != nil {
 				return ExtendedParams{}, err
 			}
-			ext.VendorID = uint16(u)
+			if ext.VendorID, err = narrowU16(u, "vendorId"); err != nil {
+				return ExtendedParams{}, err
+			}
 		case el.TagNumber == 1 && !bacnet.IsContextConstructed(el):
 			u, err := bacnet.ContextUnsigned32(el)
 			if err != nil {

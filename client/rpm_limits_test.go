@@ -17,8 +17,7 @@ func TestRPMBatchedEmptyAndTinyBudget(t *testing.T) {
 	if _, err := env.Client.ReadPropertyMultipleBatched(context.Background(), env.Target, nil, RPMBatchOptions{}); err == nil {
 		t.Fatal("empty specs")
 	}
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	obj := bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeAnalogValue, Instance: 1}
 	go serveComplexACK(ctx, env.PeerTr, env.Local, func(choice uint8) ([]byte, error) {
 		return service.EncodeReadPropertyMultipleACK([]service.ReadAccessResult{{
@@ -47,8 +46,7 @@ func TestRPMBatchedEmptyAndTinyBudget(t *testing.T) {
 
 func TestRPMBatchedMaxBatches(t *testing.T) {
 	env := newVirtualPair(t)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	obj := bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeAnalogValue, Instance: 1}
 	go serveComplexACK(ctx, env.PeerTr, env.Local, func(choice uint8) ([]byte, error) {
 		return service.EncodeReadPropertyMultipleACK([]service.ReadAccessResult{{

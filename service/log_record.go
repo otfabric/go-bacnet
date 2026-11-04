@@ -166,7 +166,14 @@ func appendContextOctets(dst []byte, tagNumber uint8, octets []byte) ([]byte, er
 	// Encode as context-constructed containing an application Real/Octet when
 	// length is 4: many peers accept either form; bacnet4j uses context primitive.
 	// Build a context primitive manually: tag | 0x08 | LVT + length + octets.
-	lvt, lenPrefix := contextLengthPrefix(len(octets))
+	if tagNumber > 14 {
+		return dst, fmt.Errorf("%w: context tag %d needs the extended form", bacnet.ErrLimitExceeded, tagNumber)
+	}
+	n := len(octets)
+	if int64(n) > math.MaxUint32 {
+		return dst, fmt.Errorf("%w: context value length %d", bacnet.ErrLimitExceeded, n)
+	}
+	lvt, lenPrefix := contextLengthPrefix(n)
 	b0 := (tagNumber << 4) | 0x08 | lvt
 	dst = append(dst, b0)
 	dst = append(dst, lenPrefix...)
@@ -174,16 +181,22 @@ func appendContextOctets(dst []byte, tagNumber uint8, octets []byte) ([]byte, er
 	return dst, nil
 }
 
+// contextLengthPrefix returns the LVT nibble and the extended length octets
+// (clause 20.2.1.3.1) for a value of n octets, 0 <= n <= 2^32-1.
 func contextLengthPrefix(n int) (lvt byte, prefix []byte) {
 	switch {
+	case n < 0:
+		return 0, nil
 	case n < 5:
 		return byte(n), nil
 	case n < 254:
 		return 5, []byte{byte(n)}
-	case n <= 0xFFFF:
-		return 5, []byte{254, byte(n >> 8), byte(n)}
+	case n <= math.MaxUint16:
+		return 5, binary.BigEndian.AppendUint16([]byte{254}, uint16(n))
+	case int64(n) <= math.MaxUint32:
+		return 5, binary.BigEndian.AppendUint32([]byte{255}, uint32(n))
 	default:
-		return 5, []byte{255, byte(n >> 24), byte(n >> 16), byte(n >> 8), byte(n)}
+		return 5, []byte{255, 0xFF, 0xFF, 0xFF, 0xFF}
 	}
 }
 
@@ -231,7 +244,7 @@ func DecodeLogRecords(elements []bacnet.Element, count int) ([]LogRecord, error)
 	}
 	out := make([]LogRecord, 0, count)
 	off := 0
-	for i := 0; i < count; i++ {
+	for range count {
 		rec, n, err := decodeLogRecord(elements[off:])
 		if err != nil {
 			return nil, err

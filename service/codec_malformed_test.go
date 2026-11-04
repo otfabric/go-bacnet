@@ -152,7 +152,7 @@ func TestDecodeRPMACKMalformedBranches(t *testing.T) {
 func TestDiscoveryEncodeDecodeEdgeCases(t *testing.T) {
 	limits := bacnet.DefaultDecodeLimits()
 
-	if _, err := service.EncodeWhoIs(service.WhoIs{LowLimit: ptrU32(1)}); err == nil {
+	if _, err := service.EncodeWhoIs(service.WhoIs{LowLimit: new(uint32(1))}); err == nil {
 		t.Fatal("EncodeWhoIs partial limits should fail")
 	}
 
@@ -481,8 +481,6 @@ func TestDecodeRPMACKMalformedExtra(t *testing.T) {
 		})
 	}
 }
-
-func ptrU32(v uint32) *uint32 { return &v }
 
 func mustWhoIsPayload(t *testing.T, low, high uint32) []byte {
 	t.Helper()

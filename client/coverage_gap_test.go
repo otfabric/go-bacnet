@@ -20,8 +20,7 @@ import (
 
 func TestReadRangeAllMaxBytesAndPagesAndSequence(t *testing.T) {
 	env := newVirtualPair(t)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	obj := bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeDevice, Instance: 1}
 	prop := bacnet.PropertyReference{Identifier: bacnet.PropertyObjectList}
 	go serveComplexACK(ctx, env.PeerTr, env.Local, func(choice uint8) ([]byte, error) {
@@ -42,8 +41,7 @@ func TestReadRangeAllMaxBytesAndPagesAndSequence(t *testing.T) {
 	}
 
 	env2 := newVirtualPair(t)
-	ctx2, cancel2 := context.WithCancel(context.Background())
-	defer cancel2()
+	ctx2 := t.Context()
 	go serveComplexACK(ctx2, env2.PeerTr, env2.Local, func(choice uint8) ([]byte, error) {
 		seq := uint32(10)
 		return service.EncodeReadRangeACK(service.ReadRangeACK{
@@ -116,8 +114,7 @@ func TestInvokeConfirmedSideEffectingUnknown(t *testing.T) {
 	_, _ = waitConfirmedInvokeID(t, env.ClientTr, time.Second)
 	env.Clk.Advance(100 * time.Millisecond)
 	err := <-errCh
-	var unk *bacnet.OutcomeUnknownError
-	if !errors.As(err, &unk) {
+	if _, ok := errors.AsType[*bacnet.OutcomeUnknownError](err); !ok {
 		t.Fatalf("got %v", err)
 	}
 }

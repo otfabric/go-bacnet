@@ -115,8 +115,7 @@ func TestBVLCExchangeBusyTimeoutCancelAndDeliver(t *testing.T) {
 		t.Fatal("expected canceled")
 	}
 
-	ctx2, cancel2 := context.WithCancel(context.Background())
-	defer cancel2()
+	ctx2 := t.Context()
 	errCh := make(chan error, 1)
 	go func() {
 		_, err := c.ReadBroadcastDistributionTable(ctx2, bbmd)

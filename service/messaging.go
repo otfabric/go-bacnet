@@ -159,7 +159,7 @@ func DecodeTextMessage(payload []byte, limits bacnet.DecodeLimits) (TextMessage,
 			u, e := bacnet.ContextUnsigned(el)
 			err = e
 			if err == nil {
-				m.MessagePriority = uint8(u)
+				m.MessagePriority, err = narrowU8(u, "messagePriority")
 				havePrio = true
 			}
 		case el.TagNumber == 3 && !bacnet.IsContextConstructed(el):
@@ -275,7 +275,7 @@ func DecodeWriteGroup(payload []byte, limits bacnet.DecodeLimits) (WriteGroup, e
 			u, e := bacnet.ContextUnsigned(el)
 			err = e
 			if err == nil {
-				w.WritePriority = uint8(u)
+				w.WritePriority, err = narrowU8(u, "writePriority")
 				havePrio = true
 			}
 		case el.TagNumber == 2 && bacnet.IsContextConstructed(el):

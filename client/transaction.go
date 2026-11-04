@@ -93,7 +93,7 @@ func (m *txManager) tryAllocLocked() (uint8, bool) {
 		return 0, false
 	}
 	now := m.clockNow()
-	for i := 0; i < 256; i++ {
+	for range 256 {
 		id := m.nextID
 		m.nextID++
 		if _, used := m.inUse[id]; used {

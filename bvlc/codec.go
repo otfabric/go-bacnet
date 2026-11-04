@@ -9,6 +9,7 @@ package bvlc
 import (
 	"encoding/binary"
 	"fmt"
+	"math"
 	"net/netip"
 
 	"github.com/otfabric/go-bacnet"
@@ -113,19 +114,22 @@ func Append(dst []byte, msg Message) ([]byte, error) {
 	dst = append(dst, TypeBACnetIP, byte(msg.Function), 0, 0) // length filled later
 	switch msg.Function {
 	case FunctionResult:
-		dst = append(dst, byte(msg.ResultCode>>8), byte(msg.ResultCode))
+		dst = binary.BigEndian.AppendUint16(dst, msg.ResultCode)
 	case FunctionRegisterForeignDevice:
-		dst = append(dst, byte(msg.TTL>>8), byte(msg.TTL))
+		dst = binary.BigEndian.AppendUint16(dst, msg.TTL)
 	case FunctionForwardedNPDU:
 		dst = append(dst, msg.OriginIP[:]...)
-		dst = append(dst, byte(msg.OriginPort>>8), byte(msg.OriginPort))
+		dst = binary.BigEndian.AppendUint16(dst, msg.OriginPort)
 		dst = append(dst, msg.Payload...)
 	default:
 		dst = append(dst, msg.Payload...)
 	}
 	total := len(dst) - start
-	if total > 0xFFFF {
+	if total > math.MaxUint16 {
 		return dst, fmt.Errorf("%w: BVLC too large", bacnet.ErrMalformed)
+	}
+	if total < 0 {
+		return dst, fmt.Errorf("%w: BVLC length %d", bacnet.ErrMalformed, total)
 	}
 	binary.BigEndian.PutUint16(dst[start+2:start+4], uint16(total))
 	return dst, nil

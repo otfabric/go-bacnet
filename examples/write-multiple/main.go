@@ -11,6 +11,7 @@ package main
 
 import (
 	"context"
+	"encoding/binary"
 	"flag"
 	"fmt"
 	"log"
@@ -27,7 +28,7 @@ import (
 
 func main() {
 	addr := flag.String("addr", "127.0.0.1:47808", "peer BACnet/IP host:port")
-	instance := flag.Uint("instance", 1001, "remote device instance")
+	instance := uint32Flag(flag.CommandLine, "instance", 1001, "remote device instance")
 	object := flag.String("object", "2:1", "object type:instance (default analog-value:1)")
 	value := flag.Float64("value", 22.5, "present-value to write")
 	flag.Parse()
@@ -50,7 +51,7 @@ func main() {
 	}
 	defer func() { _ = c.Close() }()
 
-	low, high := uint32(*instance), uint32(*instance)
+	low, high := *instance, *instance
 	// A unicast Who-Is lets the client learn the device's Max APDU and
 	// segmentation support from its I-Am before the write is sized.
 	if err := c.SendWhoIs(ctx, target.Endpoint, false, client.DiscoveryOptions{
@@ -85,7 +86,7 @@ func parseTarget(addr string) (client.Target, error) {
 	}
 	ip := ap.Addr().As4()
 	ep := bip.NewEndpoint(ap)
-	mac := []byte{ip[0], ip[1], ip[2], ip[3], byte(ap.Port() >> 8), byte(ap.Port())}
+	mac := binary.BigEndian.AppendUint16([]byte{ip[0], ip[1], ip[2], ip[3]}, ap.Port())
 	return client.Target{
 		Address:  bacnet.LocalStation(bacnet.MustMAC(mac)),
 		Endpoint: ep,
@@ -106,4 +107,18 @@ func parseObject(s string) (bacnet.ObjectIdentifier, error) {
 		return bacnet.ObjectIdentifier{}, err
 	}
 	return bacnet.ObjectIdentifier{Type: bacnet.ObjectType(t), Instance: uint32(inst)}, nil
+}
+
+// uint32Flag defines a decimal flag on fs that must fit 32 bits.
+func uint32Flag(fs *flag.FlagSet, name string, def uint32, usage string) *uint32 {
+	v := def
+	fs.Func(name, fmt.Sprintf("%s (default %d)", usage, def), func(s string) error {
+		u, err := strconv.ParseUint(s, 10, 32)
+		if err != nil {
+			return err
+		}
+		v = uint32(u)
+		return nil
+	})
+	return &v
 }

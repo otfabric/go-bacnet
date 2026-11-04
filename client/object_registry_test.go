@@ -20,7 +20,7 @@ func TestObjectRegistryTTLAndCapacity(t *testing.T) {
 		ObservationTTL:  time.Minute,
 	})
 	peer := bip.Endpoint{}
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		reg.Upsert(ObjectObservation{
 			DeviceInstance: uint32(i + 1),
 			Object:         bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeAnalogValue, Instance: uint32(i)},

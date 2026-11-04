@@ -72,7 +72,7 @@ func EncodeBDTEntries(dst []byte, entries []BDTEntry) ([]byte, error) {
 		ip := e.Endpoint.Addr.Addr().As4()
 		dst = append(dst, ip[:]...)
 		port := e.Endpoint.Addr.Port()
-		dst = append(dst, byte(port>>8), byte(port))
+		dst = binary.BigEndian.AppendUint16(dst, port)
 		dst = append(dst, e.Mask[:]...)
 	}
 	return dst, nil
@@ -90,7 +90,7 @@ func DecodeBDTEntries(payload []byte, limits bacnet.DecodeLimits) ([]BDTEntry, e
 		return nil, fmt.Errorf("%w: BDT entry count", bacnet.ErrLimitExceeded)
 	}
 	out := make([]BDTEntry, 0, n)
-	for i := 0; i < n; i++ {
+	for i := range n {
 		off := i * 10
 		var ip [4]byte
 		copy(ip[:], payload[off:off+4])
@@ -115,9 +115,9 @@ func EncodeFDTEntries(dst []byte, entries []FDTEntry) ([]byte, error) {
 		ip := e.Address.Addr.Addr().As4()
 		dst = append(dst, ip[:]...)
 		port := e.Address.Addr.Port()
-		dst = append(dst, byte(port>>8), byte(port))
-		dst = append(dst, byte(e.TTL>>8), byte(e.TTL))
-		dst = append(dst, byte(e.Remaining>>8), byte(e.Remaining))
+		dst = binary.BigEndian.AppendUint16(dst, port)
+		dst = binary.BigEndian.AppendUint16(dst, e.TTL)
+		dst = binary.BigEndian.AppendUint16(dst, e.Remaining)
 	}
 	return dst, nil
 }
@@ -133,7 +133,7 @@ func DecodeFDTEntries(payload []byte, limits bacnet.DecodeLimits) ([]FDTEntry, e
 		return nil, fmt.Errorf("%w: FDT entry count", bacnet.ErrLimitExceeded)
 	}
 	out := make([]FDTEntry, 0, n)
-	for i := 0; i < n; i++ {
+	for i := range n {
 		off := i * 10
 		var ip [4]byte
 		copy(ip[:], payload[off:off+4])
@@ -157,7 +157,7 @@ func EncodeDeleteFDTEntry(dst []byte, ep bip.Endpoint) ([]byte, error) {
 	ip := ep.Addr.Addr().As4()
 	dst = append(dst, ip[:]...)
 	port := ep.Addr.Port()
-	dst = append(dst, byte(port>>8), byte(port))
+	dst = binary.BigEndian.AppendUint16(dst, port)
 	return dst, nil
 }
 

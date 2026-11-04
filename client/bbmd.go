@@ -150,10 +150,7 @@ func (f *fdState) handleResult(code uint16, from bip.Endpoint) {
 func (c *Client) fdLoop() {
 	defer c.wg.Done()
 	f := c.fd
-	renewEvery := f.ttl / 2
-	if renewEvery < time.Second {
-		renewEvery = time.Second
-	}
+	renewEvery := max(f.ttl/2, time.Second)
 	for {
 		ctx, cancel := context.WithCancel(context.Background())
 		go func() {

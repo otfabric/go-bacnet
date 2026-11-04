@@ -1,5 +1,37 @@
 # go-bacnet Releases
 
+## v0.5.0
+
+**Date:** 2026-11-04
+**Previous release:** v0.4.1
+
+Requires **Go 1.26+**. Interop pin: [`bacnet-interop` v0.11.3](https://github.com/otfabric/bacnet-interop/releases/tag/v0.11.3).
+
+### Fixed
+
+- Decoded values that do not fit their Go field are refused with `ErrMalformed` instead of keeping their low bits. Before, a VT session identifier of 256 became 0, a file start position of 2^31 became -2^31, a record count of 2^32+1 became 1, a message or write priority of 256 became 0, and an extended vendor identifier of 65536 became 0. ERRORS.md lists the fields.
+- `device.ReadSnapshot` no longer keeps the low 32 bits of an oversized Protocol_Revision or Max_APDU_Length_Accepted. It also refuses a Vendor_Identifier above Unsigned16. Each case is reported in `PartialErrors`.
+- `ReadFileStream` and `ReadFileRecords` return `ErrProtocolViolation` when the device reports a position or count whose next position wraps the signed 32-bit range.
+- `WriteFileStream` with start -1 (end of file) wrote the second chunk at offset `n-1`. Later chunks now follow the position the device reported in its ACK. A write that would end past octet 2^31-1 is refused before anything is sent.
+- Segmented requests: a Segment-ACK NAK that names a segment never sent ended the transfer, and the device's answer was then taken as success. Such a NAK now aborts with `ErrProtocolViolation`. A device that alternated ACK 0 and NAK 255 kept a request without a deadline running forever. NAKs that rewind behind acknowledged segments are now ignored, so the segment timer ends the request.
+- `ReadObjectList` no longer lets the reported Object_List length size its allocation or run its index loop past 2^32-1.
+
+### Changed
+
+- Go 1.26 floor (`go fix` applied). CI tests on Go 1.26 and 1.27, with shared workflows v3.3.1.
+- IP_PKTINFO ancillary data is encoded without `unsafe`.
+- `internal/fixtures` reads the corpus through `os.Root`.
+
+### Tests
+
+- `e2e/hostile_test.go` adds a hostile device on loopback UDP.
+- `client/chaos_segack_test.go` adds chaos on the segmented request path.
+- `FuzzClientReceive` fuzzes the client receive path. It runs in `make fuzz` and nightly.
+- Range tables for the service decoders and the device snapshot.
+- SAST: gosec and opengrep at low/low report 0 open findings (89 before).
+
+---
+
 ## v0.4.1
 
 **Date:** 2026-10-31

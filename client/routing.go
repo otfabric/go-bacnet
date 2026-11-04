@@ -4,8 +4,9 @@ package client
 
 import (
 	"context"
+	"encoding/binary"
 	"fmt"
-	"sort"
+	"slices"
 	"sync"
 	"time"
 
@@ -292,7 +293,7 @@ func (c *Client) WhoIsRouterToNetworkAt(ctx context.Context, dest bip.Endpoint, 
 	}
 	var data []byte
 	if network != nil {
-		data = []byte{byte(*network >> 8), byte(*network)}
+		data = binary.BigEndian.AppendUint16(nil, *network)
 	}
 	n := npdu.NPDU{
 		Version:        npdu.Version1,
@@ -332,14 +333,14 @@ func (c *Client) AllRoutes() []Route {
 	}
 	c.routers.mu.RLock()
 	defer c.routers.mu.RUnlock()
-	nets := make([]int, 0, len(c.routers.byNet))
+	nets := make([]uint16, 0, len(c.routers.byNet))
 	for n := range c.routers.byNet {
-		nets = append(nets, int(n))
+		nets = append(nets, n)
 	}
-	sort.Ints(nets)
+	slices.Sort(nets)
 	var out []Route
 	for _, n := range nets {
-		out = append(out, c.routers.byNet[uint16(n)]...)
+		out = append(out, c.routers.byNet[n]...)
 	}
 	return out
 }

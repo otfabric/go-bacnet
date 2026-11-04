@@ -14,8 +14,7 @@ import (
 
 func TestReadFileStreamMaxTotal(t *testing.T) {
 	env := newVirtualPair(t)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	file := bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeFile, Instance: 1}
 	go serveComplexACK(ctx, env.PeerTr, env.Local, func(choice uint8) ([]byte, error) {
 		return service.EncodeAtomicReadFileACK(service.AtomicReadFileACK{
@@ -30,8 +29,7 @@ func TestReadFileStreamMaxTotal(t *testing.T) {
 
 func TestReadFileRecordsMaxTotal(t *testing.T) {
 	env := newVirtualPair(t)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	file := bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeFile, Instance: 1}
 	go serveComplexACK(ctx, env.PeerTr, env.Local, func(choice uint8) ([]byte, error) {
 		return service.EncodeAtomicReadFileACK(service.AtomicReadFileACK{
@@ -47,8 +45,7 @@ func TestReadFileRecordsMaxTotal(t *testing.T) {
 
 func TestReadFileAccessMismatch(t *testing.T) {
 	env := newVirtualPair(t)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	file := bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeFile, Instance: 1}
 	go serveComplexACK(ctx, env.PeerTr, env.Local, func(choice uint8) ([]byte, error) {
 		return service.EncodeAtomicReadFileACK(service.AtomicReadFileACK{
@@ -61,8 +58,7 @@ func TestReadFileAccessMismatch(t *testing.T) {
 	}
 
 	env2 := newVirtualPair(t)
-	ctx2, cancel2 := context.WithCancel(context.Background())
-	defer cancel2()
+	ctx2 := t.Context()
 	go serveComplexACK(ctx2, env2.PeerTr, env2.Local, func(choice uint8) ([]byte, error) {
 		return service.EncodeAtomicReadFileACK(service.AtomicReadFileACK{
 			EndOfFile: true, Access: service.FileAccessStream, Data: []byte("x"),

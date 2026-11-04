@@ -1,6 +1,6 @@
 # go-bacnet
 
-[![Go](https://img.shields.io/badge/Go-1.23%2B-00ADD8?style=flat&logo=go)](https://go.dev/)
+[![Go](https://img.shields.io/badge/Go-1.26%2B-00ADD8?style=flat&logo=go)](https://go.dev/)
 [![Go Reference](https://pkg.go.dev/badge/github.com/otfabric/go-bacnet.svg)](https://pkg.go.dev/github.com/otfabric/go-bacnet)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![CI](https://github.com/otfabric/go-bacnet/actions/workflows/ci.yml/badge.svg)](https://github.com/otfabric/go-bacnet/actions/workflows/ci.yml)
@@ -53,7 +53,7 @@ A command-line client built on this library lives in
 go get github.com/otfabric/go-bacnet@latest
 ```
 
-Requires **Go 1.23** or newer.
+Requires **Go 1.26** or newer.
 
 ## Getting started
 
