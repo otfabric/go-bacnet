@@ -22,6 +22,34 @@ identifier, object and source path; event and audit notifications are
 delivered from any sender. A source address can be spoofed like everything
 else in BACnet/IP.
 
+The server (`server`, `server/object`, `bbmd`) answers any peer that can
+reach its port, so whoever can send it a datagram can read every property
+and make every write its objects accept. It has no access control beyond
+these:
+
+- `Hooks.BeforeWrite` sees every client write to an existing object
+  (WriteProperty, each write of WritePropertyMultiple, AddListElement,
+  RemoveListElement) and can refuse it with a BACnet error; `BeforeDelete`
+  does the same for DeleteObject. CreateObject works only for object types
+  the application enables with `Device.RegisterFactory`; its initial values
+  are written without `BeforeWrite`.
+- `WithPassword` makes DeviceCommunicationControl and ReinitializeDevice
+  require a password (sent in clear text). Without it none is checked.
+- A broadcast Who-Is gets a broadcast I-Am, so the server can be used to
+  make one datagram produce one broadcast. Bind it to one interface
+  (`WithInterface`, `WithLocalAddr`) on networks where that matters.
+- The `bbmd` package configures its BDT locally only:
+  Write-Broadcast-Distribution-Table is refused. Foreign-device registration
+  is accepted from any peer unless `RejectRegistrations` is set; a
+  registered foreign device can have its broadcasts distributed.
+
+Server resource bounds: request workers and their queue (`WithWorkers`,
+default 4 and 64; a confirmed request that finds the queue full gets Abort
+out-of-resources, an unconfirmed one is dropped), COV subscriptions and
+their lifetime (`WithCOVLimits`, default 256), the FDT
+(`bbmd.Config.MaxForeignDevices`, default 128), segments per message
+(`WithSegmentation`) and the decode limits below (`WithDecodeLimits`).
+
 DeviceCommunicationControl and ReinitializeDevice passwords are sent in clear
 text, as the protocol defines. The library never logs them
 ([OBSERVABILITY.md](OBSERVABILITY.md)).

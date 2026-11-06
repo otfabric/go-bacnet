@@ -1,9 +1,8 @@
 # Server plan
 
-Status: **phases 0–5 implemented in go-bacnet, unreleased; reverse interop
-with one independent client** (bacnet-stack client mode: phases 1–5 except
-segmentation, the COV-property services, GetAlarmSummary,
-GetEnrollmentSummary, text messages and ConfirmedPrivateTransfer). What is implemented and how it is verified is in
+Status: **phases 0–5 implemented in go-bacnet v0.6.0; reverse interop
+with three independent clients** (bacnet-stack, BACnet4J and BACpypes3
+client modes, bacnet-interop v0.12.0; bacnet-stack without segmentation). What is implemented and how it is verified is in
 [SERVER_SUPPORT.md](SERVER_SUPPORT.md); where the implementation departs from
 this plan is listed under [Deviations](#deviations-from-the-plan).
 It scopes a BACnet/IP server (a device) for go-bacnet next to the existing
@@ -228,10 +227,11 @@ in the same PR.
    worker pool, read-only services included; the receive loop only parses,
    classifies and answers what needs no handler (Reject, Abort, duplicates).
    The pool size default is set in phase 1 from benchmark evidence.
-4. **Releases**: phase 0 (refactor and missing codecs) ships alone as
-   v0.6.0; the server phases ship as v0.7.0. (Agreed as v0.5.0 and v0.6.x;
-   v0.5.0 was released with other work before phase 0 landed, and a
-   released version is not reused.)
+4. **Releases**: phase 0 (refactor and missing codecs) and the server
+   phases ship together as v0.6.0. (Agreed as v0.5.0 and v0.6.x; v0.5.0 was
+   released with other work before phase 0 landed, and a released version
+   is not reused. Phase 0 was merged with the server, so it has no release
+   of its own.)
 
 ## Deviations from the plan
 
@@ -239,7 +239,7 @@ Recorded when the phases were implemented, and what became of each:
 
 | # | Deviation | Now |
 |---|---|---|
-| 1 | Versions: phase 0 is v0.6.0, the server v0.7.0 | Plan aligned (Decision 4). v0.5.0 is released and cannot be reused |
+| 1 | Versions: phase 0 and the server are both v0.6.0 | Plan aligned (Decision 4). v0.5.0 is released and cannot be reused; phase 0 was merged with the server |
 | 2 | No shared segmentation or parse-chain package | Closed: `internal/segment` (window, sequence and reassembly rules) and `internal/link` (Forwarded-NPDU origin, B/IP MAC, outbound framing) are used by client and server |
 | 3 | Object model: `Name`/`Properties`, `object.Write`, the optional interface and hook names | Plan aligned (Object model). The implemented names are the public v0 API |
 | 4 | Priority-3 objects not built in | Closed: Calendar, Schedule, CharacterString / Integer / Positive Integer Value and Structured View |
@@ -251,7 +251,7 @@ Recorded when the phases were implemented, and what became of each:
 | 9b | No confirmed notification to a remote-station recipient | Closed: sent through the router learnt from SNET and I-Am-Router-To-Network (clause 6.4); Who-Is-Router-To-Network while none is known |
 | 9c | No confirmed notification to a broadcast recipient | Kept: a confirmed request is a transaction with one peer (clause 5.4). Reported as a diagnostic |
 | 10 | Multi-state points have no intrinsic reporting | Closed for Multi-state Input and Value (CHANGE_OF_STATE 13.3.2, FAULT_STATE 13.4.5). A Multi-state Output does not report: its algorithm is COMMAND_FAILURE on Feedback_Value (clause 12.19), which is not implemented |
-| 11 | Exit criteria naming independent clients | Partly met: bacnet-stack client mode (unreleased) passes the phase 1, 3 (COV subscribe and notification, events), 4 and 5 (foreign-device registration) scenarios. Not met: segmentation (phase 2) and "two independent clients" (phases 3 and 5), which need BACnet4J and BACpypes3 client drivers, and broadcast distribution across two subnets |
+| 11 | Exit criteria naming independent clients | Met for phases 1–5 except broadcast distribution across two subnets: bacnet-stack, BACnet4J and BACpypes3 client modes pass the phase 1, 3 (COV subscribe and notification, events), 4 and 5 (foreign-device registration) scenarios, and BACnet4J and BACpypes3 the phase 2 segmentation scenarios. BBMD-to-BBMD forwarding has no independent evidence |
 | 12 | Duplicate requests answered from a cache | Closed in favour of clause 5.4.5: a request with the invoke ID of a completed transaction is a new request. The cache answered a second DeleteObject from bacnet-stack with the first one's success |
 | 13 | Server confirmed requests use their own requester, not the client's | Kept: the server sends only unsegmented notifications; the client's requester carries segmentation, retries per target and the device-management guard, none of which a notification needs |
 

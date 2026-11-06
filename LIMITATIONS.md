@@ -58,23 +58,23 @@ and ReadFileRecords (codec or unit evidence).
 
 ## Server evidence
 
-One independent client has driven the server: the bacnet-stack 1.6.1
-command-line tools, from a bacnet-interop image that is not yet released.
-They cover discovery, reads and writes and their error cases, SubscribeCOV,
-ReadRange, DeviceCommunicationControl, ReinitializeDevice, AtomicReadFile and
-AtomicWriteFile of a stream file, AddListElement and RemoveListElement,
-CreateObject and DeleteObject, GetEventInformation and AcknowledgeAlarm,
-time synchronization, UnconfirmedPrivateTransfer, WriteGroup, and the BBMD
-as seen by a foreign device (registration, Distribute-Broadcast-To-Network,
-Read-BDT, Read-FDT, a refused Write-BDT). The tools are built without
-segmentation and have no tool for SubscribeCOVProperty,
-SubscribeCOVPropertyMultiple, GetAlarmSummary, GetEnrollmentSummary, text
-messages or ConfirmedPrivateTransfer; segmented transactions, those services
-and BBMD-to-BBMD forwarding are verified against the go-bacnet client
-(`e2e/server*_test.go`) and by unit, fuzz and chaos tests only. The same
-codecs encode and decode both sides there, so that shows agreement between
-client and server, not with other stacks
+Three independent clients drive the server, each an unmodified upstream
+stack in a bacnet-interop v0.12.0 client-mode image: the bacnet-stack 1.6.1
+command-line tools, BACnet4J 6.1.1 and BACpypes3 0.0.110. Between them they
+cover discovery, reads and writes and their error cases, SubscribeCOV,
+SubscribeCOVProperty, SubscribeCOVPropertyMultiple (BACnet4J only),
+ReadRange, DeviceCommunicationControl, ReinitializeDevice, stream, record and
+segmented AtomicReadFile and AtomicWriteFile, AddListElement and
+RemoveListElement, CreateObject and DeleteObject, GetEventInformation,
+GetAlarmSummary, GetEnrollmentSummary and AcknowledgeAlarm, time
+synchronization, text messages, private transfer, WriteGroup, and the BBMD
+as seen by a foreign device. Not covered by any of them: BBMD-to-BBMD
+forwarding and the object types other than those of the `device-server-v1`
+fixture (Calendar, Schedule, Structured View and the value types are
+verified against the go-bacnet client only, `e2e/server*_test.go`). Where
+the standard leaves the error code open the server follows bacnet-stack, so
+agreement on those codes is partly by construction
 ([docs/SERVER_SUPPORT.md](docs/SERVER_SUPPORT.md)). Every datagram the server
-sends in those tests is dissected by Wireshark (`make dissector`), except
+sends in the e2e tests is dissected by Wireshark (`make dissector`), except
 Abort and SegmentACK frames.
 

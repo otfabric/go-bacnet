@@ -2,11 +2,11 @@
 
 ## Current release
 
-[go-bacnet v0.3.0](https://github.com/otfabric/go-bacnet/releases/tag/v0.3.0)
-implements a broad BACnet/IP IPv4 supervisory client (including the closed
-client-completeness backlog) and was tested against bacnet-stack, BACpypes3,
-BACnet4J, and Worldiety
-([bacnet-interop v0.9.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.9.0)).
+go-bacnet v0.6.0: the BACnet/IP client, tested against bacnet-stack,
+BACpypes3, BACnet4J, Worldiety and System.IO.BACnet devices, and a server,
+tested against the bacnet-stack, BACnet4J and BACpypes3 clients
+([bacnet-interop v0.12.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.12.0)).
+[RELEASE.md](RELEASE.md) has the changes.
 
 Status: **container-interoperability validated at pin**; **field validation
 pending** ([FIELD_VALIDATION.md](docs/FIELD_VALIDATION.md)).
@@ -32,19 +32,6 @@ Former P1–P3 items are implemented or explicitly bounded in
 | Audit / Auth / VT | Codec/unit — no peer servers at pin |
 | Physical-device campaign | Out of scope for this backlog |
 
-## v0.4.0 (unreleased)
-
-Review release: client hardening (invoke-ID reservation, receive-loop
-backoff, option validation, rejection of unserved requests), codec
-corrections against the standard, five peer stacks and Wireshark, named
-remote errors, `slog` logging, discovery and addressing helpers, peer
-coverage for the helper APIs, a Wireshark dissector oracle, and the move of
-the CLI to [otfabric/bacnetctl](https://github.com/otfabric/bacnetctl). See
-[RELEASE.md](RELEASE.md).
-
-The interop pin is at bacnet-interop v0.10.0. After this version is tagged,
-bacnetctl drops its local `replace` and requires it.
-
 ## Current priorities
 
 1. Field validation against physical BACnet/IP devices
@@ -60,16 +47,10 @@ bacnetctl drops its local `replace` and requires it.
    session to test it against.
 6. AuthRequest: a typed codec once a stable stack implements the service
    (BACnet4J 7.0 is the first to have one). All five peers refuse it today.
-7. Server reverse interop: independent clients against the go-bacnet server
-   through bacnet-interop client-driver images
-   (bacnet-interop `docs/CLIENT_DRIVER_CONTRACT.md`). bacnet-stack client mode
-   passes `server-baseline-v1`, `server-services-v1` and `server-bbmd-v1`
-   (one known difference of `bacrle`) but is not yet in a bacnet-interop
-   release; moving the pin enables it in CI. Next: BACnet4J and BACpypes3
-   client modes, for segmentation, SubscribeCOVProperty(Multiple),
-   GetAlarmSummary, GetEnrollmentSummary, text messages and
-   ConfirmedPrivateTransfer, which the bacnet-stack tools do not cover
-   ([docs/SERVER_SUPPORT.md](docs/SERVER_SUPPORT.md)).
+7. Server reverse interop beyond the three client modes: BBMD-to-BBMD
+   forwarding, and the object types not in the `device-server-v1` fixture
+   (Calendar, Schedule, Structured View, the value types), which no
+   independent client reads yet ([docs/SERVER_SUPPORT.md](docs/SERVER_SUPPORT.md)).
 
 ## Future
 

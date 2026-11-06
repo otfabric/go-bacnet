@@ -27,9 +27,10 @@ Typical supervisory work looks like:
 2. Read or write object properties (**ReadProperty**, **WriteProperty**, …).
 3. Optionally subscribe to change-of-value (**COV**) notifications.
 
-This library is a **BACnet/IP supervisory client** over IPv4/UDP
-(default port **47808** / `0xBAC0`). It does not implement a full BACnet
-server/device product, MS/TP, BACnet/IPv6, or BACnet/SC.
+This library is a **BACnet/IP client and server** over IPv4/UDP
+(default port **47808** / `0xBAC0`): package `client` talks to devices,
+package `server` is a device. It does not implement routing, MS/TP,
+BACnet/IPv6 or BACnet/SC, and is not BTL listed.
 
 ## Objects and properties
 
