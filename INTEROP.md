@@ -53,8 +53,8 @@ skips with a message naming the bacnet-interop version it needs
 
 ## Peers
 
-Pin: [`bacnet-interop` v0.11.3](https://github.com/otfabric/bacnet-interop/releases/tag/v0.11.3),
-all seven images by digest (`interop/bacnet-interop-pin.json`). Against the
+Pin: [`bacnet-interop` v0.13.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.13.0),
+all eight images by digest (`interop/bacnet-interop-pin.json`). Against the
 published images nothing fails; the skips are things a stack does not have
 and scenarios that need a newer adapter release.
 
@@ -65,6 +65,7 @@ and scenarios that need a newer adapter release.
 | BACnet4J | 6.1.1 | Java | Device (+ BBMD) |
 | Worldiety | `3cb2aa80` | Go | Native transport and APDU layer; adapter object model |
 | System.IO.BACnet | 4.0.0 | C# | Device; the stack behind YABE |
+| cB-Sigma (`cbsigma`) | bacnet `v0.2.0` device role, bacnet-sim `v0.1.0` | Go | Device; a simulator with fault switches ([below](#cb-sigma)) |
 | bacnet-stack-router | bacnet-stack 1.6.1 `apps/router` | C | Native BACnet/IP router |
 | bip-router | — | Python | Topology aid written for the tests; not evidence about a stack |
 
@@ -249,7 +250,43 @@ was not acknowledged when the actual window was above 1 (clause 5.4.5
 acknowledges it at once), and BACpypes3's segments, 6 octets longer than the
 server's Max APDU, were dropped by the decode limit.
 
+## cB-Sigma
+
+`interop/cbsigma_test.go`, against bacnet-interop's `cbsigma` image (from
+v0.13.0). Two roles of one image: `CBSIGMA_ROLE=device` is the `device`
+package of [cB-Sigma/bacnet](https://github.com/cB-Sigma/bacnet), and
+`CBSIGMA_ROLE=sim` is [cB-Sigma/bacnet-sim](https://github.com/cB-Sigma/bacnet-sim),
+a test device with no Device object and switches that make it misbehave.
+Both are Go, by one author, independent of go-bacnet.
+
+| Scenario | device | sim |
+|---|:---:|:---:|
+| Who-Is / I-Am; Who-Has by name | ✅ | ✅ Who-Is only |
+| Device object-name, object-list | ✅ | — (no Device object) |
+| ReadProperty, ReadPropertyMultiple, their errors | ✅ | ✅ |
+| Segmented RPM answer, receive window 1, 2, 4 and 16 | ✅ | |
+| WriteProperty at a priority, relinquish; write-access-denied | ✅ | ✅ write |
+| WritePropertyMultiple; segmented WPM request | ✅ | ✅ |
+| COV subscribe, notify, cancel | ✅ | ✅ |
+| ReadRange by position, sequence number and time; paged | | ✅ |
+| ReadRange by sequence number refused | | ✅ |
+| Segmented ReadRange answer, window 1 and 4 | | ✅ |
+| A segment left out once | | ⚠ recovered with window 4 (NAK); with window 1 the client times out: the simulator never resends on its own |
+| A segmented answer stopped | | ✅ Abort tsm-timeout, the next request succeeds |
+| RPM and WPM rejected | | ✅ |
+| GetAlarmSummary, GetEventInformation, AcknowledgeAlarm | | ✅ (the answers are the adapter's) |
+| Foreign-device registration, Distribute-Broadcast-To-Network, its NAK | | ✅ |
+| ReinitializeDevice, DCC with a wrong password, time synchronization, unconfirmed text message and private transfer | | ✅ |
+
+BACnet/IPv6 and BACnet/SC are out of scope: go-bacnet is a BACnet/IP (IPv4)
+client.
+
 ## What the peer tests found
+
+With a receive window above 1 (`client.WithSegmentWindow`), go-bacnet up to
+v0.5.x did not acknowledge segment 0 of a segmented answer, so every one
+timed out; found against cB-Sigma and BACpypes3, fixed in v0.6.0, and
+`TestSegmentedAnswerWithReceiveWindow` keeps it fixed.
 
 Defects in go-bacnet that only showed up against real stacks, all fixed in
 v0.4.0 ([RELEASE.md](RELEASE.md)):
