@@ -18,6 +18,12 @@ jobs:
     with:
       run-govulncheck: true
       coverage-min: "90"
+      # Attribute coverage across packages, as `make coverage` does: the
+      # server's objects are exercised by the server and e2e tests. Same
+      # list as COVER_GATE_PKGS in the Makefile (examples, interop, e2e and
+      # the test helpers internal/fixtures and internal/leak are excluded).
+      coverpkg: >-
+        github.com/otfabric/go-bacnet,github.com/otfabric/go-bacnet/apdu,github.com/otfabric/go-bacnet/bbmd,github.com/otfabric/go-bacnet/bip,github.com/otfabric/go-bacnet/bvlc,github.com/otfabric/go-bacnet/client,github.com/otfabric/go-bacnet/device,github.com/otfabric/go-bacnet/internal/clock,github.com/otfabric/go-bacnet/internal/diag,github.com/otfabric/go-bacnet/internal/faulty,github.com/otfabric/go-bacnet/internal/imports,github.com/otfabric/go-bacnet/internal/link,github.com/otfabric/go-bacnet/internal/segment,github.com/otfabric/go-bacnet/internal/virtual,github.com/otfabric/go-bacnet/npdu,github.com/otfabric/go-bacnet/server,github.com/otfabric/go-bacnet/server/object,github.com/otfabric/go-bacnet/service
       fuzz-time: 10s
       codecov-name: go-bacnet
       go-versions: '["1.26", "1.27"]'
