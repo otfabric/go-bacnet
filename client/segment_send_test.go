@@ -506,7 +506,8 @@ func seedPeerSegmentation(env *virtualPair, maxAPDU uint16, segmentation uint8) 
 }
 
 // serveSegmentedConfirmedWindowedACK reassembles segmented confirmed requests
-// using the given actual window size (ACK at window end or last segment).
+// using the given actual window size (ACK of segment 0, then at window end or
+// last segment).
 func serveSegmentedConfirmedWindowedACK(ctx context.Context, peerTr *virtual.Transport, dest bip.Endpoint, window uint8) {
 	if window == 0 {
 		window = 1
@@ -576,7 +577,9 @@ func serveSegmentedConfirmedWindowedACK(ctx context.Context, peerTr *virtual.Tra
 		st.next++
 		st.inWindow++
 		last := !req.MoreFollows
-		if st.inWindow >= window || last {
+		// Segment 0 is acknowledged at once (clause 5.4.5); later windows
+		// count from it.
+		if st.next == 1 || st.inWindow >= window || last {
 			ack := apdu.AppendSegmentACK(nil, apdu.SegmentACK{
 				Server: true, InvokeID: req.InvokeID,
 				SequenceNumber: req.SequenceNumber, ActualWindowSize: window,
@@ -682,5 +685,61 @@ func serveSegmentedConfirmedSimpleACK(ctx context.Context, peerTr *virtual.Trans
 			frame, _ = bvlc.Append(nil, bvlc.Message{Function: bvlc.FunctionOriginalUnicastNPDU, Payload: nraw})
 			_ = peerTr.Send(ctx, virtual.OutboundPacket{Data: frame, Destination: dest})
 		}
+	}
+}
+
+// A segmented request starts with segment 0 alone, whatever the proposed
+// window: the actual window comes from the responder's SegmentACK for it
+// (clause 5.4.4). BACpypes3 and the go-bacnet server answer segment 0 at
+// once; a requester that sent a whole window first would not be wrong for
+// them, but one that waits is what the state machine prescribes.
+func TestSegmentedSendWaitsForFirstACK(t *testing.T) {
+	env := newVirtualPair(t, WithTransactionOptions(time.Second, 0, time.Second), WithSegmentWindow(4))
+	seedPeerSegmentation(env, 50, segmentationReceive)
+	target := env.Target
+	target.MaxAPDU = 50
+
+	obj := bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeAnalogOutput, Instance: 1}
+	props := make([]service.WritePropertyValue, 0, 8)
+	for range 8 {
+		props = append(props, service.WritePropertyValue{
+			Property: bacnet.PropertyReference{Identifier: bacnet.PropertyPresentValue},
+			Value: bacnet.ApplicationValue{
+				Kind:      bacnet.ValueCharacterString,
+				Character: bacnet.CharacterString{Encoding: 0, Value: string(make([]byte, 20))},
+			},
+		})
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	errCh := make(chan error, 1)
+	go func() {
+		errCh <- env.Client.WritePropertyMultiple(ctx, target, []service.WriteAccessSpecification{{Object: obj, Properties: props}})
+	}()
+	_, _ = waitConfirmedInvokeID(t, env.ClientTr, time.Second)
+	time.Sleep(50 * time.Millisecond)
+	limits := bacnet.DefaultDecodeLimits()
+	segments := 0
+	for _, pkt := range env.ClientTr.Outbox() {
+		msg, err := bvlc.Parse(pkt.Data, limits)
+		if err != nil {
+			continue
+		}
+		n, _, err := npdu.Parse(msg.Payload, limits)
+		if err != nil || len(n.APDU) == 0 {
+			continue
+		}
+		if pdu, err := apdu.Parse(n.APDU, limits); err == nil && pdu.ConfirmedRequest != nil && pdu.ConfirmedRequest.SegmentedMessage {
+			segments++
+			if pdu.ConfirmedRequest.ProposedWindowSize != 4 {
+				t.Errorf("proposed window %d, want 4", pdu.ConfirmedRequest.ProposedWindowSize)
+			}
+		}
+	}
+	if segments != 1 {
+		t.Fatalf("%d segments sent before the first SegmentACK, want 1", segments)
+	}
+	cancel()
+	if err := <-errCh; err == nil {
+		t.Fatal("the cancelled write succeeded")
 	}
 }

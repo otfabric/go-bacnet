@@ -45,8 +45,8 @@ const (
 	// Stored: the segment was the expected one and was stored; more
 	// follow and the window is not full, so no SegmentACK is due.
 	Stored Outcome = iota
-	// StoredAck: the segment was stored and closed the window; a positive
-	// SegmentACK for Last is due.
+	// StoredAck: the segment was the first one or closed the window; a
+	// positive SegmentACK for Last is due.
 	StoredAck
 	// Complete: the last segment was stored; a positive SegmentACK for Last
 	// is due and Payload holds the whole message.
@@ -99,13 +99,20 @@ func (r *Reassembly) Add(seq uint8, more bool, payload []byte) Outcome {
 	}
 	r.buf = append(r.buf, payload...)
 	r.segments++
+	first := r.segments == 1
 	r.expected++
 	r.inWindow++
 	if !more {
 		r.inWindow = 0
 		return Complete
 	}
-	if r.inWindow >= r.window {
+	// The first segment is acknowledged at once, whatever the window: the
+	// sender sends one segment and waits for that SegmentACK, which carries
+	// the actual window (clause 5.4.4 SegmentedComplexACK received in
+	// AWAIT_CONFIRMATION, clause 5.4.5 segmented request received in IDLE).
+	// Later windows count from it: the next SegmentACK is due at sequence
+	// number 0 + window.
+	if first || r.inWindow >= r.window {
 		r.inWindow = 0
 		return StoredAck
 	}
