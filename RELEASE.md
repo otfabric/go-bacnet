@@ -2,7 +2,7 @@
 
 ## v0.6.0
 
-**Date:** unreleased
+**Date:** 2026-11-06
 **Previous release:** v0.5.0
 
 Requires **Go 1.26+**. Interop pin: [`bacnet-interop` v0.12.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.12.0). A BACnet/IP server, verified against the go-bacnet client and against three independent clients in bacnet-interop client-mode images: the bacnet-stack command-line tools, BACnet4J and BACpypes3. [docs/SERVER_SUPPORT.md](docs/SERVER_SUPPORT.md) lists each capability and its evidence.
