@@ -6,7 +6,7 @@ Concrete peer quirks and hardware results. Service coverage lives in
 
 ## Open-source peer observations
 
-Peer images: bacnet-interop v0.10.0 (`interop/bacnet-interop-pin.json`). The
+Peer images: bacnet-interop v0.13.0 (`interop/bacnet-interop-pin.json`). The
 complete list of peer behaviours is in
 [bacnet-interop PEER_SUPPORT.md](https://github.com/otfabric/bacnet-interop/blob/main/PEER_SUPPORT.md).
 
@@ -17,6 +17,7 @@ complete list of peer behaviours is in
 | **bacnet-stack** | Broad native application surface. GetEnrollmentSummary, ConfirmedPrivateTransfer, TextMessage, and COV-multiple unsupported at 1.6.1. Who-Am-I / You-Are decoded. BBMD_ENABLED with self-seeded BDT / Accept-FD (FDR + Read-BDT/FDT + Delete-FDT live). Write-BDT NAK at PR≥17. May Abort some segmented ComplexACK paths. Upstream router app not packaged. |
 | **BACpypes3** | Strong COV (including renew) and segmented ASE. File / CreateObject / ReadRange / GetAlarmSummary unsupported at 0.0.110 (GetEnrollmentSummary through an adapter handler). Peer-as-BBMD via env (Read-BDT/FDT, Delete-FDT; Write-BDT NAK). Some WPM / EventNotification / Reinit paths are adapter-assisted. |
 | **System.IO.BACnet** | C# stack behind YABE (4.0.0). Announces Max APDU 1464; sends Abort without the server bit; answers a failed WritePropertyMultiple with a plain Error; cannot return an empty list inside ReadPropertyMultiple; reads a commanded priority-array slot back as a string. Alarm services and record files are adapter-supplied. |
+| **cB-Sigma** | Go, two roles of one image (bacnet-interop 0.13.0). The device role (cB-Sigma/bacnet v0.2.0) serves a Device object, RP/RPM/WP/WPM with priority arrays, COV and segmentation both ways, nothing else. The simulator (bacnet-sim v0.1.0) has no Device object and answers Who-Has only for its demo object; it serves ReadRange, alarm and event summaries the adapter encodes, and peer-as-BBMD (Register-FD, Distribute-Broadcast); a segment it drops on purpose is never resent on its own, only after a NAK. |
 | **bacnet-stack-router** | Upstream bacnet-stack `apps/router`. Does not decrement the hop count; sends no Reject-Message-To-Network. |
 | **bip-router** | Topology aid for dual-homed BIP routing only — not a peer oracle. |
 

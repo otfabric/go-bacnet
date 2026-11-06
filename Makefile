@@ -118,7 +118,8 @@ cross: ## Cross-compile without cgo for the supported platforms
 # they are missing; `interop-pinned` takes the digests from the pin file, pulls
 # what is absent and fails instead of skipping. That is what CI runs. Images a
 # pin does not list yet (sysiobacnet and bacnet-stack-router exist from
-# bacnet-interop v0.10.0) are passed as "none": their scenarios skip.
+# bacnet-interop v0.10.0, cbsigma from v0.13.0) are passed as "none": their
+# scenarios skip.
 INTEROP_PIN     := interop/bacnet-interop-pin.json
 INTEROP_TIMEOUT ?= 30m
 INTEROP_RUN     ?=
@@ -139,9 +140,10 @@ interop-pinned: ## Pull the pinned peer images and run interop against them (nee
 	export BACNET_STACK_IMAGE="$$(pin bacnet-stack)" BACPYPES3_IMAGE="$$(pin bacpypes3)" \
 	       BACNET4J_IMAGE="$$(pin bacnet4j)" WORLDIETY_IMAGE="$$(pin worldiety)" \
 	       BIP_ROUTER_IMAGE="$$(pin bip-router)" \
-	       SYSIOBACNET_IMAGE="$$(opt sysiobacnet)" BACNET_STACK_ROUTER_IMAGE="$$(opt bacnet-stack-router)"; \
+	       SYSIOBACNET_IMAGE="$$(opt sysiobacnet)" BACNET_STACK_ROUTER_IMAGE="$$(opt bacnet-stack-router)" \
+	       CBSIGMA_IMAGE="$$(opt cbsigma)"; \
 	for img in "$$BACNET_STACK_IMAGE" "$$BACPYPES3_IMAGE" "$$BACNET4J_IMAGE" "$$WORLDIETY_IMAGE" "$$BIP_ROUTER_IMAGE" \
-	           "$$SYSIOBACNET_IMAGE" "$$BACNET_STACK_ROUTER_IMAGE"; do \
+	           "$$SYSIOBACNET_IMAGE" "$$BACNET_STACK_ROUTER_IMAGE" "$$CBSIGMA_IMAGE"; do \
 	  [ "$$img" = none ] && continue; \
 	  docker image inspect "$$img" >/dev/null 2>&1 || docker pull "$$img"; \
 	done; \

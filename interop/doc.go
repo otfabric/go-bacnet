@@ -21,6 +21,7 @@
 //	BIP_ROUTER_IMAGE         default bacnet-interop-bip-router:local
 //	SYSIOBACNET_IMAGE        default bacnet-interop-sysiobacnet:local ("none" skips its tests)
 //	BACNET_STACK_ROUTER_IMAGE  default bacnet-interop-bacnet-stack-router:local ("none" skips its test)
+//	CBSIGMA_IMAGE            default bacnet-interop-cbsigma:local ("none" skips its tests)
 //	BACNET_INTEROP_REQUIRED  if non-empty, a missing image, fixture or Docker fails instead of skipping
 //	BACNET_INTEROP_SKIP      if non-empty, skip all peer tests
 //	BACNET_INTEROP_GO_IMAGE  Go image for the in-network re-execution on Docker Desktop
