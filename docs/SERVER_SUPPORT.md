@@ -9,7 +9,7 @@ Behavioural contracts are in [API.md](../API.md#server) and
 
 **Library version:** v0.6.0  
 **Independent clients:** three, each an unmodified upstream stack in a
-bacnet-interop client-mode image (bacnet-interop v0.12.0,
+bacnet-interop client-mode image (bacnet-interop v0.12.0 and later; pin v0.13.0,
 `interop/server_clients_test.go`,
 [INTEROP.md](../INTEROP.md#independent-clients-against-the-server)):
 the bacnet-stack 1.6.1 command-line tools, BACnet4J 6.1.1 and BACpypes3

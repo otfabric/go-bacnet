@@ -8,7 +8,7 @@ transport the client uses lives in package `bip` from v0.6.0
 (`client.Transport` is an alias); the client's behaviour is unchanged.
 
 **Library version:** v0.6.0 (previous release [v0.5.0](https://github.com/otfabric/go-bacnet/releases/tag/v0.5.0))  
-**Interop pin:** bacnet-interop v0.12.0 (five peer stacks; see [INTEROP.md](../INTEROP.md))
+**Interop pin:** bacnet-interop v0.13.0 (six peer stacks; see [INTEROP.md](../INTEROP.md))
 
 | Client support | Meaning |
 |---|---|

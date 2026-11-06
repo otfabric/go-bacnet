@@ -59,7 +59,7 @@ and ReadFileRecords (codec or unit evidence).
 ## Server evidence
 
 Three independent clients drive the server, each an unmodified upstream
-stack in a bacnet-interop v0.12.0 client-mode image: the bacnet-stack 1.6.1
+stack in a bacnet-interop client-mode image (from v0.12.0; the pin is v0.13.0): the bacnet-stack 1.6.1
 command-line tools, BACnet4J 6.1.1 and BACpypes3 0.0.110. Between them they
 cover discovery, reads and writes and their error cases, SubscribeCOV,
 SubscribeCOVProperty, SubscribeCOVPropertyMultiple (BACnet4J only),

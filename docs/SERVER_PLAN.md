@@ -2,7 +2,7 @@
 
 Status: **phases 0–5 implemented in go-bacnet v0.6.0; reverse interop
 with three independent clients** (bacnet-stack, BACnet4J and BACpypes3
-client modes, bacnet-interop v0.12.0; bacnet-stack without segmentation). What is implemented and how it is verified is in
+client modes, bacnet-interop v0.12.0 and later; bacnet-stack without segmentation). What is implemented and how it is verified is in
 [SERVER_SUPPORT.md](SERVER_SUPPORT.md); where the implementation departs from
 this plan is listed under [Deviations](#deviations-from-the-plan).
 It scopes a BACnet/IP server (a device) for go-bacnet next to the existing
