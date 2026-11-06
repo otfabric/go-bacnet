@@ -146,6 +146,9 @@ func runClientAgainstServer(t *testing.T, image, adapter string, run clientRun) 
 		t.Fatalf("docker network create: %v (%s)", err, out)
 	}
 	env := []string{serveFixtureEnv + "=" + run.fixture}
+	if os.Getenv(serveTraceEnv) != "" {
+		env = append(env, serveTraceEnv+"=1")
+	}
 	if run.bbmd {
 		env = append(env, serveBBMDEnv+"=1")
 	}
@@ -229,6 +232,10 @@ func startServerContainer(t *testing.T, network, name string, env []string) *ser
 		signalled := false
 		for s.Scan() {
 			line := s.Text()
+			if strings.HasPrefix(line, "trace ") {
+				fmt.Fprintln(os.Stderr, line)
+				continue
+			}
 			var ev operationEvent
 			if json.Unmarshal([]byte(line), &ev) == nil && ev.Event == "operation" {
 				sc.mu.Lock()
@@ -301,6 +308,13 @@ func TestServeFixtureDevice(t *testing.T) {
 			t.Fatal(err)
 		}
 		opts = append(opts, server.WithBBMD(b))
+	}
+	if os.Getenv(serveTraceEnv) != "" {
+		tr, err := bip.ListenUDP(bip.UDPConfig{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		opts = append(opts, server.WithTransport(traceTransport{tr}))
 	}
 	s, err := server.New(d, opts...)
 	if err != nil {
@@ -598,4 +612,24 @@ func waitOperation(ops func() []string, want string, timeout time.Duration) bool
 		}
 		time.Sleep(100 * time.Millisecond)
 	}
+}
+
+// serveTraceEnv, set for the server container, writes every datagram the
+// server receives and sends to stderr in hex, for diagnosing a peer.
+const serveTraceEnv = "BACNET_SERVE_TRACE"
+
+type traceTransport struct{ bip.Transport }
+
+func (t traceTransport) Recv(ctx context.Context) (bip.InboundPacket, error) {
+	p, err := t.Transport.Recv(ctx)
+	if err == nil {
+		fmt.Fprintf(os.Stderr, "trace recv %s %x\n", p.ImmediatePeer, p.Data)
+	}
+	return p, err
+}
+
+func (t traceTransport) Send(ctx context.Context, p bip.OutboundPacket) error {
+	err := t.Transport.Send(ctx, p)
+	fmt.Fprintf(os.Stderr, "trace send %s broadcast=%v err=%v %x\n", p.Destination, p.Broadcast, err, p.Data)
+	return err
 }
