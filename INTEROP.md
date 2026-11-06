@@ -208,7 +208,8 @@ Each result line becomes a subtest: `pass` passes, `fail` and `infra-error`
 fail, and `unsupported` and `known-difference` skip. For a scenario whose
 expectation is that a request was sent (an unconfirmed service), the
 server's hooks report what arrived and the test checks it. The images are
-those of bacnet-interop v0.12.0 (the pin), with each stack unmodified.
+those of the pin (bacnet-interop v0.13.0; client mode exists from v0.12.0),
+with each stack unmodified.
 
 | Client | `server-baseline-v1` (23) | `server-services-v1` (36) | `server-bbmd-v1` (5) | `server-extended-v1` (23) |
 |---|---|---|---|---|
