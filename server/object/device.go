@@ -521,8 +521,9 @@ func (d *Device) dispatch(c Change) {
 	}
 }
 
-// WriteProperty implements Object for the Device object. Writes to
-// Object_Name go through Rename so that names stay unique.
+// WriteProperty implements Object for the Device object. Object_Name is
+// not writable over the network (write-access-denied); the application
+// renames objects with Rename, which keeps names unique.
 func (d *Device) WriteProperty(ctx context.Context, w Write) error {
 	if w.Property.Identifier == bacnet.PropertyObjectName {
 		return ErrWriteAccessDenied

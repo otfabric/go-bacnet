@@ -1,11 +1,11 @@
 # go-bacnet Releases
 
-## v0.7.0
+## v0.6.0
 
 **Date:** unreleased
-**Previous release:** v0.6.0
+**Previous release:** v0.5.0
 
-Requires **Go 1.26+**. A BACnet/IP server. It is verified against the go-bacnet client, and the bacnet-stack command-line tools (an unreleased bacnet-interop client mode) drive discovery, property access, COV, ReadRange, files, lists, object creation, alarms, device management and the BBMD against it; segmentation has no independent client yet. [docs/SERVER_SUPPORT.md](docs/SERVER_SUPPORT.md) lists each capability and its evidence.
+Requires **Go 1.26+**. Interop pin: [`bacnet-interop` v0.12.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.12.0). A BACnet/IP server, verified against the go-bacnet client and against three independent clients in bacnet-interop client-mode images: the bacnet-stack command-line tools, BACnet4J and BACpypes3. [docs/SERVER_SUPPORT.md](docs/SERVER_SUPPORT.md) lists each capability and its evidence.
 
 ### Added
 
@@ -15,11 +15,12 @@ Requires **Go 1.26+**. A BACnet/IP server. It is verified against the go-bacnet 
 - Package `server/object` provides the Device object; analog, binary and multi-state inputs, outputs and values; Notification Class, Trend Log and File; Calendar, Schedule, CharacterString Value, Integer Value, Positive Integer Value and Structured View. Analog, binary, and multi-state input and value points support intrinsic reporting: out-of-range, change-of-state, change-of-reliability, and Fault_Values for multi-state points.
 - AtomicWriteFile past the end of a file extends it: a stream file is zero-filled up to the start position, records are appended after the last one, within the file's maximum size.
 - Package `bbmd` is an optional BBMD for a server. It keeps the BDT and FDT, registers foreign devices and forwards broadcasts.
-- `service.RecipientProcess`, `service.ErrUndefinedEnumeration` (wraps `ErrMalformed`; returned for a DeviceCommunicationControl or ReinitializeDevice enumeration outside the defined values), and the request decoders the server uses.
+- `service.DecodeReadPropertyMultiple` (the request), `service.EncodeCOVNotification`, `service.RecipientProcess`, `service.ErrUndefinedEnumeration` (wraps `ErrMalformed`; returned for a DeviceCommunicationControl or ReinitializeDevice enumeration outside the defined values), and the request decoders the server uses.
 - Object type constants for Structured View (29), CharacterString Value (40), Integer Value (45) and Positive Integer Value (48); property identifier constants and names used by the server's objects; error codes inconsistent-configuration (129) and inconsistent-object-type (130); BVLC-Result code constants in `bvlc`.
 
 ### Changed
 
+- The `Transport` interface, `InboundPacket`, `OutboundPacket` and the UDP transport move to package `bip` (`bip.Transport`, `bip.ListenUDP`). `client.Transport`, `client.InboundPacket` and `client.OutboundPacket` are type aliases of the `bip` types, so existing code compiles unchanged.
 - **Breaking:** `service.GetEnrollmentSummaryRequest.EnrollmentFilter` is a `*service.RecipientProcess` (BACnetRecipientProcess, clause 13.11.1) instead of the unused `*service.EnrollmentFilter`. The client now encodes it.
 - `service.DecodeDeviceCommunicationControl` and `DecodeReinitializeDevice` wrap `ErrUndefinedEnumeration` for an out-of-range enumeration. `errors.Is(err, bacnet.ErrMalformed)` still holds.
 - The client's segmentation and B/IP framing moved to `internal/segment` and `internal/link`, shared with the server. Behaviour is unchanged apart from the fix below.
@@ -27,33 +28,21 @@ Requires **Go 1.26+**. A BACnet/IP server. It is verified against the go-bacnet 
 ### Fixed
 
 - After 256 received segments the client's SegmentACK named sequence number 0 instead of 255.
+- The server accepts an APDU longer than its Max_APDU_Length_Accepted, up to the datagram limit, unless `WithDecodeLimits` sets `MaxAPDUSize`. BACpypes3 0.0.110 sends segments 6 octets longer than the device's Max APDU, which the server dropped.
+- The first segment of a segmented message is acknowledged at once, whatever the window (clause 5.4.4 and 5.4.5). Before, the server answered a segmented request, and a client with `WithSegmentWindow` above 1 a segmented ComplexACK, only when the window filled, so a peer that waits for the SegmentACK of segment 0 (BACpypes3) timed out. Later windows count from segment 0.
+- A segmented request from the client sends segment 0 alone and waits for its SegmentACK, which carries the actual window, before sending more (clause 5.4.4). Before, it sent a whole proposed window first.
 - A change-of-state event notification whose new state is boolean-value (BACnetPropertyStates choice [0], clause 21) decoded as an enumerated value; it now decodes as a Boolean, and a content octet other than 0 or 1 is `ErrMalformed`.
 
 ### Tests
 
 - `e2e/server*_test.go`: the go-bacnet client against the server over loopback UDP, including every built-in object type read with ReadPropertyMultiple ALL, device management and hook services, COV-property subscriptions, and the BBMD tables.
 - `make dissector` also dissects every datagram the server sends in those tests (`TestDissectorAcceptsServerReplies`).
-- `TestBACnetStackClientAgainstServer` runs bacnet-stack client mode with `server-baseline-v1`, `server-services-v1` and `server-bbmd-v1` ([INTEROP.md](INTEROP.md#independent-clients-against-the-server)); it skips against the pinned images until a bacnet-interop release has client mode.
+- `TestBACnetStackClientAgainstServer`, `TestBACnet4JClientAgainstServer` and `TestBACpypes3ClientAgainstServer` run each stack's client mode with `server-baseline-v1`, `server-services-v1`, `server-bbmd-v1` and (BACnet4J, BACpypes3) `server-extended-v1` against the server ([INTEROP.md](INTEROP.md#independent-clients-against-the-server)).
+- Interop pin moved to bacnet-interop v0.12.0 (container contract 1.1, client mode).
+- `examples/server`: a device with a setpoint, a drifting input and a fan, which prints every write.
 - `TestChaosServer` covers concurrent requesters, retransmissions, junk and object changes under `-race`. It runs in `make chaos`.
 - `FuzzServerReceive` and `FuzzHandleBVLC` run in `make fuzz` and nightly. `FuzzDecodeReadPropertyMultiple` is added to the nightly run.
 - `server` and `bbmd` check for leaked goroutines in `TestMain`.
-
----
-
-## v0.6.0
-
-**Date:** unreleased
-**Previous release:** v0.5.0
-
-Requires **Go 1.26+**. Groundwork for the server; the client's behaviour does not change.
-
-### Changed
-
-- The `Transport` interface, `InboundPacket`, `OutboundPacket` and the UDP transport move to package `bip` (`bip.Transport`, `bip.ListenUDP`). `client.Transport`, `client.InboundPacket` and `client.OutboundPacket` are type aliases of the `bip` types, so existing code compiles unchanged.
-
-### Added
-
-- `service.DecodeReadPropertyMultiple` (the request) and `service.EncodeCOVNotification`.
 
 ---
 

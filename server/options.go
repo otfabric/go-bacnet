@@ -46,7 +46,7 @@ type config struct {
 
 func defaultConfig() config {
 	return config{
-		limits:         bacnet.DefaultDecodeLimits(),
+		limits:         defaultLimits(),
 		workers:        4,
 		queue:          64,
 		maxAPDU:        1476,
@@ -132,7 +132,22 @@ func WithLocalAddr(addr string) Option { return func(c *config) { c.localAddr = 
 // WithInterface limits broadcasts (I-Am, I-Have) to one interface.
 func WithInterface(name string) Option { return func(c *config) { c.iface = name } }
 
-// WithDecodeLimits sets the decode limits for inbound frames.
+// defaultLimits are bacnet.DefaultDecodeLimits with no APDU bound below the
+// datagram bound. Max_APDU_Length_Accepted (WithMaxAPDU) is what requesters
+// are told to send, but some exceed it: BACpypes3 0.0.110 fills each segment
+// of a segmented request with Max APDU octets of service data and adds the
+// 6-octet header, so its segments are 1482 octets for a 1476-octet device.
+// The datagram bound already limits the allocation.
+func defaultLimits() bacnet.DecodeLimits {
+	l := bacnet.DefaultDecodeLimits()
+	l.MaxAPDUSize = l.MaxDatagramSize
+	return l
+}
+
+// WithDecodeLimits sets the decode limits for inbound frames. The default
+// is bacnet.DefaultDecodeLimits with MaxAPDUSize raised to MaxDatagramSize,
+// so an APDU longer than Max_APDU_Length_Accepted is still served; set
+// MaxAPDUSize to drop such frames.
 func WithDecodeLimits(l bacnet.DecodeLimits) Option {
 	return func(c *config) { c.limits = l.Normalize() }
 }

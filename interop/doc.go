@@ -31,9 +31,14 @@
 // (macOS, Windows) each test re-executes itself inside a Go container on the
 // peer's network, compiling this working tree there.
 //
-// TestBACnetStackClientAgainstServer reverses the roles: the go-bacnet
-// server runs in a Go container and a peer image in client mode drives it
-// (bacnet-interop docs/CLIENT_DRIVER_CONTRACT.md).
+// TestBACnetStackClientAgainstServer, TestBACnet4JClientAgainstServer and
+// TestBACpypes3ClientAgainstServer reverse the roles: the go-bacnet server
+// runs in a Go container and a peer image in client mode drives it
+// (bacnet-interop docs/CLIENT_DRIVER_CONTRACT.md). An image without client
+// mode is skipped.
+//
+// The dissector tag (-tags=dissector, make dissector) checks client requests
+// and the server's replies against Wireshark's tshark.
 //
 // See INTEROP.md.
 package interop

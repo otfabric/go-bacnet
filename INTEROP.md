@@ -198,48 +198,56 @@ Wireshark is not acceptance by a device. Verified with Wireshark 4.2, 4.4 and
 The tests above drive peer devices with the go-bacnet client. The reverse
 direction runs a peer stack as a **client** against the go-bacnet server
 (bacnet-interop `docs/CLIENT_DRIVER_CONTRACT.md`).
-`TestBACnetStackClientAgainstServer` starts the server in a Go container,
-once per scenario file, with the device fixture the file requires. It then
-runs the bacnet-stack image in client mode on the same docker network, on
-Linux and Docker Desktop alike, because the bacnet-stack tools bind to the
-device by Who-Is. Each result line becomes a subtest: `pass` passes, `fail`
-and `infra-error` fail, and `unsupported` and `known-difference` skip. For a
-scenario whose expectation is that a request was sent (an unconfirmed
-service), the server's hooks report what arrived and the test checks it.
+`TestBACnetStackClientAgainstServer`, `TestBACnet4JClientAgainstServer` and
+`TestBACpypes3ClientAgainstServer` start the server in a Go container, once
+per scenario file, with the device fixture the file requires. They then run
+the client image in client mode on the same docker network, on Linux and
+Docker Desktop alike, because some clients bind to the device by Who-Is.
+Each result line becomes a subtest: `pass` passes, `fail` and `infra-error`
+fail, and `unsupported` and `known-difference` skip. For a scenario whose
+expectation is that a request was sent (an unconfirmed service), the
+server's hooks report what arrived and the test checks it. The images are
+those of bacnet-interop v0.12.0 (the pin), with each stack unmodified.
 
-| Client | Engine | Scenarios | Result |
-|---|---|---|---|
-| bacnet-stack 1.6.1 (pin 7a53f0a7) | Upstream `bacwi`, `bacwh`, `bacrp`, `bacrpm`, `bacwp`, `bacwpm`, unmodified | `server-baseline-v1` on `device-baseline-v2`: 23 (Who-Is, Who-Has, RP, RPM, WP, WPM and their errors) | All pass |
-| bacnet-stack 1.6.1 (pin 7a53f0a7) | Upstream `bacscov`, `bacrr`, `bacdcc`, `bacrd`, `bacarf`, `bacawf`, `bacale`, `bacrle`, `bacco`, `bacdo`, `bacge`, `bacackalarm`, `bacts`, `bacupt`, `bacwg`, unmodified | `server-services-v1` on `device-server-v1`: 36 (SubscribeCOV, ReadRange, DCC, ReinitializeDevice, AtomicRead/WriteFile, Add/RemoveListElement, Create/DeleteObject, GetEventInformation, AcknowledgeAlarm, (UTC) TimeSynchronization, UnconfirmedPrivateTransfer, WriteGroup, and their errors) | 35 pass; `rle.nc1` known difference |
-| bacnet-stack 1.6.1 (pin 7a53f0a7) | The tools above registered as a foreign device (`--bbmd`, `--fd-ttl 60`), plus `bacrbdt`, `bacrfdt`, `bacwbdt` | `server-bbmd-v1` on `device-server-v1` with the server's BBMD: 5 (Who-Is through Distribute-Broadcast-To-Network, RP, Read-FDT, Read-BDT, Write-BDT NAK) | All pass |
+| Client | `server-baseline-v1` (23) | `server-services-v1` (36) | `server-bbmd-v1` (5) | `server-extended-v1` (23) |
+|---|---|---|---|---|
+| bacnet-stack 1.6.1, command-line tools | All pass | 35 pass; `rle.nc1` known difference | All pass | Not run: built without segmentation, no tools for these services |
+| BACnet4J 6.1.1, `LocalDevice` | All pass | All pass | 2 pass; Read-BDT, Read-FDT, Write-BDT unsupported (no client for them) | 22 pass; `scovpm.unknown-object-second` known difference |
+| BACpypes3 0.0.110, `Application` | All pass | 35 pass; `ale.unknown-object` known difference | All pass | 15 pass; 5 known differences; the 3 `scovpm` scenarios unsupported |
 
-`rle.nc1`: `bacrle` registers its reply handlers for AddListElement
-(apps/remove-list-element/main.c), so it prints nothing for the
-RemoveListElement acknowledgement. The removal itself is checked by the next
-scenario, which reads Recipient_List back with `bacrp`.
+The known differences are limits of the client recorded in bacnet-interop
+PEER_SUPPORT.md, each with the octets the server sent:
 
-Not covered by these tools: segmentation (they are built without it),
-SubscribeCOVProperty and SubscribeCOVPropertyMultiple, GetAlarmSummary,
-GetEnrollmentSummary, text messages, ConfirmedPrivateTransfer, and an empty
-GetEventInformation reply, which `bacge` cannot decode (also against a
-bacnet-stack device). BACnet4J and BACpypes3 have client APIs for these;
-their client drivers are not written yet.
+- `rle.nc1`: `bacrle` registers its reply handlers for AddListElement
+  (apps/remove-list-element/main.c), so it prints nothing for the
+  RemoveListElement acknowledgement. The next scenario reads
+  Recipient_List back with `bacrp` and checks the removal.
+- `scovpm.unknown-object-second`: BACnet4J decodes
+  SubscribeCOVPropertyMultiple-Error as a CHOICE and drops the first failed
+  subscription; error class and code match.
+- BACpypes3 cannot decode a ChangeList-Error (`ale.unknown-object`), an
+  Error of SubscribeCOVProperty (`scovp.unknown-object`,
+  `scovp.unknown-property`) or an empty GetAlarmSummary or
+  GetEnrollmentSummary ACK (`gas.normal`, `gas.av2.after-normal`,
+  `ges.offnormal-filter.normal`), and has no SubscribeCOVPropertyMultiple.
 
-Client mode is not in a bacnet-interop release yet. The results above come
-from an image built from a bacnet-interop working tree. The test skips
-against the pinned images and runs once the pin moves to a release with
-client mode. `server-baseline-v1` also passes with bacnet-stack client mode
-against bacnet-stack device mode, which cross-checks those expectations.
-Where the standard leaves the error code open, the server follows
-bacnet-stack ([docs/SERVER_SUPPORT.md](docs/SERVER_SUPPORT.md)), so
-agreement on those codes is partly by construction.
+Also not covered: an empty GetEventInformation reply, which `bacge` cannot
+decode (also against a bacnet-stack device), and BBMD-to-BBMD forwarding.
+`server-baseline-v1` passes with every client against the bacnet-stack
+device image too (`make -C ../bacnet-interop client-matrix`), which cross-checks
+those expectations. Where the standard leaves the error code open, the
+server follows bacnet-stack ([docs/SERVER_SUPPORT.md](docs/SERVER_SUPPORT.md)),
+so agreement on those codes is partly by construction.
 
-Defects these runs found in the server, fixed before v0.7.0: a request
+Defects these runs found in the server, fixed before v0.6.0: a request
 repeated after its response was answered from a cache instead of being
 executed (the tools reuse invoke IDs, and clause 5.4.5 makes such a request
 a new one), so a second DeleteObject reported success; and AtomicWriteFile
 past the end of a file was refused where bacnet-stack's storage extends the
-file.
+file. The BACpypes3 runs found two more: segment 0 of a segmented request
+was not acknowledged when the actual window was above 1 (clause 5.4.5
+acknowledges it at once), and BACpypes3's segments, 6 octets longer than the
+server's Max APDU, were dropped by the decode limit.
 
 ## What the peer tests found
 

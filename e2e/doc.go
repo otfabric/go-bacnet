@@ -5,6 +5,9 @@
 // device is built from the public codecs only (bvlc, npdu, apdu, service), so
 // every frame crosses the wire encoded by one side and decoded by the other.
 //
-// Independent devices are the interop tier's job; this suite shows that the
-// parts of the library work together without Docker.
+// The server_*_test.go files reverse the roles: the go-bacnet client against
+// the go-bacnet server (package server) over loopback.
+//
+// Independent devices and clients are the interop tier's job; this suite
+// shows that the parts of the library work together without Docker.
 package e2e

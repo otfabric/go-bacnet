@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -750,5 +751,51 @@ func TestServerBBMDForeignDevice(t *testing.T) {
 	}, "I-Am through the BBMD")
 	if v, err := c.ReadProperty(ctx, serverTarget(s), av1, presentValue); err != nil || v.Real != 21.5 {
 		t.Fatalf("read through BBMD peer: %v %+v", err, v)
+	}
+}
+
+// Segmented requests and replies with actual windows above one in both
+// directions. The server acknowledges segment 0 at once and the client sends
+// it alone (clause 5.4.4, 5.4.5), so every window pairing completes.
+func TestServerSegmentWindows(t *testing.T) {
+	for _, w := range []uint8{1, 2, 4, 16} {
+		t.Run(fmt.Sprintf("window-%d", w), func(t *testing.T) {
+			s := startServer(t, server.WithSegmentation(64, w))
+			content := bytes.Repeat([]byte("abcdefghij"), 300) // 3000 octets
+			f, err := object.NewFile(object.FileConfig{Instance: 1, Name: "f", FileType: "bin", Data: make([]byte, len(content))})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := s.dev.Add(f); err != nil {
+				t.Fatal(err)
+			}
+			c, err := client.New(client.WithLocalAddr("127.0.0.1:0"),
+				client.WithTransactionOptions(time.Second, 0, time.Second), client.WithSegmentWindow(w))
+			if err != nil {
+				t.Fatal(err)
+			}
+			t.Cleanup(func() { _ = c.Close() })
+			ctx := ctxT(t)
+			if err := c.SendWhoIs(ctx, s.Local(), false, client.DiscoveryOptions{}); err != nil {
+				t.Fatal(err)
+			}
+			waitFor(t, func() bool {
+				for _, o := range c.Devices() {
+					if o.Instance == serverInstance {
+						return true
+					}
+				}
+				return false
+			}, "I-Am")
+			// A small Max APDU makes the 3000-octet request about 16 segments.
+			tg := client.Target{Endpoint: s.Local(), MaxAPDU: 206}
+			if _, err := c.AtomicWriteFile(ctx, tg, service.AtomicWriteFileRequest{File: f.Identifier(), Access: service.FileAccessStream, Data: content}); err != nil {
+				t.Fatalf("segmented write: %v", err)
+			}
+			got, err := c.ReadFileStream(ctx, serverTarget(s), f.Identifier(), client.FileReadOptions{ChunkSize: 3000})
+			if err != nil || !bytes.Equal(got, content) {
+				t.Fatalf("segmented read back: %v (%d octets)", err, len(got))
+			}
+		})
 	}
 }

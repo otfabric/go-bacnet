@@ -7,27 +7,29 @@
 [![Codecov](https://codecov.io/gh/otfabric/go-bacnet/graph/badge.svg)](https://codecov.io/gh/otfabric/go-bacnet)
 [![Release](https://img.shields.io/github/v/release/otfabric/go-bacnet?label=release)](https://github.com/otfabric/go-bacnet/releases)
 
-`go-bacnet` is a pure-Go BACnet/IP **client** library: discover devices, read
-and write properties, subscribe to change-of-value and alarm notifications,
-transfer files and manage objects on BACnet/IP (Annex J) over IPv4, including
-routed networks, foreign-device registration and segmentation. Package `server` serves a
-BACnet device of your own on the same codecs. It has no
-dependencies outside the Go standard library.
+`go-bacnet` is a pure-Go BACnet/IP (Annex J, IPv4) library with a client and
+a server. The client discovers devices, reads and writes properties,
+subscribes to change-of-value and alarm notifications, transfers files and
+manages objects, including over routed networks, foreign-device registration
+and segmentation. The server (`server`, `server/object`, `bbmd`) serves a
+BACnet device of your own, with its objects, on the same codecs, and can act
+as a BBMD. It has no dependencies outside the Go standard library.
 
 New to BACnet? Start with [PROTOCOL.md](PROTOCOL.md).
 
 ## Status
 
-A client and, since v0.7.0 (unreleased), a server. The client is tested on every change against five independent
+A client and, since v0.6.0, a server. The client is tested on every change against five independent
 open-source BACnet stacks running in containers (bacnet-stack, BACpypes3,
 BACnet4J, Worldiety, System.IO.BACnet; [INTEROP.md](INTEROP.md)) and its
 requests are checked against Wireshark's dissector. It has **not** been
 validated against physical controllers yet; the checklist for that is
 [docs/FIELD_VALIDATION.md](docs/FIELD_VALIDATION.md). The server is
-tested against the go-bacnet client and against the bacnet-stack
-command-line tools (discovery, property access, COV, ReadRange, files, lists,
-object creation, alarms, device management and the BBMD; not segmentation),
-and its replies are checked against Wireshark's dissector
+tested against the go-bacnet client and against three independent clients,
+the bacnet-stack command-line tools, BACnet4J and BACpypes3 in bacnet-interop
+client-mode containers (discovery, property access, COV, ReadRange, files,
+lists, object creation, alarms, device management, segmentation and the
+BBMD), and its replies are checked against Wireshark's dissector
 ([docs/SERVER_SUPPORT.md](docs/SERVER_SUPPORT.md)). The API is v0 and can
 still change between minor versions; [RELEASE.md](RELEASE.md) lists every
 change.
@@ -117,9 +119,31 @@ av1 := bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeAnalogValue, Instance: 1}
 pv, err := c.ReadProperty(ctx, target, av1, bacnet.PropertyReference{Identifier: bacnet.PropertyPresentValue})
 ```
 
+### Serving a device
+
+```go
+dev, err := object.NewDevice(object.DeviceConfig{Instance: 1234, Name: "dev-1234", VendorID: 999})
+// ...
+av, err := object.NewAnalogValue(object.PointConfig{Instance: 1, Name: "setpoint", Units: 62, Value: 21, Commandable: true})
+// ...
+if err := dev.Add(av); err != nil {
+	log.Fatal(err)
+}
+s, err := server.New(dev) // binds UDP port 47808
+if err != nil {
+	log.Fatal(err)
+}
+defer s.Close()
+_ = s.IAm()
+// The application sets the values it owns; COV subscribers are notified.
+_ = av.SetPresentValue(bacnet.RealValue(22))
+```
+
 These and further examples (writing with a priority, COV subscriptions,
-logging) are compiled as part of the test suite: see
-[client/example_test.go](client/example_test.go) and [`examples/`](examples/).
+logging, a complete server) are compiled as part of the test suite: see
+[client/example_test.go](client/example_test.go),
+[server/example_test.go](server/example_test.go) and [`examples/`](examples/)
+([`examples/server`](examples/server) runs a device until interrupted).
 
 ## Things to know before you use it
 
@@ -152,6 +176,13 @@ logging) are compiled as part of the test suite: see
   `WithDeviceManagementEnabled` / `WithNetworkManagementEnabled`.
 - **Silent by default.** No logging unless you pass `WithLogger`
   ([OBSERVABILITY.md](OBSERVABILITY.md)).
+- **The server answers what its objects hold.** `server.New` takes a
+  `*object.Device`; objects added to it are served at once. Writes from
+  clients go through `Hooks.BeforeWrite`, which can refuse them with a BACnet
+  error. The application updates input values with `SetPresentValue`. State
+  is kept in memory only: persisting it across restarts is the
+  application's ([LIMITATIONS.md](LIMITATIONS.md),
+  [docs/SERVER_SUPPORT.md](docs/SERVER_SUPPORT.md)).
 - **Character strings.** `CharacterString.Value` holds the octets as received.
   Use `Text()` to get a Go string from devices that send UCS-2 or ISO 8859-1.
 

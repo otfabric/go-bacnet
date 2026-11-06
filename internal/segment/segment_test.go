@@ -44,10 +44,10 @@ func TestReassemblyInOrder(t *testing.T) {
 		more bool
 		want segment.Outcome
 	}{
-		{0, true, segment.Stored},
-		{1, true, segment.StoredAck}, // closes the window of two
-		{2, true, segment.Stored},
-		{3, true, segment.StoredAck},
+		{0, true, segment.StoredAck}, // the first segment is acknowledged at once
+		{1, true, segment.Stored},
+		{2, true, segment.StoredAck}, // closes the window of two after segment 0
+		{3, true, segment.Stored},
 		{4, false, segment.Complete}, // the last segment always acknowledges
 	}
 	for _, s := range steps {
@@ -88,8 +88,23 @@ func TestReassemblyWindowResetsAfterOutOfOrder(t *testing.T) {
 	if r.Expected() != 2 || r.Last() != 1 || r.Segments() != 2 || !bytes.Equal(r.Payload(), []byte{0, 1}) {
 		t.Fatalf("state changed: expected %d segments %d payload % x", r.Expected(), r.Segments(), r.Payload())
 	}
-	if got := r.Add(2, true, []byte{2}); got != segment.StoredAck {
-		t.Fatalf("Add(2) = %v, want StoredAck (third of the window)", got)
+	if got := r.Add(2, true, []byte{2}); got != segment.Stored {
+		t.Fatalf("Add(2) = %v, want Stored (second of the window after segment 0)", got)
+	}
+	if got := r.Add(3, true, []byte{3}); got != segment.StoredAck {
+		t.Fatalf("Add(3) = %v, want StoredAck (third of the window after segment 0)", got)
+	}
+}
+
+// A sender following clause 5.4 sends segment 0 alone and waits for its
+// SegmentACK (BACpypes3 0.0.110 does, with a proposed window of 2): it must
+// come before any window fills.
+func TestReassemblyAcknowledgesFirstSegment(t *testing.T) {
+	for _, w := range []uint8{1, 2, 16, 127} {
+		r := segment.NewReassembly(w, 10, 100)
+		if got := r.Add(0, true, []byte{0}); got != segment.StoredAck {
+			t.Errorf("window %d: Add(0) = %v, want StoredAck", w, got)
+		}
 	}
 }
 
@@ -114,7 +129,7 @@ func TestReassemblyTooManySegments(t *testing.T) {
 
 func TestReassemblyTooLong(t *testing.T) {
 	r := segment.NewReassembly(4, 10, 5)
-	if got := r.Add(0, true, []byte{1, 2, 3}); got != segment.Stored {
+	if got := r.Add(0, true, []byte{1, 2, 3}); got != segment.StoredAck {
 		t.Fatalf("first = %v", got)
 	}
 	// Exactly at the limit is allowed.

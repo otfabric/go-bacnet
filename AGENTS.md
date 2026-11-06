@@ -2,7 +2,7 @@
 
 ## What this is
 
-Pure Go BACnet/IP client library (ANSI/ASHRAE 135-2024 baseline, Annex J over IPv4). Client, plus a server (`server`, `server/object`, `bbmd`) verified against the go-bacnet client only. No dependencies outside the standard library. Profile: **protocol-library**. The API is v0. Not BTL listed; not yet validated against physical devices.
+Pure Go BACnet/IP client and server library (ANSI/ASHRAE 135-2024 baseline, Annex J over IPv4). The client is tested against independent stacks; the server (`server`, `server/object`, `bbmd`) against the go-bacnet client and independent clients (docs/SERVER_SUPPORT.md). No dependencies outside the standard library. Profile: **protocol-library**. The API is v0. Not BTL listed; not yet validated against physical devices.
 
 ## Organisation standards
 

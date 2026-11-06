@@ -31,9 +31,8 @@ const (
 	// defaultSegmentSendWindow is the proposed window when sending segmented
 	// confirmed requests (BACnet allows 1..127).
 	defaultSegmentSendWindow uint8 = 16
-	// defaultSegmentReceiveWindow ACKs every ComplexACK segment by default.
-	// Larger receive windows deadlock peers that wait for SegmentACK before
-	// sending the next segment (BACpypes3 / BACnet4J).
+	// defaultSegmentReceiveWindow ACKs every ComplexACK segment by default,
+	// the most conservative actual window a responder can be given.
 	defaultSegmentReceiveWindow uint8 = 1
 )
 
@@ -162,10 +161,10 @@ func buildConfirmedSegments(req apdu.ConfirmedRequest, remoteMax int, proposedWi
 }
 
 func (c *Client) sendConfirmedSegments(ctx context.Context, target Target, tx *pendingTx, serviceChoice uint8, segments [][]byte, ackCh <-chan *apdu.SegmentACK) error {
-	window := c.cfg.segmentSendWindow
-	if !segment.ValidWindow(window) {
-		window = defaultSegmentSendWindow
-	}
+	// The first segment goes alone: the responder's SegmentACK for it
+	// carries the actual window (clause 5.4.4, SEGMENTED_REQUEST). The
+	// proposed window (Client configuration) is encoded in every segment.
+	window := uint8(1)
 	nextToSend := 0
 	highestAcked := -1
 	inFlight := 0

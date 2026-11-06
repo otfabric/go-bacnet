@@ -7,8 +7,8 @@ Server capabilities are in [SERVER_SUPPORT.md](SERVER_SUPPORT.md). The UDP
 transport the client uses lives in package `bip` from v0.6.0
 (`client.Transport` is an alias); the client's behaviour is unchanged.
 
-**Library version:** v0.4.0 (unreleased; previous release [v0.3.0](https://github.com/otfabric/go-bacnet/releases/tag/v0.3.0))  
-**Interop pin:** bacnet-interop v0.10.0 (five peer stacks; see [INTEROP.md](../INTEROP.md))
+**Library version:** v0.6.0 (previous release [v0.5.0](https://github.com/otfabric/go-bacnet/releases/tag/v0.5.0))  
+**Interop pin:** bacnet-interop v0.12.0 (five peer stacks; see [INTEROP.md](../INTEROP.md))
 
 | Client support | Meaning |
 |---|---|
@@ -64,8 +64,8 @@ transport the client uses lives in package `bip` from v0.6.0
 | Unconfirmed requests | Implemented | Multi-peer | |
 | SimpleACK / ComplexACK | Implemented | Multi-peer | |
 | Error / Reject / Abort | Implemented | Multi-peer | |
-| Segmented confirmed-request send | Implemented | Single-peer | BACpypes3 live; BACnet4J rejects |
-| Segmented ComplexACK receive | Implemented | Multi-peer | Window 1; Worldiety continuation deviation |
+| Segmented confirmed-request send | Implemented | Single-peer | BACpypes3 live; BACnet4J rejects. Segment 0 goes alone; the rest follow in the actual window of its SegmentACK (clause 5.4.4) |
+| Segmented ComplexACK receive | Implemented | Multi-peer | Window 1 by default (`WithSegmentWindow`); segment 0 is acknowledged at once; Worldiety continuation deviation |
 | Timeout and cancellation | Implemented | Single-peer | An unused port, and BACnet4J muted with DeviceCommunicationControl; see API.md |
 | Outcome-unknown after send | Implemented | Single-peer | Unanswered write; policy registry covers all side-effecting services |
 | Rejecting unserved confirmed requests | Implemented | Codec/unit | Reject / Abort to requests a client does not serve |

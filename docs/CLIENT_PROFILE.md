@@ -27,7 +27,7 @@ Standards edition: [STANDARD_BASELINE.md](STANDARD_BASELINE.md).
 | Foreign-device registration | Supported (optional) |
 | BBMD Forwarded-NPDU receive | Supported |
 | BBMD BDT/FDT client management | Supported (Write-BDT opt-in; peer-dependent) |
-| BBMD server | Not supported |
+| BBMD server | Not part of the client; package `bbmd` ([SERVER_SUPPORT.md](SERVER_SUPPORT.md)) |
 | BACnet/IPv6 | Not supported |
 | BACnet/SC | Not supported |
 | MS/TP | Not supported |
@@ -38,7 +38,7 @@ Standards edition: [STANDARD_BASELINE.md](STANDARD_BASELINE.md).
 |---|---|
 | Segmented ComplexACK receive | Supported (receive window 1) |
 | Segmented confirmed-request transmit | Supported (proposed window 16 when peer allows) |
-| Segmented confirmed-request receive (as server) | Not applicable (client library) |
+| Segmented confirmed-request receive (as server) | Not part of the client; the server receives them ([SERVER_SUPPORT.md](SERVER_SUPPORT.md)) |
 
 ## Character sets
 

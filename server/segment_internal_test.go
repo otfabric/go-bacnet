@@ -136,9 +136,13 @@ func TestSegmentedRequest(t *testing.T) {
 			t.Fatalf("segment ack %+v, want %d nak %v", a, seq, nak)
 		}
 	}
+	// Segment 0 is acknowledged at once (clause 5.4.5, IDLE): a requester
+	// sends nothing more until it has the actual window. The window of two
+	// then counts from segment 0, and the last segment is acknowledged.
 	seg(1, 0, p[:2], true)
+	expectSegACK(0, false)
 	seg(1, 1, p[2:4], true)
-	expectSegACK(1, false)
+	h.quiet(20 * time.Millisecond)
 	seg(1, 2, p[4:], false)
 	expectSegACK(2, false)
 	h.expectType(apdu.TypeComplexACK)
@@ -146,6 +150,7 @@ func TestSegmentedRequest(t *testing.T) {
 	// Out of order: NAK naming the last segment received in order; a repeat
 	// of that one is acknowledged again.
 	seg(2, 0, p[:2], true)
+	expectSegACK(0, false)
 	seg(2, 2, p[4:], false)
 	expectSegACK(0, true)
 	seg(2, 0, p[:2], true)
@@ -157,7 +162,7 @@ func TestSegmentedRequest(t *testing.T) {
 
 	// A reassembly whose segment timer expired is dropped.
 	seg(3, 0, p[:2], true)
-	h.quiet(20 * time.Millisecond)
+	expectSegACK(0, false)
 	h.s.resp.expire(time.Now().Add(time.Minute))
 	seg(3, 1, p[2:4], true)
 	h.expectAbort(bacnet.AbortReasonInvalidAPDUInThisState)
@@ -258,4 +263,21 @@ func TestRepeatWhileExecutingDropped(t *testing.T) {
 	if n := writes.Load(); n != 1 {
 		t.Fatalf("%d writes executed, want 1", n)
 	}
+}
+
+// BACpypes3 0.0.110 sends segments with Max APDU octets of service data
+// after the 6-octet header: 1482 octets to a 1476-octet device. The default
+// limits serve them; a configured MaxAPDUSize drops them.
+func TestSegmentLongerThanMaxAPDU(t *testing.T) {
+	seg0 := append([]byte{0x0e, 0x44, 0x01, 0x00, 0x02, apdu.ServiceAtomicWriteFile}, make([]byte, 1476)...)
+	h := newHarness(t)
+	h.inject(seg0)
+	if got := h.expectType(apdu.TypeSegmentACK).pdu.SegmentACK; got.SequenceNumber != 0 || got.ActualWindowSize != 2 {
+		t.Fatalf("segment ack %+v", got)
+	}
+
+	strict := bacnet.DefaultDecodeLimits()
+	h = newHarness(t, WithDecodeLimits(strict))
+	h.inject(seg0)
+	h.quiet(50 * time.Millisecond)
 }
