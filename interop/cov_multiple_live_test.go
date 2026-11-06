@@ -61,7 +61,7 @@ func TestBACnet4JCOVNotificationMultipleLive(t *testing.T) {
 	if err != nil {
 		t.Fatalf("SubscribeCOV: %v", err)
 	}
-	defer sub.Close()
+	defer func() { _ = sub.Close() }()
 	next := func(what string) client.SubscriptionEvent {
 		t.Helper()
 		deadline := time.After(8 * time.Second)

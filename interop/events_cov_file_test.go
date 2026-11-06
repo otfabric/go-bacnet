@@ -252,6 +252,8 @@ func TestCOVRenewKeepsSubscriptionAlive(t *testing.T) {
 					renewals++
 				case client.SubscriptionDegraded, client.SubscriptionExpired, client.SubscriptionClosed:
 					t.Fatalf("subscription went %v: %v", ev.State, ev.Err)
+				default:
+					// Pending and Active carry no renewal; keep waiting.
 				}
 			}
 		}

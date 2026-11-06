@@ -11,6 +11,7 @@ import (
 	"github.com/otfabric/go-bacnet/apdu"
 	"github.com/otfabric/go-bacnet/internal/clock"
 	"github.com/otfabric/go-bacnet/internal/diag"
+	"github.com/otfabric/go-bacnet/internal/segment"
 )
 
 // Abort reason codes used by the client receive path (ASHRAE 135).
@@ -42,18 +43,14 @@ type segmentReceiver struct {
 }
 
 type segState struct {
-	invokeID     uint8
-	service      uint8
-	nextSeq      uint8
-	window       uint8
-	inWindow     uint8
-	buf          []byte
-	src          packetSource
-	destAddr     bacnet.Address
-	segmentCount int
-	timer        clock.Timer
-	done         chan struct{}
-	c            *Client
+	invokeID uint8
+	service  uint8
+	asm      *segment.Reassembly
+	src      packetSource
+	destAddr bacnet.Address
+	timer    clock.Timer
+	done     chan struct{}
+	c        *Client
 }
 
 func newSegmentReceiver(limits bacnet.DecodeLimits, d diag.Sink, clk clock.Clock, segmentTimeout time.Duration, localWindow uint8) *segmentReceiver {
@@ -63,7 +60,7 @@ func newSegmentReceiver(limits bacnet.DecodeLimits, d diag.Sink, clk clock.Clock
 	if clk == nil {
 		clk = clock.Real{}
 	}
-	if localWindow == 0 || localWindow > 127 {
+	if !segment.ValidWindow(localWindow) {
 		localWindow = defaultSegmentReceiveWindow
 	}
 	return &segmentReceiver{
@@ -105,18 +102,11 @@ func (r *segmentReceiver) accept(ack *apdu.ComplexACK, src packetSource, c *Clie
 			r.mu.Unlock()
 			return apdu.PDU{}, false, nil
 		}
-		window := r.localWindow
-		if ack.ProposedWindowSize > 0 && ack.ProposedWindowSize < window {
-			window = ack.ProposedWindowSize
-		}
-		if window == 0 {
-			window = 1
-		}
+		window := segment.Window(r.localWindow, ack.ProposedWindowSize)
 		st = &segState{
 			invokeID: ack.InvokeID,
 			service:  ack.ServiceChoice,
-			nextSeq:  0,
-			window:   window,
+			asm:      segment.NewReassembly(window, r.limits.MaxSegments, r.limits.MaxReassembledAPDU),
 			src:      src,
 			destAddr: tx.address,
 			done:     make(chan struct{}),
@@ -135,58 +125,44 @@ func (r *segmentReceiver) accept(ack *apdu.ComplexACK, src packetSource, c *Clie
 		return apdu.PDU{}, false, bacnet.ErrProtocolViolation
 	}
 
-	if ack.SequenceNumber != st.nextSeq {
-		if seqDuplicate(ack.SequenceNumber, st.nextSeq) {
-			outbounds = append(outbounds, r.ackOutbound(st, false))
-			r.mu.Unlock()
-			r.flush(outbounds)
-			return apdu.PDU{}, false, nil
-		}
-		outbounds = append(outbounds, r.ackOutbound(st, true))
+	outcome := st.asm.Add(ack.SequenceNumber, ack.MoreFollows, ack.Payload)
+	switch outcome {
+	case segment.OutOfOrder:
+		// A segment already received is acknowledged again; any other is
+		// answered with a negative SegmentACK naming the last in order.
+		outbounds = append(outbounds, r.ackOutbound(st, !seqDuplicate(ack.SequenceNumber, st.asm.Expected())))
 		r.mu.Unlock()
 		r.flush(outbounds)
 		return apdu.PDU{}, false, nil
-	}
-
-	if st.segmentCount+1 > r.limits.MaxSegments {
+	case segment.TooManySegments:
 		failErr := &bacnet.AbortError{InvokeID: ack.InvokeID, Server: false, Reason: abortReasonOutOfResources}
 		outbounds = append(outbounds, r.abortOutbound(st, abortReasonOutOfResources)...)
 		r.removeLocked(ack.InvokeID)
 		r.mu.Unlock()
 		r.flush(outbounds)
 		return apdu.PDU{}, false, failErr
-	}
-	if len(st.buf)+len(ack.Payload) > r.limits.MaxReassembledAPDU {
+	case segment.TooLong:
 		failErr := &bacnet.AbortError{InvokeID: ack.InvokeID, Server: false, Reason: abortReasonAPDUTooLong}
 		outbounds = append(outbounds, r.abortOutbound(st, abortReasonAPDUTooLong)...)
 		r.removeLocked(ack.InvokeID)
 		r.mu.Unlock()
 		r.flush(outbounds)
 		return apdu.PDU{}, false, failErr
-	}
-
-	st.buf = append(st.buf, ack.Payload...)
-	st.segmentCount++
-	st.nextSeq++
-	st.inWindow++
-	st.src = src
-	if st.timer != nil {
+	case segment.Stored, segment.StoredAck:
+		st.src = src
 		st.timer.Reset(r.segmentTimeout)
-	}
-
-	atWindowEnd := st.inWindow >= st.window
-	last := !ack.MoreFollows
-	if atWindowEnd || last {
-		outbounds = append(outbounds, r.ackOutbound(st, false))
-		st.inWindow = 0
-	}
-	if !last {
+		if outcome == segment.StoredAck {
+			outbounds = append(outbounds, r.ackOutbound(st, false))
+		}
 		r.mu.Unlock()
 		r.flush(outbounds)
 		return apdu.PDU{}, false, nil
+	default: // segment.Complete
+		st.src = src
+		outbounds = append(outbounds, r.ackOutbound(st, false))
 	}
 
-	payload := append([]byte(nil), st.buf...)
+	payload := append([]byte(nil), st.asm.Payload()...)
 	service := st.service
 	r.removeLocked(ack.InvokeID)
 	r.mu.Unlock()
@@ -207,10 +183,6 @@ func seqDuplicate(got, expected uint8) bool {
 }
 
 func (r *segmentReceiver) ackOutbound(st *segState, negative bool) segOutbound {
-	seq := st.nextSeq
-	if seq > 0 {
-		seq--
-	}
 	kind := "SegmentACK+"
 	if negative {
 		kind = "SegmentACK-"
@@ -224,8 +196,8 @@ func (r *segmentReceiver) ackOutbound(st *segState, negative bool) segOutbound {
 			NegativeACK:      negative,
 			Server:           false,
 			InvokeID:         st.invokeID,
-			SequenceNumber:   seq,
-			ActualWindowSize: st.window,
+			SequenceNumber:   st.asm.Last(),
+			ActualWindowSize: st.asm.Window(),
 		}),
 	}
 }

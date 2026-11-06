@@ -171,6 +171,9 @@ func assertRPMPartialUnknownProperty(t *testing.T, results []service.ReadAccessR
 			if er.Class != errorClassProperty || er.Code != errorCodeUnknownProperty {
 				t.Fatalf("property error %d/%d, want %d/%d", er.Class, er.Code, errorClassProperty, errorCodeUnknownProperty)
 			}
+		default:
+			// The request asked for these two properties only; the
+			// completeness check below catches anything missing.
 		}
 	}
 	if !sawOK || !sawErr {

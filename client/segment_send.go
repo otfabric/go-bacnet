@@ -12,6 +12,7 @@ import (
 	"github.com/otfabric/go-bacnet/apdu"
 	"github.com/otfabric/go-bacnet/bip"
 	"github.com/otfabric/go-bacnet/internal/clock"
+	"github.com/otfabric/go-bacnet/internal/segment"
 )
 
 // BACnet Segmentation enumeration (I-Am / Device object).
@@ -23,11 +24,10 @@ const (
 )
 
 const (
-	// Segmented confirmed-request APDU header is always six octets when
-	// service choice is present on every segment (type/flags, maxInfo,
-	// invoke, sequence, window, service).
+	// Segmented confirmed-request APDU header is always six octets, on
+	// every segment, because service choice is present on each (type/flags,
+	// maxInfo, invoke, sequence, window, service).
 	confirmedSeg0Overhead = 6
-	confirmedSegNOverhead = 6
 	// defaultSegmentSendWindow is the proposed window when sending segmented
 	// confirmed requests (BACnet allows 1..127).
 	defaultSegmentSendWindow uint8 = 16
@@ -125,57 +125,45 @@ func (c *Client) peerAcceptsSegmentedRequests(target Target) bool {
 // proposedWindow is encoded in every segment (1..127); callers pass the local
 // send window proposal from Client configuration.
 func buildConfirmedSegments(req apdu.ConfirmedRequest, remoteMax int, proposedWindow uint8) ([][]byte, error) {
-	if proposedWindow == 0 || proposedWindow > 127 {
+	if !segment.ValidWindow(proposedWindow) {
 		proposedWindow = defaultSegmentSendWindow
 	}
-	firstMax := remoteMax - confirmedSeg0Overhead
-	laterMax := remoteMax - confirmedSegNOverhead
-	if firstMax < 1 || laterMax < 1 {
+	size := remoteMax - confirmedSeg0Overhead
+	if size < 1 {
 		return nil, fmt.Errorf("%w: remote max APDU too small for segmented confirmed request", bacnet.ErrAPDUTooLarge)
 	}
 	payload := req.Payload
-	var out [][]byte
-	off := 0
-	seq := uint8(0)
-	for off < len(payload) || (off == 0 && len(payload) == 0) {
-		max := laterMax
-		if seq == 0 {
-			max = firstMax
-		}
-		end := min(off+max, len(payload))
-		more := end < len(payload)
+	count := segment.Count(len(payload), size)
+	if count > segment.MaxSegments {
+		// Refuse rather than reuse sequence number 0.
+		return nil, fmt.Errorf("%w: confirmed request requires more than 256 segments", bacnet.ErrAPDUTooLarge)
+	}
+	out := make([][]byte, 0, count)
+	for i := range count {
+		start, end := segment.Bounds(i, size, len(payload))
 		seg := apdu.AppendConfirmedRequest(nil, apdu.ConfirmedRequest{
 			SegmentedMessage:          true,
-			MoreFollows:               more,
+			MoreFollows:               i < count-1,
 			SegmentedResponseAccepted: req.SegmentedResponseAccepted,
 			MaxSegments:               req.MaxSegments,
 			MaxAPDU:                   req.MaxAPDU,
 			InvokeID:                  req.InvokeID,
-			SequenceNumber:            seq,
+			SequenceNumber:            uint8(i), // i < segment.MaxSegments
 			ProposedWindowSize:        proposedWindow,
 			ServiceChoice:             req.ServiceChoice,
-			Payload:                   payload[off:end],
+			Payload:                   payload[start:end],
 		})
 		if len(seg) > remoteMax {
 			return nil, fmt.Errorf("%w: segmented APDU exceeds remote max", bacnet.ErrAPDUTooLarge)
 		}
 		out = append(out, seg)
-		off = end
-		seq++
-		if !more {
-			break
-		}
-		if seq == 0 {
-			// Wrapped after 256 segments — refuse rather than reuse sequence 0.
-			return nil, fmt.Errorf("%w: confirmed request requires more than 256 segments", bacnet.ErrAPDUTooLarge)
-		}
 	}
 	return out, nil
 }
 
 func (c *Client) sendConfirmedSegments(ctx context.Context, target Target, tx *pendingTx, serviceChoice uint8, segments [][]byte, ackCh <-chan *apdu.SegmentACK) error {
 	window := c.cfg.segmentSendWindow
-	if window == 0 || window > 127 {
+	if !segment.ValidWindow(window) {
 		window = defaultSegmentSendWindow
 	}
 	nextToSend := 0
@@ -213,7 +201,7 @@ func (c *Client) sendConfirmedSegments(ctx context.Context, target Target, tx *p
 				if ack.InvokeID != tx.invokeID || !ack.Server {
 					continue
 				}
-				if ack.ActualWindowSize >= 1 && ack.ActualWindowSize <= 127 {
+				if segment.ValidWindow(ack.ActualWindowSize) {
 					window = ack.ActualWindowSize
 				}
 				if ack.NegativeACK {

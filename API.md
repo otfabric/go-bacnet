@@ -1,6 +1,6 @@
 # API reference
 
-Behavioural contract for the BACnet/IP client. Prefer this document over guessing from
+Behavioural contract for the BACnet/IP client and server. Prefer this document over guessing from
 sibling OT Fabric libraries. Generated GoDoc remains the source for signatures.
 
 ## Package dependency direction
@@ -8,12 +8,15 @@ sibling OT Fabric libraries. Generated GoDoc remains the source for signatures.
 ```text
 bacnet (root leaf types)
   ↑
-  ├── bip          BACnet/IP endpoints (not root)
+  ├── bip          BACnet/IP endpoints, Transport, UDP transport (not root)
   ├── bvlc         BVLC framing
   ├── npdu         network PDU
   ├── apdu         application PDU
   ├── service      service payloads (Who-Is, RP, RPM, WP, COV, …)
-  └── client       supervisory runtime (composes layers + UDP)
+  ├── client       supervisory runtime (composes layers + bip)
+  ├── server       BACnet/IP server runtime (composes layers + bip)
+  │   └── object   Device and standard objects
+  └── bbmd         optional BBMD for a server
 ```
 
 Rules (enforced by `internal/imports`):
@@ -21,7 +24,9 @@ Rules (enforced by `internal/imports`):
 - Root `bacnet` must not import `bip`, `bvlc`, `npdu`, `apdu`, `service`, or `client`.
 - Sibling codecs (`bvlc`, `npdu`, `apdu`) may import root only; they must not import each other or `client`.
 - `service` may import root and `apdu` helpers as needed; it must not import `bvlc`, `npdu`, `bip`, or `client`.
-- `client` is the composition root for BACnet/IP client networking.
+- `client` is the composition root for BACnet/IP client networking, `server`
+  for serving a device; neither imports the other, and `server/object` imports
+  only root and `service`.
 
 See [ARCHITECTURE.md](ARCHITECTURE.md).
 
@@ -93,7 +98,9 @@ defer c.Close()
   from an event handler or diagnostic callback.
 - `WithTransport` replaces the UDP socket (tests, custom data links). The
   client owns the transport from then on: `Close` closes it, and so does a
-  failing `New`. The `Transport` contract is in its GoDoc.
+  failing `New`. The `Transport` contract is in its GoDoc. `client.Transport`,
+  `InboundPacket` and `OutboundPacket` are aliases of the `bip` types since
+  v0.6.0, where the UDP transport (`bip.ListenUDP`) now lives.
 
 ### Addressing a device
 
@@ -197,7 +204,7 @@ send the BVLC frame to `Target.Endpoint` (the next hop).
 - Forwarded-NPDU is accepted; when FD mode is active, only the configured BBMD
   may be the immediate peer for Forwarded-NPDU.
 
-This library does **not** implement a BBMD server or multi-BBMD failover.
+The client is not a BBMD and does not fail over between BBMDs. A server can be a BBMD with package `bbmd` ([BBMD](#bbmd)).
 
 ## Confirmed-service policy registry
 
@@ -423,3 +430,127 @@ Do not retain aliased slices after the datagram buffer is reused.
 - ReadRangeACK with property `Log_Buffer` requires a successful typed
   `LogRecord` split; known NotificationParameters CHOICEs reject malformed
   contents (unknown/unimplemented CHOICEs remain opaque)
+
+## Server
+
+Package `server` serves one `object.Device` on one BACnet/IP endpoint.
+What it implements and how well that is verified is in
+[docs/SERVER_SUPPORT.md](docs/SERVER_SUPPORT.md); its errors are in
+[ERRORS.md](ERRORS.md#server-errors). A complete, tested version of the
+snippet below is [server/example_test.go](server/example_test.go).
+
+```go
+dev, err := object.NewDevice(object.DeviceConfig{Instance: 1234, Name: "dev-1234", VendorID: 999})
+av, err := object.NewAnalogValue(object.PointConfig{Instance: 1, Name: "setpoint", Value: 21, Commandable: true})
+err = dev.Add(av)
+s, err := server.New(dev, server.WithLocalAddr("0.0.0.0:47808"))
+defer s.Close()
+_ = s.IAm()
+_ = av.SetPresentValue(bacnet.RealValue(22)) // COV subscribers are notified
+```
+
+### Lifecycle
+
+- `New` validates the options (`ErrInvalidConfig`), opens a UDP socket unless
+  `WithTransport` is given, binds the Device to the server and starts the
+  receive loop, the workers, housekeeping and the event engine. A Device is
+  served by one server at a time.
+- `Close` stops receiving, cancels the context of running handlers and
+  hooks, ends in-flight transactions, COV subscriptions and pending
+  notifications, closes the transport and returns when every server
+  goroutine has exited. It is idempotent. It sends nothing: subscribers see
+  their subscriptions lapse.
+- `IAm` broadcasts an I-Am; it is not sent while DeviceCommunicationControl
+  disables initiation.
+
+### Options
+
+| Option | Default | Meaning |
+|---|---|---|
+| `WithTransport`, `WithLocalAddr`, `WithPort`, `WithInterface` | UDP 47808 | Endpoint; the server owns an injected transport |
+| `WithWorkers(workers, queue)` | 4, 64 | Bounded handler pool; a full queue gives Abort out-of-resources |
+| `WithMaxAPDU` | 1476 | Max_APDU_Length_Accepted |
+| `WithSegmentation(maxSegments, window)` | 64, 4 | 0 segments disables segmentation |
+| `WithTransactionOptions(apduTimeout, retries, segmentTimeout)` | 3 s, 3, 2 s | The server's own confirmed notifications and segmented replies; also the Device's APDU properties |
+| `WithPassword` | none | Required by DeviceCommunicationControl and ReinitializeDevice when set |
+| `WithCOVLimits(max, maxLifetime)` | 256, none | With a lifetime limit, indefinite subscriptions are refused |
+| `WithBBMD` | none | A `bbmd.BBMD` sharing the endpoint |
+| `WithHooks` | none | Application part of device-level services |
+| `WithDecodeLimits`, `WithLogger`, `WithDiagnosticFunc` | | As for the client |
+
+### Objects
+
+`object.Device` is the Device object and the object table. Object_Name is
+unique within the device; Object_List, Protocol_Services_Supported and
+Protocol_Object_Types_Supported are computed from what is served;
+Database_Revision increases when an object is added, removed or renamed.
+`RegisterFactory` enables CreateObject for a type.
+
+Built-in objects: analog, binary and multi-state inputs, outputs and values
+(`object.Point`), `NotificationClass`, `TrendLog`, `File`, `Calendar`,
+`Schedule`, CharacterString / Integer / Positive Integer Values
+(`object.Value`: `NewCharacterStringValue`, `NewIntegerValue`,
+`NewPositiveIntegerValue`) and `StructuredView`. Any type that
+implements `object.Object` can be added; optional interfaces add behaviour:
+
+| Interface | Gives |
+|---|---|
+| `COVReporter` | SubscribeCOV and COV_Increment handling |
+| `EventReporter` | Intrinsic reporting and the alarm services |
+| `RangeReader` | ReadRange |
+| `ListModifier` | AddListElement / RemoveListElement |
+| `FileAccessor` | AtomicReadFile / AtomicWriteFile |
+| `Deletable` | DeleteObject |
+| `Poller` | A tick from housekeeping (polled logging, Calendar and Schedule evaluation) |
+
+Intrinsic reporting is configured with `PointConfig.Events`
+(`object.EventConfig`): limits for analog points, `AlarmValue` for binary
+points, `AlarmValues` and `FaultValues` (states 1..Number_Of_States) for
+Multi-state Input and Value objects. A Multi-state Output with `Events` is
+refused. `NotificationClassConfig.Priority` is a `*[3]uint8` (to-offnormal,
+to-fault, to-normal); 0 is a valid priority, and nil starts all three at
+255, as bacnet-stack does.
+
+`Calendar` and `Schedule` follow the server's clock: each housekeeping tick
+(about once a second) re-evaluates Calendar Present_Value against the local
+date and Schedule Present_Value against the local date and time, and a
+Schedule writes a changed value to the properties in
+List_Of_Object_Property_References that belong to objects of the same
+device, at Priority_For_Writing (`object.ScheduleConfig`). A Schedule's
+special events may name a `Calendar` (`bacnet.SpecialEvent.PeriodObject`).
+
+Objects are safe for concurrent use: the application may change values
+(for example `Point.SetPresentValue`, `TrendLog.Log`) while the server reads
+them. Errors are BACnet errors made with `object.Err`; anything else is sent
+as device/operational-problem.
+
+### Hooks
+
+`Hooks` functions run on a worker with the request's context:
+`BeforeWrite` and `BeforeDelete` can refuse with a BACnet error;
+`Reinitialize` performs a ReinitializeDevice; `TimeSync`, `PrivateTransfer`,
+`TextMessage` and `WriteGroup` are the whole service, so without them the
+service is not advertised and a confirmed request gets Reject
+unrecognized-service.
+
+### Requests and answers
+
+- Every confirmed request runs on a worker; the reply is segmented when it
+  does not fit the requester's Max APDU and the requester accepts
+  segmentation.
+- A repeated request (same requester, invoke ID and content) that arrives
+  while the first is still executing is dropped. Once the reply is sent the
+  transaction is released (clause 5.4.5): a later request with the same
+  requester and invoke ID is a new request and is executed.
+- Confirmed requests sent to a broadcast address and requests for another
+  network are ignored: the server is not a router. It learns the router of
+  a remote network from received SNET and I-Am-Router-To-Network (at most
+  64 networks) to send event notifications to remote stations.
+
+### BBMD
+
+`bbmd.New(bbmd.Config{Self, BDT, MaxForeignDevices, RejectRegistrations})`
+returns a BBMD to pass to `server.WithBBMD`. `BDT()` and `FDT()` return the
+tables; expired foreign devices are dropped after their TTL plus
+`bbmd.GracePeriod`. Write-Broadcast-Distribution-Table is refused with a NAK.
+

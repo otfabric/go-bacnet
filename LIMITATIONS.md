@@ -1,7 +1,8 @@
 # Limitations
 
 What go-bacnet does not do, or does with restrictions. Per-capability status
-and evidence: [docs/CLIENT_SUPPORT.md](docs/CLIENT_SUPPORT.md). Peer quirks:
+and evidence: [docs/CLIENT_SUPPORT.md](docs/CLIENT_SUPPORT.md) and
+[docs/SERVER_SUPPORT.md](docs/SERVER_SUPPORT.md). Peer quirks:
 [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md).
 
 ## Certification and validation
@@ -15,10 +16,15 @@ and evidence: [docs/CLIENT_SUPPORT.md](docs/CLIENT_SUPPORT.md). Peer quirks:
 
 ## Not implemented
 
-- A BACnet server or device object model; a BBMD server.
+- A BACnet router (no routing between networks, for client or server).
+- Server objects beyond Device, analog/binary/multi-state points,
+  Notification Class, Trend Log, File, Calendar, Schedule, CharacterString,
+  Integer and Positive Integer Value, and Structured View; other types need
+  an application `object.Object`. The server keeps state in memory only.
 - MS/TP, BACnet/IPv6, BACnet/SC.
-- A full schedule object database (the Weekly, Exception, Calendar and
-  HostNPort codecs and the property decode helpers exist).
+- On the client side, a schedule object database: the client decodes
+  Weekly_Schedule, Exception_Schedule, calendar entries and HostNPort, but
+  keeps no model of a remote schedule.
 - Authentication or encryption: BACnet/IP has none and this library adds
   none ([SECURITY.md](SECURITY.md)).
 
@@ -30,7 +36,14 @@ and evidence: [docs/CLIENT_SUPPORT.md](docs/CLIENT_SUPPORT.md). Peer quirks:
   inbound VT-Data is not handled.
 - **Network-layer messages** beyond those the client needs: typed codecs and
   raw preservation; the client is not a router.
-- **Segmented ComplexACK receive** uses window 1.
+- **Segmented ComplexACK receive** uses window 1 by default
+  (`client.WithSegmentWindow` raises it).
+- **Server intrinsic reporting**: out-of-range, change-of-state and
+  change-of-reliability only. A Multi-state Output does not report (its
+  algorithm, command-failure on Feedback_Value, is not implemented), and
+  multi-state points do not re-alarm on a different alarm value or apply
+  Time_Delay_Normal. A confirmed event notification to a broadcast recipient
+  is not sent.
 - **Vendor extensions and newer revision constructs** are preserved as raw
   ASN.1 where typed models are incomplete.
 
@@ -42,3 +55,26 @@ Write-Broadcast-Distribution-Table and segmented confirmed-request send
 (one peer), SubscribeCOVPropertyMultiple and COVNotificationMultiple (codec
 evidence: no stack executes the subscription), WritePropertyMultipleBatched
 and ReadFileRecords (codec or unit evidence).
+
+## Server evidence
+
+One independent client has driven the server: the bacnet-stack 1.6.1
+command-line tools, from a bacnet-interop image that is not yet released.
+They cover discovery, reads and writes and their error cases, SubscribeCOV,
+ReadRange, DeviceCommunicationControl, ReinitializeDevice, AtomicReadFile and
+AtomicWriteFile of a stream file, AddListElement and RemoveListElement,
+CreateObject and DeleteObject, GetEventInformation and AcknowledgeAlarm,
+time synchronization, UnconfirmedPrivateTransfer, WriteGroup, and the BBMD
+as seen by a foreign device (registration, Distribute-Broadcast-To-Network,
+Read-BDT, Read-FDT, a refused Write-BDT). The tools are built without
+segmentation and have no tool for SubscribeCOVProperty,
+SubscribeCOVPropertyMultiple, GetAlarmSummary, GetEnrollmentSummary, text
+messages or ConfirmedPrivateTransfer; segmented transactions, those services
+and BBMD-to-BBMD forwarding are verified against the go-bacnet client
+(`e2e/server*_test.go`) and by unit, fuzz and chaos tests only. The same
+codecs encode and decode both sides there, so that shows agreement between
+client and server, not with other stacks
+([docs/SERVER_SUPPORT.md](docs/SERVER_SUPPORT.md)). Every datagram the server
+sends in those tests is dissected by Wireshark (`make dissector`), except
+Abort and SegmentACK frames.
+

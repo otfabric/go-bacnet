@@ -3,6 +3,9 @@
 Authoritative declaration of BACnet client capabilities in `go-bacnet` and how
 well each is validated. Per-peer results live in [INTEROP.md](../INTEROP.md).
 Behavioural contracts live in [API.md](../API.md) and [ERRORS.md](../ERRORS.md).
+Server capabilities are in [SERVER_SUPPORT.md](SERVER_SUPPORT.md). The UDP
+transport the client uses lives in package `bip` from v0.6.0
+(`client.Transport` is an alias); the client's behaviour is unchanged.
 
 **Library version:** v0.4.0 (unreleased; previous release [v0.3.0](https://github.com/otfabric/go-bacnet/releases/tag/v0.3.0))  
 **Interop pin:** bacnet-interop v0.10.0 (five peer stacks; see [INTEROP.md](../INTEROP.md))
@@ -106,7 +109,7 @@ Behavioural contracts live in [API.md](../API.md) and [ERRORS.md](../ERRORS.md).
 | EventNotification receive | Implemented | Multi-peer | Practical NotificationParameters typed (incl. life-safety/extended) |
 | AcknowledgeAlarm | Implemented | Multi-peer | |
 | GetAlarmSummary | Implemented | Multi-peer | |
-| GetEnrollmentSummary | Implemented | Multi-peer | BACnet4J executes it; BACpypes3 decodes every filter (adapter handler) |
+| GetEnrollmentSummary | Implemented | Multi-peer | BACnet4J executes it; BACpypes3 decodes every filter (adapter handler). The enrollment filter (`EnrollmentFilter`, BACnetRecipientProcess) is encoded since the server gained its decoder; it is covered by unit round trips, the go-bacnet server and the Wireshark dissector, not by the peer scenarios |
 | GetEventInformation | Implemented | Multi-peer | |
 
 ## Files

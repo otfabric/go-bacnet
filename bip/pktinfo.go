@@ -2,7 +2,7 @@
 
 //go:build linux || darwin
 
-package client
+package bip
 
 import (
 	"encoding/binary"

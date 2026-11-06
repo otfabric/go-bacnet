@@ -81,6 +81,8 @@ const (
 	ErrorCodeAccessDenied                      uint16 = 85
 	ErrorCodeUnknownFileSize                   uint16 = 122
 	ErrorCodeFileFull                          uint16 = 128
+	ErrorCodeInconsistentConfiguration         uint16 = 129
+	ErrorCodeInconsistentObjectType            uint16 = 130
 	ErrorCodeInternalError                     uint16 = 131
 	ErrorCodeNotConfigured                     uint16 = 132
 	ErrorCodeOutOfMemory                       uint16 = 133

@@ -83,7 +83,7 @@ func TestBACpypes3ReadAnalogValue(t *testing.T) {
 	}
 	c := newClient(t)
 
-	var want float64 = 21.5
+	want := 21.5
 	var avInst uint32 = 1
 	for _, o := range dev.Objects {
 		if o.Type == "analog-value" {

@@ -3,6 +3,7 @@
 package service
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/otfabric/go-bacnet"
@@ -121,20 +122,35 @@ func TestNotificationParametersChangeVariantsRoundTrip(t *testing.T) {
 		case params.ChangeOfState != nil && got.ChangeOfState == nil:
 			t.Fatalf("%d state", i)
 		}
+		// boolean-value [0] and the enumerated choices keep their kind.
+		if s := params.ChangeOfState; s != nil && s.NewState.Choice < 2 {
+			if g := got.ChangeOfState.NewState; g.Choice != s.NewState.Choice || g.Value.Kind != s.NewState.Value.Kind ||
+				g.Value.Boolean != s.NewState.Value.Boolean || g.Value.Enumerated != s.NewState.Value.Enumerated {
+				t.Fatalf("%d state %+v, want %+v", i, g, s.NewState)
+			}
+		}
 	}
 }
 
-func TestNotificationParametersEmptyAndRawElements(t *testing.T) {
-	if _, err := EncodeNotificationParameters(NotificationParameters{}); err == nil {
-		t.Fatal("expected empty NotificationParameters")
+func TestChangeOfStateBooleanValueMalformed(t *testing.T) {
+	// new-state [0] { boolean-value [0] = 2 }, status-flags [1]: a Boolean
+	// content octet is 0 or 1.
+	raw := []byte{0x0E, 0x09, 0x02, 0x0F, 0x1A, 0x04, 0x00}
+	els, _, err := bacnet.ParseSequence(raw, bacnet.DefaultDecodeLimits(), -1)
+	if err != nil {
+		t.Fatal(err)
 	}
-	rawNP, err := EncodeNotificationParameters(NotificationParameters{
-		Choice: NotificationExtended,
-		RawElements: []bacnet.Element{{
-			Value: bacnet.UnsignedValue(1),
-		}},
-	})
-	if err != nil || len(rawNP) == 0 {
-		t.Fatalf("raw NotificationParameters: %v %#v", err, rawNP)
+	if ps, err := decodeChangeOfState(els); !errors.Is(err, bacnet.ErrMalformed) {
+		t.Fatalf("got %+v, %v", ps, err)
+	}
+	// The same with 1 decodes as a Boolean, not as enumerated 1.
+	raw[2] = 0x01
+	els, _, err = bacnet.ParseSequence(raw, bacnet.DefaultDecodeLimits(), -1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ps, err := decodeChangeOfState(els)
+	if err != nil || ps.NewState.Value.Kind != bacnet.ValueBoolean || !ps.NewState.Value.Boolean {
+		t.Fatalf("got %+v, %v", ps, err)
 	}
 }

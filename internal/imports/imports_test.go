@@ -24,7 +24,35 @@ func TestImportBoundaries(t *testing.T) {
 		"apdu": {"github.com/otfabric/go-bacnet/bvlc", "github.com/otfabric/go-bacnet/npdu",
 			"github.com/otfabric/go-bacnet/service", "github.com/otfabric/go-bacnet/client"},
 		"service": {"github.com/otfabric/go-bacnet/bvlc", "github.com/otfabric/go-bacnet/npdu",
-			"github.com/otfabric/go-bacnet/client", "github.com/otfabric/go-bacnet/bip"},
+			"github.com/otfabric/go-bacnet/client", "github.com/otfabric/go-bacnet/bip",
+			"github.com/otfabric/go-bacnet/server", "github.com/otfabric/go-bacnet/bbmd"},
+		"bip": {"github.com/otfabric/go-bacnet/client", "github.com/otfabric/go-bacnet/server",
+			"github.com/otfabric/go-bacnet/bbmd", "github.com/otfabric/go-bacnet/service",
+			"github.com/otfabric/go-bacnet/apdu", "github.com/otfabric/go-bacnet/npdu"},
+		// The client and the server are peers: neither imports the other.
+		"client": {"github.com/otfabric/go-bacnet/server", "github.com/otfabric/go-bacnet/server/object",
+			"github.com/otfabric/go-bacnet/bbmd"},
+		"server": {"github.com/otfabric/go-bacnet/client", "github.com/otfabric/go-bacnet/device",
+			"github.com/otfabric/go-bacnet/bbmd"},
+		"server/object": {"github.com/otfabric/go-bacnet/client", "github.com/otfabric/go-bacnet/server",
+			"github.com/otfabric/go-bacnet/bip", "github.com/otfabric/go-bacnet/bvlc",
+			"github.com/otfabric/go-bacnet/npdu", "github.com/otfabric/go-bacnet/apdu",
+			"github.com/otfabric/go-bacnet/bbmd"},
+		// The BBMD works at the BVLL: no NPDU/APDU decoding, no client or server.
+		"bbmd": {"github.com/otfabric/go-bacnet/client", "github.com/otfabric/go-bacnet/server",
+			"github.com/otfabric/go-bacnet/server/object", "github.com/otfabric/go-bacnet/service",
+			"github.com/otfabric/go-bacnet/apdu", "github.com/otfabric/go-bacnet/npdu"},
+		// Shared by the client and the server: neither may depend on either
+		// role. internal/segment is pure arithmetic (stdlib only);
+		// internal/link frames below the APDU.
+		"internal/segment": {"github.com/otfabric/go-bacnet", "github.com/otfabric/go-bacnet/bip",
+			"github.com/otfabric/go-bacnet/bvlc", "github.com/otfabric/go-bacnet/npdu",
+			"github.com/otfabric/go-bacnet/apdu", "github.com/otfabric/go-bacnet/service",
+			"github.com/otfabric/go-bacnet/client", "github.com/otfabric/go-bacnet/server",
+			"github.com/otfabric/go-bacnet/server/object", "github.com/otfabric/go-bacnet/bbmd"},
+		"internal/link": {"github.com/otfabric/go-bacnet/apdu", "github.com/otfabric/go-bacnet/service",
+			"github.com/otfabric/go-bacnet/client", "github.com/otfabric/go-bacnet/server",
+			"github.com/otfabric/go-bacnet/server/object", "github.com/otfabric/go-bacnet/bbmd"},
 	}
 	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
 		if err != nil {

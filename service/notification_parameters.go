@@ -635,11 +635,17 @@ func decodeChangeOfState(els []bacnet.Element) (ChangeOfStateParams, error) {
 	}
 	ps := PropertyStates{Choice: psEl.TagNumber}
 	switch {
+	case !bacnet.IsContextConstructed(psEl) && psEl.TagNumber == 0:
+		// boolean-value [0] BOOLEAN (BACnetPropertyStates, clause 21): the
+		// choice, not the content octet, says it is a Boolean.
+		b, err := bacnet.ContextBool(psEl)
+		if err != nil {
+			return ChangeOfStateParams{}, fmt.Errorf("%w: PropertyStates boolean-value", bacnet.ErrMalformed)
+		}
+		ps.Value = bacnet.BoolValue(b)
 	case !bacnet.IsContextConstructed(psEl):
 		if u, err := bacnet.ContextUnsigned32(psEl); err == nil {
 			ps.Value = bacnet.EnumValue(u)
-		} else if b, err := bacnet.ContextBool(psEl); err == nil {
-			ps.Value = bacnet.BoolValue(b)
 		} else {
 			ps.Value = bacnet.ApplicationValue{Kind: bacnet.ValueContext, OctetString: append([]byte(nil), psEl.Value.OctetString...)}
 		}

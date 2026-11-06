@@ -60,10 +60,19 @@ bacnetctl drops its local `replace` and requires it.
    session to test it against.
 6. AuthRequest: a typed codec once a stable stack implements the service
    (BACnet4J 7.0 is the first to have one). All five peers refuse it today.
+7. Server reverse interop: independent clients against the go-bacnet server
+   through bacnet-interop client-driver images
+   (bacnet-interop `docs/CLIENT_DRIVER_CONTRACT.md`). bacnet-stack client mode
+   passes `server-baseline-v1`, `server-services-v1` and `server-bbmd-v1`
+   (one known difference of `bacrle`) but is not yet in a bacnet-interop
+   release; moving the pin enables it in CI. Next: BACnet4J and BACpypes3
+   client modes, for segmentation, SubscribeCOVProperty(Multiple),
+   GetAlarmSummary, GetEnrollmentSummary, text messages and
+   ConfirmedPrivateTransfer, which the bacnet-stack tools do not cover
+   ([docs/SERVER_SUPPORT.md](docs/SERVER_SUPPORT.md)).
 
 ## Future
 
 - BACnet/IPv6
 - BACnet/SC
 - MS/TP transport
-- Full BACnet server / device model

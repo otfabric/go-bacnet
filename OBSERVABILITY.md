@@ -102,3 +102,25 @@ that takes time use `WithEventDispatcher` (bounded worker pool) or
 | Failed COV renewal | `SubscriptionEvent{State: SubscriptionDegraded, Err: …}` |
 | Foreign-device registration state | `Client.ForeignDeviceRegistered()` |
 | Known devices, objects and routes | `Client.Devices()`, `Objects()`, `Routes(network)` |
+
+## Server
+
+The server (package `server`) follows the same rules: silent by default,
+`server.WithLogger` and `server.WithDiagnosticFunc(func(server.Diagnostic))`
+with the same `Diagnostic` shape and the same `Kind` vocabulary. A request is
+always answered on the network (ACK, Error, Reject or Abort) or dropped;
+diagnostics report what no answer shows.
+
+| Kind | Log level | Reported when |
+|---|---|---|
+| `transport` | Warn | The socket failed to receive (the server retries with backoff, 10 ms doubling to 1 s) or a send failed |
+| `queue_drop` | Warn | A confirmed request was answered with Abort out-of-resources, or an unconfirmed one dropped, because every worker was busy and the queue full |
+| `malformed` | Debug | A datagram failed BVLC, NPDU or APDU decoding and was dropped |
+| `transaction` | Debug | A repeated request was dropped while executing; a segmented reply ended without completing (timeout, requester Abort, send failure) |
+| `cov` | Debug | A COV notification could not be encoded, or a confirmed one failed |
+| `event` | Debug | An event was not reported (no Notification Class; recipient not bound and Who-Is sent; no router known for a remote-station recipient of a confirmed notification and Who-Is-Router-To-Network sent; confirmed notification to a broadcast recipient) or a confirmed notification failed |
+
+Diagnostics run on the receive loop, a worker or the COV and event engines;
+the callback rules above apply, with the `Server` in place of the `Client`.
+Fields carry addresses, invoke IDs, service choices, object identifiers and
+error texts, never property values, file data or passwords.
