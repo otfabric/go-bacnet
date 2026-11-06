@@ -34,7 +34,7 @@ transport the client uses lives in package `bip` from v0.6.0
 | Original-Unicast-NPDU | Implemented | Multi-peer | Default BACnet/IP path |
 | Original-Broadcast-NPDU | Implemented | Multi-peer | Discovery and broadcasts |
 | Forwarded-NPDU receive | Implemented | Multi-peer | BBMD forwarded frames |
-| Register-Foreign-Device | Implemented | Multi-peer | FD against bacnet-stack, BACpypes3, BACnet4J |
+| Register-Foreign-Device | Implemented | Multi-peer | FD against bacnet-stack, BACpypes3, BACnet4J, the cB-Sigma simulator (and its Register-FD NAK) |
 | Distribute-Broadcast-To-Network | Implemented | Multi-peer | Used when foreign-device registered |
 | BVLC Result | Implemented | Multi-peer | FD registration + BDT/FDT management |
 | Read-Broadcast-Distribution-Table | Implemented | Multi-peer | bacnet-stack / BACpypes3 / BACnet4J |
@@ -64,8 +64,8 @@ transport the client uses lives in package `bip` from v0.6.0
 | Unconfirmed requests | Implemented | Multi-peer | |
 | SimpleACK / ComplexACK | Implemented | Multi-peer | |
 | Error / Reject / Abort | Implemented | Multi-peer | |
-| Segmented confirmed-request send | Implemented | Single-peer | BACpypes3 live; BACnet4J rejects. Segment 0 goes alone; the rest follow in the actual window of its SegmentACK (clause 5.4.4) |
-| Segmented ComplexACK receive | Implemented | Multi-peer | Window 1 by default (`WithSegmentWindow`); segment 0 is acknowledged at once; Worldiety continuation deviation |
+| Segmented confirmed-request send | Implemented | Multi-peer | BACpypes3 and cB-Sigma (both roles) live; BACnet4J rejects. Segment 0 goes alone; the rest follow in the actual window of its SegmentACK (clause 5.4.4) |
+| Segmented ComplexACK receive | Implemented | Multi-peer | Window 1 by default (`WithSegmentWindow`); segment 0 is acknowledged at once, asserted at windows 1, 2, 4 and 16 against cB-Sigma and BACpypes3; a segment lost inside a window is NAKed and recovered (cB-Sigma simulator); Worldiety continuation deviation |
 | Timeout and cancellation | Implemented | Single-peer | An unused port, and BACnet4J muted with DeviceCommunicationControl; see API.md |
 | Outcome-unknown after send | Implemented | Single-peer | Unanswered write; policy registry covers all side-effecting services |
 | Rejecting unserved confirmed requests | Implemented | Codec/unit | Reject / Abort to requests a client does not serve |
@@ -79,12 +79,12 @@ transport the client uses lives in package `bip` from v0.6.0
 | ReadPropertyMultiple | Implemented | Multi-peer | |
 | WriteProperty | Implemented | Multi-peer | Priority + NULL relinquish |
 | WritePropertyMultiple | Implemented | Multi-peer | First-failed Error model |
-| ReadRange | Implemented | Multi-peer | By position, sequence number and time on bacnet-stack and BACnet4J; typed LogRecord |
+| ReadRange | Implemented | Multi-peer | By position, sequence number and time on bacnet-stack, BACnet4J and the cB-Sigma simulator; typed LogRecord |
 | ReadProperty of the Device wildcard | Implemented | Multi-peer | bacnet-stack, BACnet4J; not implemented by BACpypes3 / Worldiety adapter |
 | ReadRangeAll pager | Implemented | Multi-peer | By position and by sequence number to LAST_ITEM; MaxItems/MaxBytes/MaxPages |
 | ReadPropertyMultipleBatched | Implemented | Multi-peer | Split by property and merge; shrink after Abort on bacnet-stack |
 | ReadObjectList / ReadPropertyList | Implemented | Multi-peer | Element-by-element fallback on bacnet-stack (47 entries, 50-octet APDU) |
-| WritePriority / RelinquishPriority | Implemented | Multi-peer | BACpypes3, BACnet4J, System.IO.BACnet |
+| WritePriority / RelinquishPriority | Implemented | Multi-peer | BACpypes3, BACnet4J, System.IO.BACnet, cB-Sigma (device role) |
 | WritePropertyMultipleBatched | Implemented | Codec/unit | Batch Completed/Failed/Unknown |
 | AddListElement / RemoveListElement | Implemented | Multi-peer | Notification Class list |
 | CreateObject / DeleteObject | Implemented | Multi-peer | |
