@@ -1,13 +1,13 @@
 {
-  "ref": "v0.11.3",
-  "release": "https://github.com/otfabric/bacnet-interop/releases/tag/v0.11.3",
+  "ref": "v0.12.0",
+  "release": "https://github.com/otfabric/bacnet-interop/releases/tag/v0.12.0",
   "images": {
-    "bacnet-stack": "ghcr.io/otfabric/bacnet-interop-bacnet-stack@sha256:3a941e08fbe47cf6c7dfb2a8036b4902f824e8dd178dc7b2ff846942b72ad47a",
-    "bacpypes3": "ghcr.io/otfabric/bacnet-interop-bacpypes3@sha256:960540d44274061818daae0e64a811b028fc8f279a71bc03ffcc6b5008b8ff20",
-    "bacnet4j": "ghcr.io/otfabric/bacnet-interop-bacnet4j@sha256:32fba743bbbeb83feb71bce8a0fef016defb1df59ffb2be3dbd4c26fba59bad9",
-    "worldiety": "ghcr.io/otfabric/bacnet-interop-worldiety@sha256:774f3121f8c3eddb7b22a8868ab465c529a20357affac4de22b0116ee8368007",
-    "sysiobacnet": "ghcr.io/otfabric/bacnet-interop-sysiobacnet@sha256:043342b16b8a746c1d025a821731cc92291eafe692945b11198a19325799059a",
-    "bip-router": "ghcr.io/otfabric/bacnet-interop-bip-router@sha256:10086fca39d7588f25cb03de1f57b02e30fd5d3f67f4e8d4f4bd75d0e713e6ef",
-    "bacnet-stack-router": "ghcr.io/otfabric/bacnet-interop-bacnet-stack-router@sha256:99be65fa0eee2ed0f68311b416b4d46e69df49d4620ab9014181d6e1d31fa98d"
+    "bacnet-stack": "ghcr.io/otfabric/bacnet-interop-bacnet-stack@sha256:199cd3381a78cd85c35fa1e0d717b176db5e84a023e13ca3745f2d6e906131d7",
+    "bacpypes3": "ghcr.io/otfabric/bacnet-interop-bacpypes3@sha256:e1987498514563109ba9762c218b749b43f96b47f16a6195c033e6acdd776dc1",
+    "bacnet4j": "ghcr.io/otfabric/bacnet-interop-bacnet4j@sha256:425b0cab0e52f944b1dc871d476dfc2527845aab83263dd0af5658bf88ee170f",
+    "worldiety": "ghcr.io/otfabric/bacnet-interop-worldiety@sha256:c34cd6cc646791714412530c60d19c11af1c556f3202d677bb40aeed97efe0f3",
+    "sysiobacnet": "ghcr.io/otfabric/bacnet-interop-sysiobacnet@sha256:530adb2faca859f4bc42b5fd9e0c61be723a43c0de7d8d609b821be67ade7205",
+    "bip-router": "ghcr.io/otfabric/bacnet-interop-bip-router@sha256:2ce31b8384bb782fc60f3e659013fc78b6decca23e660f3f051c8cf46eaf467c",
+    "bacnet-stack-router": "ghcr.io/otfabric/bacnet-interop-bacnet-stack-router@sha256:a7a1e799d48574677f084eaef3c25ebab35e06e182137f4ace1873b5e2d2fc8e"
   }
 }

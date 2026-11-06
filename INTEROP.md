@@ -234,7 +234,7 @@ PEER_SUPPORT.md, each with the octets the server sent:
 Also not covered: an empty GetEventInformation reply, which `bacge` cannot
 decode (also against a bacnet-stack device), and BBMD-to-BBMD forwarding.
 `server-baseline-v1` passes with every client against the bacnet-stack
-device image too (bacnet-interop `make client-matrix`), which cross-checks
+device image too (`make -C ../bacnet-interop client-matrix`), which cross-checks
 those expectations. Where the standard leaves the error code open, the
 server follows bacnet-stack ([docs/SERVER_SUPPORT.md](docs/SERVER_SUPPORT.md)),
 so agreement on those codes is partly by construction.
