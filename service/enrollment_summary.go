@@ -31,14 +31,31 @@ const (
 	EnrollmentFilterNotificationClass
 )
 
-// GetEnrollmentSummaryRequest is a GetEnrollmentSummary confirmed request.
+// RecipientProcess is a BACnetRecipientProcess (clause 21):
 //
-// Empty AcknowledgmentFilter means “all”. Optional filters use context tags
-// per ASHRAE 135 GetEnrollmentSummary-Request.
+//	recipient         [0] BACnetRecipient
+//	processIdentifier [1] Unsigned32
+type RecipientProcess struct {
+	Recipient         AuditRecipient
+	ProcessIdentifier uint32
+}
+
+// GetEnrollmentSummaryRequest is a GetEnrollmentSummary confirmed request
+// (clause 13.11.1):
+//
+//	acknowledgmentFilter    [0] ENUMERATED
+//	enrollmentFilter        [1] BACnetRecipientProcess OPTIONAL
+//	eventStateFilter        [2] ENUMERATED OPTIONAL
+//	eventTypeFilter         [3] BACnetEventType OPTIONAL
+//	priorityFilter          [4] SEQUENCE { minPriority [0], maxPriority [1] } OPTIONAL
+//	notificationClassFilter [5] Unsigned OPTIONAL
+//
+// Empty AcknowledgmentFilter means “all”; a nil filter is omitted.
 type GetEnrollmentSummaryRequest struct {
 	AcknowledgmentFilter EnrollmentFilter // 0=all, 1=acked, 2=not-acked (as enum)
-	// Optional filters omitted in v1 encode when zero/nil.
-	EnrollmentFilter        *EnrollmentFilter // unused reserved for future CHOICE
+	// EnrollmentFilter selects the objects that have this recipient
+	// process as a notification recipient.
+	EnrollmentFilter        *RecipientProcess
 	EventStateFilter        *uint32
 	EventTypeFilter         *uint32
 	PriorityFilter          *[2]uint32 // min,max
@@ -71,6 +88,19 @@ func EncodeGetEnrollmentSummary(req GetEnrollmentSummaryRequest) ([]byte, error)
 	dst, err := bacnet.AppendContextUnsigned(nil, 0, uint64(req.AcknowledgmentFilter))
 	if err != nil {
 		return nil, err
+	}
+	if f := req.EnrollmentFilter; f != nil {
+		inner, err := appendAuditRecipient(nil, 0, f.Recipient, "enrollmentFilter recipient")
+		if err != nil {
+			return nil, err
+		}
+		inner, err = bacnet.AppendContextUnsigned(inner, 1, uint64(f.ProcessIdentifier))
+		if err != nil {
+			return nil, err
+		}
+		dst = append(dst, 0x1E)
+		dst = append(dst, inner...)
+		dst = append(dst, 0x1F)
 	}
 	if req.EventStateFilter != nil {
 		dst, err = bacnet.AppendContextUnsigned(dst, 2, uint64(*req.EventStateFilter))

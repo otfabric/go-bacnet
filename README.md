@@ -10,19 +10,25 @@
 `go-bacnet` is a pure-Go BACnet/IP **client** library: discover devices, read
 and write properties, subscribe to change-of-value and alarm notifications,
 transfer files and manage objects on BACnet/IP (Annex J) over IPv4, including
-routed networks, foreign-device registration and segmentation. It has no
+routed networks, foreign-device registration and segmentation. Package `server` serves a
+BACnet device of your own on the same codecs. It has no
 dependencies outside the Go standard library.
 
 New to BACnet? Start with [PROTOCOL.md](PROTOCOL.md).
 
 ## Status
 
-Client only. The library is tested on every change against five independent
+A client and, since v0.7.0 (unreleased), a server. The client is tested on every change against five independent
 open-source BACnet stacks running in containers (bacnet-stack, BACpypes3,
 BACnet4J, Worldiety, System.IO.BACnet; [INTEROP.md](INTEROP.md)) and its
 requests are checked against Wireshark's dissector. It has **not** been
 validated against physical controllers yet; the checklist for that is
-[docs/FIELD_VALIDATION.md](docs/FIELD_VALIDATION.md). The API is v0 and can
+[docs/FIELD_VALIDATION.md](docs/FIELD_VALIDATION.md). The server is
+tested against the go-bacnet client and against the bacnet-stack
+command-line tools (discovery, property access, COV, ReadRange, files, lists,
+object creation, alarms, device management and the BBMD; not segmentation),
+and its replies are checked against Wireshark's dissector
+([docs/SERVER_SUPPORT.md](docs/SERVER_SUPPORT.md)). The API is v0 and can
 still change between minor versions; [RELEASE.md](RELEASE.md) lists every
 change.
 
@@ -39,8 +45,15 @@ change.
 The complete matrix, with how well each capability is validated, is
 [docs/CLIENT_SUPPORT.md](docs/CLIENT_SUPPORT.md).
 
-**Not in scope:** a BACnet server or device object model, BBMD server,
-MS/TP, BACnet/IPv6, BACnet/SC, BTL certification. BACnet/IP has no
+The server (`server`, `server/object`, optional `bbmd`) serves a Device with
+analog, binary and multi-state points, Notification Class, Trend Log, File,
+Calendar, Schedule, CharacterString / Integer / Positive Integer Value and
+Structured View objects: the data-sharing, list, file, COV, alarm and event, and
+device-management services above, segmentation in both directions, and a
+BBMD. Its matrix is [docs/SERVER_SUPPORT.md](docs/SERVER_SUPPORT.md); a
+runnable example is [server/example_test.go](server/example_test.go).
+
+**Not in scope:** routing, MS/TP, BACnet/IPv6, BACnet/SC, BTL certification. BACnet/IP has no
 authentication or encryption and this library adds none
 ([SECURITY.md](SECURITY.md)).
 
@@ -147,11 +160,13 @@ logging) are compiled as part of the test suite: see
 | Document | Contents |
 |----------|----------|
 | [PROTOCOL.md](PROTOCOL.md) | BACnet primer |
-| [API.md](API.md) | Client behavioural contract: lifecycle, ownership, timeouts, result models |
+| [API.md](API.md) | Client and server behavioural contract: lifecycle, ownership, timeouts, result models |
 | [ERRORS.md](ERRORS.md) | Sentinels, remote PDUs, outcome-unknown |
 | [OBSERVABILITY.md](OBSERVABILITY.md) | Logging and diagnostics |
-| [ARCHITECTURE.md](ARCHITECTURE.md) | Packages, dependency rules, client runtime |
-| [docs/CLIENT_SUPPORT.md](docs/CLIENT_SUPPORT.md) | Every capability and its evidence level |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | Packages, dependency rules, client and server runtime |
+| [docs/CLIENT_SUPPORT.md](docs/CLIENT_SUPPORT.md) | Every client capability and its evidence level |
+| [docs/SERVER_SUPPORT.md](docs/SERVER_SUPPORT.md) | Every server capability and its evidence level |
+| [docs/SERVER_PLAN.md](docs/SERVER_PLAN.md) | Server scope, phases and recorded deviations |
 | [INTEROP.md](INTEROP.md) | Scenario-by-peer results and how to run them |
 | [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md) | Peer quirks and hardware results |
 | [docs/CLIENT_PROFILE.md](docs/CLIENT_PROFILE.md) | Descriptive standards profile |

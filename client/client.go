@@ -8,7 +8,6 @@ package client
 
 import (
 	"context"
-	"encoding/binary"
 	"errors"
 	"fmt"
 	"sync"
@@ -20,6 +19,7 @@ import (
 	"github.com/otfabric/go-bacnet/bvlc"
 	"github.com/otfabric/go-bacnet/internal/clock"
 	"github.com/otfabric/go-bacnet/internal/diag"
+	"github.com/otfabric/go-bacnet/internal/link"
 	"github.com/otfabric/go-bacnet/npdu"
 )
 
@@ -264,9 +264,7 @@ func (c *Client) handlePacket(pkt InboundPacket) {
 			})
 			return
 		}
-		if ap, ok := msg.OriginAddrPort(); ok {
-			origin = bip.NewEndpoint(ap)
-		}
+		origin = link.Origin(msg, pkt.ImmediatePeer)
 	case bvlc.FunctionResult,
 		bvlc.FunctionReadBroadcastDistributionTableAck,
 		bvlc.FunctionReadForeignDeviceTableAck:
@@ -331,13 +329,11 @@ func (c *Client) handlePacket(pkt InboundPacket) {
 }
 
 func bipMACAddress(ep bip.Endpoint) (bacnet.Address, bool) {
-	if !ep.IsValid() {
+	mac, ok := link.MAC(ep)
+	if !ok {
 		return bacnet.Address{}, false
 	}
-	ip := ep.Addr.Addr().As4()
-	port := ep.Addr.Port()
-	mac := binary.BigEndian.AppendUint16([]byte{ip[0], ip[1], ip[2], ip[3]}, port)
-	return bacnet.LocalStation(bacnet.MustMAC(mac)), true
+	return bacnet.LocalStation(mac), true
 }
 
 func (c *Client) dispatchAPDU(pdu apdu.PDU, src packetSource, n npdu.NPDU) {
@@ -357,10 +353,6 @@ func (c *Client) dispatchAPDU(pdu apdu.PDU, src packetSource, n npdu.NPDU) {
 }
 
 func (c *Client) sendNPDU(ctx context.Context, dest bip.Endpoint, broadcast bool, n npdu.NPDU) error {
-	raw, err := npdu.Append(nil, n)
-	if err != nil {
-		return err
-	}
 	fn := bvlc.FunctionOriginalUnicastNPDU
 	if broadcast {
 		fn = bvlc.FunctionOriginalBroadcastNPDU
@@ -370,7 +362,7 @@ func (c *Client) sendNPDU(ctx context.Context, dest bip.Endpoint, broadcast bool
 			broadcast = false
 		}
 	}
-	frame, err := bvlc.Append(nil, bvlc.Message{Function: fn, Payload: raw})
+	_, frame, err := link.Frame(fn, n)
 	if err != nil {
 		return err
 	}
@@ -389,16 +381,5 @@ func (c *Client) send(ctx context.Context, pkt OutboundPacket) error {
 }
 
 func (c *Client) sendAPDU(ctx context.Context, dest bip.Endpoint, broadcast bool, destAddr bacnet.Address, expectingReply bool, apduBytes []byte) error {
-	n := npdu.NPDU{
-		Version:        npdu.Version1,
-		Destination:    destAddr,
-		ExpectingReply: expectingReply,
-		HopCount:       c.cfg.hopCount,
-		APDU:           apduBytes,
-	}
-	// Local unicast/broadcast: no DNET.
-	if destAddr.Scope() == bacnet.AddressLocalStation || destAddr.Scope() == bacnet.AddressLocalBroadcast || destAddr.Scope() == 0 {
-		n.Destination = bacnet.Address{}
-	}
-	return c.sendNPDU(ctx, dest, broadcast, n)
+	return c.sendNPDU(ctx, dest, broadcast, link.APDU(destAddr, expectingReply, c.cfg.hopCount, apduBytes))
 }

@@ -31,3 +31,8 @@ issues:
 
 run:
   timeout: 5m
+  # Lint the tagged interop and dissector suites too (interop/); without
+  # these tags their files are invisible to every linter.
+  build-tags:
+    - interop
+    - dissector

@@ -89,7 +89,7 @@ func DecodeDeviceCommunicationControl(payload []byte, limits bacnet.DecodeLimits
 				return DeviceCommunicationControlRequest{}, err
 			}
 			if u > 2 {
-				return DeviceCommunicationControlRequest{}, fmt.Errorf("%w: enableDisable out of range", bacnet.ErrMalformed)
+				return DeviceCommunicationControlRequest{}, fmt.Errorf("%w: enableDisable %d", ErrUndefinedEnumeration, u)
 			}
 			req.EnableDisable = EnableDisable(u)
 			haveEnable = true

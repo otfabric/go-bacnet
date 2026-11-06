@@ -269,7 +269,7 @@ func decodeAuditNotifications(els []bacnet.Element) ([]AuditNotification, error)
 
 func decodeAuditRecipient(el bacnet.Element) (AuditRecipient, error) {
 	if !bacnet.IsContextConstructed(el) || len(el.Value.Elements) != 1 {
-		return AuditRecipient{}, fmt.Errorf("%w: AuditNotification recipient [%d]", bacnet.ErrMalformed, el.TagNumber)
+		return AuditRecipient{}, fmt.Errorf("%w: BACnetRecipient [%d]", bacnet.ErrMalformed, el.TagNumber)
 	}
 	inner := el.Value.Elements[0]
 	switch {
@@ -286,7 +286,7 @@ func decodeAuditRecipient(el bacnet.Element) (AuditRecipient, error) {
 		}
 		return AuditRecipient{Address: &addr}, nil
 	}
-	return AuditRecipient{}, fmt.Errorf("%w: AuditNotification recipient choice %d", bacnet.ErrMalformed, inner.TagNumber)
+	return AuditRecipient{}, fmt.Errorf("%w: BACnetRecipient choice %d", bacnet.ErrMalformed, inner.TagNumber)
 }
 
 func decodeAuditAddress(els []bacnet.Element) (AuditAddress, error) {

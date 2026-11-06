@@ -95,7 +95,18 @@ func sysioFixturePath(t *testing.T, fixture string) string {
 	return ""
 }
 
-func sysioRequireError(t *testing.T, what string, err error, class, code uint16) *bacnet.ErrorResponse {
+// sysioRequireError fails the test unless err is a BACnet Error PDU with the
+// given class and code.
+func sysioRequireError(t *testing.T, what string, err error, class, code uint16) {
+	t.Helper()
+	// The response has been checked by sysioRequireErrorResponse; the
+	// value itself is only needed by callers that inspect other fields.
+	_ = sysioRequireErrorResponse(t, what, err, class, code)
+}
+
+// sysioRequireErrorResponse is sysioRequireError for callers that also
+// inspect the decoded Error PDU.
+func sysioRequireErrorResponse(t *testing.T, what string, err error, class, code uint16) *bacnet.ErrorResponse {
 	t.Helper()
 	var er *bacnet.ErrorResponse
 	if !errors.As(err, &er) {
@@ -149,6 +160,8 @@ func sysioWaitPresentValue(t *testing.T, sub client.Subscription, want float32, 
 			switch ev.State {
 			case client.SubscriptionDegraded, client.SubscriptionExpired, client.SubscriptionClosed:
 				t.Fatalf("subscription went %v: %v", ev.State, ev.Err)
+			default:
+				// Pending, Active and Renewing are healthy; look for the notification.
 			}
 			if ev.Notification == nil {
 				continue
@@ -1196,7 +1209,7 @@ func TestSysIOBACnetWritePropertyMultipleError(t *testing.T) {
 		},
 	}}
 	err := c.WritePropertyMultiple(ctx, peer.target, specs)
-	er := sysioRequireError(t, "WritePropertyMultiple with a read-only property", err,
+	er := sysioRequireErrorResponse(t, "WritePropertyMultiple with a read-only property", err,
 		bacnet.ErrorClassProperty, bacnet.ErrorCodeWriteAccessDenied)
 	if er.Service != apdu.ServiceWritePropertyMultiple {
 		t.Fatalf("Error service %d, want WritePropertyMultiple (%d)", er.Service, apdu.ServiceWritePropertyMultiple)
@@ -1393,6 +1406,8 @@ func TestSysIOBACnetCOVRenewKeepsSubscriptionAlive(t *testing.T) {
 				renewals++
 			case client.SubscriptionDegraded, client.SubscriptionExpired, client.SubscriptionClosed:
 				t.Fatalf("subscription went %v: %v", ev.State, ev.Err)
+			default:
+				// Pending and Active carry no renewal; keep waiting.
 			}
 		}
 	}

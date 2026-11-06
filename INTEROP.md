@@ -37,7 +37,7 @@ Three kinds of evidence, in decreasing strength:
 ```bash
 make interop-pinned   # pull the pinned images, run everything, fail on anything missing
 make interop          # run against locally built images (bacnet-interop `make build`), skip what is missing
-make dissector        # check the client's requests against Wireshark (needs tshark, no Docker)
+make dissector        # check client requests and server replies against Wireshark (needs tshark, no Docker)
 ```
 
 The interop targets need Docker and a `bacnet-interop` checkout next to this
@@ -53,10 +53,10 @@ skips with a message naming the bacnet-interop version it needs
 
 ## Peers
 
-Pin: [`bacnet-interop` v0.10.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.10.0),
-all seven images by digest (`interop/bacnet-interop-pin.json`). Last full run
-against the published images: 206 scenarios pass, 11 skip (things a stack does
-not have), none fail.
+Pin: [`bacnet-interop` v0.11.3](https://github.com/otfabric/bacnet-interop/releases/tag/v0.11.3),
+all seven images by digest (`interop/bacnet-interop-pin.json`). Against the
+published images nothing fails; the skips are things a stack does not have
+and scenarios that need a newer adapter release.
 
 | Peer | Upstream | Language | Role |
 |---|---|---|---|
@@ -170,20 +170,76 @@ An empty cell means the scenario is not run against that peer.
 
 ## Dissector oracle
 
-`make dissector` captures every request the client can emit (45 at the
-moment, one or more per service) from a recording transport and has
+`make dissector` captures every request the client can emit (one or more
+per service) from a recording transport and has
 Wireshark's `tshark` dissect them. It fails on a frame Wireshark calls
 malformed or flags with an expert warning, and, for the requests whose layout
 is easy to get wrong, when Wireshark does not find the named fields where the
 standard puts them (SubscribeCOVPropertyMultiple, GetEnrollmentSummary
-filters, AcknowledgeAlarm, LifeSafetyOperation, DeviceCommunicationControl,
+filters including the enrollment filter, AcknowledgeAlarm, LifeSafetyOperation, DeviceCommunicationControl,
 AuditLogQuery, Who-Am-I, You-Are, CreateObject).
 
-Limits: it checks requests only, not the decoding of responses; Wireshark
+The same target checks the server's side: `TestDissectorAcceptsServerReplies`
+runs the server end-to-end tests (`e2e/server*_test.go`) with
+`BACNET_SERVER_FRAMES_DIR` set, which records every datagram the server sends
+(ComplexACK, SimpleACK, Error, Reject, segmented replies, I-Am, I-Have,
+COV, COV-multiple and event notifications, BVLC results, Read-BDT and
+Read-FDT acks), and has tshark dissect them with the same malformed and
+expert checks. Server Abort and SegmentACK frames are not in that set.
+
+Limits: it does not check the client's decoding of responses; Wireshark
 walks BACnet tags leniently, so a request without listed fields is only
 checked for well-formed tags and the right service; and agreement with
 Wireshark is not acceptance by a device. Verified with Wireshark 4.2, 4.4 and
 4.6.
+
+## Independent clients against the server
+
+The tests above drive peer devices with the go-bacnet client. The reverse
+direction runs a peer stack as a **client** against the go-bacnet server
+(bacnet-interop `docs/CLIENT_DRIVER_CONTRACT.md`).
+`TestBACnetStackClientAgainstServer` starts the server in a Go container,
+once per scenario file, with the device fixture the file requires. It then
+runs the bacnet-stack image in client mode on the same docker network, on
+Linux and Docker Desktop alike, because the bacnet-stack tools bind to the
+device by Who-Is. Each result line becomes a subtest: `pass` passes, `fail`
+and `infra-error` fail, and `unsupported` and `known-difference` skip. For a
+scenario whose expectation is that a request was sent (an unconfirmed
+service), the server's hooks report what arrived and the test checks it.
+
+| Client | Engine | Scenarios | Result |
+|---|---|---|---|
+| bacnet-stack 1.6.1 (pin 7a53f0a7) | Upstream `bacwi`, `bacwh`, `bacrp`, `bacrpm`, `bacwp`, `bacwpm`, unmodified | `server-baseline-v1` on `device-baseline-v2`: 23 (Who-Is, Who-Has, RP, RPM, WP, WPM and their errors) | All pass |
+| bacnet-stack 1.6.1 (pin 7a53f0a7) | Upstream `bacscov`, `bacrr`, `bacdcc`, `bacrd`, `bacarf`, `bacawf`, `bacale`, `bacrle`, `bacco`, `bacdo`, `bacge`, `bacackalarm`, `bacts`, `bacupt`, `bacwg`, unmodified | `server-services-v1` on `device-server-v1`: 36 (SubscribeCOV, ReadRange, DCC, ReinitializeDevice, AtomicRead/WriteFile, Add/RemoveListElement, Create/DeleteObject, GetEventInformation, AcknowledgeAlarm, (UTC) TimeSynchronization, UnconfirmedPrivateTransfer, WriteGroup, and their errors) | 35 pass; `rle.nc1` known difference |
+| bacnet-stack 1.6.1 (pin 7a53f0a7) | The tools above registered as a foreign device (`--bbmd`, `--fd-ttl 60`), plus `bacrbdt`, `bacrfdt`, `bacwbdt` | `server-bbmd-v1` on `device-server-v1` with the server's BBMD: 5 (Who-Is through Distribute-Broadcast-To-Network, RP, Read-FDT, Read-BDT, Write-BDT NAK) | All pass |
+
+`rle.nc1`: `bacrle` registers its reply handlers for AddListElement
+(apps/remove-list-element/main.c), so it prints nothing for the
+RemoveListElement acknowledgement. The removal itself is checked by the next
+scenario, which reads Recipient_List back with `bacrp`.
+
+Not covered by these tools: segmentation (they are built without it),
+SubscribeCOVProperty and SubscribeCOVPropertyMultiple, GetAlarmSummary,
+GetEnrollmentSummary, text messages, ConfirmedPrivateTransfer, and an empty
+GetEventInformation reply, which `bacge` cannot decode (also against a
+bacnet-stack device). BACnet4J and BACpypes3 have client APIs for these;
+their client drivers are not written yet.
+
+Client mode is not in a bacnet-interop release yet. The results above come
+from an image built from a bacnet-interop working tree. The test skips
+against the pinned images and runs once the pin moves to a release with
+client mode. `server-baseline-v1` also passes with bacnet-stack client mode
+against bacnet-stack device mode, which cross-checks those expectations.
+Where the standard leaves the error code open, the server follows
+bacnet-stack ([docs/SERVER_SUPPORT.md](docs/SERVER_SUPPORT.md)), so
+agreement on those codes is partly by construction.
+
+Defects these runs found in the server, fixed before v0.7.0: a request
+repeated after its response was answered from a cache instead of being
+executed (the tools reuse invoke IDs, and clause 5.4.5 makes such a request
+a new one), so a second DeleteObject reported success; and AtomicWriteFile
+past the end of a file was refused where bacnet-stack's storage extends the
+file.
 
 ## What the peer tests found
 

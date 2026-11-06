@@ -39,6 +39,11 @@ func DecodeGetEnrollmentSummary(payload []byte, limits bacnet.DecodeLimits) (Get
 					haveAck = true
 				}
 			}
+		case el.TagNumber == 1 && bacnet.IsContextConstructed(el):
+			var f RecipientProcess
+			if f, err = decodeRecipientProcess(el.Value.Elements); err == nil {
+				req.EnrollmentFilter = &f
+			}
 		case el.TagNumber == 2 && !bacnet.IsContextConstructed(el):
 			u, e := bacnet.ContextUnsigned32(el)
 			err = e
@@ -82,6 +87,24 @@ func DecodeGetEnrollmentSummary(payload []byte, limits bacnet.DecodeLimits) (Get
 		return GetEnrollmentSummaryRequest{}, fmt.Errorf("%w: GetEnrollmentSummary acknowledgmentFilter", bacnet.ErrMalformed)
 	}
 	return req, nil
+}
+
+// decodeRecipientProcess decodes the elements of a BACnetRecipientProcess:
+// recipient [0] BACnetRecipient, processIdentifier [1] Unsigned32.
+func decodeRecipientProcess(els []bacnet.Element) (RecipientProcess, error) {
+	if len(els) != 2 || !els[0].Context || els[0].TagNumber != 0 ||
+		!els[1].Context || els[1].TagNumber != 1 || bacnet.IsContextConstructed(els[1]) {
+		return RecipientProcess{}, fmt.Errorf("%w: GetEnrollmentSummary enrollmentFilter", bacnet.ErrMalformed)
+	}
+	r, err := decodeAuditRecipient(els[0])
+	if err != nil {
+		return RecipientProcess{}, err
+	}
+	pid, err := bacnet.ContextUnsigned32(els[1])
+	if err != nil {
+		return RecipientProcess{}, err
+	}
+	return RecipientProcess{Recipient: r, ProcessIdentifier: pid}, nil
 }
 
 // DecodeAtomicReadFile decodes an AtomicReadFile request.

@@ -18,7 +18,7 @@ Defined in package `bacnet`:
 | `ErrAPDUTooLarge` | Request exceeds remote max APDU without permitted segmentation |
 | `ErrTrailingData` | Decode left unexpected trailing octets |
 | `ErrLimitExceeded` | Decode / reassembly hit configured `DecodeLimits` |
-| `ErrInvalidConfig` | `client.New` was given an option value it cannot run with |
+| `ErrInvalidConfig` | `client.New`, `server.New` or `bbmd.New` was given an option value it cannot run with |
 | `ErrBusy` | A BVLC management exchange is already in flight on this client |
 | `ErrDeviceManagementDisabled` | DeviceCommunicationControl / ReinitializeDevice without `WithDeviceManagementEnabled` |
 
@@ -183,6 +183,10 @@ low bits. This covers 8-bit fields (VT session identifiers, VT data flag,
 message and write priorities, acknowledgment filter), 16-bit fields (vendor
 identifiers, network numbers, object types, audit counts) and 32-bit fields
 (file start positions and counts, ReadRange indexes and counts).
+An enumerated request parameter outside the values the standard defines
+(DeviceCommunicationControl enable-disable, ReinitializeDevice
+reinitialized-state) yields `service.ErrUndefinedEnumeration`, which wraps
+`ErrMalformed`; the server answers it with Reject undefined-enumeration.
 `device.ReadSnapshot` records an out-of-range Vendor_Identifier (above
 Unsigned16), Protocol_Revision or Max_APDU_Length_Accepted (above 32 bits) in
 `PartialErrors` and leaves the field zero.
@@ -192,3 +196,79 @@ return `ErrProtocolViolation` when the device reports a position or count
 whose next position would leave the signed 32-bit range, and
 `WriteFileStream` returns `ErrLimitExceeded` before sending anything when the
 data would end past octet 2^31-1.
+
+## Server errors
+
+The server never returns Go errors to the network. Each request is answered
+with a BACnet Error, Reject or Abort PDU (clause 18), or not at all.
+
+### Configuration
+
+`server.New` and `bbmd.New` validate their options like `client.New`: an
+error wrapping `bacnet.ErrInvalidConfig` (`server.ErrInvalidConfig` and
+`bbmd.ErrInvalidConfig` are the same value) names every rejected option. A
+nil Device is a configuration error. A UDP socket that cannot be opened is
+returned as the operating-system error.
+
+### Errors from objects and hooks
+
+Objects, `Hooks` and `object.Factory` functions return BACnet errors made
+with `object.Err(class, code)`; the server sends them as the Error PDU of the
+request. `object.AsError` maps anything else to device/operational-problem,
+so an application failure reaches the network only as a well-formed Error.
+
+Package `server/object` exports the errors its objects return:
+
+| Variable | Class / code |
+|---|---|
+| `ErrUnknownProperty` | property / unknown-property |
+| `ErrWriteAccessDenied` | property / write-access-denied |
+| `ErrReadAccessDenied` | property / read-access-denied |
+| `ErrInvalidDataType` | property / invalid-data-type |
+| `ErrValueOutOfRange` | property / value-out-of-range |
+| `ErrNotAnArray` | property / property-is-not-an-array |
+| `ErrInvalidArrayIndex` | property / invalid-array-index |
+| `ErrDuplicateName` | property / duplicate-name |
+| `ErrUnknownObject` | object / unknown-object |
+| `ErrObjectExists` | object / object-identifier-already-exists |
+| `ErrNotDeletable` | object / object-deletion-not-permitted |
+| `ErrNotCreatable` | object / dynamic-creation-not-supported |
+| `ErrUnsupportedType` | object / unsupported-object-type |
+| `ErrNoSpaceForObject` | resources / no-space-for-object |
+| `ErrPropertyIsNotAList` | services / property-is-not-a-list |
+| `ErrListElementNotFound` | services / list-element-not-found |
+| `ErrNoSpaceForListElement` | resources / no-space-to-add-list-element |
+| `ErrNoSpaceToWriteProperty` | resources / no-space-to-write-property |
+| `ErrInconsistentObjectType` | services / inconsistent-object-type |
+| `ErrInvalidFileAccessMethod` | services / invalid-file-access-method |
+| `ErrInvalidFileStartPosition` | services / invalid-file-start-position |
+| `ErrFileAccessDenied` | object / file-access-denied |
+| `ErrFileFull` | object / file-full |
+| `ErrInvalidTimeStamp` | services / invalid-time-stamp |
+| `ErrInvalidEventState` | services / invalid-event-state |
+| `ErrNoAlarmConfigured` | object / no-alarm-configured |
+
+`*object.ListError` carries the 1-based element at which an
+AddListElement or RemoveListElement failed; the server sends it as a
+ChangeList-Error. A failed CreateObject initial value is sent as a
+CreateObject-Error naming the element, and a failed
+SubscribeCOVPropertyMultiple as an error naming the first failed
+subscription.
+
+### Rejects and Aborts
+
+| Condition | Answer |
+|---|---|
+| Malformed request | Reject invalid-tag (too-many-arguments for trailing data, buffer-overflow for a decode limit) |
+| Enumeration outside the defined values | Reject undefined-enumeration |
+| Service not served (or hook not installed) | Reject unrecognized-service |
+| Worker queue full | Abort out-of-resources |
+| Reply needs segmentation the requester does not accept, or segmentation disabled | Abort segmentation-not-supported |
+| Reply or segmented request beyond the segment limits | Abort buffer-overflow |
+| Segment of an unknown transaction | Abort invalid-apdu-in-this-state |
+| No SegmentACK after the retries | Abort tsm-timeout |
+
+Remaining failures that are not answers (a malformed frame, a dropped
+request, a failed send or notification) are diagnostics; see
+[OBSERVABILITY.md](OBSERVABILITY.md#server).
+

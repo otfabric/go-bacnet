@@ -19,17 +19,20 @@ test-race: ## Run tests with race detector
 	@echo "Running tests with race detector..."
 	@go test -race $(PKGS)
 
-chaos: ## Client chaos tests under the race detector, at 5x load, repeated
+chaos: ## Client and server chaos tests under the race detector, at 5x load, repeated
 	@echo "Running chaos tests (BACNET_CHAOS_SEED=<n> pins a seed)..."
-	@BACNET_CHAOS_SCALE=$${BACNET_CHAOS_SCALE:-5} go test -race -count=3 -timeout 20m -run '^TestChaos' ./client
+	@BACNET_CHAOS_SCALE=$${BACNET_CHAOS_SCALE:-5} go test -race -count=3 -timeout 20m -run '^TestChaos' ./client ./server
 
 vet: ## Run go vet
 	@echo "Running go vet..."
 	@go vet $(PKGS)
 
-lint: ## Run staticcheck
+# Build tags of the gated test suites in interop/; lint them like the rest.
+LINT_TAGS := interop,dissector
+
+lint: ## Run staticcheck (including the interop and dissector suites)
 	@echo "Running staticcheck..."
-	@staticcheck $(PKGS)
+	@staticcheck -tags=$(LINT_TAGS) $(PKGS)
 
 lint-ci: ## Run golangci-lint (same gate as shared go-ci.yml)
 	@echo "Running golangci-lint..."
@@ -84,7 +87,7 @@ imports: ## Enforce package import boundaries
 # Packages that own native fuzz targets. Discovery avoids hand-maintained name
 # lists and always uses ^Name$ so -fuzz never matches a longer sibling
 # (e.g. FuzzDecodeWritePropertyMultiple vs …Error).
-FUZZ_PKGS ?= . ./bvlc ./apdu ./npdu ./service ./client
+FUZZ_PKGS ?= . ./bvlc ./apdu ./npdu ./service ./client ./server ./bbmd
 
 fuzz: ## Run short fuzz targets (override FUZZTIME; nightly uses 5m)
 	@echo "Fuzzing (FUZZTIME=$(FUZZTIME))..."
@@ -145,7 +148,7 @@ interop-pinned: ## Pull the pinned peer images and run interop against them (nee
 	echo "Interop against bacnet-interop $$(jq -r .ref $(INTEROP_PIN))"; \
 	BACNET_INTEROP_REQUIRED=1 go test $(INTEROP_FLAGS) ./interop/...
 
-dissector: ## Check every client request against Wireshark's dissector (needs tshark)
+dissector: ## Check every client request and server reply against Wireshark's dissector (needs tshark)
 	@echo "Dissector oracle: go test -tags=dissector ./interop/"
 	@BACNET_DISSECTOR_REQUIRED=1 go test -tags=dissector -count=1 -run '^TestDissector' ./interop/
 

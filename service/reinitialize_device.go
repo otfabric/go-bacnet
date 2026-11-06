@@ -71,7 +71,7 @@ func DecodeReinitializeDevice(payload []byte, limits bacnet.DecodeLimits) (Reini
 				return ReinitializeDeviceRequest{}, err
 			}
 			if u > 7 {
-				return ReinitializeDeviceRequest{}, fmt.Errorf("%w: reinitializedStateOfDevice out of range", bacnet.ErrMalformed)
+				return ReinitializeDeviceRequest{}, fmt.Errorf("%w: reinitializedStateOfDevice %d", ErrUndefinedEnumeration, u)
 			}
 			req.State = ReinitializedStateOfDevice(u)
 			haveState = true

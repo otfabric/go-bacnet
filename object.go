@@ -39,6 +39,11 @@ const (
 	ObjectTypeAuditLog          ObjectType = 61
 	ObjectTypeAccessDoor        ObjectType = 30
 	ObjectTypeAccessPoint       ObjectType = 33
+
+	ObjectTypeStructuredView       ObjectType = 29
+	ObjectTypeCharacterStringValue ObjectType = 40
+	ObjectTypeIntegerValue         ObjectType = 45
+	ObjectTypePositiveIntegerValue ObjectType = 48
 )
 
 // MaxObjectInstance is the largest valid object instance (22 bits).

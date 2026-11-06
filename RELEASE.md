@@ -1,5 +1,62 @@
 # go-bacnet Releases
 
+## v0.7.0
+
+**Date:** unreleased
+**Previous release:** v0.6.0
+
+Requires **Go 1.26+**. A BACnet/IP server. It is verified against the go-bacnet client, and the bacnet-stack command-line tools (an unreleased bacnet-interop client mode) drive discovery, property access, COV, ReadRange, files, lists, object creation, alarms, device management and the BBMD against it; segmentation has no independent client yet. [docs/SERVER_SUPPORT.md](docs/SERVER_SUPPORT.md) lists each capability and its evidence.
+
+### Added
+
+- Package `server` serves one `object.Device` on a BACnet/IP endpoint. It answers ReadProperty, ReadPropertyMultiple, WriteProperty, WritePropertyMultiple, ReadRange, Who-Is and Who-Has, Add/RemoveListElement, CreateObject and DeleteObject, AtomicReadFile and AtomicWriteFile. It also answers SubscribeCOV, SubscribeCOVProperty and SubscribeCOVPropertyMultiple, AcknowledgeAlarm, GetAlarmSummary, GetEventInformation and GetEnrollmentSummary (all filters), DeviceCommunicationControl and ReinitializeDevice. Time synchronization, private transfer, text message and WriteGroup are served through `Hooks`.
+- The server sends segmented replies and reassembles segmented requests. A request repeated while it executes is dropped; after the response, the same invoke ID is a new request (clause 5.4.5). Handlers run on a bounded worker pool, and a full queue is answered with Abort out-of-resources.
+- Confirmed event notifications to a remote-station recipient go through the router learnt from received SNET and I-Am-Router-To-Network; the server sends Who-Is-Router-To-Network while none is known.
+- Package `server/object` provides the Device object; analog, binary and multi-state inputs, outputs and values; Notification Class, Trend Log and File; Calendar, Schedule, CharacterString Value, Integer Value, Positive Integer Value and Structured View. Analog, binary, and multi-state input and value points support intrinsic reporting: out-of-range, change-of-state, change-of-reliability, and Fault_Values for multi-state points.
+- AtomicWriteFile past the end of a file extends it: a stream file is zero-filled up to the start position, records are appended after the last one, within the file's maximum size.
+- Package `bbmd` is an optional BBMD for a server. It keeps the BDT and FDT, registers foreign devices and forwards broadcasts.
+- `service.RecipientProcess`, `service.ErrUndefinedEnumeration` (wraps `ErrMalformed`; returned for a DeviceCommunicationControl or ReinitializeDevice enumeration outside the defined values), and the request decoders the server uses.
+- Object type constants for Structured View (29), CharacterString Value (40), Integer Value (45) and Positive Integer Value (48); property identifier constants and names used by the server's objects; error codes inconsistent-configuration (129) and inconsistent-object-type (130); BVLC-Result code constants in `bvlc`.
+
+### Changed
+
+- **Breaking:** `service.GetEnrollmentSummaryRequest.EnrollmentFilter` is a `*service.RecipientProcess` (BACnetRecipientProcess, clause 13.11.1) instead of the unused `*service.EnrollmentFilter`. The client now encodes it.
+- `service.DecodeDeviceCommunicationControl` and `DecodeReinitializeDevice` wrap `ErrUndefinedEnumeration` for an out-of-range enumeration. `errors.Is(err, bacnet.ErrMalformed)` still holds.
+- The client's segmentation and B/IP framing moved to `internal/segment` and `internal/link`, shared with the server. Behaviour is unchanged apart from the fix below.
+
+### Fixed
+
+- After 256 received segments the client's SegmentACK named sequence number 0 instead of 255.
+- A change-of-state event notification whose new state is boolean-value (BACnetPropertyStates choice [0], clause 21) decoded as an enumerated value; it now decodes as a Boolean, and a content octet other than 0 or 1 is `ErrMalformed`.
+
+### Tests
+
+- `e2e/server*_test.go`: the go-bacnet client against the server over loopback UDP, including every built-in object type read with ReadPropertyMultiple ALL, device management and hook services, COV-property subscriptions, and the BBMD tables.
+- `make dissector` also dissects every datagram the server sends in those tests (`TestDissectorAcceptsServerReplies`).
+- `TestBACnetStackClientAgainstServer` runs bacnet-stack client mode with `server-baseline-v1`, `server-services-v1` and `server-bbmd-v1` ([INTEROP.md](INTEROP.md#independent-clients-against-the-server)); it skips against the pinned images until a bacnet-interop release has client mode.
+- `TestChaosServer` covers concurrent requesters, retransmissions, junk and object changes under `-race`. It runs in `make chaos`.
+- `FuzzServerReceive` and `FuzzHandleBVLC` run in `make fuzz` and nightly. `FuzzDecodeReadPropertyMultiple` is added to the nightly run.
+- `server` and `bbmd` check for leaked goroutines in `TestMain`.
+
+---
+
+## v0.6.0
+
+**Date:** unreleased
+**Previous release:** v0.5.0
+
+Requires **Go 1.26+**. Groundwork for the server; the client's behaviour does not change.
+
+### Changed
+
+- The `Transport` interface, `InboundPacket`, `OutboundPacket` and the UDP transport move to package `bip` (`bip.Transport`, `bip.ListenUDP`). `client.Transport`, `client.InboundPacket` and `client.OutboundPacket` are type aliases of the `bip` types, so existing code compiles unchanged.
+
+### Added
+
+- `service.DecodeReadPropertyMultiple` (the request) and `service.EncodeCOVNotification`.
+
+---
+
 ## v0.5.0
 
 **Date:** 2026-11-04

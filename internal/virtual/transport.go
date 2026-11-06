@@ -7,25 +7,16 @@ import (
 	"context"
 	"errors"
 	"sync"
-	"time"
 
 	"github.com/otfabric/go-bacnet/bip"
 	"github.com/otfabric/go-bacnet/internal/clock"
 )
 
 // InboundPacket is a received datagram with path metadata.
-type InboundPacket struct {
-	Data          []byte
-	ImmediatePeer bip.Endpoint
-	ReceivedAt    time.Time
-}
+type InboundPacket = bip.InboundPacket
 
 // OutboundPacket is a datagram to send.
-type OutboundPacket struct {
-	Data        []byte
-	Destination bip.Endpoint
-	Broadcast   bool
-}
+type OutboundPacket = bip.OutboundPacket
 
 // Transport is a bidirectional in-memory link.
 type Transport struct {

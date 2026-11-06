@@ -20,9 +20,8 @@ capability in [docs/CLIENT_SUPPORT.md](docs/CLIENT_SUPPORT.md).
 | Interop | `make interop-pinned`, or `make interop` | Docker, a `bacnet-interop` checkout; `make interop-pinned` also needs `jq` | `interop.yml` |
 | Dissector oracle | `make dissector` | `tshark` | `interop.yml` |
 
-The library is a client with no BACnet server of its own. `e2e/` runs it on a
-real UDP socket against a device on another, over loopback; that device is
-built in the test from the public codecs (`bvlc`, `npdu`, `apdu`, `service`),
+`e2e/` runs the client on a real UDP socket against a device on another,
+over loopback. In most tests that device is built in the test from the public codecs (`bvlc`, `npdu`, `apdu`, `service`),
 and covers discovery, reads, writes, device errors, timeouts, COV and
 concurrent requests. `e2e/hostile_test.go` replaces that device with a hostile
 one: malformed frames ahead of a valid answer, out-of-range values in ACKs and
@@ -36,7 +35,23 @@ request path, described in
 feeds raw datagrams to the client while a request is pending. Independent
 devices are reached through the interop tier.
 
-`internal/leak` fails `client`, `internal/clock` and `e2e` when a test leaves a
+The server has the same tiers. `e2e/server*_test.go` runs the client against
+the go-bacnet server over loopback UDP: every served service, one object of each
+built-in type read with ReadPropertyMultiple ALL, and the BBMD (foreign
+device, tables). With `BACNET_SERVER_FRAMES_DIR` set those tests record
+every datagram the server sends, which `make dissector` passes to tshark;
+`server/*_internal_test.go` sends encoded requests to a server on the
+in-memory transport for the paths a client does not produce (segmentation
+faults, repeats, a full worker queue, hooks, malformed frames).
+`TestChaosServer` (`make chaos`) runs concurrent requesters with
+retransmissions and junk while objects change. `FuzzServerReceive` feeds two
+raw datagrams to a serving device, and `FuzzHandleBVLC` arbitrary BVLC
+messages to a BBMD. `TestBACnetStackClientAgainstServer` (`make interop`)
+runs a bacnet-interop image in client mode against the server in a Go
+container on the image's network; it skips when the image has no client
+mode, as the pinned release does today.
+
+`internal/leak` fails `client`, `server`, `bbmd`, `internal/clock` and `e2e` when a test leaves a
 goroutine behind; it compares goroutine stacks, so the failure names it.
 
 ## Prerequisites and their switches
@@ -47,6 +62,7 @@ goroutine behind; it compares goroutine stacks, so the failure names it.
 | `BACNET_INTEROP_REQUIRED` | A missing image, fixture or Docker fails instead of skipping. Set by `make interop-required`, `make interop-pinned` and CI |
 | `BACNET_INTEROP_SKIP` | Skips all peer tests |
 | `BACNET_DISSECTOR_REQUIRED` | A missing `tshark` fails instead of skipping. Set by `make dissector` |
+| `BACNET_SERVER_FRAMES_DIR` | The server e2e tests write every datagram the server sends to this directory, one hex file per test. Set by the server dissector test |
 | `BACNET_CHAOS_SEED`, `BACNET_CHAOS_SCALE` | Pin the chaos seed and set its load |
 
 [interop/doc.go](interop/doc.go) lists the image variables. Tests that need a

@@ -530,41 +530,9 @@ func reexecInNetwork(t *testing.T, network, peerIP string, extraEnv ...string) {
 // can retry topology bring-up under flaky docker dataplanes.
 func runReexecInNetwork(t *testing.T, network, peerIP string, extraEnv ...string) error {
 	t.Helper()
-	modRoot, err := filepath.Abs("..")
+	args, image, err := goContainerArgs(network)
 	if err != nil {
 		return err
-	}
-	if _, err := os.Stat(filepath.Join(modRoot, "go.mod")); err != nil {
-		modRoot, err = filepath.Abs(".")
-		if err != nil {
-			return err
-		}
-	}
-	goVer := strings.TrimPrefix(runtime.Version(), "go")
-	parts := strings.Split(goVer, ".")
-	if len(parts) >= 2 {
-		goVer = parts[0] + "." + parts[1]
-	}
-	image := getEnv("BACNET_INTEROP_GO_IMAGE", "golang:"+goVer)
-	interopRoot, err := resolveInteropRootFrom(modRoot, os.Getenv("BACNET_INTEROP_ROOT"))
-	if err != nil {
-		return err
-	}
-	cacheRoot := filepath.Join(os.TempDir(), "go-bacnet-interop-cache")
-	_ = os.MkdirAll(filepath.Join(cacheRoot, "go"), 0o755)
-	_ = os.MkdirAll(filepath.Join(cacheRoot, "mod"), 0o755)
-	args := []string{
-		"run", "--rm",
-		"--network", network,
-		"-v", modRoot + ":/src",
-		"-v", interopRoot + ":/bacnet-interop:ro",
-		"-v", filepath.Join(cacheRoot, "go") + ":/tmp/gocache",
-		"-v", filepath.Join(cacheRoot, "mod") + ":/tmp/gomodcache",
-		"-w", "/src",
-		"-e", "BACNET_INTEROP_ROOT=/bacnet-interop",
-		"-e", "GOWORK=off",
-		"-e", "GOCACHE=/tmp/gocache",
-		"-e", "GOMODCACHE=/tmp/gomodcache",
 	}
 	if peerIP != "" {
 		args = append(args, "-e", "BACNET_INTEROP_ENDPOINT="+fmt.Sprintf("%s:47808", peerIP))
@@ -601,6 +569,48 @@ func runReexecInNetwork(t *testing.T, network, peerIP string, extraEnv ...string
 	cmd.Stderr = os.Stderr
 	t.Logf("re-exec in network %s via %s peerIP=%s extra=%v", network, image, peerIP, extraEnv)
 	return cmd.Run()
+}
+
+// goContainerArgs returns the `docker run` arguments (without the image) for
+// a Go toolchain container on network with this module at /src and the
+// bacnet-interop checkout at /bacnet-interop, and the image to run.
+func goContainerArgs(network string) ([]string, string, error) {
+	modRoot, err := filepath.Abs("..")
+	if err != nil {
+		return nil, "", err
+	}
+	if _, err := os.Stat(filepath.Join(modRoot, "go.mod")); err != nil {
+		modRoot, err = filepath.Abs(".")
+		if err != nil {
+			return nil, "", err
+		}
+	}
+	goVer := strings.TrimPrefix(runtime.Version(), "go")
+	parts := strings.Split(goVer, ".")
+	if len(parts) >= 2 {
+		goVer = parts[0] + "." + parts[1]
+	}
+	image := getEnv("BACNET_INTEROP_GO_IMAGE", "golang:"+goVer)
+	interopRoot, err := resolveInteropRootFrom(modRoot, os.Getenv("BACNET_INTEROP_ROOT"))
+	if err != nil {
+		return nil, "", err
+	}
+	cacheRoot := filepath.Join(os.TempDir(), "go-bacnet-interop-cache")
+	_ = os.MkdirAll(filepath.Join(cacheRoot, "go"), 0o755)
+	_ = os.MkdirAll(filepath.Join(cacheRoot, "mod"), 0o755)
+	return []string{
+		"run", "--rm",
+		"--network", network,
+		"-v", modRoot + ":/src",
+		"-v", interopRoot + ":/bacnet-interop:ro",
+		"-v", filepath.Join(cacheRoot, "go") + ":/tmp/gocache",
+		"-v", filepath.Join(cacheRoot, "mod") + ":/tmp/gomodcache",
+		"-w", "/src",
+		"-e", "BACNET_INTEROP_ROOT=/bacnet-interop",
+		"-e", "GOWORK=off",
+		"-e", "GOCACHE=/tmp/gocache",
+		"-e", "GOMODCACHE=/tmp/gomodcache",
+	}, image, nil
 }
 
 func containerIPOnNetwork(t *testing.T, container, network string) string {

@@ -60,6 +60,12 @@ jobs:
             pkg: ./service
           - target: FuzzDecodeReinitializeDevice
             pkg: ./service
+          - target: FuzzDecodeReadPropertyMultiple
+            pkg: ./service
+          - target: FuzzServerReceive
+            pkg: ./server
+          - target: FuzzHandleBVLC
+            pkg: ./bbmd
     steps:
       - name: Checkout go-bacnet
         uses: actions/checkout@v7

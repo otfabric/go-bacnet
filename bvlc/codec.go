@@ -36,6 +36,17 @@ const (
 	FunctionOriginalBroadcastNPDU             Function = 0x0B
 )
 
+// BVLC-Result codes (Annex J.2.1.1).
+const (
+	ResultSuccessfulCompletion               uint16 = 0x0000
+	ResultWriteBroadcastDistributionTableNAK uint16 = 0x0010
+	ResultReadBroadcastDistributionTableNAK  uint16 = 0x0020
+	ResultRegisterForeignDeviceNAK           uint16 = 0x0030
+	ResultReadForeignDeviceTableNAK          uint16 = 0x0040
+	ResultDeleteForeignDeviceTableEntryNAK   uint16 = 0x0050
+	ResultDistributeBroadcastToNetworkNAK    uint16 = 0x0060
+)
+
 // Message is a parsed BVLC message. Payload aliases the input buffer.
 type Message struct {
 	Function Function

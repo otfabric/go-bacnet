@@ -24,10 +24,16 @@
 //	BACNET_INTEROP_REQUIRED  if non-empty, a missing image, fixture or Docker fails instead of skipping
 //	BACNET_INTEROP_SKIP      if non-empty, skip all peer tests
 //	BACNET_INTEROP_GO_IMAGE  Go image for the in-network re-execution on Docker Desktop
+//	                         and for the server container
+//	BACNET_INTEROP_SERVE     set inside the server container only
 //
 // On Linux the tests reach the peer containers directly. On Docker Desktop
 // (macOS, Windows) each test re-executes itself inside a Go container on the
 // peer's network, compiling this working tree there.
+//
+// TestBACnetStackClientAgainstServer reverses the roles: the go-bacnet
+// server runs in a Go container and a peer image in client mode drives it
+// (bacnet-interop docs/CLIENT_DRIVER_CONTRACT.md).
 //
 // See INTEROP.md.
 package interop

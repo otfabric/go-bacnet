@@ -108,12 +108,12 @@ func TestSysIOBACnetBroadcastWhoIsForms(t *testing.T) {
 	if err != nil {
 		t.Fatalf("listen UDP 47808: %v", err)
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 	pinned, err := net.ListenUDP("udp4", &net.UDPAddr{IP: local})
 	if err != nil {
 		t.Fatalf("listen UDP on %v: %v", local, err)
 	}
-	defer pinned.Close()
+	defer func() { _ = pinned.Close() }()
 
 	// Original-Broadcast-NPDU, NPDU with DNET 0xFFFF and hop count 255, Who-Is.
 	whoIs := []byte{0x81, 0x0b, 0x00, 0x0c, 0x01, 0x20, 0xff, 0xff, 0x00, 0xff, 0x10, 0x08}

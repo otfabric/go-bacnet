@@ -11,7 +11,7 @@ stack shape this library assumes.
 - [Stack layers on BACnet/IP](#stack-layers-on-bacnetip)
 - [Confirmed vs unconfirmed](#confirmed-vs-unconfirmed)
 - [Discovery and addressing](#discovery-and-addressing)
-- [Segmentation (BACnet/IP)](#segmentation-horizon-1)
+- [Segmentation (BACnet/IP)](#segmentation)
 - [What to read next](#what-to-read-next)
 
 ## What BACnet is

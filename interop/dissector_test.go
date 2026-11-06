@@ -275,6 +275,11 @@ func dissectorCases() []dissectorCase {
 				EventStateFilter: u32(2), EventTypeFilter: u32(5), PriorityFilter: &[2]uint32{1, 200}, NotificationClassFilter: u32(1)})
 			return err
 		}, []string{"acknowledgment Filter: all (0)", "event State Filter:", "event Type Filter:", "min Priority: (Unsigned) 1", "max Priority: (Unsigned) 200", "notification Class Filter: (Unsigned) 1"}},
+		{"GetEnrollmentSummary with enrollment filter", "getEnrollmentSummary", func(ctx context.Context, c *client.Client, t client.Target) error {
+			_, err := c.GetEnrollmentSummary(ctx, t, service.GetEnrollmentSummaryRequest{
+				EnrollmentFilter: &service.RecipientProcess{Recipient: service.AuditRecipient{Device: &dev}, ProcessIdentifier: 7}})
+			return err
+		}, []string{"acknowledgment Filter: all (0)", "Recipient Process", "ProcessIdentifier: 7"}},
 		{"DeviceCommunicationControl", "deviceCommunicationControl", func(ctx context.Context, c *client.Client, t client.Target) error {
 			minutes := uint16(5)
 			pw := text("secret")

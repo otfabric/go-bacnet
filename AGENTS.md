@@ -2,7 +2,7 @@
 
 ## What this is
 
-Pure Go BACnet/IP client library (ANSI/ASHRAE 135-2024 baseline, Annex J over IPv4). Client only: no server or device object model. No dependencies outside the standard library. Profile: **protocol-library**. The API is v0. Not BTL listed; not yet validated against physical devices.
+Pure Go BACnet/IP client library (ANSI/ASHRAE 135-2024 baseline, Annex J over IPv4). Client, plus a server (`server`, `server/object`, `bbmd`) verified against the go-bacnet client only. No dependencies outside the standard library. Profile: **protocol-library**. The API is v0. Not BTL listed; not yet validated against physical devices.
 
 ## Organisation standards
 
@@ -13,7 +13,7 @@ This repository follows **otfabric/engineering policy 1.2**, profile **protocol-
 | Question | Source |
 |---|---|
 | Wire behaviour | ANSI/ASHRAE 135-2024 (docs/STANDARD_BASELINE.md) |
-| What is supported and how well it is verified | docs/CLIENT_SUPPORT.md, LIMITATIONS.md |
+| What is supported and how well it is verified | docs/CLIENT_SUPPORT.md, docs/SERVER_SUPPORT.md, LIMITATIONS.md |
 | Peer results and quirks | INTEROP.md, docs/COMPATIBILITY.md |
 | Behavioural contract | API.md, ERRORS.md |
 | Physical device evidence | docs/FIELD_VALIDATION.md |
@@ -35,9 +35,9 @@ Repository-local truth order, when these disagree: current code and tests, then 
 | When you change… | Run |
 |---|---|
 | anything | `make check` |
-| client handlers or state | `make chaos`, `make test-race` |
+| client or server handlers or state | `make chaos`, `make test-race` |
 | a decoder | `make fuzz` |
-| a client request | `make dissector` (tshark) |
+| a client request or a server reply | `make dissector` (tshark) |
 | interop-relevant behaviour | `make interop-pinned` (Docker, jq) |
 
 ## Definition of Done

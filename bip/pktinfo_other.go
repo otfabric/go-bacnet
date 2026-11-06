@@ -2,7 +2,7 @@
 
 //go:build !linux && !darwin
 
-package client
+package bip
 
 // interfaceOOB returns nil: on this platform a datagram cannot be pinned to
 // an interface, and the limited broadcast goes where the routing table sends
