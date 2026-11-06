@@ -19,9 +19,9 @@ New to BACnet? Start with [PROTOCOL.md](PROTOCOL.md).
 
 ## Status
 
-A client and, since v0.6.0, a server. The client is tested on every change against five independent
+A client and, since v0.6.0, a server. The client is tested on every change against six independent
 open-source BACnet stacks running in containers (bacnet-stack, BACpypes3,
-BACnet4J, Worldiety, System.IO.BACnet; [INTEROP.md](INTEROP.md)) and its
+BACnet4J, Worldiety, System.IO.BACnet, cB-Sigma; [INTEROP.md](INTEROP.md)) and its
 requests are checked against Wireshark's dissector. It has **not** been
 validated against physical controllers yet; the checklist for that is
 [docs/FIELD_VALIDATION.md](docs/FIELD_VALIDATION.md). The server is
