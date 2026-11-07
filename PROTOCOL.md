@@ -72,7 +72,7 @@ UDP datagram
 
 Receive composition in the runtime is:
 
-`UDP → bvlc.Parse → npdu.Parse → apdu.Parse → service.Decode…`
+`UDP → bvlc.Parse → npdu.Parse → apdu.Parse →` the per-service decoder (for example `service.DecodeReadProperty`)
 
 ## Confirmed vs unconfirmed
 

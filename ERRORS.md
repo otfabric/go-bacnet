@@ -97,6 +97,30 @@ if errors.As(err, &unknown) {
 `Unwrap` returns `Cause`. Application retries after this error are at-least-once
 and may double-apply a write or leave an orphaned remote subscription.
 
+### `*client.BVLCOperationError`
+
+Returned by the BVLC management calls (`ReadBroadcastDistributionTable`,
+`WriteBroadcastDistributionTable`, `ReadForeignDeviceTable`,
+`DeleteForeignDeviceTableEntry`) when the BBMD answers with a non-zero
+BVLC-Result. Fields: `Operation` (`Read-BDT`, `Write-BDT`, `Read-FDT`,
+`Delete-FDT`) and `Code` (the BVLC-Result code). Unwraps to
+`ErrProtocolViolation`.
+
+```go
+var bvlcErr *client.BVLCOperationError
+if errors.As(err, &bvlcErr) {
+    // bvlcErr.Operation, bvlcErr.Code
+}
+```
+
+### `*client.BVLCResultError`
+
+A non-zero BVLC-Result to a Register-Foreign-Device request (`Code` holds the
+result code; unwraps to `ErrProtocolViolation`). Registration runs in the
+background (`client.WithForeignDevice`), so this error is not returned from a
+call: it is reported as a diagnostic (`client.WithLogger`, `client.WithDiagnosticFunc`) and
+`ForeignDeviceRegistered` reports false until a later attempt succeeds.
+
 ## Remote typed errors
 
 These represent peer PDUs, not local validation failures:

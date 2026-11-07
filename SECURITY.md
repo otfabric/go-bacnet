@@ -70,6 +70,15 @@ via diagnostics.
 BACnet/IP endpoints are IPv4-only. Custom transports that inject IPv6
 `ImmediatePeer` values are diagnosed and discarded; they must not panic.
 
+## Supported versions
+
+| Version | Supported |
+|---------|-----------|
+| 0.6.x | Yes |
+| < 0.6 | No |
+
+Fixes are released on the latest minor only.
+
 ## Reporting a vulnerability
 
 Report security vulnerabilities **privately** — do not open a public GitHub
