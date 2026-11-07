@@ -77,7 +77,6 @@ BACnet/IP endpoints are IPv4-only. Custom transports that inject IPv6
 | 0.6.x | Yes |
 | < 0.6 | No |
 
-Fixes are released on the latest minor only.
 
 ## Reporting a vulnerability
 
