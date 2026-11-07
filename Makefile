@@ -4,9 +4,12 @@ SHELL := /bin/bash
 export GOWORK := off
 
 PKGS     := ./...
+
+# docsync release of docs-check (DOC-008).
+DOCSYNC_VERSION := v0.2.0
 FUZZTIME ?= 5s
 
-.PHONY: help test test-race chaos vet lint lint-ci fmt tidy vuln coverage coverage-check coverage-pkg-check e2e check fuzz bench cross imports interop interop-required interop-pinned dissector clean
+.PHONY: help test test-race chaos vet lint lint-ci fmt tidy vuln coverage coverage-check coverage-pkg-check e2e check fuzz bench cross imports interop interop-required interop-pinned dissector clean docs-check
 
 help: ## Show available targets
 	@awk 'BEGIN {FS = ":.*## "}; /^[a-zA-Z0-9_.-]+:.*## / {printf "%-14s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -154,7 +157,11 @@ dissector: ## Check every client request and server reply against Wireshark's di
 	@echo "Dissector oracle: go test -tags=dissector ./interop/"
 	@BACNET_DISSECTOR_REQUIRED=1 go test -tags=dissector -count=1 -run '^TestDissector' ./interop/
 
-check: fmt tidy vet lint lint-ci vuln test test-race coverage coverage-pkg-check imports ## Aggregate local release checks (includes CI linters)
+# The documents against the code (DOC-008): docsync, as docs-check.yml runs it.
+docs-check: ## Check that the documents agree with the code (docsync)
+	@go run github.com/otfabric/docsync@$(DOCSYNC_VERSION) check .
+
+check: fmt tidy vet lint lint-ci vuln test test-race coverage coverage-pkg-check imports docs-check ## Aggregate local release checks (includes CI linters)
 	@echo "check: ok"
 
 clean: ## Remove coverage artifacts and test cache
