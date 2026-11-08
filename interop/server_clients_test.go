@@ -98,7 +98,7 @@ type scenarioFile struct {
 	} `json:"scenarios"`
 }
 
-// The BACnet4J and BACpypes3 images run every scenario file; a file the
+// The BACnet4J, BACpypes3 and bacnet-js images run every scenario file; a file the
 // image does not ship is skipped (requireClientMode).
 var stackClientRuns = append(append([]clientRun(nil), bacnetStackClientRuns...),
 	clientRun{scenarios: "server-extended-v1", fixture: "device-server-v1"})
@@ -113,6 +113,31 @@ func TestBACnet4JClientAgainstServer(t *testing.T) {
 
 func TestBACpypes3ClientAgainstServer(t *testing.T) {
 	runClientImage(t, getEnv("BACPYPES3_IMAGE", defaultBACpypes3Image), "bacpypes3", stackClientRuns)
+}
+
+// The bacnet-js image (@bacnet-js/client) runs every scenario file; what
+// upstream cannot issue it reports unsupported (bacnet-interop
+// PEER_SUPPORT.md, bacnet-js).
+func TestBacnetJSClientAgainstServer(t *testing.T) {
+	if bacnetJSImage() != "none" {
+		requireAdapterVersion(t, bacnetJSImage(), bacnetJSMinAdapterVersion)
+	}
+	runClientImage(t, bacnetJSImage(), bacnetJSAdapter, stackClientRuns)
+}
+
+// ulbios issues Who-Is, ReadProperty and WriteProperty only; every other
+// scenario is unsupported (bacnet-interop adapters/ulbios/README.md).
+func TestUlbiosClientAgainstServer(t *testing.T) {
+	requireAdapterVersion(t, ulbiosImage(), ulbiosMinAdapterVersion)
+	runClientImage(t, ulbiosImage(), "ulbios", stackClientRuns)
+}
+
+// Legacy BACpypes (bacpypes 0.19.0, not BACpypes3): bacnet-interop adapter
+// bacpypes. The minimum adapter release is checked in startBACpypes; here
+// requireClientMode skips a file the image does not ship.
+func TestBACpypesClientAgainstServer(t *testing.T) {
+	requireAdapterVersion(t, bacpypesImage(), bacpypesMinAdapterVersion)
+	runClientImage(t, bacpypesImage(), "bacpypes", stackClientRuns)
 }
 
 func runClientImage(t *testing.T, image, adapter string, runs []clientRun) {

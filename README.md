@@ -19,9 +19,10 @@ New to BACnet? Start with [PROTOCOL.md](PROTOCOL.md).
 
 ## Status
 
-A client and, since v0.6.0, a server. The client is tested on every change against six independent
+A client and, since v0.6.0, a server. The client is tested on every change against nine independent
 open-source BACnet stacks running in containers (bacnet-stack, BACpypes3,
-BACnet4J, Worldiety, System.IO.BACnet, cB-Sigma; [INTEROP.md](INTEROP.md)) and its
+legacy BACpypes, BACnet4J, Worldiety, System.IO.BACnet, cB-Sigma, ulbios,
+bacnet-js; [INTEROP.md](INTEROP.md)) and its
 requests are checked against Wireshark's dissector. Recorded traffic of
 physical devices (234 captures of Trane, Tridium, Reliable Controls, Delta
 Controls, Alerton, WattStopper, Lithonia and other controllers, mostly at
@@ -30,9 +31,10 @@ committed and decoded, compared with Wireshark and encoded again; the client run
 answers and the server gets their recorded requests. No live device was
 tested; the checklist for that is
 [docs/FIELD_VALIDATION.md](docs/FIELD_VALIDATION.md). The server is
-tested against the go-bacnet client and against three independent clients,
-the bacnet-stack command-line tools, BACnet4J and BACpypes3 in bacnet-interop
-client-mode containers (discovery, property access, COV, ReadRange, files,
+tested against the go-bacnet client and against six independent clients,
+the bacnet-stack command-line tools, BACnet4J, BACpypes3, legacy BACpypes,
+bacnet-js and ulbios (Who-Is, ReadProperty and WriteProperty only) in
+bacnet-interop client-mode containers (discovery, property access, COV, ReadRange, files,
 lists, object creation, alarms, device management, segmentation and the
 BBMD), and its replies are checked against Wireshark's dissector
 ([docs/SERVER_SUPPORT.md](docs/SERVER_SUPPORT.md)). The API is v0 and can

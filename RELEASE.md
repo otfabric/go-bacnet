@@ -1,5 +1,32 @@
 # go-bacnet Releases
 
+## v0.8.0
+
+**Date:** 2026-11-08
+**Previous release:** v0.7.0
+
+Requires **Go 1.26+**. Interop pin: [`bacnet-interop` v0.14.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.14.0), which adds three independent peers, each as a device and as a client: ulbios/bacnet (commit `227d6227`), legacy BACpypes 0.19.0 and @bacnet-js/client 3.3.2. The go-bacnet client runs against their devices and they run as clients against the go-bacnet server ([INTEROP.md](INTEROP.md)). The legacy BACpypes runs found one client defect, fixed; a second, in foreign-device BVLC-Result routing, showed up as an intermittent failure of go-bacnet's own end-to-end `TestServerBBMDTables` while the BBMD scenarios were wired. Not a conformance claim.
+
+### Changed
+
+- The client's default decode limits are `bacnet.DefaultDecodeLimits` with `MaxAPDUSize` raised to `MaxDatagramSize`, as the server's are, so it receives an APDU longer than the Max APDU it advertises. It still advertises at most 1476 octets (code 5, the largest encodable size, clause 20.1.2.5); `WithDecodeLimits` with a `MaxAPDUSize` keeps a strict bound and advertises it. Legacy BACpypes sends segments of Max APDU octets of service data plus the 5-octet header (1481 octets for a 1476-octet requester); the client dropped them and the read timed out.
+
+### Fixed
+
+- A foreign device that read its BBMD's BDT or FDT while its registration was pending gave the registration's successful-completion BVLC-Result (Annex J.2.1.1) to the read, which returned no entries, and the registration never completed. A read is answered by its ACK (Annex J.2.4, J.2.8), and Register-Foreign-Device-NAK and Distribute-Broadcast-To-Network-NAK never answer a table operation, so these Results now go to the registration ([API.md](API.md#foreign-device--forwarded-npdu)).
+
+### Tests
+
+- `interop`: `ulbios_test.go`, `bacpypes_test.go` and `bacnetjs_test.go` drive the three peer devices (`ULBIOS_IMAGE`, `BACPYPES_IMAGE`, `BACNETJS_IMAGE`; `none` skips); the cross-peer tables of `client_helpers_test.go` include bacnet-js and, for what it serves, ulbios. `TestUlbiosClientAgainstServer`, `TestBACpypesClientAgainstServer` and `TestBacnetJSClientAgainstServer` run the four scenario files with each new client against the server. Recorded peer behaviour is asserted before a test is skipped, so a change in it is noticed.
+- `client`: `TestSegmentLongerThanAdvertisedMaxAPDU`, `TestDefaultDecodeLimitsAndAdvertisedMaxAPDU` and `bvlc_fd_result_test.go` on the virtual transport.
+- `make interop-pinned` and the interop workflow pass the three new images from the pin.
+
+### Interoperability
+
+Recorded peer behaviour ([docs/COMPATIBILITY.md](docs/COMPATIBILITY.md), [INTEROP.md](INTEROP.md)): ulbios does not answer what it cannot decode (no Reject or Abort encoder) and encodes Unsigned in two octets; legacy BACpypes rejects a value of the wrong datatype with Reject invalid-tag, answers FDT remaining time TTL + 5 and Write-BDT with NAK 0x0010; bacnet-js encodes a GetAlarmSummary ACK with context tags, which go-bacnet refuses, and cannot send a segmented answer.
+
+---
+
 ## v0.7.0
 
 **Date:** 2026-11-08

@@ -622,8 +622,8 @@ func TestCBSigmaSimUnconfirmedMessaging(t *testing.T) {
 
 // Regression (fixed in go-bacnet v0.6.0): with a receive window above 1 the
 // client did not acknowledge segment 0 of a segmented ComplexACK (clause
-// 5.4.4.2), so every segmented answer timed out. Two independent senders:
-// the cB-Sigma device role and BACpypes3.
+// 5.4.4.2), so every segmented answer timed out. Independent senders: the
+// cB-Sigma device role, BACpypes3 and legacy BACpypes.
 func TestSegmentedAnswerWithReceiveWindow(t *testing.T) {
 	for _, p := range []struct {
 		name, image string
@@ -633,6 +633,7 @@ func TestSegmentedAnswerWithReceiveWindow(t *testing.T) {
 		{"bacpypes3", getEnv("BACPYPES3_IMAGE", defaultBACpypes3Image), func(t *testing.T) *peerHandle {
 			return startPeer(t, getEnv("BACPYPES3_IMAGE", defaultBACpypes3Image), "bacpypes3")
 		}},
+		{"bacpypes", bacpypesImage(), func(t *testing.T) *peerHandle { return startBACpypes(t) }},
 	} {
 		for _, w := range []uint8{1, 2, 4, 16} {
 			t.Run(fmt.Sprintf("%s/window-%d", p.name, w), func(t *testing.T) {

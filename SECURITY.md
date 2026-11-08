@@ -59,7 +59,10 @@ text, as the protocol defines. The library never logs them
 All public parsers honour `bacnet.DecodeLimits` (datagram size, APDU size,
 constructed depth, element counts, string/octet/bit lengths, segment counts,
 reassembled APDU size). Application-configured hard bounds win over
-peer-advertised maxima. Malformed or hostile inputs should fail with
+peer-advertised maxima. The client and the server default to
+`bacnet.DefaultDecodeLimits` with `MaxAPDUSize` raised to `MaxDatagramSize`
+(65535), so an APDU longer than the advertised Max APDU is still received;
+`WithDecodeLimits` sets a lower bound. Malformed or hostile inputs should fail with
 `ErrMalformed` / `ErrLimitExceeded` rather than unbounded allocation.
 
 Device observation retention is bounded by `client.RegistryOptions`

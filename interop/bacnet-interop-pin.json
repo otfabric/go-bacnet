@@ -1,14 +1,17 @@
 {
-  "ref": "v0.13.0",
-  "release": "https://github.com/otfabric/bacnet-interop/releases/tag/v0.13.0",
+  "ref": "v0.14.0",
+  "release": "https://github.com/otfabric/bacnet-interop/releases/tag/v0.14.0",
   "images": {
-    "bacnet-stack": "ghcr.io/otfabric/bacnet-interop-bacnet-stack@sha256:cfaaad6cc78da6eec21da2ab50fdc7a6427910800bb8755d2cbd05746a7a908b",
-    "bacpypes3": "ghcr.io/otfabric/bacnet-interop-bacpypes3@sha256:545ccebf3cd20860ee903e009b52ad9fcccd29db2180a1c167c1d5036fea8d6b",
-    "bacnet4j": "ghcr.io/otfabric/bacnet-interop-bacnet4j@sha256:943b03f4c4c265de6da8a722fbd7125ffaff4164de6f8b35624845cf9ed6d544",
-    "worldiety": "ghcr.io/otfabric/bacnet-interop-worldiety@sha256:4a08f43651c40b27333e2e447cea38b4abbfd0ffe75203fad6c1044b3e2c18d0",
-    "sysiobacnet": "ghcr.io/otfabric/bacnet-interop-sysiobacnet@sha256:d7db94871759fb2dc006be1c2861c29728e18deb2505ddab2d45d57604ea2d01",
-    "cbsigma": "ghcr.io/otfabric/bacnet-interop-cbsigma@sha256:69490be5892e19b7d32a8815e545d5f7b23637f20fbe079e0e7abafc09f8a2bc",
-    "bip-router": "ghcr.io/otfabric/bacnet-interop-bip-router@sha256:1b93954f29fbf4f26396fc70a802546c14ec9b332bcd8d359bfc92497e14683b",
-    "bacnet-stack-router": "ghcr.io/otfabric/bacnet-interop-bacnet-stack-router@sha256:d5838bdd9aebfd5c387edbafe6cee8fb681d25a3dc7a88786b6330de0a2f0ff6"
+    "bacnet-stack": "ghcr.io/otfabric/bacnet-interop-bacnet-stack@sha256:32ef96b955d6d2a5799fce734571d6e618d7ec4e5035b20dfe136251a62bb69a",
+    "bacpypes3": "ghcr.io/otfabric/bacnet-interop-bacpypes3@sha256:c3306164d69270f20e425d908c9a389b26b452c71fb77b26bdfaff668145d8df",
+    "bacnet4j": "ghcr.io/otfabric/bacnet-interop-bacnet4j@sha256:ba9c3c4faa4b813dcea4c0ea13b7d109633b654181021f7e8a869570586da7fc",
+    "worldiety": "ghcr.io/otfabric/bacnet-interop-worldiety@sha256:01834def5d023195559d5b27aaffd959530c7a8d02071d49639c6de6df5239ef",
+    "sysiobacnet": "ghcr.io/otfabric/bacnet-interop-sysiobacnet@sha256:1d38d9044f862b1f7954887b1b25f249f8f93db107771827dae48d394b685959",
+    "cbsigma": "ghcr.io/otfabric/bacnet-interop-cbsigma@sha256:f5f2d27b0e472960c53364774ab9fb65bba5bc5e344601c7b1679da1bc034b9e",
+    "bacpypes": "ghcr.io/otfabric/bacnet-interop-bacpypes@sha256:51e0822226a724c58abb30b3c4fa160480f693a3ff09636d621aeb75cab960d7",
+    "ulbios": "ghcr.io/otfabric/bacnet-interop-ulbios@sha256:94a0e233a20c8d08c15ba1b2c9fc8471d9c8def95ee65d7df932c1a642816dd0",
+    "bacnet-js": "ghcr.io/otfabric/bacnet-interop-bacnet-js@sha256:d92537fc6b08df87fc084cc7949a899825b01d3973dc878064e6bd1cf6bf89d6",
+    "bip-router": "ghcr.io/otfabric/bacnet-interop-bip-router@sha256:3ac38fdbf5ed56d988d7c2cf5e36022cf6745b74a5e6a653687fee7305eba114",
+    "bacnet-stack-router": "ghcr.io/otfabric/bacnet-interop-bacnet-stack-router@sha256:5922d92825fa27013de2acfe14557baa5d0dcaf2c8087a9902b92ac22f9e38ae"
   }
 }

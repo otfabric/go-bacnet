@@ -46,6 +46,10 @@ func forPeers(t *testing.T, peers []interopPeer, fn func(t *testing.T, dev devic
 	t.Helper()
 	for _, p := range peers {
 		t.Run(p.name, func(t *testing.T) {
+			if p.name == "ulbios" {
+				// New in bacnet-interop 0.14.0; "none" in an older pin.
+				requireAdapterVersion(t, p.image, ulbiosMinAdapterVersion)
+			}
 			dev := loadDeviceFixture(t)
 			peer := startPeer(t, p.image, p.name)
 			if peer.assertedByReexec {
@@ -67,11 +71,12 @@ func containsObject(list []bacnet.ObjectIdentifier, want bacnet.ObjectIdentifier
 
 // The Device wildcard instance (4194303) is answered with the real device
 // identifier: the standard way to identify a device by address. bacnet-stack
-// and BACnet4J implement it; BACpypes3 0.0.110 and the Worldiety fixture
+// and BACnet4J implement it, and so does the bacnet-js adapter's object model;
+// BACpypes3 0.0.110 and the Worldiety fixture
 // adapter answer object/unknown-object, which the second test pins down so a
 // change in either peer is noticed.
 func TestReadDeviceByWildcardInstance(t *testing.T) {
-	forPeers(t, []interopPeer{stackPeer(), bacnet4jPeer()}, func(t *testing.T, dev deviceFixture, peer *peerHandle) {
+	forPeers(t, withBacnetJS(stackPeer(), bacnet4jPeer()), func(t *testing.T, dev deviceFixture, peer *peerHandle) {
 		c := newClient(t)
 		ctx, cancel := withTimeout(t, 10*time.Second)
 		defer cancel()
@@ -106,7 +111,7 @@ func TestReadDeviceByWildcardInstanceUnsupported(t *testing.T) {
 
 // A Target that names only the endpoint is completed by the client.
 func TestEndpointOnlyTarget(t *testing.T) {
-	forPeers(t, allPeers(), func(t *testing.T, dev deviceFixture, peer *peerHandle) {
+	forPeers(t, withBacnetJS(allPeers()...), func(t *testing.T, dev deviceFixture, peer *peerHandle) {
 		c := newClient(t)
 		ctx, cancel := withTimeout(t, 10*time.Second)
 		defer cancel()
@@ -122,7 +127,7 @@ func TestEndpointOnlyTarget(t *testing.T) {
 }
 
 func TestReadObjectList(t *testing.T) {
-	forPeers(t, allPeers(), func(t *testing.T, dev deviceFixture, peer *peerHandle) {
+	forPeers(t, withBacnetJS(allPeers()...), func(t *testing.T, dev deviceFixture, peer *peerHandle) {
 		c := newClient(t)
 		ctx, cancel := withTimeout(t, 15*time.Second)
 		defer cancel()
@@ -138,7 +143,7 @@ func TestReadObjectList(t *testing.T) {
 }
 
 func TestReadPropertyMultipleBatched(t *testing.T) {
-	forPeers(t, allPeers(), func(t *testing.T, dev deviceFixture, peer *peerHandle) {
+	forPeers(t, withBacnetJS(allPeers()...), func(t *testing.T, dev deviceFixture, peer *peerHandle) {
 		c := newClient(t)
 		ctx, cancel := withTimeout(t, 20*time.Second)
 		defer cancel()
@@ -190,7 +195,7 @@ func TestReadPropertyMultipleBatched(t *testing.T) {
 // writes NULL to it and the value falls back. The bacnet-stack adapter's
 // Analog Value has no Priority_Array (unknown-property), so it is left out.
 func TestWriteAndRelinquishPriority(t *testing.T) {
-	forPeers(t, []interopPeer{bacpypes3Peer(), bacnet4jPeer()}, func(t *testing.T, dev deviceFixture, peer *peerHandle) {
+	forPeers(t, withBacnetJS(bacpypes3Peer(), bacnet4jPeer()), func(t *testing.T, dev deviceFixture, peer *peerHandle) {
 		c := newClient(t)
 		ctx, cancel := withTimeout(t, 20*time.Second)
 		defer cancel()
@@ -242,7 +247,7 @@ func TestWriteAndRelinquishPriority(t *testing.T) {
 }
 
 func TestDeviceSnapshot(t *testing.T) {
-	forPeers(t, allPeers(), func(t *testing.T, dev deviceFixture, peer *peerHandle) {
+	forPeers(t, withBacnetJS(allPeers()...), func(t *testing.T, dev deviceFixture, peer *peerHandle) {
 		c := newClient(t)
 		ctx, cancel := withTimeout(t, 30*time.Second)
 		defer cancel()
@@ -267,7 +272,7 @@ func TestDeviceSnapshot(t *testing.T) {
 }
 
 func TestReadPropertyUnknownObjectError(t *testing.T) {
-	forPeers(t, allPeers(), func(t *testing.T, _ deviceFixture, peer *peerHandle) {
+	forPeers(t, append(withBacnetJS(allPeers()...), ulbiosPeer()), func(t *testing.T, _ deviceFixture, peer *peerHandle) {
 		c := newClient(t)
 		ctx, cancel := withTimeout(t, 10*time.Second)
 		defer cancel()
@@ -289,7 +294,7 @@ func TestReadPropertyUnknownObjectError(t *testing.T) {
 // Device Object_Identifier is not: three of the four peers accept that write).
 // BACpypes3 0.0.110 accepts even this write, so it is left out.
 func TestWritePropertyReadOnlyError(t *testing.T) {
-	forPeers(t, []interopPeer{stackPeer(), bacnet4jPeer(), worldietyPeer()}, func(t *testing.T, dev deviceFixture, peer *peerHandle) {
+	forPeers(t, withBacnetJS(stackPeer(), bacnet4jPeer(), worldietyPeer(), ulbiosPeer()), func(t *testing.T, dev deviceFixture, peer *peerHandle) {
 		c := newClient(t)
 		ctx, cancel := withTimeout(t, 10*time.Second)
 		defer cancel()
@@ -398,7 +403,7 @@ func TestBacnetStackDeviceCommunicationControlDisableDenied(t *testing.T) {
 // returns the one record it asked for has MORE_ITEMS clear on every peer,
 // which must not end the paging.
 func TestReadRangeAllPager(t *testing.T) {
-	forPeers(t, []interopPeer{stackPeer(), bacnet4jPeer(), worldietyPeer()}, func(t *testing.T, dev deviceFixture, peer *peerHandle) {
+	forPeers(t, withBacnetJS(stackPeer(), bacnet4jPeer(), worldietyPeer()), func(t *testing.T, dev deviceFixture, peer *peerHandle) {
 		tl, ok := trendLogObject(dev)
 		if !ok {
 			failOrSkip(t, "device fixture has no trend-log")

@@ -22,7 +22,7 @@ import (
 // The device must come back with the address it really has, and
 // DeviceObservation.Target must reach it.
 func TestBroadcastDiscover(t *testing.T) {
-	for _, p := range allPeers() {
+	for _, p := range withBacnetJS(allPeers()...) {
 		t.Run(p.name, func(t *testing.T) {
 			if p.name == "bacpypes3" {
 				// Up to adapter 0.9.0 the BACpypes3 device was started without

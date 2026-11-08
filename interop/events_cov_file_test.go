@@ -222,7 +222,7 @@ func TestBACnet4JSubscribeCOVProperty(t *testing.T) {
 // A subscription outlives its lifetime: the client renews at half of it and
 // notifications still arrive after the original lifetime has passed.
 func TestCOVRenewKeepsSubscriptionAlive(t *testing.T) {
-	forPeers(t, []interopPeer{stackPeer(), bacpypes3Peer(), bacnet4jPeer()}, func(t *testing.T, dev deviceFixture, peer *peerHandle) {
+	forPeers(t, withBacnetJS(stackPeer(), bacpypes3Peer(), bacnet4jPeer()), func(t *testing.T, dev deviceFixture, peer *peerHandle) {
 		c := newClient(t)
 		ctx, cancel := withTimeout(t, 40*time.Second)
 		defer cancel()

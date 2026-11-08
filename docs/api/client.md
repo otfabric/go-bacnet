@@ -1258,7 +1258,7 @@ Option configures a Client.
 func WithAdvertisedMaxAPDU(size uint16) Option
 ```
 
-WithAdvertisedMaxAPDU sets the Max APDU length accepted field in confirmed requests. When 0 (default), the client advertises DecodeLimits.MaxAPDUSize.
+WithAdvertisedMaxAPDU sets the Max APDU length accepted field in confirmed requests. When 0 (default), the client advertises DecodeLimits.MaxAPDUSize, at most 1476 octets (the largest encodable size).
 
 Validated at New: 0 or ≥ 50, encodable as a BACnet MaxAPDU code, and not greater than DecodeLimits.MaxAPDUSize. Non-discrete values floor to the next lower defined size when encoded (50/128/206/480/1024/1476).
 
@@ -1270,7 +1270,7 @@ Use a value smaller than DecodeLimits.MaxAPDUSize to coax peers into segmenting 
 func WithDecodeLimits(l bacnet.DecodeLimits) Option
 ```
 
-WithDecodeLimits sets parser/reassembly limits.
+WithDecodeLimits sets parser/reassembly limits. The default is bacnet.DefaultDecodeLimits with MaxAPDUSize raised to MaxDatagramSize, so an APDU longer than the advertised Max APDU is still received; set MaxAPDUSize to drop such frames. Fields left zero take the values of bacnet.DefaultDecodeLimits (MaxAPDUSize 1476).
 
 #### func WithDeviceManagementEnabled
 
