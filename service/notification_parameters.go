@@ -277,14 +277,12 @@ func encodeExtended(p ExtendedParams) ([]bacnet.Element, error) {
 	if err != nil {
 		return nil, err
 	}
-	body := []bacnet.Element{vid, et}
-	if len(p.Parameters) > 0 {
-		body = append(body, bacnet.Element{
-			Context: true, TagNumber: 2,
-			Value: bacnet.ApplicationValue{Kind: bacnet.ValueConstructed, Elements: append([]bacnet.Element{}, p.Parameters...)},
-		})
-	}
-	return body, nil
+	// parameters [2] is a SEQUENCE OF, not OPTIONAL (clause 13.3): an
+	// empty list is still sent, as recorded (kargs CEN_9_11.pcap frame 3).
+	return []bacnet.Element{vid, et, {
+		Context: true, TagNumber: 2,
+		Value: bacnet.ApplicationValue{Kind: bacnet.ValueConstructed, Elements: append([]bacnet.Element{}, p.Parameters...)},
+	}}, nil
 }
 
 // encodeFloatingLimit encodes floating-limit [4]: reference-value [0] REAL,

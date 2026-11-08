@@ -4,6 +4,7 @@ package capture
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 )
@@ -32,7 +33,9 @@ type ManifestGroup struct {
 // ManifestFile is one capture file.
 type ManifestFile struct {
 	Source     string         `json:"source"` // ManifestGroup.ID
-	Name       string         `json:"name"`
+	Name       string         `json:"name"`   // the original file name
+	File       string         `json:"file"`   // where it is: under testdata/captures if committed, else under the cache
+	Committed  bool           `json:"committed"`
 	URL        string         `json:"url"`
 	SHA256     string         `json:"sha256"`
 	Size       int64          `json:"size"`
@@ -57,7 +60,13 @@ type Stats struct {
 	Answered     int            `json:"answered"`
 	Orphans      int            `json:"orphan_answers"`
 	Segmented    int            `json:"segmented_transactions"`
-	SegmentACKs  int            `json:"segment_acks"`
+	// Reencoded counts the decoded datagrams go-bacnet encodes again to
+	// the recorded octets at every layer (those whose service has an
+	// encoder); ReencodeDiffs the others, by first differing layer and
+	// service type.
+	Reencoded     int            `json:"reencoded_byte_exact"`
+	ReencodeDiffs map[string]int `json:"reencode_differences,omitempty"`
+	SegmentACKs   int            `json:"segment_acks"`
 	// Wireshark: BVLC frames and those it marks malformed.
 	WiresharkBVLC      int `json:"wireshark_bvlc"`
 	WiresharkMalformed int `json:"wireshark_malformed"`
@@ -70,6 +79,20 @@ func CacheDir() string {
 		return d
 	}
 	return filepath.Join(Dir(), "cache")
+}
+
+// CorpusPath returns where a manifest file is: under testdata/captures if
+// committed; else in the cache with BACNET_CAPTURE_EXTENDED=1; else "".
+func CorpusPath(mf ManifestFile) string {
+	switch {
+	case !mf.Readable:
+		return ""
+	case mf.Committed:
+		return filepath.Join(Dir(), filepath.FromSlash(mf.File))
+	case os.Getenv("BACNET_CAPTURE_EXTENDED") == "1":
+		return filepath.Join(CacheDir(), filepath.FromSlash(mf.File))
+	}
+	return ""
 }
 
 // LoadManifest reads testdata/captures/manifest.json.
@@ -98,6 +121,15 @@ func Analyze(f *File) (Stats, []Message) {
 			continue
 		}
 		st.Decoded++
+		switch layer, ok, err := Reencode(m); {
+		case layer != "":
+			if st.ReencodeDiffs == nil {
+				st.ReencodeDiffs = map[string]int{}
+			}
+			st.ReencodeDiffs[fmt.Sprintf("%s %T", layer, m.Service)]++
+		case ok && err == nil:
+			st.Reencoded++
+		}
 	}
 	txs, orphans := Transactions(msgs)
 	st.Transactions, st.Orphans = len(txs), len(orphans)

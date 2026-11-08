@@ -11,15 +11,13 @@ import (
 	"path/filepath"
 	"runtime"
 	"sort"
-	"strings"
 	"time"
 )
 
 // Golden is one golden case: datagrams excerpted from one recorded capture,
 // with the decode of an independent dissector (Wireshark) for every one, the
 // devices the capture identifies, and the known differences between
-// go-bacnet and the recording. The raw capture is not redistributed; Source
-// says where it is.
+// go-bacnet and the recording. It sits next to the capture it excerpts.
 type Golden struct {
 	ID          string   `json:"id"`
 	Summary     string   `json:"summary"`
@@ -41,6 +39,7 @@ type Golden struct {
 // Source identifies the recorded capture a golden case excerpts.
 type Source struct {
 	Name     string `json:"name"` // the original file name
+	File     string `json:"file"` // the committed file, under testdata/captures
 	URL      string `json:"url"`
 	SHA256   string `json:"sha256"`
 	Size     int64  `json:"size"`
@@ -127,25 +126,25 @@ func Dir() string {
 	return filepath.Join(filepath.Dir(file), "..", "..", "testdata", "captures")
 }
 
-// LoadGolden reads every golden case, ordered by ID.
+// LoadGolden reads every golden case (<source>/<capture>.json, next to the
+// capture it excerpts), ordered by ID.
 func LoadGolden() ([]*Golden, error) {
-	dir := filepath.Join(Dir(), "golden")
-	ents, err := os.ReadDir(dir)
+	paths, err := filepath.Glob(filepath.Join(Dir(), "*", "*.json"))
 	if err != nil {
 		return nil, err
 	}
 	var out []*Golden
-	for _, e := range ents {
-		if !strings.HasSuffix(e.Name(), ".json") {
+	for _, path := range paths {
+		if filepath.Base(filepath.Dir(path)) == "report" {
 			continue
 		}
-		b, err := os.ReadFile(filepath.Join(dir, e.Name()))
+		b, err := os.ReadFile(path)
 		if err != nil {
 			return nil, err
 		}
 		g := new(Golden)
 		if err := json.Unmarshal(b, g); err != nil {
-			return nil, fmt.Errorf("%s: %w", e.Name(), err)
+			return nil, fmt.Errorf("%s: %w", path, err)
 		}
 		out = append(out, g)
 	}

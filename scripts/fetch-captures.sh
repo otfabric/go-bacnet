@@ -1,31 +1,25 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: MIT
 #
-# Downloads the original captures listed in testdata/captures/SHA256SUMS
-# into the capture cache (BACNET_CAPTURE_CACHE, default
-# testdata/captures/cache, git-ignored) and verifies every SHA256. The
-# originals are not redistributed with this repository
-# (testdata/captures/README.md). Files already cached with the right hash
-# are not downloaded again.
+# Downloads the captures listed in testdata/captures/CACHED (those over
+# 50 MB, not committed) into the capture cache (BACNET_CAPTURE_CACHE,
+# default testdata/captures/cache, git-ignored) under their clean names and
+# verifies every SHA256. Files already cached with the right hash are not
+# downloaded again. The committed captures are checked with
+# `shasum -a 256 -c SHA256SUMS` in testdata/captures.
 set -euo pipefail
 
 root=$(cd "$(dirname "$0")/.." && pwd)
-sums="$root/testdata/captures/SHA256SUMS"
+list="$root/testdata/captures/CACHED"
 cache="${BACNET_CAPTURE_CACHE:-$root/testdata/captures/cache}"
 
 sha() { if command -v sha256sum >/dev/null; then sha256sum "$1"; else shasum -a 256 "$1"; fi | cut -d' ' -f1; }
 
-fetched=0
-while IFS= read -r line; do
-	want=${line%%  *}
-	rel=${line#*  }
-	source=${rel%%/*}
-	name=${rel#*/}
-	case "$source" in
-	kargs) url="https://kargs.net/captures/$(printf '%s' "$name" | sed -e 's/%/%25/g' -e 's/ /%20/g' -e 's/#/%23/g' -e 's/+/%2B/g')" ;;
-	*) echo "unknown source $source" >&2; exit 1 ;;
-	esac
-	dst="$cache/$source/$name"
+fetched=0 total=0
+while IFS=$'\t' read -r rel want url; do
+	[ -n "$rel" ] || continue
+	total=$((total + 1))
+	dst="$cache/$rel"
 	if [ -f "$dst" ] && [ "$(sha "$dst")" = "$want" ]; then
 		continue
 	fi
@@ -39,5 +33,5 @@ while IFS= read -r line; do
 	fi
 	mv "$dst.part" "$dst"
 	fetched=$((fetched + 1))
-done <"$sums"
-echo "captures: $fetched downloaded, all $(wc -l <"$sums" | tr -d ' ') verified in $cache"
+done <"$list"
+echo "captures: $fetched downloaded, all $total verified in $cache"

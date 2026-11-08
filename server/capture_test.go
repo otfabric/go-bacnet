@@ -4,7 +4,7 @@ package server
 
 import (
 	"fmt"
-	"sort"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -151,70 +151,8 @@ func TestCaptureServerParity(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		txs, _ := capture.Transactions(msgs)
-		ids := capture.Identities(msgs)
-		for _, tx := range txs {
-			req, resp := tx.Final()
-			if !tx.Answered() || len(tx.Request) > 1 || len(tx.Response) > 1 || req.Err != nil {
-				continue
-			}
-			instance, onDevice := recordedTarget(req.Service)
-			objectless := false
-			switch tx.Service {
-			case apdu.ServiceReinitializeDevice, apdu.ServiceDeviceCommunicationControl, apdu.ServiceGetEventInformation,
-				apdu.ServiceGetAlarmSummary, apdu.ServiceConfirmedPrivateTransfer:
-				objectless = true
-			}
-			if !onDevice && !objectless {
-				continue
-			}
-			// The stand-in has the recorded responder's instance when the
-			// capture identifies it, so that a request naming another
-			// Device instance finds none, as at the recorded device.
-			own := uint32(100)
-			if id := ids[capture.Endpoint(resp, true)]; id != nil && id.Instance != 0 {
-				own = id.Instance
-			} else if onDevice && instance != 4194303 {
-				own = instance
-			}
-			want := outcome(resp.APDU)
-			pw := ""
-			if p := password(req.Service); p != nil {
-				pw = p.Value // the device accepted it
-			}
-			if strings.Contains(want, "password") {
-				pw = "capture-parity" // one the request does not carry
-			}
-			ps := newParityServer(t, own, pw)
-			got := outcome(ps.ask(t, req.NPDU.APDU, 300*time.Millisecond))
-			key := fmt.Sprintf("service %d: device %s, go-bacnet %s", tx.Service, want, got)
-			if got == want {
-				same[fmt.Sprintf("service %d: %s", tx.Service, got)]++
-				continue
-			}
-			why, ok := explained(tx.Service, want, got)
-			if !ok {
-				t.Errorf("%s frame %d: %s", g.ID, req.Frame, key)
-			}
-			diff[key]++
-			classes[key] = why
-			if testing.Verbose() {
-				t.Logf("%s frame %d: %s (%s)", g.ID, req.Frame, key, why)
-			}
-		}
+		parity(t, g.ID, msgs, same, diff, classes)
 	}
-	report := func(name string, m map[string]int) {
-		keys := make([]string, 0, len(m))
-		for k := range m {
-			keys = append(keys, k)
-		}
-		sort.Strings(keys)
-		for _, k := range keys {
-			t.Logf("%s %4d  %s", name, m[k], k)
-		}
-	}
-	report("same", same)
-	report("differs", diff)
 	n := 0
 	for _, v := range same {
 		n += v
@@ -222,6 +160,41 @@ func TestCaptureServerParity(t *testing.T) {
 	if n < 50 {
 		t.Fatalf("only %d recorded answers reproduced", n)
 	}
+	if err := capture.Report("server", parityReport(same, diff, classes)); err != nil {
+		t.Error(err)
+	}
+}
+
+// TestCorpusServerParity runs the parity comparison over every committed
+// capture (with BACNET_CAPTURE_EXTENDED=1 also the cached ones);
+// report/server-corpus.json holds the counts.
+func TestCorpusServerParity(t *testing.T) {
+	man, err := capture.LoadManifest()
+	if err != nil {
+		t.Fatal(err)
+	}
+	same, diff := map[string]int{}, map[string]int{}
+	classes := map[string]string{}
+	for _, mf := range man.Files {
+		path := capture.CorpusPath(mf)
+		if path == "" || mf.Stats.Transactions == 0 {
+			continue
+		}
+		f, err := capture.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		_, msgs := capture.Analyze(f)
+		parity(t, mf.File, msgs, same, diff, classes)
+	}
+	if os.Getenv("BACNET_CAPTURE_EXTENDED") != "1" {
+		if err := capture.Report("server-corpus", parityReport(same, diff, classes)); err != nil {
+			t.Error(err)
+		}
+	}
+}
+
+func parityReport(same, diff map[string]int, classes map[string]string) any {
 	type difference struct {
 		Count          int    `json:"count"`
 		Classification string `json:"classification"`
@@ -230,8 +203,63 @@ func TestCaptureServerParity(t *testing.T) {
 	for k, v := range diff {
 		ds[k] = difference{v, classes[k]}
 	}
-	if err := capture.Report("server", map[string]any{"same_as_device": same, "differs_from_device": ds}); err != nil {
-		t.Error(err)
+	return map[string]any{"same_as_device": same, "differs_from_device": ds}
+}
+
+// parity sends the comparable recorded requests of msgs to a stand-in
+// server and counts the answers that equal the device's (same) and those
+// that differ (diff, with their classification); an unclassified
+// difference fails the test.
+func parity(t *testing.T, label string, msgs []capture.Message, same, diff map[string]int, classes map[string]string) {
+	t.Helper()
+	txs, _ := capture.Transactions(msgs)
+	ids := capture.Identities(msgs)
+	for _, tx := range txs {
+		req, resp := tx.Final()
+		if !tx.Answered() || len(tx.Request) > 1 || len(tx.Response) > 1 || req.Err != nil {
+			continue
+		}
+		instance, onDevice := recordedTarget(req.Service)
+		objectless := false
+		switch tx.Service {
+		case apdu.ServiceReinitializeDevice, apdu.ServiceDeviceCommunicationControl, apdu.ServiceGetEventInformation,
+			apdu.ServiceGetAlarmSummary, apdu.ServiceConfirmedPrivateTransfer:
+			objectless = true
+		}
+		if !onDevice && !objectless {
+			continue
+		}
+		// The stand-in has the recorded responder's instance when the
+		// capture identifies it, so that a request naming another
+		// Device instance finds none, as at the recorded device.
+		own := uint32(100)
+		if id := ids[capture.Endpoint(resp, true)]; id != nil && id.Instance != 0 && id.Instance < 4194303 {
+			own = id.Instance
+		} else if onDevice && instance < 4194303 {
+			own = instance // an I-Am with the wildcard instance (the ALC LGE) or none
+		}
+		want := outcome(resp.APDU)
+		pw := ""
+		if p := password(req.Service); p != nil {
+			pw = p.Value // the device accepted it
+		}
+		if strings.Contains(want, "password") {
+			pw = "capture-parity" // one the request does not carry
+		}
+		ps := newParityServer(t, own, pw)
+		got := outcome(ps.ask(t, req.NPDU.APDU, 300*time.Millisecond))
+		_ = ps.s.Close()
+		key := fmt.Sprintf("service %d: device %s, go-bacnet %s", tx.Service, want, got)
+		if got == want {
+			same[fmt.Sprintf("service %d: %s", tx.Service, got)]++
+			continue
+		}
+		why, ok := explained(tx.Service, want, got)
+		if !ok {
+			t.Errorf("%s frame %d: %s", label, req.Frame, key)
+		}
+		diff[key]++
+		classes[key] = why
 	}
 }
 
@@ -250,8 +278,24 @@ func explained(svc uint8, device, ours string) (string, bool) {
 		return "object model: the recorded Device object and go-bacnet's implement different optional properties", true
 	case device == "abort segmentation-not-supported" && strings.HasPrefix(ours, "complex-ack"):
 		return "answer size: the recorded device's answer did not fit the requester's max-APDU; go-bacnet's Device object holds less", true
+	case svc == apdu.ServiceReadProperty && ours == "error object/unknown-object":
+		return "proxy: the device answers for a Device instance that is not its own (a router or gateway for its subordinates)", true
+	case device == "error object/unknown-property":
+		return "vendor difference: the WattStopper LI_NB answers unknown-property with class object; go-bacnet with class property", true
+	case device == "reject buffer-overflow" || device == "error services/no-space-for-object":
+		return "device resource limit: the device could not hold the answer", true
+	case svc == apdu.ServiceWriteProperty && device == "simple-ack" && strings.HasPrefix(ours, "error"):
+		return "object model: the property written is writable only at the recorded device", true
+	case svc == apdu.ServiceReinitializeDevice && device == "simple-ack" && ours == "error services/service-request-denied":
+		return "capability: the device (a Delta DAC-T305) supports backup and acknowledges START_BACKUP; go-bacnet has no backup procedure without a hook", true
+	case svc == apdu.ServiceReadProperty && strings.HasPrefix(device, "complex-ack") && ours == "error property/invalid-array-index":
+		return "object model: the recorded Device's arrays (object-list) hold more elements than the stand-in's", true
+	case svc == apdu.ServiceReadPropertyMultiple && strings.HasPrefix(device, "error") && strings.HasPrefix(ours, "complex-ack"):
+		return "vendor difference: the device answers a failed ReadPropertyMultiple access with an Error PDU; go-bacnet reports it inside the ComplexACK (clause 15.7.1.3)", true
+	case strings.HasPrefix(device, "complex-ack") && ours == "abort segmentation-not-supported":
+		return "answer size: go-bacnet's answer does not fit the requester's max-APDU without segmentation; the device's did", true
 	case svc == apdu.ServiceReadProperty && device == "reject other" && strings.HasPrefix(ours, "complex-ack"):
-		return "insufficient evidence: a routed SPAK MSTP (max-APDU 50) refuses to read its object-list with Reject other", true
+		return "insufficient evidence: the device refuses the read with Reject other (a routed SPAK MSTP, max-APDU 50, does so for its object-list)", true
 	case svc == apdu.ServiceReadPropertyMultiple && device == "error services/other" && ours == "complex-ack 14":
 		return "vendor difference: asked for ALL of a Device instance not its own, the SYSC MLX answers Error services/other; go-bacnet a ComplexACK with object/unknown-object for the object", true
 	case svc == apdu.ServiceWriteProperty && (ours == "error property/unknown-property" || device == "error property/unknown-property"):
@@ -259,7 +303,7 @@ func explained(svc uint8, device, ours string) (string, bool) {
 	case svc == apdu.ServiceDeviceCommunicationControl && device == "simple-ack" && ours == "error services/service-request-denied":
 		return "protocol revision: go-bacnet's Device (revision 20 or later) refuses the deprecated DISABLE; the recorded device predates it", true
 	case svc == apdu.ServiceReinitializeDevice && strings.HasPrefix(device, "reject") && ours == "error services/service-request-denied":
-		return "vendor difference: refusing START_BACKUP, the device rejects (undefined-enumeration from a device older than backup and restore, parameter-out-of-range from the PolarSoft server); go-bacnet answers as the LMBC-300 does", true
+		return "vendor difference: refusing START_BACKUP, the device rejects (undefined-enumeration from a device older than backup and restore, parameter-out-of-range from the PolarSoft server); go-bacnet answers services/service-request-denied, as the LMBC-300 does", true
 	}
 	return "", false
 }

@@ -1,0 +1,325 @@
+{
+  "id": "critical-room-control",
+  "summary": "Critical Room Control Room Pressure Monitor 5.5 on network 26001, read through a router",
+  "source": {
+    "name": "bip-readprop.cap",
+    "file": "kargs/unknown_critical-room-control-room-pressure-monitor_bip-readprop.cap",
+    "url": "https://kargs.net/captures/bip-readprop.cap",
+    "sha256": "4784f8f9bcdb05a47d02a71fa5af386fc829c3883e1644774cbf5c47db83dda2",
+    "size": 379272,
+    "fetched": "2026-11-08",
+    "terms": "No licence or redistribution statement on the site; the files are committed byte-identical.",
+    "frames": 4631,
+    "datagrams": 4631
+  },
+  "class": "A",
+  "class_basis": "model and firmware from the devices' own Device objects: Room Pressure Monitor\u0000 5.5",
+  "devices": [
+    {
+      "station": "192.168.0.24:47808|net=26001:19",
+      "instance": 0,
+      "vendor_id": 0,
+      "vendor_name": "Critical Room Control\u0000",
+      "model_name": "Room Pressure Monitor\u0000",
+      "firmware_revision": "5.5",
+      "application_software_version": "5.5",
+      "protocol_revision": 4,
+      "segmentation": 0,
+      "frames": [
+        10,
+        14,
+        16,
+        18,
+        22
+      ],
+      "role": "Room Pressure Monitor on network 26001"
+    }
+  ],
+  "frames": [
+    {
+      "frame": 1,
+      "time": "2008-03-01T06:35:51.0679Z",
+      "src": "192.168.0.103:47808",
+      "dst": "192.168.0.24:47808",
+      "hex": "810a0016012465910119ff0003010c0c0200d903194b",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x24",
+        "dnet": "26001",
+        "apdu_type": "0",
+        "confirmed_service": "12",
+        "invoke_id": "1"
+      }
+    },
+    {
+      "frame": 2,
+      "time": "2008-03-01T06:35:51.181691Z",
+      "src": "192.168.0.24:47808",
+      "dst": "192.168.0.103:47808",
+      "hex": "810a001b01086591011930010c0c0200d903194b3ec40200d9033f",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x08",
+        "snet": "26001",
+        "apdu_type": "3",
+        "confirmed_service": "12",
+        "invoke_id": "1"
+      }
+    },
+    {
+      "frame": 3,
+      "time": "2008-03-01T06:35:51.282766Z",
+      "src": "192.168.0.103:47808",
+      "dst": "192.168.0.24:47808",
+      "hex": "810a0016012465910119ff0003010c0c0200d903194d",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x24",
+        "dnet": "26001",
+        "apdu_type": "0",
+        "confirmed_service": "12",
+        "invoke_id": "1"
+      }
+    },
+    {
+      "frame": 4,
+      "time": "2008-03-01T06:35:51.447227Z",
+      "src": "192.168.0.24:47808",
+      "dst": "192.168.0.103:47808",
+      "hex": "810a001b01086591011930010c0c0200d903194d3e7400524d2e3f",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x08",
+        "snet": "26001",
+        "apdu_type": "3",
+        "confirmed_service": "12",
+        "invoke_id": "1"
+      }
+    },
+    {
+      "frame": 9,
+      "time": "2008-03-01T06:35:52.026683Z",
+      "src": "192.168.0.103:47808",
+      "dst": "192.168.0.24:47808",
+      "hex": "810a0016012465910119ff0003010c0c0200d9031979",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x24",
+        "dnet": "26001",
+        "apdu_type": "0",
+        "confirmed_service": "12",
+        "invoke_id": "1"
+      }
+    },
+    {
+      "frame": 10,
+      "time": "2008-03-01T06:35:52.109943Z",
+      "src": "192.168.0.24:47808",
+      "dst": "192.168.0.103:47808",
+      "hex": "810a002f01086591011930010c0c0200d90319793e751700437269746963616c20526f6f6d20436f6e74726f6c003f",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x08",
+        "snet": "26001",
+        "apdu_type": "3",
+        "confirmed_service": "12",
+        "invoke_id": "1"
+      }
+    },
+    {
+      "frame": 13,
+      "time": "2008-03-01T06:35:52.510371Z",
+      "src": "192.168.0.103:47808",
+      "dst": "192.168.0.24:47808",
+      "hex": "810a0016012465910119ff0003010c0c0200d9031946",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x24",
+        "dnet": "26001",
+        "apdu_type": "0",
+        "confirmed_service": "12",
+        "invoke_id": "1"
+      }
+    },
+    {
+      "frame": 14,
+      "time": "2008-03-01T06:35:52.585356Z",
+      "src": "192.168.0.24:47808",
+      "dst": "192.168.0.103:47808",
+      "hex": "810a002f01086591011930010c0c0200d90319463e751700526f6f6d205072657373757265204d6f6e69746f72003f",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x08",
+        "snet": "26001",
+        "apdu_type": "3",
+        "confirmed_service": "12",
+        "invoke_id": "1"
+      }
+    },
+    {
+      "frame": 15,
+      "time": "2008-03-01T06:35:52.686323Z",
+      "src": "192.168.0.103:47808",
+      "dst": "192.168.0.24:47808",
+      "hex": "810a0016012465910119ff0003010c0c0200d903192c",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x24",
+        "dnet": "26001",
+        "apdu_type": "0",
+        "confirmed_service": "12",
+        "invoke_id": "1"
+      }
+    },
+    {
+      "frame": 16,
+      "time": "2008-03-01T06:35:52.889001Z",
+      "src": "192.168.0.24:47808",
+      "dst": "192.168.0.103:47808",
+      "hex": "810a001b01086591011930010c0c0200d903192c3e7400352e353f",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x08",
+        "snet": "26001",
+        "apdu_type": "3",
+        "confirmed_service": "12",
+        "invoke_id": "1"
+      }
+    },
+    {
+      "frame": 17,
+      "time": "2008-03-01T06:35:52.990241Z",
+      "src": "192.168.0.103:47808",
+      "dst": "192.168.0.24:47808",
+      "hex": "810a0016012465910119ff0003010c0c0200d903190c",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x24",
+        "dnet": "26001",
+        "apdu_type": "0",
+        "confirmed_service": "12",
+        "invoke_id": "1"
+      }
+    },
+    {
+      "frame": 18,
+      "time": "2008-03-01T06:35:53.05418Z",
+      "src": "192.168.0.24:47808",
+      "dst": "192.168.0.103:47808",
+      "hex": "810a001b01086591011930010c0c0200d903190c3e7400352e353f",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x08",
+        "snet": "26001",
+        "apdu_type": "3",
+        "confirmed_service": "12",
+        "invoke_id": "1"
+      }
+    },
+    {
+      "frame": 21,
+      "time": "2008-03-01T06:35:53.326152Z",
+      "src": "192.168.0.103:47808",
+      "dst": "192.168.0.24:47808",
+      "hex": "810a0016012465910119ff0003010c0c0200d903198b",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x24",
+        "dnet": "26001",
+        "apdu_type": "0",
+        "confirmed_service": "12",
+        "invoke_id": "1"
+      }
+    },
+    {
+      "frame": 22,
+      "time": "2008-03-01T06:35:53.394339Z",
+      "src": "192.168.0.24:47808",
+      "dst": "192.168.0.103:47808",
+      "hex": "810a001801086591011930010c0c0200d903198b3e21043f",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x08",
+        "snet": "26001",
+        "apdu_type": "3",
+        "confirmed_service": "12",
+        "invoke_id": "1"
+      }
+    },
+    {
+      "frame": 299,
+      "time": "2008-03-01T06:36:19.394397Z",
+      "src": "192.168.0.103:47808",
+      "dst": "192.168.0.24:47808",
+      "hex": "810a001d012465910119ff0003010f0c0080000019553e44422800003f",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x24",
+        "dnet": "26001",
+        "apdu_type": "0",
+        "confirmed_service": "15",
+        "invoke_id": "1"
+      }
+    },
+    {
+      "frame": 300,
+      "time": "2008-03-01T06:36:19.457789Z",
+      "src": "192.168.0.24:47808",
+      "dst": "192.168.0.103:47808",
+      "hex": "810a000d01086591011920010f",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x08",
+        "snet": "26001",
+        "apdu_type": "2",
+        "confirmed_service": "15",
+        "invoke_id": "1"
+      }
+    },
+    {
+      "frame": 303,
+      "time": "2008-03-01T06:36:19.730294Z",
+      "src": "192.168.0.103:47808",
+      "dst": "192.168.0.24:47808",
+      "hex": "810a001d012465910119ff0003010f0c0080000019553e443ff333333f",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x24",
+        "dnet": "26001",
+        "apdu_type": "0",
+        "confirmed_service": "15",
+        "invoke_id": "1"
+      }
+    },
+    {
+      "frame": 304,
+      "time": "2008-03-01T06:36:19.777173Z",
+      "src": "192.168.0.24:47808",
+      "dst": "192.168.0.103:47808",
+      "hex": "810a000d01086591011920010f",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x08",
+        "snet": "26001",
+        "apdu_type": "2",
+        "confirmed_service": "15",
+        "invoke_id": "1"
+      }
+    },
+    {
+      "frame": 4631,
+      "time": "2008-03-01T06:44:52.249787Z",
+      "src": "192.168.0.103:47808",
+      "dst": "192.168.0.24:47808",
+      "hex": "810a0016012465910119ff0003010c0c00800007194b",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x24",
+        "dnet": "26001",
+        "apdu_type": "0",
+        "confirmed_service": "12",
+        "invoke_id": "1"
+      }
+    }
+  ]
+}

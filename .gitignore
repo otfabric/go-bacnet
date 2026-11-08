@@ -34,5 +34,5 @@ cover*.out
 /examples/who-has/who-has
 /examples/write-multiple/write-multiple
 
-# Original captures, downloaded by make captures-fetch (not redistributed)
+# Captures over 50 MB, downloaded by make captures-fetch
 /testdata/captures/cache/

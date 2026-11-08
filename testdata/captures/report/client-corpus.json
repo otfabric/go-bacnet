@@ -1,0 +1,394 @@
+{
+  "icspcaps/unknown_bacnet-stack-demo_bacnet-ip.pcap": {
+    "replayed": 416
+  },
+  "icspcaps/unknown_bacnet-stack-demo_bacnet-mstp-snap-mixed.pcap": {
+    "replayed": 31
+  },
+  "icspcaps/unknown_bacnet-stack-demo_bacnetip-mstp-mix.pcap": {
+    "replayed": 31
+  },
+  "icspcaps/unknown_bacnet-stack_bacnetarray-elements.pcap": {
+    "replayed": 4
+  },
+  "icspcaps/unknown_j-c-i-m-s-n-a-e-4-5-1-0-2_bacnet-test.pcap": {
+    "replayed": 9
+  },
+  "icspcaps/unknown_lithonia-sysc-mlx_bacnet-services.pcap": {
+    "replayed": 3339,
+    "segmented_answers": 1
+  },
+  "icspcaps/unknown_unknown_bacnetarray-element-0.pcap": {
+    "replayed": 3
+  },
+  "icspcaps/unknown_unknown_bacnetdeviceobjectreference.pcap": {
+    "replayed": 2
+  },
+  "icspcaps/unknown_unknown_bacnetl-schedrpm.pcap": {
+    "replayed": 1
+  },
+  "kargs/unknown_alerton-vlc-16160c3_whois-i-am-epics.cap": {
+    "replayed": 26
+  },
+  "kargs/unknown_ashrae_atomic-read-file-1470.cap": {
+    "replayed": 2
+  },
+  "kargs/unknown_ashrae_atomic-read-file-50x1500k.cap": {
+    "replayed": 50312
+  },
+  "kargs/unknown_ashrae_readfile.cap": {
+    "replayed": 173
+  },
+  "kargs/unknown_ashrae_wiresharkofnewobjects.pcap": {
+    "replayed": 69
+  },
+  "kargs/unknown_ashrae_wp-rp-index.cap": {
+    "replayed": 35
+  },
+  "kargs/unknown_automated-logic_trendlogmultiplereadrangesimple.pcap": {
+    "replayed": 91,
+    "segmented_answers": 1
+  },
+  "kargs/unknown_bacnet-stack-demo_bacnet-ip.cap": {
+    "replayed": 416
+  },
+  "kargs/unknown_bacnet-stack-demo_bacnet-mstp-snap-mixed.cap": {
+    "replayed": 31
+  },
+  "kargs/unknown_bacnet-stack-demo_bacnetip-mstp-mix.cap": {
+    "replayed": 31
+  },
+  "kargs/unknown_bacnet-stack-demo_bacrpm-test.cap": {
+    "replayed": 12
+  },
+  "kargs/unknown_bacnet-stack-demo_bbmd-readproperty.pcap": {
+    "replayed": 88
+  },
+  "kargs/unknown_bacnet-stack-demo_bvlc-bac4.cap": {
+    "replayed": 26
+  },
+  "kargs/unknown_bacnet-stack-demo_bvlc-fdreg-readprop-47809.cap": {
+    "replayed": 136
+  },
+  "kargs/unknown_bacnet-stack-demo_epics-1.cap": {
+    "replayed": 247
+  },
+  "kargs/unknown_bacnet-stack-demo_load-control.cap": {
+    "replayed": 3
+  },
+  "kargs/unknown_bacnet-stack-demo_readpropertymultipledeviceall.cap": {
+    "replayed": 1
+  },
+  "kargs/unknown_bacnet-stack_bacnetarray-elements.cap": {
+    "replayed": 4
+  },
+  "kargs/unknown_bacnet-stack_cov-awf-arf.cap": {
+    "replayed": 329
+  },
+  "kargs/unknown_bacnet-stack_device-address-binding.pcap": {
+    "replayed": 1
+  },
+  "kargs/unknown_bacnet-stack_privatetransfererror-octetstring.cap": {
+    "replayed": 1
+  },
+  "kargs/unknown_bacnet-stack_write-property-array.cap": {
+    "replayed": 10
+  },
+  "kargs/unknown_bacnet-stack_writeproperty-binaryoutput.cap": {
+    "replayed": 10
+  },
+  "kargs/unknown_contemporary-controls-basrt-b_bvlc-bac4-rp.cap": {
+    "replayed": 56
+  },
+  "kargs/unknown_cornell_tc51103-btl-9-21-1-x3-int-ext-1.pcap": {
+    "replayed": 5
+  },
+  "kargs/unknown_critical-room-control-room-pressure-monitor_bip-readprop-2.cap": {
+    "replayed": 7037,
+    "classified_failures": {
+      "peer defect: the ACK names another property or array index than requested (the client refuses it)": 24
+    }
+  },
+  "kargs/unknown_critical-room-control-room-pressure-monitor_bip-readprop.cap": {
+    "replayed": 2306,
+    "classified_failures": {
+      "peer defect: the ACK names another property or array index than requested (the client refuses it)": 7
+    }
+  },
+  "kargs/unknown_critical-room-control-room-pressure-monitor_bip-readwrite-test.cap": {
+    "replayed": 12758,
+    "classified_failures": {
+      "peer defect: the ACK names another property or array index than requested (the client refuses it)": 42
+    }
+  },
+  "kargs/unknown_critical-room-control-room-pressure-monitor_polarsoft-free-range-router.cap": {
+    "replayed": 98
+  },
+  "kargs/unknown_critical-room-control_rpm-error.cap": {
+    "replayed": 13
+  },
+  "kargs/unknown_lithonia-spak-mstp_alerton-plugfest-2.cap": {
+    "replayed": 17280,
+    "segmented_answers": 524
+  },
+  "kargs/unknown_lithonia-spak-mstp_alerton-plugfest-3.cap": {
+    "replayed": 1108
+  },
+  "kargs/unknown_lithonia-spak-mstp_plugfest-delta-2.cap": {
+    "replayed": 6129,
+    "segmented_answers": 81
+  },
+  "kargs/unknown_lithonia-spak-mstp_plugfest-delta-2b.cap": {
+    "replayed": 4724,
+    "segmented_answers": 26
+  },
+  "kargs/unknown_lithonia-sysc-mlx_bacnet-services.cap": {
+    "replayed": 3339,
+    "segmented_answers": 1
+  },
+  "kargs/unknown_lithonia-sysc-mlx_btl-plugfest.cap": {
+    "replayed": 180,
+    "segmented_answers": 2
+  },
+  "kargs/unknown_lithonia-sysc-mlx_epics-2.cap": {
+    "replayed": 964
+  },
+  "kargs/unknown_lithonia-sysc-mlx_properties.cap": {
+    "replayed": 120
+  },
+  "kargs/unknown_lithonia-sysc-mlx_read-properties.cap": {
+    "replayed": 56
+  },
+  "kargs/unknown_lithonia-sysc-mlx_read-property-epics.cap": {
+    "replayed": 1441
+  },
+  "kargs/unknown_lithonia-sysc-mlx_rpm.cap": {
+    "replayed": 2
+  },
+  "kargs/unknown_lithonia-sysc-mlx_synergy-broken-rpm.cap": {
+    "replayed": 16
+  },
+  "kargs/unknown_lithonia-sysc-mlx_synergy-device.cap": {
+    "replayed": 218
+  },
+  "kargs/unknown_lithonia_atomic-write-file-seg.cap": {
+    "replayed": 278
+  },
+  "kargs/unknown_lithonia_bacnet-stack-services.cap": {
+    "replayed": 9
+  },
+  "kargs/unknown_lithonia_startup-exchange.cap": {
+    "replayed": 2
+  },
+  "kargs/unknown_lithonia_synergy-binding-2x63y.cap": {
+    "replayed": 13
+  },
+  "kargs/unknown_lithonia_synergyblinkwarn.cap": {
+    "replayed": 20
+  },
+  "kargs/unknown_lithonia_synergywriteproperty.cap": {
+    "replayed": 20
+  },
+  "kargs/unknown_lithonia_weekend.cap": {
+    "replayed": 642
+  },
+  "kargs/unknown_lithonia_write-property.cap": {
+    "replayed": 16
+  },
+  "kargs/unknown_lithonia_write-property2.cap": {
+    "replayed": 8
+  },
+  "kargs/unknown_polarsoft-9260-linux-server_plugfest-tridium-2.pcap": {
+    "replayed": 241
+  },
+  "kargs/unknown_polarsoft_trendlogmultiplereadrange3.pcap": {
+    "replayed": 2,
+    "segmented_answers": 1
+  },
+  "kargs/unknown_polarsoft_trendlogmultipleusage.pcap": {
+    "replayed": 18
+  },
+  "kargs/unknown_reliable-controls-ether-link_testrun4-internal-side-of-router.pcap": {
+    "replayed": 53
+  },
+  "kargs/unknown_reliable-controls-ether-link_testrun4-outside-of-router.pcap": {
+    "replayed": 52
+  },
+  "kargs/unknown_reliable-controls-ether-link_testrun8-internal-side-of-router.pcap": {
+    "replayed": 137
+  },
+  "kargs/unknown_reliable-controls-mach-prosys_testrun5-outside-of-router.pcap": {
+    "replayed": 23
+  },
+  "kargs/unknown_reliable-controls-mach-prosys_testrun8-outside-of-router.pcap": {
+    "replayed": 153
+  },
+  "kargs/unknown_reliable-controls-mach2_testrun5-internal-side-of-router.pcap": {
+    "replayed": 41
+  },
+  "kargs/unknown_schneider-electric_schedule-rpm-foreign.pcap": {
+    "replayed": 5
+  },
+  "kargs/unknown_trane-uc400_plugfest-2011-trane-1.pcap": {
+    "replayed": 1118
+  },
+  "kargs/unknown_unknown_action-list.pcap": {
+    "replayed": 1
+  },
+  "kargs/unknown_unknown_arf-empty-file.cap": {
+    "replayed": 1
+  },
+  "kargs/unknown_unknown_atomic-empty-file.cap": {
+    "replayed": 1
+  },
+  "kargs/unknown_unknown_atomic-read-file.cap": {
+    "replayed": 64
+  },
+  "kargs/unknown_unknown_bacnetarray-element-0.cap": {
+    "replayed": 3
+  },
+  "kargs/unknown_unknown_bacnetdeviceobjectreference.pcap": {
+    "replayed": 2
+  },
+  "kargs/unknown_unknown_bacnetl-schedrpm.pcapng": {
+    "replayed": 1
+  },
+  "kargs/unknown_unknown_criticalroom55-1.cap": {
+    "replayed": 4
+  },
+  "kargs/unknown_unknown_eventlog-readrange.pcap": {
+    "replayed": 1
+  },
+  "kargs/unknown_unknown_eventlog-rpm.pcap": {
+    "replayed": 1
+  },
+  "kargs/unknown_unknown_eventtimestamp-rp.pcap": {
+    "replayed": 1
+  },
+  "kargs/unknown_unknown_eventtimestamp-rpm.pcap": {
+    "replayed": 1
+  },
+  "kargs/unknown_unknown_load-control-properties.cap": {
+    "replayed": 1
+  },
+  "kargs/unknown_unknown_log-buffer-readrange.pcap": {
+    "replayed": 1
+  },
+  "kargs/unknown_unknown_loop2.cap": {
+    "replayed": 1
+  },
+  "kargs/unknown_unknown_read-file.cap": {
+    "replayed": 185,
+    "segmented_answers": 161
+  },
+  "kargs/unknown_unknown_readpropertymultiple.cap": {
+    "replayed": 2
+  },
+  "kargs/unknown_unknown_rp-shed-level.cap": {
+    "replayed": 1
+  },
+  "kargs/unknown_unknown_rpm-all-allobjecttypes1.pcap": {
+    "replayed": 31
+  },
+  "kargs/unknown_unknown_rpm-multiple-scheduler-bug.pcap": {
+    "replayed": 1
+  },
+  "kargs/unknown_unknown_signed-value-negative.cap": {
+    "replayed": 1
+  },
+  "kargs/unknown_unknown_single-rpm.pcap": {
+    "replayed": 1
+  },
+  "kargs/unknown_unknown_special-events.pcap": {
+    "replayed": 1
+  },
+  "kargs/unknown_unknown_subordinate-list.pcap": {
+    "replayed": 1
+  },
+  "kargs/unknown_unknown_subordinate-list2.pcap": {
+    "replayed": 2
+  },
+  "kargs/unknown_unknown_subordinatelist-rpm.pcap": {
+    "replayed": 1
+  },
+  "kargs/unknown_unknown_subordinatelistdecodesample.pcap": {
+    "replayed": 1
+  },
+  "kargs/unknown_unknown_synergyreadproperties.cap": {
+    "replayed": 27
+  },
+  "kargs/unknown_unknown_tc51103-btl-9-21-1-x3-bool-ext-3.pcap": {
+    "replayed": 4
+  },
+  "kargs/unknown_unknown_trendlogmultiplereadrange.pcap": {
+    "replayed": 1,
+    "segmented_answers": 1
+  },
+  "kargs/unknown_unknown_trendlogmultiplereadrange2.pcap": {
+    "replayed": 1
+  },
+  "kargs/unknown_unknown_tridium-jace2.pcap": {
+    "replayed": 413
+  },
+  "kargs/unknown_unknown_wiresharkerror-arrayindex.pcap": {
+    "replayed": 1
+  },
+  "kargs/unknown_unknown_wp-weekly-schedule-test.cap": {
+    "replayed": 13
+  },
+  "kargs/unknown_unknown_wp-weekly-schedule.cap": {
+    "replayed": 10
+  },
+  "kargs/unknown_wattstopper-li-nb-24_rp-device.cap": {
+    "replayed": 45
+  },
+  "kargs/unknown_wattstopper-li-nb_mstp-mix-basrt-v124-bad.cap": {
+    "replayed": 23,
+    "classified_failures": {
+      "corrupted test traffic: the recorded answer does not answer the request": 1,
+      "peer defect: the ACK names another property or array index than requested (the client refuses it)": 7
+    }
+  },
+  "kargs/unknown_wattstopper-li-nb_mstp-mix-basrt-v124.cap": {
+    "replayed": 158
+  },
+  "kargs/unknown_wattstopper-lmbc-300_plugfest-2011-mstp-roundtable.pcap": {
+    "replayed": 19
+  },
+  "kargs/unknown_wattstopper-lmbc-300_plugfest-2011-sauter-1.pcap": {
+    "replayed": 652
+  },
+  "kargs/unknown_wattstopper-lmbc-300_plugfest-2011-siemens-1.pcap": {
+    "replayed": 2479
+  },
+  "kargs/unknown_wattstopper-lmbc-300_plugfest-tridium-1.pcap": {
+    "replayed": 1484
+  },
+  "kargs/unknown_wattstopper-weblink_dri-cave-log-udp-0168-20081216-1117-03.cap": {
+    "replayed": 42
+  },
+  "kargs/unknown_wattstopper_nb-binary-output.cap": {
+    "replayed": 61
+  },
+  "kargs/unknown_wattstopper_state-text-good.cap": {
+    "replayed": 31
+  },
+  "kargs/unknown_wattstopper_state-text.cap": {
+    "replayed": 7
+  },
+  "kargs/unknown_wattstopper_sysco-1.cap": {
+    "replayed": 46
+  },
+  "kargs/unknown_wattstopper_sysco-2.cap": {
+    "replayed": 14
+  },
+  "kargs/unknown_wattstopper_sysco-3.cap": {
+    "replayed": 14
+  },
+  "kargs/unknown_wattstopper_tower333-lighting-5min-ip.pcap": {
+    "replayed": 1909
+  },
+  "kargs/unknown_wattstopper_write-property-wattstopper-panel.cap": {
+    "replayed": 6
+  }
+}

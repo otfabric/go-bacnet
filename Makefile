@@ -159,17 +159,17 @@ dissector: ## Check every client request and server reply against Wireshark's di
 
 # Recorded traffic of physical devices (testdata/captures/README.md). The
 # golden excerpts run in `make test`; these targets need the originals.
-captures-fetch: ## Download the original captures into the git-ignored cache and verify their SHA256
+captures-fetch: ## Download the captures over 50 MB (not committed) into the git-ignored cache and verify their SHA256
 	@./scripts/fetch-captures.sh
 
-captures-extended: captures-fetch ## Re-derive every manifest entry from the original captures
-	@BACNET_CAPTURE_EXTENDED=1 go test -count=1 -run '^TestExtendedCorpus$$' ./internal/capture/
+captures-extended: captures-fetch ## Run the corpus suites over every capture, the cached ones over 50 MB included
+	@BACNET_CAPTURE_EXTENDED=1 go test -count=1 -timeout 30m -run '^TestCorpus' ./internal/capture/ ./client/ ./server/
 
-captures-generate: captures-fetch ## Rebuild manifest.json, SHA256SUMS and golden/*.json from the originals (needs tshark)
+captures-generate: ## Rebuild the manifest, the committed captures and the golden cases from BACNET_CAPTURE_ORIGINALS (needs tshark)
 	@BACNET_CAPTURE_GENERATE=1 go test -count=1 -run '^TestGenerate$$' ./internal/capture/
 
 captures-report: ## Rewrite testdata/captures/report/*.json from the golden suites
-	@BACNET_CAPTURE_REPORT=1 go test -count=1 -run '^TestCapture|^TestGolden' ./internal/capture/ ./client/ ./server/
+	@BACNET_CAPTURE_REPORT=1 go test -count=1 -run '^TestCapture|^TestGolden|^TestCorpus' ./internal/capture/ ./client/ ./server/
 
 # The documents against the code (DOC-008): docsync, as docs-check.yml runs it.
 docs-check: ## Check that the documents agree with the code (docsync)

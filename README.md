@@ -23,10 +23,10 @@ A client and, since v0.6.0, a server. The client is tested on every change again
 open-source BACnet stacks running in containers (bacnet-stack, BACpypes3,
 BACnet4J, Worldiety, System.IO.BACnet, cB-Sigma; [INTEROP.md](INTEROP.md)) and its
 requests are checked against Wireshark's dissector. Recorded traffic of
-physical devices (Trane, Tridium, Reliable Controls, Delta Controls,
-Alerton, WattStopper, Lithonia and other controllers at BACnet plugfests;
-[testdata/captures](testdata/captures/README.md)) is decoded, compared with
-Wireshark and encoded again; the client runs against the devices' recorded
+physical devices (234 captures of Trane, Tridium, Reliable Controls, Delta
+Controls, Alerton, WattStopper, Lithonia and other controllers, mostly at
+BACnet plugfests; [testdata/captures](testdata/captures/README.md)) is
+committed and decoded, compared with Wireshark and encoded again; the client runs against the devices' recorded
 answers and the server gets their recorded requests. No live device was
 tested; the checklist for that is
 [docs/FIELD_VALIDATION.md](docs/FIELD_VALIDATION.md). The server is

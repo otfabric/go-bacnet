@@ -21,7 +21,7 @@ func logBuffer(ot bacnet.ObjectType) func(Message) bool {
 
 const (
 	fetchedDate = "2026-11-08"
-	kargsTerms  = "No licence or redistribution statement on kargs.net/captures; the originals are not redistributed here. Excerpts of individual datagrams only (README.md)."
+	kargsTerms  = "No licence or redistribution statement on the site; the files are committed byte-identical."
 )
 
 var sources = []ManifestGroup{{
@@ -31,8 +31,14 @@ var sources = []ManifestGroup{{
 	Fetched:  fetchedDate,
 	Terms:    kargsTerms,
 	Notes: "Steve Karg's collection of BACnet captures (BACnet Stack author; ASHRAE SSPC 135 member): plugfest and field recordings of vendor devices, " +
-		"and test traffic of the BACnet Stack demo applications. github.com/EmreEkin/ICS-Pcaps BacNET/ holds 16 of these files re-saved as pcap " +
-		"(no licence either) and is not used separately.",
+		"and test traffic of the BACnet Stack demo applications.",
+}, {
+	ID:       "icspcaps",
+	URL:      "https://raw.githubusercontent.com/EmreEkin/ICS-Pcaps/0ffbf023afb4e39373228b54851bb4a1f33a3ab8/BacNET/",
+	Revision: "commit 0ffbf023afb4e39373228b54851bb4a1f33a3ab8",
+	Fetched:  fetchedDate,
+	Terms:    "No licence file in the repository; the files are committed byte-identical.",
+	Notes:    "github.com/EmreEkin/ICS-Pcaps BacNET/: 16 of the kargs.net captures re-saved as pcap, and bacnet_test.pcap.",
 }}
 
 var cases = []caseSpec{

@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"reflect"
 	"strings"
 	"testing"
@@ -377,4 +378,82 @@ func disruptedReplay(t *testing.T, tx capture.Transaction, call call, segs []cap
 		}
 	}()
 	return call(ctx, c, target)
+}
+
+// corpusFailure classifies a replay error on a whole recorded capture.
+func corpusFailure(class string, err error) (string, bool) {
+	switch msg := err.Error(); {
+	case strings.Contains(msg, "ReadProperty ACK is for"):
+		return "peer defect: the ACK names another property or array index than requested (the client refuses it)", true
+	case class == "D" && strings.Contains(msg, "timeout"):
+		return "corrupted test traffic: the recorded answer does not answer the request", true
+	}
+	return "", false
+}
+
+// TestCorpusReplay runs TestCaptureReplay's replay over every answered
+// transaction of every committed capture (with BACNET_CAPTURE_EXTENDED=1
+// also the cached ones): each must give the recorded outcome, or fail in a
+// way corpusFailure classifies. report/client-corpus.json holds the counts.
+func TestCorpusReplay(t *testing.T) {
+	man, err := capture.LoadManifest()
+	if err != nil {
+		t.Fatal(err)
+	}
+	type fileReport struct {
+		Replayed   int            `json:"replayed"`
+		Segmented  int            `json:"segmented_answers,omitempty"`
+		Classified map[string]int `json:"classified_failures,omitempty"`
+	}
+	report := map[string]*fileReport{}
+	total := 0
+	for _, mf := range man.Files {
+		path := capture.CorpusPath(mf)
+		if path == "" || mf.Stats.Transactions == 0 {
+			continue
+		}
+		f, err := capture.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		_, msgs := capture.Analyze(f)
+		txs, _ := capture.Transactions(msgs)
+		r := &fileReport{}
+		for _, tx := range txs {
+			if !tx.Answered() {
+				continue
+			}
+			res, err := replay(t, tx)
+			if err != nil {
+				why, ok := corpusFailure(mf.Class, err)
+				if !ok {
+					t.Errorf("%s frame %d: %v", mf.File, tx.Request[0].Frame, err)
+					continue
+				}
+				if r.Classified == nil {
+					r.Classified = map[string]int{}
+				}
+				r.Classified[why]++
+				continue
+			}
+			if res == replayed {
+				r.Replayed++
+				if len(tx.Response) > 1 {
+					r.Segmented++
+				}
+			}
+		}
+		if r.Replayed > 0 || len(r.Classified) > 0 {
+			report[mf.File] = r
+			total += r.Replayed
+		}
+	}
+	if total < 10000 {
+		t.Fatalf("only %d transactions replayed", total)
+	}
+	if os.Getenv("BACNET_CAPTURE_EXTENDED") != "1" {
+		if err := capture.Report("client-corpus", report); err != nil {
+			t.Error(err)
+		}
+	}
 }
