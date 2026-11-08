@@ -70,6 +70,7 @@ and scenarios that need a newer adapter release.
 | Worldiety | `3cb2aa80` | Go | Native transport and APDU layer; adapter object model |
 | System.IO.BACnet | 4.0.0 | C# | Device; the stack behind YABE |
 | cB-Sigma (`cbsigma`) | bacnet `v0.2.0` device role, bacnet-sim `v0.1.0` | Go | Device; a simulator with fault switches ([below](#cb-sigma)) |
+| Legacy BACpypes (`bacpypes`) | PyPI `bacpypes` 0.19.0 | Python | Device (+ BBMD) and client; not in the pin yet ([below](#legacy-bacpypes)) |
 | bacnet-stack-router | bacnet-stack 1.6.1 `apps/router` | C | Native BACnet/IP router |
 | bip-router | — | Python | Topology aid written for the tests; not evidence about a stack |
 
@@ -203,8 +204,9 @@ Wireshark is not acceptance by a device. Verified with Wireshark 4.2, 4.4 and
 The tests above drive peer devices with the go-bacnet client. The reverse
 direction runs a peer stack as a **client** against the go-bacnet server
 (bacnet-interop `docs/CLIENT_DRIVER_CONTRACT.md`).
-`TestBACnetStackClientAgainstServer`, `TestBACnet4JClientAgainstServer` and
-`TestBACpypes3ClientAgainstServer` start the server in a Go container, once
+`TestBACnetStackClientAgainstServer`, `TestBACnet4JClientAgainstServer`,
+`TestBACpypes3ClientAgainstServer` and `TestBACpypesClientAgainstServer`
+(legacy BACpypes, a local build) start the server in a Go container, once
 per scenario file, with the device fixture the file requires. They then run
 the client image in client mode on the same docker network, on Linux and
 Docker Desktop alike, because some clients bind to the device by Who-Is.
@@ -220,6 +222,7 @@ with each stack unmodified.
 | bacnet-stack 1.6.1, command-line tools | All pass | 35 pass; `rle.nc1` known difference | All pass | Not run: built without segmentation, no tools for these services |
 | BACnet4J 6.1.1, `LocalDevice` | All pass | All pass | 2 pass; Read-BDT, Read-FDT, Write-BDT unsupported (no client for them) | 22 pass; `scovpm.unknown-object-second` known difference |
 | BACpypes3 0.0.110, `Application` | All pass | 35 pass; `ale.unknown-object` known difference | All pass | 15 pass; 5 known differences; the 3 `scovpm` scenarios unsupported |
+| Legacy BACpypes 0.19.0, `Application` (local build) | All pass | All pass | All pass | 20 pass; the 3 `scovpm` scenarios unsupported (no APDU) |
 
 The known differences are limits of the client recorded in bacnet-interop
 PEER_SUPPORT.md, each with the octets the server sent:
@@ -285,6 +288,45 @@ Both are Go, by one author, independent of go-bacnet.
 
 BACnet/IPv6 and BACnet/SC are out of scope: go-bacnet is a BACnet/IP (IPv4)
 client.
+
+## Legacy BACpypes
+
+`interop/bacpypes_test.go`, against bacnet-interop's `bacpypes` image
+(`BACPYPES_IMAGE`; a local build of the adapter, not yet in a release or the
+pin, so `make interop-pinned` passes "none" and the tests skip). PyPI
+`bacpypes` 0.19.0, the asyncore code base that BACpypes3 replaced: the same
+author, a separate package and repository. Agreement between it and
+BACpypes3 is weaker evidence than agreement with an unrelated stack.
+
+| Scenario | Result |
+|---|---|
+| Who-Is / I-Am (range, unicast, broadcast); Who-Has by name and identifier | ✅ |
+| ReadProperty, ReadPropertyMultiple, their errors | ✅ |
+| WriteProperty at a priority, relinquish | ✅ |
+| WriteProperty of the wrong datatype; to Description | ⚠ Reject invalid-tag; write-access-denied (read-only in BACpypes) |
+| WritePropertyMultiple, firstFailedWriteAttempt | A |
+| Segmented RPM answer, seven device/client window pairs, device Max APDU 128 | ✅ |
+| Segmented WPM request | ✅ |
+| Segmented answer at client Max APDU 1476 | ⚠ 1481-octet segments; see below |
+| SubscribeCOV confirmed and unconfirmed; SubscribeCOVProperty | ✅; ⚠ an unknown property is accepted |
+| AtomicReadFile / AtomicWriteFile, stream and record, 3000 octets segmented | ✅ (contents A) |
+| ReadRange by position and sequence number | A |
+| DCC disable-initiation (Who-Is still answered), password; DCC disable | ✅; ⚠ acknowledged, then silent until enable |
+| ReinitializeDevice; messaging services | A |
+| CreateObject, DeleteObject, event, alarm and enrollment summaries | ✅ Reject unrecognized-service |
+| Read-BDT, Read-FDT, Delete-FDT, FD registration, segmented answer as BBMD | ✅ |
+| FDT remaining time; Write-BDT; Delete-FDT of an absent entry | ⚠ TTL + 5 (clause J.5.2.3: + 30); NAK 0x0010; NAK 0x0050 |
+
+**Oversized segments (peer behaviour):** BACpypes fills each segment of a
+ComplexACK with Max-APDU-accepted octets of service data and puts the
+5-octet header in front. A raw-socket probe recorded segments of 1481, 1481
+and 62 octets for the 3000-octet file at 1476 advertised (1029, 1029 and 966
+at 1024). Clause 20.1.2.5 bounds an APDU by the receiver's
+Max_APDU_Length_Accepted. The go-bacnet client discards an APDU longer than
+`DecodeLimits.MaxAPDUSize` (default 1476), so the read times out;
+`TestBACpypesOversizedSegments` asserts the timeout at the default and the
+answer at a decode limit of 1497. The go-bacnet server already accepts such
+segments (BACpypes3 sends them too); the client does not.
 
 ## What the peer tests found
 
