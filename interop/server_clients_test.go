@@ -132,6 +132,14 @@ func TestUlbiosClientAgainstServer(t *testing.T) {
 	runClientImage(t, ulbiosImage(), "ulbios", stackClientRuns)
 }
 
+// Legacy BACpypes (bacpypes 0.19.0, not BACpypes3): bacnet-interop adapter
+// bacpypes. The minimum adapter release is checked in startBACpypes; here
+// requireClientMode skips a file the image does not ship.
+func TestBACpypesClientAgainstServer(t *testing.T) {
+	requireAdapterVersion(t, bacpypesImage(), bacpypesMinAdapterVersion)
+	runClientImage(t, bacpypesImage(), "bacpypes", stackClientRuns)
+}
+
 func runClientImage(t *testing.T, image, adapter string, runs []clientRun) {
 	if image == "none" {
 		t.Skipf("no %s image in the pinned bacnet-interop release", adapter)

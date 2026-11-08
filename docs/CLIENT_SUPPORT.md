@@ -8,7 +8,7 @@ transport the client uses lives in package `bip` from v0.6.0
 (`client.Transport` is an alias); the client's behaviour is unchanged.
 
 **Library version:** v0.6.0 (previous release [v0.5.0](https://github.com/otfabric/go-bacnet/releases/tag/v0.5.0))  
-**Interop pin:** bacnet-interop v0.13.0 (six peer stacks; see [INTEROP.md](../INTEROP.md)). bacnet-js (@bacnet-js/client 3.3.2) is evidence from an image built from bacnet-interop branch `feat/bacnet-js`, not yet in the pin
+**Interop pin:** bacnet-interop v0.13.0 (six peer stacks; see [INTEROP.md](../INTEROP.md)). bacnet-js, ulbios and legacy BACpypes are evidence from images built from bacnet-interop, not yet in the pin
 
 | Client support | Meaning |
 |---|---|
@@ -34,13 +34,13 @@ transport the client uses lives in package `bip` from v0.6.0
 | Original-Unicast-NPDU | Implemented | Multi-peer | Default BACnet/IP path |
 | Original-Broadcast-NPDU | Implemented | Multi-peer | Discovery and broadcasts |
 | Forwarded-NPDU receive | Implemented | Multi-peer | BBMD forwarded frames |
-| Register-Foreign-Device | Implemented | Multi-peer | FD against bacnet-stack, BACpypes3, BACnet4J, the cB-Sigma simulator (and its Register-FD NAK) |
+| Register-Foreign-Device | Implemented | Multi-peer | FD against bacnet-stack, BACpypes3, BACnet4J, legacy BACpypes, the cB-Sigma simulator (and its Register-FD NAK) |
 | Distribute-Broadcast-To-Network | Implemented | Multi-peer | Used when foreign-device registered |
 | BVLC Result | Implemented | Multi-peer | FD registration + BDT/FDT management |
-| Read-Broadcast-Distribution-Table | Implemented | Multi-peer | bacnet-stack / BACpypes3 / BACnet4J |
-| Write-Broadcast-Distribution-Table | Implemented | Single-peer | Opt-in network management; BACnet4J write OK; stack/BACpypes3 NAK asserted |
+| Read-Broadcast-Distribution-Table | Implemented | Multi-peer | bacnet-stack / BACpypes3 / BACnet4J / legacy BACpypes |
+| Write-Broadcast-Distribution-Table | Implemented | Single-peer | Opt-in network management; BACnet4J write OK; stack/BACpypes3/legacy BACpypes NAK asserted |
 | Read-Foreign-Device-Table | Implemented | Multi-peer | After FD registration |
-| Delete-Foreign-Device-Table-Entry | Implemented | Multi-peer | Register → delete → absence |
+| Delete-Foreign-Device-Table-Entry | Implemented | Multi-peer | Register → delete → absence; legacy BACpypes also NAKs an absent entry (0x0050) |
 | BBMD server | Not implemented | — | Out of scope |
 | BACnet/IPv6 | Not implemented | — | |
 | BACnet/SC | Not implemented | — | |
@@ -64,8 +64,8 @@ transport the client uses lives in package `bip` from v0.6.0
 | Unconfirmed requests | Implemented | Multi-peer | |
 | SimpleACK / ComplexACK | Implemented | Multi-peer | |
 | Error / Reject / Abort | Implemented | Multi-peer | |
-| Segmented confirmed-request send | Implemented | Multi-peer | BACpypes3, cB-Sigma (both roles) and bacnet-js live; BACnet4J rejects. Segment 0 goes alone; the rest follow in the actual window of its SegmentACK (clause 5.4.4) |
-| Segmented ComplexACK receive | Implemented | Multi-peer | Window 1 by default (`WithSegmentWindow`); segment 0 is acknowledged at once, asserted at windows 1, 2, 4 and 16 against cB-Sigma and BACpypes3; a segment lost inside a window is NAKed and recovered (cB-Sigma simulator); Worldiety continuation deviation |
+| Segmented confirmed-request send | Implemented | Multi-peer | BACpypes3, legacy BACpypes (client windows 1, 2, 4, 16 against device windows 1, 2, 4; a 3000-octet AtomicWriteFile) cB-Sigma (both roles) and bacnet-js live; BACnet4J rejects. Segment 0 goes alone; the rest follow in the actual window of its SegmentACK (clause 5.4.4) |
+| Segmented ComplexACK receive | Implemented | Multi-peer | Window 1 by default (`WithSegmentWindow`); segment 0 is acknowledged at once, asserted at windows 1, 2, 4 and 16 against cB-Sigma, BACpypes3 and legacy BACpypes (also against legacy BACpypes device windows 1, 2, 4 and 8); a segment lost inside a window is NAKed and recovered (cB-Sigma simulator); Worldiety continuation deviation. Legacy BACpypes sends segments 5 octets longer than the client's Max APDU (1481 for 1476): with the default decode limit they are dropped and the answer times out; a higher `DecodeLimits.MaxAPDUSize` or a smaller `WithAdvertisedMaxAPDU` receives them |
 | Timeout and cancellation | Implemented | Multi-peer | An unused port, BACnet4J muted with DeviceCommunicationControl, and ulbios, which answers nothing it cannot decode (ulbios image from bacnet-interop 0.14.0, run as a local build; not yet in the pin); see API.md |
 | Outcome-unknown after send | Implemented | Multi-peer | Unanswered write; policy registry covers all side-effecting services. ulbios leaves WriteProperty of NULL or CharacterString, WritePropertyMultiple, SubscribeCOV, DeviceCommunicationControl and ReinitializeDevice unanswered: each ends outcome-unknown |
 | Rejecting unserved confirmed requests | Implemented | Codec/unit | Reject / Abort to requests a client does not serve |
@@ -84,7 +84,7 @@ transport the client uses lives in package `bip` from v0.6.0
 | ReadRangeAll pager | Implemented | Multi-peer | By position and by sequence number to LAST_ITEM; MaxItems/MaxBytes/MaxPages |
 | ReadPropertyMultipleBatched | Implemented | Multi-peer | Split by property and merge; shrink after Abort on bacnet-stack |
 | ReadObjectList / ReadPropertyList | Implemented | Multi-peer | Element-by-element fallback on bacnet-stack (47 entries, 50-octet APDU). The fallback needs the device's Abort: ulbios sends none for a list too long, and the read times out |
-| WritePriority / RelinquishPriority | Implemented | Multi-peer | BACpypes3, BACnet4J, System.IO.BACnet, cB-Sigma (device role), bacnet-js (adapter); WritePriority also ulbios (its NULL decoder refuses every relinquish) |
+| WritePriority / RelinquishPriority | Implemented | Multi-peer | BACpypes3, BACnet4J, System.IO.BACnet, cB-Sigma (device role), bacnet-js (adapter), legacy BACpypes; WritePriority also ulbios (its NULL decoder refuses every relinquish) |
 | WritePropertyMultipleBatched | Implemented | Codec/unit | Batch Completed/Failed/Unknown |
 | AddListElement / RemoveListElement | Implemented | Multi-peer | Notification Class list |
 | CreateObject / DeleteObject | Implemented | Multi-peer | |
@@ -102,7 +102,7 @@ transport the client uses lives in package `bip` from v0.6.0
 | Capability | Client support | Interop evidence | Notes |
 |---|---|---|---|
 | SubscribeCOV | Implemented | Multi-peer | Subscribe / notify / cancel / renew |
-| SubscribeCOVProperty | Implemented | Multi-peer | BACnet4J, System.IO.BACnet, bacnet-js (adapter; COV increment honoured) |
+| SubscribeCOVProperty | Implemented | Multi-peer | BACnet4J, System.IO.BACnet, bacnet-js (adapter; COV increment honoured), legacy BACpypes (which accepts a property the object does not have) |
 | SubscribeCOVPropertyMultiple | Implemented | Codec evidence | `SubscribeCOVMultiple` is the managed subscription: subscribe, renewal and cancellation decoded by BACpypes3, the request and cancellation parsed by BACnet4J. No stack executes the subscription |
 | COVNotification / ConfirmedCOVNotification | Implemented | Multi-peer | |
 | COVNotificationMultiple | Implemented | Codec evidence | BACnet4J's encoder, confirmed and unconfirmed. Delivered whole (`SubscriptionEvent.Multiple`) with timestamp and time-of-change |
@@ -126,7 +126,7 @@ transport the client uses lives in package `bip` from v0.6.0
 
 | Capability | Client support | Interop evidence | Notes |
 |---|---|---|---|
-| DeviceCommunicationControl | Implemented | Multi-peer | Explicit opt-in. BACnet4J goes silent on disable; bacnet-stack refuses it; BACpypes3 acknowledges without enforcing it |
+| DeviceCommunicationControl | Implemented | Multi-peer | Explicit opt-in. BACnet4J and legacy BACpypes go silent on disable; bacnet-stack refuses it; BACpypes3 acknowledges without enforcing it |
 | ReinitializeDevice | Implemented | Multi-peer | Explicit opt-in |
 | PrivateTransfer | Implemented | Multi-peer | Confirmed path peer-dependent |
 | TextMessage | Implemented | Multi-peer | |

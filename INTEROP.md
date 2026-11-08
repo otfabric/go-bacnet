@@ -72,6 +72,7 @@ and scenarios that need a newer adapter release.
 | cB-Sigma (`cbsigma`) | bacnet `v0.2.0` device role, bacnet-sim `v0.1.0` | Go | Device; a simulator with fault switches ([below](#cb-sigma)) |
 | bacnet-js (`bacnet-js`) | `@bacnet-js/client` 3.3.2 | TypeScript (Node.js) | Device (adapter object model) and client; not in the pin yet ([below](#bacnet-js)) |
 | ulbios (`ulbios`) | ulbios/bacnet `227d6227` (no tags upstream) | Go | Device and client; Who-Is, ReadProperty and WriteProperty only ([below](#ulbios)). Not in the v0.13.0 pin: run against an image built from bacnet-interop, its tests skip with `ULBIOS_IMAGE=none` |
+| Legacy BACpypes (`bacpypes`) | PyPI `bacpypes` 0.19.0 | Python | Device (+ BBMD) and client; not in the pin yet ([below](#legacy-bacpypes)) |
 | bacnet-stack-router | bacnet-stack 1.6.1 `apps/router` | C | Native BACnet/IP router |
 | bip-router | — | Python | Topology aid written for the tests; not evidence about a stack |
 
@@ -206,7 +207,8 @@ The tests above drive peer devices with the go-bacnet client. The reverse
 direction runs a peer stack as a **client** against the go-bacnet server
 (bacnet-interop `docs/CLIENT_DRIVER_CONTRACT.md`).
 `TestBACnetStackClientAgainstServer`, `TestBACnet4JClientAgainstServer`,
-`TestBACpypes3ClientAgainstServer`, `TestBacnetJSClientAgainstServer` and `TestUlbiosClientAgainstServer` start the server in a Go container, once
+`TestBACpypes3ClientAgainstServer`, `TestBACpypesClientAgainstServer`,
+`TestBacnetJSClientAgainstServer` and `TestUlbiosClientAgainstServer` start the server in a Go container, once
 per scenario file, with the device fixture the file requires. They then run
 the client image in client mode on the same docker network, on Linux and
 Docker Desktop alike, because some clients bind to the device by Who-Is.
@@ -224,6 +226,7 @@ with each stack unmodified.
 | BACpypes3 0.0.110, `Application` | All pass | 35 pass; `ale.unknown-object` known difference | All pass | 15 pass; 5 known differences; the 3 `scovpm` scenarios unsupported |
 | bacnet-js 3.3.2, `BACnetClient` (image built from bacnet-interop branch `feat/bacnet-js`) | 21 pass; `wpm.unknown-object-second`, `wpm.wrong-type` known differences | 29 pass; 5 unsupported (`ale.nc1`, `ale.unknown-object`, `rle.nc1`, `co.not-creatable`, `wg.group1`), 2 not tested (their read-backs) | 2 pass; Read-BDT, Read-FDT, Write-BDT unsupported | 13 pass; 9 unsupported (segmented request, `scovpm`, filtered GetEnrollmentSummary, text messages), 1 not tested |
 | ulbios `227d6227` (local image, not in the pin) | 5 pass, 5 known differences, 13 unsupported | 4 known differences, 32 unsupported | 1 known difference, 4 unsupported | 2 known differences, 21 unsupported |
+| Legacy BACpypes 0.19.0, `Application` (local build) | All pass | All pass | All pass | 20 pass; the 3 `scovpm` scenarios unsupported (no APDU) |
 
 The known differences are limits of the client recorded in bacnet-interop
 PEER_SUPPORT.md, each with the octets the server sent:
@@ -387,6 +390,45 @@ application tags, and `GetEnrollmentSummary.decode` treats the primitive
 `[2]` event-state filter of clause 13.11.1.1.3 as an opening tag: `29 00`
 decodes by accident, `29 02` throws inside upstream and the request is
 dropped.
+
+## Legacy BACpypes
+
+`interop/bacpypes_test.go`, against bacnet-interop's `bacpypes` image
+(`BACPYPES_IMAGE`; a local build of the adapter, not yet in a release or the
+pin, so `make interop-pinned` passes "none" and the tests skip). PyPI
+`bacpypes` 0.19.0, the asyncore code base that BACpypes3 replaced: the same
+author, a separate package and repository. Agreement between it and
+BACpypes3 is weaker evidence than agreement with an unrelated stack.
+
+| Scenario | Result |
+|---|---|
+| Who-Is / I-Am (range, unicast, broadcast); Who-Has by name and identifier | ✅ |
+| ReadProperty, ReadPropertyMultiple, their errors | ✅ |
+| WriteProperty at a priority, relinquish | ✅ |
+| WriteProperty of the wrong datatype; to Description | ⚠ Reject invalid-tag; write-access-denied (read-only in BACpypes) |
+| WritePropertyMultiple, firstFailedWriteAttempt | A |
+| Segmented RPM answer, seven device/client window pairs, device Max APDU 128 | ✅ |
+| Segmented WPM request | ✅ |
+| Segmented answer at client Max APDU 1476 | ⚠ 1481-octet segments; see below |
+| SubscribeCOV confirmed and unconfirmed; SubscribeCOVProperty | ✅; ⚠ an unknown property is accepted |
+| AtomicReadFile / AtomicWriteFile, stream and record, 3000 octets segmented | ✅ (contents A) |
+| ReadRange by position and sequence number | A |
+| DCC disable-initiation (Who-Is still answered), password; DCC disable | ✅; ⚠ acknowledged, then silent until enable |
+| ReinitializeDevice; messaging services | A |
+| CreateObject, DeleteObject, event, alarm and enrollment summaries | ✅ Reject unrecognized-service |
+| Read-BDT, Read-FDT, Delete-FDT, FD registration, segmented answer as BBMD | ✅ |
+| FDT remaining time; Write-BDT; Delete-FDT of an absent entry | ⚠ TTL + 5 (clause J.5.2.3: + 30); NAK 0x0010; NAK 0x0050 |
+
+**Oversized segments (peer behaviour):** BACpypes fills each segment of a
+ComplexACK with Max-APDU-accepted octets of service data and puts the
+5-octet header in front. A raw-socket probe recorded segments of 1481, 1481
+and 62 octets for the 3000-octet file at 1476 advertised (1029, 1029 and 966
+at 1024). Clause 20.1.2.5 bounds an APDU by the receiver's
+Max_APDU_Length_Accepted. The go-bacnet client discards an APDU longer than
+`DecodeLimits.MaxAPDUSize` (default 1476), so the read times out;
+`TestBACpypesOversizedSegments` asserts the timeout at the default and the
+answer at a decode limit of 1497. The go-bacnet server already accepts such
+segments (BACpypes3 sends them too); the client does not.
 
 ## What the peer tests found
 

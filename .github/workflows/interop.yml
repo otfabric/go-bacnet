@@ -43,6 +43,7 @@ jobs:
             # New in bacnet-interop v0.14.0; "none" until the pin lists them.
             echo "bacnet_js=$(jq -r '.images["bacnet-js"] // "none"' "$pin")"
             echo "ulbios=$(jq -r '.images.ulbios // "none"' "$pin")"
+            echo "bacpypes=$(jq -r '.images.bacpypes // "none"' "$pin")"
           } >> "$GITHUB_OUTPUT"
 
       - name: Checkout bacnet-interop (pinned)
@@ -70,6 +71,7 @@ jobs:
             echo "CBSIGMA_IMAGE=${{ steps.pin.outputs.cbsigma }}"
             echo "BACNETJS_IMAGE=${{ steps.pin.outputs.bacnet_js }}"
             echo "ULBIOS_IMAGE=${{ steps.pin.outputs.ulbios }}"
+            echo "BACPYPES_IMAGE=${{ steps.pin.outputs.bacpypes }}"
           } | tee interop-evidence.txt
           echo "## Interop evidence (pinned)" >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
@@ -107,6 +109,7 @@ jobs:
           CBSIGMA_IMAGE: ${{ steps.pin.outputs.cbsigma }}
           BACNETJS_IMAGE: ${{ steps.pin.outputs.bacnet_js }}
           ULBIOS_IMAGE: ${{ steps.pin.outputs.ulbios }}
+          BACPYPES_IMAGE: ${{ steps.pin.outputs.bacpypes }}
         run: |
           set -euo pipefail
           docker pull "$BACNET_STACK_IMAGE"
@@ -114,7 +117,7 @@ jobs:
           docker pull "$BACNET4J_IMAGE"
           docker pull "$WORLDIETY_IMAGE"
           docker pull "$BIP_ROUTER_IMAGE"
-          for img in "$SYSIOBACNET_IMAGE" "$BACNET_STACK_ROUTER_IMAGE" "$CBSIGMA_IMAGE" "$BACNETJS_IMAGE" "$ULBIOS_IMAGE"; do
+          for img in "$SYSIOBACNET_IMAGE" "$BACNET_STACK_ROUTER_IMAGE" "$CBSIGMA_IMAGE" "$BACNETJS_IMAGE" "$ULBIOS_IMAGE" "$BACPYPES_IMAGE"; do
             [ "$img" = none ] || docker pull "$img"
           done
           # In-network re-exec uses golang:<go.mod major.minor>; pull before tests
@@ -148,6 +151,7 @@ jobs:
           CBSIGMA_IMAGE: ${{ steps.pin.outputs.cbsigma }}
           BACNETJS_IMAGE: ${{ steps.pin.outputs.bacnet_js }}
           ULBIOS_IMAGE: ${{ steps.pin.outputs.ulbios }}
+          BACPYPES_IMAGE: ${{ steps.pin.outputs.bacpypes }}
           GOWORK: "off"
           CI: "true"
         run: make interop INTEROP_TIMEOUT=60m
@@ -256,6 +260,7 @@ jobs:
           CBSIGMA_IMAGE: bacnet-interop-cbsigma:local
           BACNETJS_IMAGE: bacnet-interop-bacnet-js:local
           ULBIOS_IMAGE: bacnet-interop-ulbios:local
+          BACPYPES_IMAGE: bacnet-interop-bacpypes:local
           GOWORK: "off"
           CI: "true"
         run: make interop INTEROP_TIMEOUT=60m
