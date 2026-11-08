@@ -46,6 +46,10 @@ func forPeers(t *testing.T, peers []interopPeer, fn func(t *testing.T, dev devic
 	t.Helper()
 	for _, p := range peers {
 		t.Run(p.name, func(t *testing.T) {
+			if p.name == "ulbios" {
+				// New in bacnet-interop 0.14.0; "none" in an older pin.
+				requireAdapterVersion(t, p.image, ulbiosMinAdapterVersion)
+			}
 			dev := loadDeviceFixture(t)
 			peer := startPeer(t, p.image, p.name)
 			if peer.assertedByReexec {
@@ -268,7 +272,7 @@ func TestDeviceSnapshot(t *testing.T) {
 }
 
 func TestReadPropertyUnknownObjectError(t *testing.T) {
-	forPeers(t, withBacnetJS(allPeers()...), func(t *testing.T, _ deviceFixture, peer *peerHandle) {
+	forPeers(t, append(withBacnetJS(allPeers()...), ulbiosPeer()), func(t *testing.T, _ deviceFixture, peer *peerHandle) {
 		c := newClient(t)
 		ctx, cancel := withTimeout(t, 10*time.Second)
 		defer cancel()
@@ -290,7 +294,7 @@ func TestReadPropertyUnknownObjectError(t *testing.T) {
 // Device Object_Identifier is not: three of the four peers accept that write).
 // BACpypes3 0.0.110 accepts even this write, so it is left out.
 func TestWritePropertyReadOnlyError(t *testing.T) {
-	forPeers(t, withBacnetJS(stackPeer(), bacnet4jPeer(), worldietyPeer()), func(t *testing.T, dev deviceFixture, peer *peerHandle) {
+	forPeers(t, withBacnetJS(stackPeer(), bacnet4jPeer(), worldietyPeer(), ulbiosPeer()), func(t *testing.T, dev deviceFixture, peer *peerHandle) {
 		c := newClient(t)
 		ctx, cancel := withTimeout(t, 10*time.Second)
 		defer cancel()

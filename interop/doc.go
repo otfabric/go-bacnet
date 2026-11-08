@@ -23,6 +23,7 @@
 //	BACNET_STACK_ROUTER_IMAGE  default bacnet-interop-bacnet-stack-router:local ("none" skips its test)
 //	CBSIGMA_IMAGE            default bacnet-interop-cbsigma:local ("none" skips its tests)
 //	BACNETJS_IMAGE           default bacnet-interop-bacnet-js:local ("none" skips its tests)
+//	ULBIOS_IMAGE             default bacnet-interop-ulbios:local ("none" skips its tests)
 //	BACNET_INTEROP_REQUIRED  if non-empty, a missing image, fixture or Docker fails instead of skipping
 //	BACNET_INTEROP_SKIP      if non-empty, skip all peer tests
 //	BACNET_INTEROP_GO_IMAGE  Go image for the in-network re-execution on Docker Desktop
@@ -34,11 +35,10 @@
 // peer's network, compiling this working tree there.
 //
 // TestBACnetStackClientAgainstServer, TestBACnet4JClientAgainstServer,
-// TestBACpypes3ClientAgainstServer and TestBacnetJSClientAgainstServer reverse
-// the roles: the go-bacnet server
-// runs in a Go container and a peer image in client mode drives it
-// (bacnet-interop docs/CLIENT_DRIVER_CONTRACT.md). An image without client
-// mode is skipped.
+// TestBACpypes3ClientAgainstServer, TestBacnetJSClientAgainstServer and
+// TestUlbiosClientAgainstServer reverse the roles: the go-bacnet server runs
+// in a Go container and a peer image in client mode drives it (bacnet-interop
+// docs/CLIENT_DRIVER_CONTRACT.md). An image without client mode is skipped.
 //
 // The dissector tag (-tags=dissector, make dissector) checks client requests
 // and the server's replies against Wireshark's tshark.

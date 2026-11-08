@@ -71,6 +71,7 @@ and scenarios that need a newer adapter release.
 | System.IO.BACnet | 4.0.0 | C# | Device; the stack behind YABE |
 | cB-Sigma (`cbsigma`) | bacnet `v0.2.0` device role, bacnet-sim `v0.1.0` | Go | Device; a simulator with fault switches ([below](#cb-sigma)) |
 | bacnet-js (`bacnet-js`) | `@bacnet-js/client` 3.3.2 | TypeScript (Node.js) | Device (adapter object model) and client; not in the pin yet ([below](#bacnet-js)) |
+| ulbios (`ulbios`) | ulbios/bacnet `227d6227` (no tags upstream) | Go | Device and client; Who-Is, ReadProperty and WriteProperty only ([below](#ulbios)). Not in the v0.13.0 pin: run against an image built from bacnet-interop, its tests skip with `ULBIOS_IMAGE=none` |
 | bacnet-stack-router | bacnet-stack 1.6.1 `apps/router` | C | Native BACnet/IP router |
 | bip-router | — | Python | Topology aid written for the tests; not evidence about a stack |
 
@@ -205,7 +206,7 @@ The tests above drive peer devices with the go-bacnet client. The reverse
 direction runs a peer stack as a **client** against the go-bacnet server
 (bacnet-interop `docs/CLIENT_DRIVER_CONTRACT.md`).
 `TestBACnetStackClientAgainstServer`, `TestBACnet4JClientAgainstServer`,
-`TestBACpypes3ClientAgainstServer` and `TestBacnetJSClientAgainstServer` start the server in a Go container, once
+`TestBACpypes3ClientAgainstServer`, `TestBacnetJSClientAgainstServer` and `TestUlbiosClientAgainstServer` start the server in a Go container, once
 per scenario file, with the device fixture the file requires. They then run
 the client image in client mode on the same docker network, on Linux and
 Docker Desktop alike, because some clients bind to the device by Who-Is.
@@ -222,6 +223,7 @@ with each stack unmodified.
 | BACnet4J 6.1.1, `LocalDevice` | All pass | All pass | 2 pass; Read-BDT, Read-FDT, Write-BDT unsupported (no client for them) | 22 pass; `scovpm.unknown-object-second` known difference |
 | BACpypes3 0.0.110, `Application` | All pass | 35 pass; `ale.unknown-object` known difference | All pass | 15 pass; 5 known differences; the 3 `scovpm` scenarios unsupported |
 | bacnet-js 3.3.2, `BACnetClient` (image built from bacnet-interop branch `feat/bacnet-js`) | 21 pass; `wpm.unknown-object-second`, `wpm.wrong-type` known differences | 29 pass; 5 unsupported (`ale.nc1`, `ale.unknown-object`, `rle.nc1`, `co.not-creatable`, `wg.group1`), 2 not tested (their read-backs) | 2 pass; Read-BDT, Read-FDT, Write-BDT unsupported | 13 pass; 9 unsupported (segmented request, `scovpm`, filtered GetEnrollmentSummary, text messages), 1 not tested |
+| ulbios `227d6227` (local image, not in the pin) | 5 pass, 5 known differences, 13 unsupported | 4 known differences, 32 unsupported | 1 known difference, 4 unsupported | 2 known differences, 21 unsupported |
 
 The known differences are limits of the client recorded in bacnet-interop
 PEER_SUPPORT.md, each with the octets the server sent:
@@ -233,6 +235,18 @@ PEER_SUPPORT.md, each with the octets the server sent:
 - `scovpm.unknown-object-second`: BACnet4J decodes
   SubscribeCOVPropertyMultiple-Error as a CHOICE and drops the first failed
   subscription; error class and code match.
+- ulbios issues Who-Is (without limits), ReadProperty and WriteProperty
+  only; everything else is unsupported. It cannot decode a CharacterString
+  (`rp.device.object-name`, `rp.av1.object-name`), a ReadProperty-ACK
+  shorter than its own REAL one (`rp.av1.object-type`,
+  `rp.bv1.present-value`, the empty Recipient_List), and it decodes an
+  object identifier's type shifted left by two (`rp.av1.object-identifier`).
+  Its own WriteProperty encoder (`NewWriteProperty` of ulbios' root package, used without a priority)
+  carries a REAL followed by a NULL in the value; the server answers
+  property/invalid-data-type (`wp.av2.high`, `wp.av2.normal` in two
+  files), where the bacnet-stack and BACnet4J devices acknowledge it and the
+  BACpypes3 device sends Reject invalid-tag. Clause 15.9.1.1.3 has
+  one value of the property's datatype, so the server's answer stands.
 - BACpypes3 cannot decode a ChangeList-Error (`ale.unknown-object`), an
   Error of SubscribeCOVProperty (`scovp.unknown-object`,
   `scovp.unknown-property`) or an empty GetAlarmSummary or
@@ -293,6 +307,38 @@ Both are Go, by one author, independent of go-bacnet.
 | GetAlarmSummary, GetEventInformation, AcknowledgeAlarm | | ✅ (the answers are the adapter's) |
 | Foreign-device registration, Distribute-Broadcast-To-Network, its NAK | | ✅ |
 | ReinitializeDevice, DCC with a wrong password, time synchronization, unconfirmed text message and private transfer | | ✅ |
+
+## ulbios
+
+`interop/ulbios_test.go`, against bacnet-interop's `ulbios` image (new in
+v0.14.0, not yet in the pin: the runs below are against
+`bacnet-interop-ulbios:local` built from the bacnet-interop branch that adds
+it). [ulbios/bacnet](https://github.com/ulbios/bacnet) is a small MIT Go
+library, independent of go-bacnet, pinned by commit `227d6227` (it has no
+tags). Its parser knows Who-Is, I-Am, ReadProperty, WriteProperty,
+Simple-ACK, Complex-ACK and Error; its encoders REAL, NULL, one-octet
+Enumerated, two-octet Unsigned and object identifiers. It has no Reject or
+Abort encoder, so whatever it cannot decode or answer gets no reply; the
+adapter reports each such request (`"operation":"unanswered"`) and the
+tests assert that line.
+
+| Scenario | Result |
+|---|---|
+| Who-Is unicast without limits, with a range that holds the device, and two that do not | ✅ I-Am with max APDU 1024, no segmentation, vendor 999; none outside the range |
+| `Discover` by broadcast, then read through `DeviceObservation.Target()` | ✅ ulbios' broadcast I-Am (NPDU DNET 0xFFFF) |
+| ReadProperty of every property ulbios encodes: object identifier, type and list, vendor, max APDU, segmentation, protocol version, system status, present value (REAL and Enumerated), event state, units, relinquish default, priority array | ✅ Protocol_Version comes as `22 00 01`, two octets where clause 20.2.4 asks for one; go-bacnet decodes it |
+| ReadProperty errors: unknown object, unknown property (Object_Name, Status_Flags, Out_Of_Service: ulbios has no encoder for them) | ✅ |
+| WriteProperty at priority 8, without priority (slot 16), priority 1 (`WritePriority`), a Binary Value; the priority array afterwards | ✅ |
+| WriteProperty errors: unknown object, unknown property, write-access-denied, invalid-data-type (Enumerated, Unsigned, REAL to the wrong object), value-out-of-range | ✅ definite Errors, not outcome-unknown |
+| A property identifier above 255, an array index (read and write), NULL (relinquish), CharacterString, Boolean, priority 17 | ⚠ no reply: a read ends in `ErrTimeout`, a write as outcome-unknown. Clause 18.8 would have a Reject |
+| ReadPropertyMultiple, ReadRange, an unrecognized service; WritePropertyMultiple, SubscribeCOV, DeviceCommunicationControl, ReinitializeDevice | ⚠ no reply: `ErrTimeout`; outcome-unknown for the four that change state (client service policy). The device still answers afterwards |
+| An Object_List longer than the client's Max_APDU (fixture v9, 206 octets) | ⚠ no reply and no Abort (clause 5.4.5), so `ReadObjectList`, which falls back to element reads on an Abort only, ends in `ErrTimeout` |
+| A request with segmented-response-accepted set, with `ULBIOS_KEEP_SA=1` | ⚠ ulbios' parser does not recognise it (it compares the whole first octet); the same request without SA is answered. The default image clears the bit (adapter-shim) |
+
+The ⚠ rows are observations: the subtest asserts go-bacnet's outcome and
+the adapter's reason, then skips. Unknown-object and write-access-denied
+also run in the cross-peer `TestReadPropertyUnknownObjectError` and
+`TestWritePropertyReadOnlyError`.
 
 BACnet/IPv6 and BACnet/SC are out of scope: go-bacnet is a BACnet/IP (IPv4)
 client.

@@ -125,6 +125,13 @@ func TestBacnetJSClientAgainstServer(t *testing.T) {
 	runClientImage(t, bacnetJSImage(), bacnetJSAdapter, stackClientRuns)
 }
 
+// ulbios issues Who-Is, ReadProperty and WriteProperty only; every other
+// scenario is unsupported (bacnet-interop adapters/ulbios/README.md).
+func TestUlbiosClientAgainstServer(t *testing.T) {
+	requireAdapterVersion(t, ulbiosImage(), ulbiosMinAdapterVersion)
+	runClientImage(t, ulbiosImage(), "ulbios", stackClientRuns)
+}
+
 func runClientImage(t *testing.T, image, adapter string, runs []clientRun) {
 	if image == "none" {
 		t.Skipf("no %s image in the pinned bacnet-interop release", adapter)

@@ -66,8 +66,8 @@ transport the client uses lives in package `bip` from v0.6.0
 | Error / Reject / Abort | Implemented | Multi-peer | |
 | Segmented confirmed-request send | Implemented | Multi-peer | BACpypes3, cB-Sigma (both roles) and bacnet-js live; BACnet4J rejects. Segment 0 goes alone; the rest follow in the actual window of its SegmentACK (clause 5.4.4) |
 | Segmented ComplexACK receive | Implemented | Multi-peer | Window 1 by default (`WithSegmentWindow`); segment 0 is acknowledged at once, asserted at windows 1, 2, 4 and 16 against cB-Sigma and BACpypes3; a segment lost inside a window is NAKed and recovered (cB-Sigma simulator); Worldiety continuation deviation |
-| Timeout and cancellation | Implemented | Single-peer | An unused port, and BACnet4J muted with DeviceCommunicationControl; see API.md |
-| Outcome-unknown after send | Implemented | Single-peer | Unanswered write; policy registry covers all side-effecting services |
+| Timeout and cancellation | Implemented | Multi-peer | An unused port, BACnet4J muted with DeviceCommunicationControl, and ulbios, which answers nothing it cannot decode (ulbios image from bacnet-interop 0.14.0, run as a local build; not yet in the pin); see API.md |
+| Outcome-unknown after send | Implemented | Multi-peer | Unanswered write; policy registry covers all side-effecting services. ulbios leaves WriteProperty of NULL or CharacterString, WritePropertyMultiple, SubscribeCOV, DeviceCommunicationControl and ReinitializeDevice unanswered: each ends outcome-unknown |
 | Rejecting unserved confirmed requests | Implemented | Codec/unit | Reject / Abort to requests a client does not serve |
 | Event dispatcher (async) | Implemented | Codec/unit | Opt-in `WithEventDispatcher`; sync handler default |
 
@@ -83,8 +83,8 @@ transport the client uses lives in package `bip` from v0.6.0
 | ReadProperty of the Device wildcard | Implemented | Multi-peer | bacnet-stack, BACnet4J, bacnet-js (adapter); not implemented by BACpypes3 / Worldiety adapter |
 | ReadRangeAll pager | Implemented | Multi-peer | By position and by sequence number to LAST_ITEM; MaxItems/MaxBytes/MaxPages |
 | ReadPropertyMultipleBatched | Implemented | Multi-peer | Split by property and merge; shrink after Abort on bacnet-stack |
-| ReadObjectList / ReadPropertyList | Implemented | Multi-peer | Element-by-element fallback on bacnet-stack (47 entries, 50-octet APDU) |
-| WritePriority / RelinquishPriority | Implemented | Multi-peer | BACpypes3, BACnet4J, System.IO.BACnet, cB-Sigma (device role), bacnet-js (adapter) |
+| ReadObjectList / ReadPropertyList | Implemented | Multi-peer | Element-by-element fallback on bacnet-stack (47 entries, 50-octet APDU). The fallback needs the device's Abort: ulbios sends none for a list too long, and the read times out |
+| WritePriority / RelinquishPriority | Implemented | Multi-peer | BACpypes3, BACnet4J, System.IO.BACnet, cB-Sigma (device role), bacnet-js (adapter); WritePriority also ulbios (its NULL decoder refuses every relinquish) |
 | WritePropertyMultipleBatched | Implemented | Codec/unit | Batch Completed/Failed/Unknown |
 | AddListElement / RemoveListElement | Implemented | Multi-peer | Notification Class list |
 | CreateObject / DeleteObject | Implemented | Multi-peer | |

@@ -26,7 +26,13 @@ text messages, ConfirmedPrivateTransfer). A row names the clients whose
 scenarios for it pass. The bacnet-stack tools are built without
 segmentation and do not run `server-extended-v1`; a `known-difference` or
 `unsupported` result is a recorded limit of the client (bacnet-interop
-PEER_SUPPORT.md) and is not counted as evidence.
+PEER_SUPPORT.md) and is not counted as evidence. A fourth client,
+ulbios/bacnet (commit `227d6227`, bacnet-interop 0.14.0, run as a local
+image; not yet in the pin), issues Who-Is, ReadProperty and WriteProperty
+only: of `server-baseline-v1` it passes `who-is.global`,
+`rp.unknown-object`, `wp.av1.pv.priority8`, `wp.av1.pv.relinquish8` and
+`wp.unknown-object`; every other scenario of the four files is
+`known-difference` or `unsupported`.
 
 | Server support | Meaning |
 |---|---|
@@ -58,12 +64,12 @@ bacnet-stack agreeing with those codes is partly by construction.
 
 | Service | Clause | Support | Evidence | Notes |
 |---|---|---|---|---|
-| ReadProperty | 15.5 | Implemented | Internal e2e, Independent client (bacnet-stack, BACnet4J, BACpypes3, bacnet-js) | Array index; index 0 is the array length; Device wildcard instance 4194303 |
+| ReadProperty | 15.5 | Implemented | Internal e2e, Independent client (bacnet-stack, BACnet4J, BACpypes3, bacnet-js; ulbios for unknown-object only) | Array index; index 0 is the array length; Device wildcard instance 4194303 |
 | ReadPropertyMultiple | 15.7 | Implemented | Internal e2e, Independent client (bacnet-stack, BACnet4J, BACpypes3, bacnet-js) | ALL, REQUIRED, OPTIONAL; errors per property |
-| WriteProperty | 15.9 | Implemented | Internal e2e, Independent client (bacnet-stack, BACnet4J, BACpypes3, bacnet-js) | Priority 1..16; NULL relinquishes; `Hooks.BeforeWrite` can refuse |
+| WriteProperty | 15.9 | Implemented | Internal e2e, Independent client (bacnet-stack, BACnet4J, BACpypes3, bacnet-js, ulbios) | Priority 1..16; NULL relinquishes; `Hooks.BeforeWrite` can refuse. A value of two application values (ulbios' own REAL-then-NULL form) is property/invalid-data-type |
 | WritePropertyMultiple | 15.10 | Implemented | Internal e2e, Independent client (bacnet-stack, BACnet4J, BACpypes3, bacnet-js) | In order, stops at the first failure with WritePropertyMultiple-Error |
 | ReadRange | 15.8 | Implemented | Internal e2e, Independent client (bacnet-stack, BACnet4J, BACpypes3, bacnet-js) | Trend Log Log_Buffer by position, sequence number and time; the reply is the largest prefix that fits, with MORE_ITEMS. ReadProperty of Log_Buffer gives property/read-access-denied, as bacnet-stack (trendlog.c) |
-| Who-Is / I-Am | 16.10 | Implemented | Internal e2e, Independent client (bacnet-stack, BACnet4J, BACpypes3, bacnet-js) | Range filter; a Who-Is from a remote network is answered by remote broadcast through the router it came from |
+| Who-Is / I-Am | 16.10 | Implemented | Internal e2e, Independent client (bacnet-stack, BACnet4J, BACpypes3, bacnet-js, ulbios without range) | Range filter; a Who-Is from a remote network is answered by remote broadcast through the router it came from |
 | Who-Has / I-Have | 16.9 | Implemented | Internal e2e, Independent client (bacnet-stack, BACnet4J, BACpypes3, bacnet-js) | By name and by identifier |
 | WriteGroup | 15.11 | Hook | Internal e2e, Independent client (bacnet-stack, BACnet4J, BACpypes3) | `Hooks.WriteGroup` |
 
