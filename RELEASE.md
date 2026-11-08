@@ -16,7 +16,7 @@ Requires **Go 1.26+**. Interop pin unchanged: [`bacnet-interop` v0.12.0](https:/
 
 ### Added
 
-- `service.ReadRangeACK.LogMultipleRecords` (`service.LogMultipleRecord`, `LogMultipleValue`) and `EventLogRecords` (`service.EventLogRecord`), chosen by the object type of the answer; `LogDataChoice`; `DecodeLogMultipleRecords`, `DecodeEventLogRecords`, `EncodeLogMultipleRecord`, `EncodeEventLogRecord`. `EncodeReadRangeACK` encodes both.
+- `service.ReadRangeACK.LogMultipleRecords` (`service.LogMultipleRecord`, `LogMultipleValue`) and `EventLogRecords` (`service.EventLogRecord`), chosen by the object type of the answer; `LogDataChoice`; `DecodeLogMultipleRecords`, `DecodeEventLogRecords`, `EncodeLogMultipleRecord`, `EncodeEventLogRecord`. `EncodeReadRangeACK` encodes both, and `client.ReadRangeAll` collects them (`ReadRangePageResult.LogMultipleRecords`, `EventLogRecords`).
 - `bacnet.ObjectTypeEventLog` (25).
 - `testdata/captures`: the captures (`kargs/`, `icspcaps/`, and `*-non-ip/` for MS/TP, ARCNET and Ethernet), [README.md](testdata/captures/README.md) (sources, names, evidence classes, devices, differences, every file with its original name), [manifest.json](testdata/captures/manifest.json) (original name, URL, SHA256, class and its basis, devices, go-bacnet and Wireshark counts), SHA256SUMS, CACHED, the golden cases next to their captures and the machine-readable coverage report `report/`.
 - `make captures-fetch` downloads the two captures over 50 MB into a git-ignored cache; `make captures-extended` runs the corpus suites over them too; `make captures-generate` and `make captures-report` rebuild the corpus and the report.

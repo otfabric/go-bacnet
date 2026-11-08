@@ -457,3 +457,47 @@ func TestCorpusReplay(t *testing.T) {
 		}
 	}
 }
+
+// ReadRangeAll collects the Trend Log Multiple and Event Log records of
+// the recorded answers (trend-log-multiple, event-log).
+func TestCaptureReadRangeAllLogTypes(t *testing.T) {
+	gs, err := capture.LoadGolden()
+	if err != nil {
+		t.Fatal(err)
+	}
+	seen := map[bacnet.ObjectType]bool{}
+	for _, g := range gs {
+		msgs, err := g.Messages()
+		if err != nil {
+			t.Fatal(err)
+		}
+		txs, _ := capture.Transactions(msgs)
+		for _, tx := range txs {
+			req, resp := tx.Final()
+			r, ok := req.Service.(service.ReadRangeRequest)
+			ack, ok2 := resp.Service.(service.ReadRangeACK)
+			if !ok || !ok2 || len(tx.Response) > 1 || !ack.LastItem() || seen[r.Object.Type] ||
+				(r.Object.Type != bacnet.ObjectTypeTrendLogMultiple && r.Object.Type != bacnet.ObjectTypeEventLog) {
+				continue
+			}
+			// The recorded requests read the whole buffer (no range);
+			// ReadRangeAll pages by position and stops at the LAST_ITEM the
+			// recorded answer carries.
+			byPos := service.ReadRangeRequest{Object: r.Object, Property: r.Property, By: service.ReadRangeByPosition, ReferenceIndex: 1, Count: int32(min(ack.ItemCount, 1000))}
+			got, err := disruptedReplay(t, tx, func(ctx context.Context, c *Client, tg Target) (any, error) {
+				return c.ReadRangeAll(ctx, tg, byPos, ReadRangePageOptions{PageCount: byPos.Count})
+			}, tx.Response)
+			if err != nil {
+				t.Fatalf("%s: %v", g.ID, err)
+			}
+			page := got.(ReadRangePageResult)
+			if len(page.LogMultipleRecords) != len(ack.LogMultipleRecords) || len(page.EventLogRecords) != len(ack.EventLogRecords) || len(page.LogMultipleRecords)+len(page.EventLogRecords) == 0 {
+				t.Fatalf("%s: %+v", g.ID, page)
+			}
+			seen[r.Object.Type] = true
+		}
+	}
+	if !seen[bacnet.ObjectTypeTrendLogMultiple] || !seen[bacnet.ObjectTypeEventLog] {
+		t.Fatalf("replayed %v", seen)
+	}
+}
