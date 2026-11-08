@@ -424,11 +424,12 @@ ComplexACK with Max-APDU-accepted octets of service data and puts the
 5-octet header in front. A raw-socket probe recorded segments of 1481, 1481
 and 62 octets for the 3000-octet file at 1476 advertised (1029, 1029 and 966
 at 1024). Clause 20.1.2.5 bounds an APDU by the receiver's
-Max_APDU_Length_Accepted. The go-bacnet client discards an APDU longer than
-`DecodeLimits.MaxAPDUSize` (default 1476), so the read times out;
-`TestBACpypesOversizedSegments` asserts the timeout at the default and the
-answer at a decode limit of 1497. The go-bacnet server already accepts such
-segments (BACpypes3 sends them too); the client does not.
+Max_APDU_Length_Accepted. The go-bacnet client advertises 1476 and by
+default receives APDUs up to the datagram bound, as the server does
+(BACpypes3 sends such segments too), so the read succeeds;
+`TestBACpypesOversizedSegments` asserts the answer at the default limits and
+the timeout with `DecodeLimits.MaxAPDUSize` 1476, which drops the longer
+segments.
 
 ## What the peer tests found
 

@@ -632,33 +632,35 @@ func TestBACpypesFiles(t *testing.T) {
 // APDUs (recorded with a raw-socket probe of the bacnet-interop image:
 // segments of 1481, 1481 and 62 octets for the 3000-octet file; with 1024
 // advertised, 1029, 1029 and 966). Clause 20.1.2.5 bounds an APDU by the
-// receiver's Max_APDU_Length_Accepted. go-bacnet's client discards an APDU
-// longer than DecodeLimits.MaxAPDUSize (default 1476), so the answer times
-// out; with a decode limit of 1497 (the B/IP maximum NPDU) it is accepted.
+// receiver's Max_APDU_Length_Accepted. go-bacnet's client advertises 1476
+// and, by default, receives APDUs up to the datagram bound, so the answer is
+// read (the server does the same for BACpypes3's requests). With
+// DecodeLimits.MaxAPDUSize set to 1476 the client discards the longer
+// segments and the read times out: the peer behaviour stays visible.
 func TestBACpypesOversizedSegments(t *testing.T) {
 	_, peer := startBACpypesServerFixture(t)
 	if peer.assertedByReexec {
 		return
 	}
 	req := service.AtomicReadFileRequest{File: bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeFile, Instance: 3}, Access: service.FileAccessStream, Count: 3000}
-	t.Run("default-decode-limit", func(t *testing.T) {
+	t.Run("default-decode-limits", func(t *testing.T) {
 		c := newClientOpts(t)
-		ctx, cancel := withTimeout(t, 30*time.Second)
-		defer cancel()
-		_, err := c.AtomicReadFile(ctx, peer.target, req)
-		if !errors.Is(err, bacnet.ErrTimeout) {
-			t.Fatalf("ARF with 1481-octet segments: %v, want ErrTimeout (segments longer than the decode limit are dropped)", err)
-		}
-	})
-	t.Run("decode-limit-1497", func(t *testing.T) {
-		limits := bacnet.DefaultDecodeLimits()
-		limits.MaxAPDUSize = 1497
-		c := newClientOpts(t, client.WithDecodeLimits(limits), client.WithAdvertisedMaxAPDU(1476))
 		ctx, cancel := withTimeout(t, 30*time.Second)
 		defer cancel()
 		ack, err := c.AtomicReadFile(ctx, peer.target, req)
 		if err != nil || !bytes.Equal(ack.Data, fileThreeData()) {
-			t.Fatalf("ARF with a 1497-octet decode limit: %d octets, %v", len(ack.Data), err)
+			t.Fatalf("ARF with 1481-octet segments, default limits: %d octets, %v", len(ack.Data), err)
+		}
+	})
+	t.Run("strict-decode-limit-1476", func(t *testing.T) {
+		limits := bacnet.DefaultDecodeLimits()
+		limits.MaxAPDUSize = 1476
+		c := newClientOpts(t, client.WithDecodeLimits(limits))
+		ctx, cancel := withTimeout(t, 30*time.Second)
+		defer cancel()
+		_, err := c.AtomicReadFile(ctx, peer.target, req)
+		if !errors.Is(err, bacnet.ErrTimeout) {
+			t.Fatalf("ARF with 1481-octet segments, MaxAPDUSize 1476: %v, want ErrTimeout (segments longer than the decode limit are dropped)", err)
 		}
 	})
 }

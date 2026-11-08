@@ -10,6 +10,11 @@ import (
 	"github.com/otfabric/go-bacnet/apdu"
 )
 
+// maxEncodableAPDU is the largest Max_APDU_Length_Accepted the request header
+// encodes (clause 20.1.2.5, code 5). Without WithAdvertisedMaxAPDU the client
+// advertises DecodeLimits.MaxAPDUSize up to this size.
+const maxEncodableAPDU = 1476
+
 // validateAdvertisedMaxAPDU checks advertised vs parser MaxAPDU at construction.
 // advertised 0 means "use parserMax". parserMax must be positive after Normalize.
 func validateAdvertisedMaxAPDU(advertised uint16, parserMax int) error {
@@ -21,7 +26,7 @@ func validateAdvertisedMaxAPDU(advertised uint16, parserMax int) error {
 	}
 	effective := advertised
 	if effective == 0 {
-		effective = uint16(parserMax)
+		effective = uint16(min(parserMax, maxEncodableAPDU))
 	}
 	if effective < 50 {
 		return fmt.Errorf("%w: advertised MaxAPDU %d below BACnet minimum 50", bacnet.ErrMalformed, effective)
@@ -45,7 +50,7 @@ func (c *Client) advertisedMaxAPDU() (uint16, error) {
 		if size < 0 {
 			return 0, fmt.Errorf("%w: DecodeLimits.MaxAPDUSize %d is negative", bacnet.ErrMalformed, size)
 		}
-		localMax = uint16(size)
+		localMax = uint16(min(size, maxEncodableAPDU))
 	}
 	if localMax == 0 {
 		localMax = 1476

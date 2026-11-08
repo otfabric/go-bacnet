@@ -73,7 +73,7 @@ type Diagnostic struct {
 func defaultConfig() config {
 	return config{
 		port:                 bip.DefaultPort,
-		limits:               bacnet.DefaultDecodeLimits(),
+		limits:               defaultLimits(),
 		clock:                clock.Real{},
 		diag:                 diag.Discard{},
 		apduTimeout:          3 * time.Second,
@@ -140,13 +140,31 @@ func WithPort(port int) Option {
 	}
 }
 
-// WithDecodeLimits sets parser/reassembly limits.
+// defaultLimits are bacnet.DefaultDecodeLimits with no APDU bound below the
+// datagram bound, as in the server. Max_APDU_Length_Accepted is what peers
+// are told to send (at most 1476 octets by default, the largest size the
+// field encodes, clause 20.1.2.5), but some exceed it: legacy BACpypes 0.19.0
+// fills each segment of a ComplexACK with Max APDU octets of service data and
+// adds the 5-octet header, so its segments are 1481 octets for a 1476-octet
+// requester. The datagram bound already limits the allocation.
+func defaultLimits() bacnet.DecodeLimits {
+	l := bacnet.DefaultDecodeLimits()
+	l.MaxAPDUSize = l.MaxDatagramSize
+	return l
+}
+
+// WithDecodeLimits sets parser/reassembly limits. The default is
+// bacnet.DefaultDecodeLimits with MaxAPDUSize raised to MaxDatagramSize, so
+// an APDU longer than the advertised Max APDU is still received; set
+// MaxAPDUSize to drop such frames. Fields left zero take the values of
+// bacnet.DefaultDecodeLimits (MaxAPDUSize 1476).
 func WithDecodeLimits(l bacnet.DecodeLimits) Option {
 	return func(c *config) { c.limits = l }
 }
 
 // WithAdvertisedMaxAPDU sets the Max APDU length accepted field in confirmed
-// requests. When 0 (default), the client advertises DecodeLimits.MaxAPDUSize.
+// requests. When 0 (default), the client advertises DecodeLimits.MaxAPDUSize,
+// at most 1476 octets (the largest encodable size).
 //
 // Validated at New: 0 or ≥ 50, encodable as a BACnet MaxAPDU code, and not
 // greater than DecodeLimits.MaxAPDUSize. Non-discrete values floor to the next
