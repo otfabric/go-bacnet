@@ -87,6 +87,30 @@ func (o *bvlcOps) deliver(msg bvlc.Message, from bip.Endpoint) bool {
 	return true
 }
 
+// claimsResult reports whether a BVLC-Result from from belongs to the
+// pending management operation rather than to this client's own
+// foreign-device registration with the same BBMD. Annex J.2.1.1 gives each
+// operation its own NAK code; Register-Foreign-Device-NAK (0x0030) and
+// Distribute-Broadcast-To-Network-NAK (0x0060) never answer a table
+// operation. A read succeeds with its ACK (Annex J.2.4, J.2.8), so a
+// successful-completion Result (0x0000) only answers a write or delete.
+func (o *bvlcOps) claimsResult(code uint16, from bip.Endpoint) bool {
+	o.mu.Lock()
+	p := o.pending
+	o.mu.Unlock()
+	if p == nil || !from.Equal(p.peer) {
+		return false
+	}
+	switch code {
+	case bvlc.ResultSuccessfulCompletion:
+		return p.want == bvlc.FunctionResult
+	case bvlc.ResultRegisterForeignDeviceNAK, bvlc.ResultDistributeBroadcastToNetworkNAK:
+		return false
+	default:
+		return true
+	}
+}
+
 func (c *Client) bvlcExchange(ctx context.Context, peer bip.Endpoint, req bvlc.Message, wantAck bvlc.Function, op string) (bvlc.Message, error) {
 	if c.isClosed() {
 		return bvlc.Message{}, bacnet.ErrClosed
@@ -195,6 +219,13 @@ func (c *Client) handleBVLCManagement(msg bvlc.Message, from bip.Endpoint) bool 
 	case bvlc.FunctionResult,
 		bvlc.FunctionReadBroadcastDistributionTableAck,
 		bvlc.FunctionReadForeignDeviceTableAck:
+		// While a registration with this BBMD is pending, a Result the
+		// pending table operation cannot own is the registration's.
+		if msg.Function == bvlc.FunctionResult && c.fd != nil &&
+			c.fd.attemptPendingFrom(from) && !c.bvlcOps.claimsResult(msg.ResultCode, from) {
+			c.fd.handleResult(msg.ResultCode, from)
+			return true
+		}
 		if c.bvlcOps.deliver(msg, from) {
 			return true
 		}

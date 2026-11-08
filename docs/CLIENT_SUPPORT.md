@@ -8,7 +8,7 @@ transport the client uses lives in package `bip` from v0.6.0
 (`client.Transport` is an alias); the client's behaviour is unchanged.
 
 **Library version:** v0.6.0 (previous release [v0.5.0](https://github.com/otfabric/go-bacnet/releases/tag/v0.5.0))  
-**Interop pin:** bacnet-interop v0.13.0 (six peer stacks; see [INTEROP.md](../INTEROP.md))
+**Interop pin:** bacnet-interop v0.13.0 (six peer stacks; see [INTEROP.md](../INTEROP.md)). bacnet-js (@bacnet-js/client 3.3.2) is evidence from an image built from bacnet-interop branch `feat/bacnet-js`, not yet in the pin
 
 | Client support | Meaning |
 |---|---|
@@ -64,7 +64,7 @@ transport the client uses lives in package `bip` from v0.6.0
 | Unconfirmed requests | Implemented | Multi-peer | |
 | SimpleACK / ComplexACK | Implemented | Multi-peer | |
 | Error / Reject / Abort | Implemented | Multi-peer | |
-| Segmented confirmed-request send | Implemented | Multi-peer | BACpypes3 and cB-Sigma (both roles) live; BACnet4J rejects. Segment 0 goes alone; the rest follow in the actual window of its SegmentACK (clause 5.4.4) |
+| Segmented confirmed-request send | Implemented | Multi-peer | BACpypes3, cB-Sigma (both roles) and bacnet-js live; BACnet4J rejects. Segment 0 goes alone; the rest follow in the actual window of its SegmentACK (clause 5.4.4) |
 | Segmented ComplexACK receive | Implemented | Multi-peer | Window 1 by default (`WithSegmentWindow`); segment 0 is acknowledged at once, asserted at windows 1, 2, 4 and 16 against cB-Sigma and BACpypes3; a segment lost inside a window is NAKed and recovered (cB-Sigma simulator); Worldiety continuation deviation |
 | Timeout and cancellation | Implemented | Single-peer | An unused port, and BACnet4J muted with DeviceCommunicationControl; see API.md |
 | Outcome-unknown after send | Implemented | Single-peer | Unanswered write; policy registry covers all side-effecting services |
@@ -79,12 +79,12 @@ transport the client uses lives in package `bip` from v0.6.0
 | ReadPropertyMultiple | Implemented | Multi-peer | |
 | WriteProperty | Implemented | Multi-peer | Priority + NULL relinquish |
 | WritePropertyMultiple | Implemented | Multi-peer | First-failed Error model |
-| ReadRange | Implemented | Multi-peer | By position, sequence number and time on bacnet-stack, BACnet4J and the cB-Sigma simulator; typed LogRecord. Trend Log Multiple (LogMultipleRecords) and Event Log (EventLogRecords) answers: recorded traffic of a PolarSoft and an Automated Logic device only ([testdata/captures](../testdata/captures/README.md)) |
-| ReadProperty of the Device wildcard | Implemented | Multi-peer | bacnet-stack, BACnet4J; not implemented by BACpypes3 / Worldiety adapter |
+| ReadRange | Implemented | Multi-peer | By position, sequence number and time on bacnet-stack, BACnet4J, the cB-Sigma simulator and bacnet-js (adapter selection); typed LogRecord. Trend Log Multiple (LogMultipleRecords) and Event Log (EventLogRecords) answers: recorded traffic of a PolarSoft and an Automated Logic device only ([testdata/captures](../testdata/captures/README.md)) |
+| ReadProperty of the Device wildcard | Implemented | Multi-peer | bacnet-stack, BACnet4J, bacnet-js (adapter); not implemented by BACpypes3 / Worldiety adapter |
 | ReadRangeAll pager | Implemented | Multi-peer | By position and by sequence number to LAST_ITEM; MaxItems/MaxBytes/MaxPages |
 | ReadPropertyMultipleBatched | Implemented | Multi-peer | Split by property and merge; shrink after Abort on bacnet-stack |
 | ReadObjectList / ReadPropertyList | Implemented | Multi-peer | Element-by-element fallback on bacnet-stack (47 entries, 50-octet APDU) |
-| WritePriority / RelinquishPriority | Implemented | Multi-peer | BACpypes3, BACnet4J, System.IO.BACnet, cB-Sigma (device role) |
+| WritePriority / RelinquishPriority | Implemented | Multi-peer | BACpypes3, BACnet4J, System.IO.BACnet, cB-Sigma (device role), bacnet-js (adapter) |
 | WritePropertyMultipleBatched | Implemented | Codec/unit | Batch Completed/Failed/Unknown |
 | AddListElement / RemoveListElement | Implemented | Multi-peer | Notification Class list |
 | CreateObject / DeleteObject | Implemented | Multi-peer | |
@@ -102,13 +102,13 @@ transport the client uses lives in package `bip` from v0.6.0
 | Capability | Client support | Interop evidence | Notes |
 |---|---|---|---|
 | SubscribeCOV | Implemented | Multi-peer | Subscribe / notify / cancel / renew |
-| SubscribeCOVProperty | Implemented | Multi-peer | BACnet4J, System.IO.BACnet |
+| SubscribeCOVProperty | Implemented | Multi-peer | BACnet4J, System.IO.BACnet, bacnet-js (adapter; COV increment honoured) |
 | SubscribeCOVPropertyMultiple | Implemented | Codec evidence | `SubscribeCOVMultiple` is the managed subscription: subscribe, renewal and cancellation decoded by BACpypes3, the request and cancellation parsed by BACnet4J. No stack executes the subscription |
 | COVNotification / ConfirmedCOVNotification | Implemented | Multi-peer | |
 | COVNotificationMultiple | Implemented | Codec evidence | BACnet4J's encoder, confirmed and unconfirmed. Delivered whole (`SubscriptionEvent.Multiple`) with timestamp and time-of-change |
 | EventNotification receive | Implemented | Multi-peer | Practical NotificationParameters typed (incl. life-safety/extended) |
 | AcknowledgeAlarm | Implemented | Multi-peer | |
-| GetAlarmSummary | Implemented | Multi-peer | |
+| GetAlarmSummary | Implemented | Multi-peer | bacnet-js's ACK with an alarm is refused: its encoder uses context tags where clause 13.10.2 has application tags (docs/COMPATIBILITY.md) |
 | GetEnrollmentSummary | Implemented | Multi-peer | BACnet4J executes it; BACpypes3 decodes every filter (adapter handler). The enrollment filter (`EnrollmentFilter`, BACnetRecipientProcess) is encoded since the server gained its decoder; it is covered by unit round trips, the go-bacnet server and the Wireshark dissector, not by the peer scenarios |
 | GetEventInformation | Implemented | Multi-peer | |
 
@@ -119,7 +119,7 @@ transport the client uses lives in package `bip` from v0.6.0
 | AtomicReadFile stream / record | Implemented | Multi-peer | |
 | AtomicWriteFile stream / record | Implemented | Multi-peer | |
 | ReadFileStream | Implemented | Multi-peer | Chunked read to end of file |
-| ReadFileRecords | Implemented | Codec/unit | |
+| ReadFileRecords | Implemented | Multi-peer | System.IO.BACnet and bacnet-js record files |
 | WriteFileStream | Implemented | Multi-peer | Chunked write + readback; per-chunk outcome-unknown unit-tested |
 
 ## Device management and advanced services
@@ -137,7 +137,7 @@ transport the client uses lives in package `bip` from v0.6.0
 | AuthRequest | Partial | Codec/unit | Opaque payload; no stable stack implements the service: all five peers refuse it (three Reject unrecognized-service, Worldiety Reject other, BACpypes3 does not answer) |
 | LifeSafetyOperation | Implemented | Multi-peer | |
 | VT-Open / VT-Close / VT-Data | Partial | Codec evidence | BACpypes3 decodes the requests and encodes the VT-Open and VT-Data ACKs, which the client decodes; no session anywhere; inbound VT-Data is not handled |
-| device.ReadSnapshot | Implemented | Multi-peer | All five peers |
+| device.ReadSnapshot | Implemented | Multi-peer | All five peers, and bacnet-js |
 
 ## Explicitly out of scope
 

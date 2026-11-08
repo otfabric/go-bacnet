@@ -8,12 +8,14 @@ Behavioural contracts are in [API.md](../API.md#server) and
 [CLIENT_SUPPORT.md](CLIENT_SUPPORT.md).
 
 **Library version:** v0.6.0  
-**Independent clients:** three, each an unmodified upstream stack in a
+**Independent clients:** four, each an unmodified upstream stack in a
 bacnet-interop client-mode image (bacnet-interop v0.12.0 and later; pin v0.13.0,
 `interop/server_clients_test.go`,
 [INTEROP.md](../INTEROP.md#independent-clients-against-the-server)):
-the bacnet-stack 1.6.1 command-line tools, BACnet4J 6.1.1 and BACpypes3
-0.0.110. They run four scenario files against the server:
+the bacnet-stack 1.6.1 command-line tools, BACnet4J 6.1.1, BACpypes3
+0.0.110 and @bacnet-js/client 3.3.2 (bacnet-js; its image is not in the pin
+yet, the evidence is from an image built from bacnet-interop branch
+`feat/bacnet-js`). They run four scenario files against the server:
 `server-baseline-v1` (discovery, reads and writes), `server-services-v1`
 (COV, ReadRange, device management, files, lists, object creation, alarms,
 time synchronization, private transfer, WriteGroup), `server-bbmd-v1` (the
@@ -56,13 +58,13 @@ bacnet-stack agreeing with those codes is partly by construction.
 
 | Service | Clause | Support | Evidence | Notes |
 |---|---|---|---|---|
-| ReadProperty | 15.5 | Implemented | Internal e2e, Independent client (bacnet-stack, BACnet4J, BACpypes3) | Array index; index 0 is the array length; Device wildcard instance 4194303 |
-| ReadPropertyMultiple | 15.7 | Implemented | Internal e2e, Independent client (bacnet-stack, BACnet4J, BACpypes3) | ALL, REQUIRED, OPTIONAL; errors per property |
-| WriteProperty | 15.9 | Implemented | Internal e2e, Independent client (bacnet-stack, BACnet4J, BACpypes3) | Priority 1..16; NULL relinquishes; `Hooks.BeforeWrite` can refuse |
-| WritePropertyMultiple | 15.10 | Implemented | Internal e2e, Independent client (bacnet-stack, BACnet4J, BACpypes3) | In order, stops at the first failure with WritePropertyMultiple-Error |
-| ReadRange | 15.8 | Implemented | Internal e2e, Independent client (bacnet-stack, BACnet4J, BACpypes3) | Trend Log Log_Buffer by position, sequence number and time; the reply is the largest prefix that fits, with MORE_ITEMS. ReadProperty of Log_Buffer gives property/read-access-denied, as bacnet-stack (trendlog.c) |
-| Who-Is / I-Am | 16.10 | Implemented | Internal e2e, Independent client (bacnet-stack, BACnet4J, BACpypes3) | Range filter; a Who-Is from a remote network is answered by remote broadcast through the router it came from |
-| Who-Has / I-Have | 16.9 | Implemented | Internal e2e, Independent client (bacnet-stack, BACnet4J, BACpypes3) | By name and by identifier |
+| ReadProperty | 15.5 | Implemented | Internal e2e, Independent client (bacnet-stack, BACnet4J, BACpypes3, bacnet-js) | Array index; index 0 is the array length; Device wildcard instance 4194303 |
+| ReadPropertyMultiple | 15.7 | Implemented | Internal e2e, Independent client (bacnet-stack, BACnet4J, BACpypes3, bacnet-js) | ALL, REQUIRED, OPTIONAL; errors per property |
+| WriteProperty | 15.9 | Implemented | Internal e2e, Independent client (bacnet-stack, BACnet4J, BACpypes3, bacnet-js) | Priority 1..16; NULL relinquishes; `Hooks.BeforeWrite` can refuse |
+| WritePropertyMultiple | 15.10 | Implemented | Internal e2e, Independent client (bacnet-stack, BACnet4J, BACpypes3, bacnet-js) | In order, stops at the first failure with WritePropertyMultiple-Error |
+| ReadRange | 15.8 | Implemented | Internal e2e, Independent client (bacnet-stack, BACnet4J, BACpypes3, bacnet-js) | Trend Log Log_Buffer by position, sequence number and time; the reply is the largest prefix that fits, with MORE_ITEMS. ReadProperty of Log_Buffer gives property/read-access-denied, as bacnet-stack (trendlog.c) |
+| Who-Is / I-Am | 16.10 | Implemented | Internal e2e, Independent client (bacnet-stack, BACnet4J, BACpypes3, bacnet-js) | Range filter; a Who-Is from a remote network is answered by remote broadcast through the router it came from |
+| Who-Has / I-Have | 16.9 | Implemented | Internal e2e, Independent client (bacnet-stack, BACnet4J, BACpypes3, bacnet-js) | By name and by identifier |
 | WriteGroup | 15.11 | Hook | Internal e2e, Independent client (bacnet-stack, BACnet4J, BACpypes3) | `Hooks.WriteGroup` |
 
 ## Lists and objects
@@ -70,24 +72,24 @@ bacnet-stack agreeing with those codes is partly by construction.
 | Service | Clause | Support | Evidence | Notes |
 |---|---|---|---|---|
 | AddListElement / RemoveListElement | 15.1, 15.2 | Implemented | Internal e2e, Independent client (bacnet-stack, BACnet4J, BACpypes3) | Notification Class Recipient_List; atomic; ChangeList-Error names the first failed element. bacnet-stack `bacrle` registers its reply handlers for AddListElement and prints nothing for RemoveListElement (apps/remove-list-element/main.c); the removal is verified by reading Recipient_List back with `bacrp` |
-| CreateObject | 15.3 | Implemented | Internal e2e, Independent client (bacnet-stack, BACnet4J, BACpypes3) | Types with a registered `object.Factory`; initial values written in order and the object removed when one fails (bacnet-stack, create_object.c) |
-| DeleteObject | 15.4 | Implemented | Internal e2e, Independent client (bacnet-stack, BACnet4J, BACpypes3) | Objects that implement `object.Deletable`; never the Device; `Hooks.BeforeDelete`; COV subscriptions on the object end |
+| CreateObject | 15.3 | Implemented | Internal e2e, Independent client (bacnet-stack, BACnet4J, BACpypes3, bacnet-js) | Types with a registered `object.Factory`; initial values written in order and the object removed when one fails (bacnet-stack, create_object.c) |
+| DeleteObject | 15.4 | Implemented | Internal e2e, Independent client (bacnet-stack, BACnet4J, BACpypes3, bacnet-js) | Objects that implement `object.Deletable`; never the Device; `Hooks.BeforeDelete`; COV subscriptions on the object end |
 
 ## Files
 
 | Service | Clause | Support | Evidence | Notes |
 |---|---|---|---|---|
-| AtomicReadFile | 14.1 | Implemented | Internal e2e, Independent client (bacnet-stack, BACnet4J, BACpypes3) (stream) | Stream and record access, in-memory File object or an `object.FileAccessor` |
-| AtomicWriteFile | 14.2 | Implemented | Internal e2e, Independent client (bacnet-stack, BACnet4J, BACpypes3) | Start −1 appends. Past the end a stream file is extended with zero octets and records are appended after the last one, within the file's maximum size, as bacnet-stack's storage does (ports/posix/bacfile-posix.c) |
+| AtomicReadFile | 14.1 | Implemented | Internal e2e, Independent client (bacnet-stack, BACnet4J, BACpypes3, bacnet-js) (stream) | Stream and record access, in-memory File object or an `object.FileAccessor` |
+| AtomicWriteFile | 14.2 | Implemented | Internal e2e, Independent client (bacnet-stack, BACnet4J, BACpypes3, bacnet-js) | Start −1 appends. Past the end a stream file is extended with zero octets and records are appended after the last one, within the file's maximum size, as bacnet-stack's storage does (ports/posix/bacfile-posix.c) |
 
 ## Change of value
 
 | Service | Clause | Support | Evidence | Notes |
 |---|---|---|---|---|
-| SubscribeCOV | 13.14 | Implemented | Internal e2e, Independent client (bacnet-stack, BACnet4J, BACpypes3) | Lifetime, cancellation, confirmed and unconfirmed notifications |
-| SubscribeCOVProperty | 13.15 | Implemented | Internal e2e, Unit, Independent client (BACnet4J, BACpypes3) | COV increment; Status_Flags carried when the object has it |
+| SubscribeCOV | 13.14 | Implemented | Internal e2e, Independent client (bacnet-stack, BACnet4J, BACpypes3, bacnet-js) | Lifetime, cancellation, confirmed and unconfirmed notifications |
+| SubscribeCOVProperty | 13.15 | Implemented | Internal e2e, Unit, Independent client (BACnet4J, BACpypes3, bacnet-js) | COV increment; Status_Flags carried when the object has it |
 | SubscribeCOVPropertyMultiple | 13.16 | Implemented | Internal e2e, Unit, Independent client (BACnet4J) | One subscription per subscriber and process identifier; the error names the first failed subscription |
-| COV notifications | 13.6, 13.7, 13.17 | Implemented | Internal e2e, Unit, Independent client (bacnet-stack, BACnet4J, BACpypes3) (unconfirmed) | Confirmed notifications use the server's own requester with the configured APDU timeout and retries |
+| COV notifications | 13.6, 13.7, 13.17 | Implemented | Internal e2e, Unit, Independent client (bacnet-stack, BACnet4J, BACpypes3, bacnet-js) (unconfirmed) | Confirmed notifications use the server's own requester with the configured APDU timeout and retries |
 | Active_COV_Subscriptions | 12.11 | Implemented | Internal e2e, Unit | One entry per monitored property |
 
 Subscriptions are bounded (`WithCOVLimits`, default 256). With a lifetime
@@ -98,12 +100,12 @@ refused.
 
 | Service | Clause | Support | Evidence | Notes |
 |---|---|---|---|---|
-| Intrinsic reporting | 13.3 | Partial | Internal e2e, Unit, Independent client (bacnet-stack, BACnet4J, BACpypes3) (analog high limit) | Analog points: out-of-range (high and low limit, deadband, Limit_Enable). Binary points: change-of-state on Alarm_Value. Multi-state Input and Value: change-of-state on Alarm_Values (13.3.2), Fault_Values set Reliability to multi-state-fault (13.4.5). Any point: change-of-reliability to FAULT. Time_Delay holds. Transition rules follow bacnet-stack (ai.c, bi.c) |
+| Intrinsic reporting | 13.3 | Partial | Internal e2e, Unit, Independent client (bacnet-stack, BACnet4J, BACpypes3, bacnet-js) (analog high limit) | Analog points: out-of-range (high and low limit, deadband, Limit_Enable). Binary points: change-of-state on Alarm_Value. Multi-state Input and Value: change-of-state on Alarm_Values (13.3.2), Fault_Values set Reliability to multi-state-fault (13.4.5). Any point: change-of-reliability to FAULT. Time_Delay holds. Transition rules follow bacnet-stack (ai.c, bi.c) |
 | Event notifications | 13.8, 13.9 | Implemented | Internal e2e | Routed by the Notification Class Recipient_List (valid days, times, transitions). A device recipient is resolved from received I-Am; while it is unknown the server sends a Who-Is and skips that notification (bacnet-stack, nc.c). A remote-station recipient is sent through the router learnt from received SNET and I-Am-Router-To-Network (6.4.2); while none is known the server sends Who-Is-Router-To-Network (6.4.1), skips a confirmed notification and sends an unconfirmed one as a local broadcast with DNET |
-| AcknowledgeAlarm | 13.5 | Implemented | Internal e2e, Independent client (bacnet-stack, BACnet4J, BACpypes3) | Time-stamp and event-state checks as bacnet-stack (ai.c); the ack notification follows the SimpleACK |
-| GetAlarmSummary | 13.10 | Implemented | Internal e2e, Independent client (BACnet4J, BACpypes3) | Objects in an off-normal state with notify type alarm |
-| GetEventInformation | 13.12 | Implemented | Internal e2e, Independent client (bacnet-stack, BACnet4J, BACpypes3) | Paging by last received object; MoreEvents when truncated to the reply budget. bacnet-stack `bacge` cannot decode an empty list of event summaries (it fails the same way against a bacnet-stack device), so only a non-empty reply is checked with it |
-| GetEnrollmentSummary | 13.11 | Implemented | Internal e2e, Unit, Independent client (BACnet4J, BACpypes3) | All filters. The enrollment filter keeps objects whose Notification Class Recipient_List holds that recipient (same device, or same network and MAC) and process identifier |
+| AcknowledgeAlarm | 13.5 | Implemented | Internal e2e, Independent client (bacnet-stack, BACnet4J, BACpypes3, bacnet-js) | Time-stamp and event-state checks as bacnet-stack (ai.c); the ack notification follows the SimpleACK |
+| GetAlarmSummary | 13.10 | Implemented | Internal e2e, Independent client (BACnet4J, BACpypes3, bacnet-js) | Objects in an off-normal state with notify type alarm |
+| GetEventInformation | 13.12 | Implemented | Internal e2e, Independent client (bacnet-stack, BACnet4J, BACpypes3, bacnet-js) | Paging by last received object; MoreEvents when truncated to the reply budget. bacnet-stack `bacge` cannot decode an empty list of event summaries (it fails the same way against a bacnet-stack device), so only a non-empty reply is checked with it |
+| GetEnrollmentSummary | 13.11 | Implemented | Internal e2e, Unit, Independent client (BACnet4J, BACpypes3, bacnet-js: unfiltered) | All filters. The enrollment filter keeps objects whose Notification Class Recipient_List holds that recipient (same device, or same network and MAC) and process identifier |
 
 Limits:
 
@@ -126,10 +128,10 @@ Limits:
 
 | Service | Clause | Support | Evidence | Notes |
 |---|---|---|---|---|
-| DeviceCommunicationControl | 16.1 | Implemented | Internal e2e, Unit, Independent client (bacnet-stack, BACnet4J, BACpypes3) | Enable, disable-initiation, duration, password. DISABLE is refused with services/service-request-denied from protocol revision 20 (bacnet-stack, h_dcc.c). Who-Is is answered while initiation is disabled |
-| ReinitializeDevice | 16.4 | Implemented | Internal e2e, Unit, Independent client (bacnet-stack, BACnet4J, BACpypes3) | Password; `Hooks.Reinitialize` performs the action; without it COLDSTART, WARMSTART and ACTIVATE_CHANGES are acknowledged and START_BACKUP to ABORT_RESTORE get services/service-request-denied (no backup procedure), as the recorded WattStopper LMBC-300 answers ([testdata/captures](../testdata/captures/README.md)) |
-| TimeSynchronization / UTCTimeSynchronization | 16.7, 16.8 | Hook | Internal e2e, Unit, Independent client (bacnet-stack, BACnet4J, BACpypes3) | `Hooks.TimeSync` |
-| ConfirmedPrivateTransfer / UnconfirmedPrivateTransfer | 16.2, 16.3 | Hook | Internal e2e, Unit, Independent client (bacnet-stack: unconfirmed; BACnet4J, BACpypes3: confirmed) | `Hooks.PrivateTransfer`; the returned elements are the result block |
+| DeviceCommunicationControl | 16.1 | Implemented | Internal e2e, Unit, Independent client (bacnet-stack, BACnet4J, BACpypes3, bacnet-js) | Enable, disable-initiation, duration, password. DISABLE is refused with services/service-request-denied from protocol revision 20 (bacnet-stack, h_dcc.c). Who-Is is answered while initiation is disabled |
+| ReinitializeDevice | 16.4 | Implemented | Internal e2e, Unit, Independent client (bacnet-stack, BACnet4J, BACpypes3, bacnet-js) | Password; `Hooks.Reinitialize` performs the action; without it COLDSTART, WARMSTART and ACTIVATE_CHANGES are acknowledged and START_BACKUP to ABORT_RESTORE get services/service-request-denied (no backup procedure), as the recorded WattStopper LMBC-300 answers ([testdata/captures](../testdata/captures/README.md)) |
+| TimeSynchronization / UTCTimeSynchronization | 16.7, 16.8 | Hook | Internal e2e, Unit, Independent client (bacnet-stack, BACnet4J, BACpypes3, bacnet-js) | `Hooks.TimeSync` |
+| ConfirmedPrivateTransfer / UnconfirmedPrivateTransfer | 16.2, 16.3 | Hook | Internal e2e, Unit, Independent client (bacnet-stack: unconfirmed; BACnet4J, BACpypes3: confirmed; bacnet-js: both) | `Hooks.PrivateTransfer`; the returned elements are the result block |
 | ConfirmedTextMessage / UnconfirmedTextMessage | 16.5, 16.6 | Hook | Internal e2e, Unit, Independent client (BACnet4J, BACpypes3) | `Hooks.TextMessage` |
 | LifeSafetyOperation, VT, authentication, audit | — | Not implemented | Internal e2e (Reject) | |
 
@@ -137,7 +139,7 @@ Limits:
 
 | Capability | Clause | Support | Evidence | Notes |
 |---|---|---|---|---|
-| Segmented ComplexACK | 5.2, 5.4.5 | Implemented | Unit, Internal e2e, Independent client (BACnet4J, BACpypes3) | Window from the requester's SegmentACK; NAK and timeout resend; Abort tsm-timeout after the retries; Abort segmentation-not-supported or buffer-overflow when the requester cannot take the reply |
+| Segmented ComplexACK | 5.2, 5.4.5 | Implemented | Unit, Internal e2e, Independent client (BACnet4J, BACpypes3, bacnet-js) | Window from the requester's SegmentACK; NAK and timeout resend; Abort tsm-timeout after the retries; Abort segmentation-not-supported or buffer-overflow when the requester cannot take the reply |
 | Segmented request reassembly | 5.4.5 | Implemented | Unit, Internal e2e, Independent client (BACnet4J, BACpypes3) | Segment 0 acknowledged at once, later windows counted from it; window capped at the server's; an APDU longer than Max_APDU_Length_Accepted is accepted within the datagram limit (BACpypes3 0.0.110 sends 1482-octet segments to a 1476-octet device; `WithDecodeLimits` can refuse them); out-of-order NAK; Abort buffer-overflow beyond `WithSegmentation` segments or the decode limits; a segment of an unknown transaction gets Abort invalid-apdu-in-this-state |
 | Repeated requests | 5.4.5 | Implemented | Unit | Dropped while executing; after the response a request with the same invoke ID is a new request (clause 5.4.5) |
 | Bounded workers | — | Implemented | Unit, chaos | A confirmed request that finds the queue full gets Abort out-of-resources |
@@ -147,13 +149,13 @@ Limits:
 
 | Object | Support | Evidence | Notes |
 |---|---|---|---|
-| Device | Implemented | Internal e2e, Independent client (bacnet-stack, BACnet4J, BACpypes3) | Object_List, Protocol_Services_Supported and Protocol_Object_Types_Supported computed from what is served; Database_Revision; Active_COV_Subscriptions |
-| Analog Input / Output / Value | Implemented | Internal e2e, Independent client (bacnet-stack, BACnet4J, BACpypes3) (value) | Outputs commandable; values optionally commandable; COV increment |
+| Device | Implemented | Internal e2e, Independent client (bacnet-stack, BACnet4J, BACpypes3, bacnet-js) | Object_List, Protocol_Services_Supported and Protocol_Object_Types_Supported computed from what is served; Database_Revision; Active_COV_Subscriptions |
+| Analog Input / Output / Value | Implemented | Internal e2e, Independent client (bacnet-stack, BACnet4J, BACpypes3, bacnet-js) (value) | Outputs commandable; values optionally commandable; COV increment |
 | Binary Input / Output / Value | Implemented | Internal e2e, Unit | Polarity, active and inactive text |
 | Multi-state Input / Output / Value | Implemented | Internal e2e, Unit | State text; intrinsic reporting on Input and Value (Alarm_Values, Fault_Values) |
 | Notification Class | Implemented | Internal e2e, Independent client (bacnet-stack, BACnet4J, BACpypes3) | Priority, Ack_Required, Recipient_List |
-| Trend Log | Implemented | Internal e2e, Independent client (bacnet-stack, BACnet4J, BACpypes3) | Polled logging of a local property or `Log` by the application; stop-when-full; Record_Count writable to 0 |
-| File | Implemented | Internal e2e, Independent client (bacnet-stack, BACnet4J, BACpypes3) | Stream and record files in memory; read-only files |
+| Trend Log | Implemented | Internal e2e, Independent client (bacnet-stack, BACnet4J, BACpypes3, bacnet-js) | Polled logging of a local property or `Log` by the application; stop-when-full; Record_Count writable to 0 |
+| File | Implemented | Internal e2e, Independent client (bacnet-stack, BACnet4J, BACpypes3, bacnet-js) | Stream and record files in memory; read-only files |
 | Calendar | Implemented | Internal e2e, Unit | Clause 12.9. Present_Value from Date_List against the server clock's local date, evaluated on every poll and when Date_List changes; Date_List writable and changed by AddListElement / RemoveListElement. Calendar entries: date with the BACnetDate special values (any, odd / even month, last / odd / even day; clause 21), dateRange (fields unspecified in either date are skipped, so a fully unspecified end opens the range, as bacnet-stack datetime.c `datetime_wildcard_compare_date`), weekNDay per the clause 21 week-of-month table (bacnet-stack calendar_entry.c computes weeks 1–9 differently; the standard is followed) |
 | Schedule | Implemented | Internal e2e, Unit | Clause 12.24. Evaluated on every poll against the server clock: outside Effective_Period Schedule_Default; else the non-NULL value of the in-effect special event with the lowest Event_Priority (first in Exception_Schedule on a tie; period by calendar entry or Calendar reference; this is the implementation's reading of clause 12.24 without a peer reference, because bacnet-stack schedule.c does not evaluate Exception_Schedule), else the day's Weekly_Schedule value, else Schedule_Default. A NULL time value relinquishes to the next layer; before a day's first entry the default applies, as bacnet-stack schedule.c `Schedule_Recalculate_PV`. A changed Present_Value is written at Priority_For_Writing to the referenced properties of local objects; references to other devices are kept but not written (the server initiates no WriteProperty). Present_Value writable while Out_Of_Service; Weekly_Schedule, Exception_Schedule, Effective_Period, List_Of_Object_Property_References writable; arrays not resizable through index 0 (write-access-denied, as schedule.c); one datatype per schedule |
 | CharacterString / Integer / Positive Integer Value | Implemented | Internal e2e, Unit | Clauses 12.37, 12.43, 12.44. Optionally commandable; COV of Present_Value and Status_Flags on every change (no COV_Increment); integers held in 32 bits as bacnet-stack iv.c / piv.c, beyond is value-out-of-range |
@@ -163,11 +165,11 @@ Limits:
 
 | Capability | Clause | Support | Evidence | Notes |
 |---|---|---|---|---|
-| Register-Foreign-Device, FDT | J.5.2 | Implemented | Internal e2e, Unit, Independent client (bacnet-stack, BACnet4J, BACpypes3) | TTL plus 30 s grace; table bounded (`MaxForeignDevices`) |
+| Register-Foreign-Device, FDT | J.5.2 | Implemented | Internal e2e, Unit, Independent client (bacnet-stack, BACnet4J, BACpypes3, bacnet-js) | TTL plus 30 s grace; table bounded (`MaxForeignDevices`) |
 | Read-BDT / Read-FDT / Delete-FDT-Entry | J.2 | Implemented | Internal e2e, Unit, Independent client (bacnet-stack, BACpypes3) (Read-BDT, Read-FDT) | |
 | Write-BDT | J.4.4.2 | Implemented | Internal e2e, Unit, Independent client (bacnet-stack, BACpypes3) | Answered with a NAK (bacnet-stack, h_bbmd.c) |
 | Forwarded-NPDU distribution | J.4.5 | Implemented | Internal e2e, Unit | Two-hop by directed broadcast (IP OR inverted mask); a Forwarded-NPDU from a one-hop peer is rebroadcast locally; not back to the originating foreign device |
-| Distribute-Broadcast-To-Network | J.4.5 | Implemented | Internal e2e, Unit, Independent client (bacnet-stack, BACnet4J, BACpypes3) | From a registered foreign device only; otherwise a NAK. bacnet-stack does not check registration; this follows the clause text |
+| Distribute-Broadcast-To-Network | J.4.5 | Implemented | Internal e2e, Unit, Independent client (bacnet-stack, BACnet4J, BACpypes3, bacnet-js) | From a registered foreign device only; otherwise a NAK. bacnet-stack does not check registration; this follows the clause text |
 | Broadcast confirmed requests | — | Implemented | Unit | Discarded, as bacnet-stack |
 
 Without a BBMD the server answers every BBMD function with its NAK.

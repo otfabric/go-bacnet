@@ -120,6 +120,14 @@ func (f *fdState) clearAttempt(a *fdAttempt) {
 	}
 }
 
+// attemptPendingFrom reports whether a registration attempt with from is
+// awaiting its BVLC-Result.
+func (f *fdState) attemptPendingFrom(from bip.Endpoint) bool {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.pending != nil && from.Equal(f.pending.bbmd)
+}
+
 func (f *fdState) handleResult(code uint16, from bip.Endpoint) {
 	f.mu.Lock()
 	a := f.pending

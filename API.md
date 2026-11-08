@@ -198,6 +198,13 @@ send the BVLC frame to `Target.Endpoint` (the next hop).
 - BVLC-Result correlation is by pending attempt + BBMD peer only: the wire has
   no generation field, so a delayed Result for an earlier attempt to the same
   BBMD is indistinguishable from a Result for the current attempt.
+- A BVLC management call to the same BBMD can be in flight with a pending
+  registration. A Result the call cannot own goes to the registration
+  (Annex J.2.1.1): successful completion while a Read-BDT or Read-FDT waits
+  for its ACK, and Register-Foreign-Device-NAK or
+  Distribute-Broadcast-To-Network-NAK at any time. A success Result while a
+  Write-BDT or Delete-FDT is pending is ambiguous on the wire and goes to
+  that call; the registration then times out and is retried after one TTL.
 - `ForeignDeviceRegistered()` reports whether the last registration succeeded.
 - When registered, local broadcasts are sent as Distribute-Broadcast-To-Network
   to the BBMD.
