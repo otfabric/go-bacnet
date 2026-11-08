@@ -232,6 +232,14 @@ func EncodeDeviceCommunicationControl(req DeviceCommunicationControlRequest) ([]
 
 EncodeDeviceCommunicationControl encodes a DCC request payload.
 
+### func EncodeEventLogRecord
+
+```go
+func EncodeEventLogRecord(rec EventLogRecord) ([]bacnet.Element, error)
+```
+
+EncodeEventLogRecord encodes one BACnetEventLogRecord as itemData elements (for EncodeReadRangeACK).
+
 ### func EncodeEventNotification
 
 ```go
@@ -337,6 +345,14 @@ func EncodeListElementRequest(req ListElementRequest) ([]byte, error)
 ```
 
 EncodeListElementRequest encodes AddListElement or RemoveListElement.
+
+### func EncodeLogMultipleRecord
+
+```go
+func EncodeLogMultipleRecord(rec LogMultipleRecord) ([]bacnet.Element, error)
+```
+
+EncodeLogMultipleRecord encodes one BACnetLogMultipleRecord as itemData elements (for EncodeReadRangeACK).
 
 ### func EncodeLogRecord
 
@@ -1349,6 +1365,39 @@ EnrollmentSummaryEntry is one GetEnrollmentSummary ACK element:
 	objectIdentifier, eventType, eventState, priority Unsigned8,
 	notificationClass Unsigned OPTIONAL
 
+### type EventLogRecord
+
+```go
+type EventLogRecord struct {
+	Timestamp DateTime
+	Choice    LogDataChoice
+	// LogStatus is set for LogDataLogStatus.
+	LogStatus bacnet.BitString
+	// Notification is set for LogDataValues.
+	Notification *EventNotification
+	// TimeChange is set for LogDataTimeChange.
+	TimeChange float32
+}
+```
+
+EventLogRecord is a BACnetEventLogRecord: an item of the Log\_Buffer of an Event Log object (clause 12.27).
+
+Wire form (ASHRAE 135):
+
+	timestamp [0] BACnetDateTime
+	log-datum [1] CHOICE {
+	    log-status   [0] BACnetLogStatus,
+	    notification [1] ConfirmedEventNotification-Request,
+	    time-change  [2] REAL }
+
+#### func DecodeEventLogRecords
+
+```go
+func DecodeEventLogRecords(elements []bacnet.Element, count int, limits bacnet.DecodeLimits) ([]EventLogRecord, error)
+```
+
+DecodeEventLogRecords splits the itemData of a ReadRange ACK of an Event Log's Log\_Buffer into count records.
+
 ### type EventNotification
 
 ```go
@@ -1629,6 +1678,26 @@ func DecodeListElementRequest(payload []byte, limits bacnet.DecodeLimits) (ListE
 
 DecodeListElementRequest decodes Add/RemoveListElement.
 
+### type LogDataChoice
+
+```go
+type LogDataChoice uint8
+```
+
+LogDataChoice identifies the log-datum alternative of a BACnetLogMultipleRecord (BACnetLogData) or a BACnetEventLogRecord.
+
+```go
+const (
+	// LogDataLogStatus is log-status [0] BACnetLogStatus.
+	LogDataLogStatus LogDataChoice = 0
+	// LogDataValues is log-data [1] of a BACnetLogMultipleRecord, or
+	// notification [1] of a BACnetEventLogRecord.
+	LogDataValues LogDataChoice = 1
+	// LogDataTimeChange is time-change [2] REAL.
+	LogDataTimeChange LogDataChoice = 2
+)
+```
+
 ### type LogDatumChoice
 
 ```go
@@ -1652,6 +1721,54 @@ const (
 	LogDatumAnyValue   LogDatumChoice = 10
 )
 ```
+
+### type LogMultipleRecord
+
+```go
+type LogMultipleRecord struct {
+	Timestamp DateTime
+	Choice    LogDataChoice
+	// LogStatus is set for LogDataLogStatus.
+	LogStatus bacnet.BitString
+	// Values is set for LogDataValues: one entry per member of the
+	// object's Log_DeviceObjectProperty, in order.
+	Values []LogMultipleValue
+	// TimeChange is set for LogDataTimeChange.
+	TimeChange float32
+}
+```
+
+LogMultipleRecord is a BACnetLogMultipleRecord: an item of the Log\_Buffer of a Trend Log Multiple object (clause 12.30).
+
+Wire form (ASHRAE 135):
+
+	timestamp [0] BACnetDateTime
+	log-data  [1] BACnetLogData ::= CHOICE {
+	    log-status  [0] BACnetLogStatus,
+	    log-data    [1] SEQUENCE OF CHOICE {
+	        boolean-value [0], real-value [1], enumerated-value [2],
+	        unsigned-value [3], integer-value [4], bitstring-value [5],
+	        null-value [6], failure [7] Error, any-value [8] },
+	    time-change [2] REAL }
+
+#### func DecodeLogMultipleRecords
+
+```go
+func DecodeLogMultipleRecords(elements []bacnet.Element, count int) ([]LogMultipleRecord, error)
+```
+
+DecodeLogMultipleRecords splits the itemData of a ReadRange ACK of a Trend Log Multiple's Log\_Buffer into count records.
+
+### type LogMultipleValue
+
+```go
+type LogMultipleValue struct {
+	Choice LogDatumChoice
+	Value  bacnet.ApplicationValue
+}
+```
+
+LogMultipleValue is one value of a LogMultipleRecord's log-data. Choice uses the LogRecord alternatives (LogDatumBoolean … LogDatumAnyValue); on the wire its context tag is one less (boolean-value is \[0]).
 
 ### type LogRecord
 
@@ -1896,13 +2013,18 @@ DecodeReadProperty decodes a ReadProperty request payload.
 
 ```go
 type ReadRangeACK struct {
-	Object        bacnet.ObjectIdentifier
-	Property      bacnet.PropertyReference
-	ResultFlags   bacnet.BitString
-	ItemCount     uint32
-	ItemData      []bacnet.ApplicationValue
-	LogRecords    []LogRecord
-	FirstSequence *uint32
+	Object      bacnet.ObjectIdentifier
+	Property    bacnet.PropertyReference
+	ResultFlags bacnet.BitString
+	ItemCount   uint32
+	ItemData    []bacnet.ApplicationValue
+	// LogRecords holds the itemData of a Trend Log's Log_Buffer,
+	// LogMultipleRecords that of a Trend Log Multiple, EventLogRecords that
+	// of an Event Log: each object type logs its own record type.
+	LogRecords         []LogRecord
+	LogMultipleRecords []LogMultipleRecord
+	EventLogRecords    []EventLogRecord
+	FirstSequence      *uint32
 }
 ```
 

@@ -34,6 +34,7 @@ const (
 	ObjectTypeMultiStateOutput  ObjectType = 14
 	ObjectTypeAccumulator       ObjectType = 23
 	ObjectTypePulseConverter    ObjectType = 24
+	ObjectTypeEventLog          ObjectType = 25
 	ObjectTypeTrendLogMultiple  ObjectType = 27
 	ObjectTypeNetworkPort       ObjectType = 56
 	ObjectTypeAuditLog          ObjectType = 61
