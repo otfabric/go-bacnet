@@ -21,19 +21,24 @@ func Report(part string, v any) error {
 		return err
 	}
 	b = append(b, '\n')
-	path := filepath.Join(Dir(), "report", part+".json")
+	root, err := os.OpenRoot(Dir())
+	if err != nil {
+		return err
+	}
+	defer func() { _ = root.Close() }()
+	name := filepath.Join("report", filepath.Base(part)+".json")
 	if os.Getenv("BACNET_CAPTURE_REPORT") == "1" {
-		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		if err := root.MkdirAll("report", 0o750); err != nil {
 			return err
 		}
-		return os.WriteFile(path, b, 0o644)
+		return root.WriteFile(name, b, 0o600)
 	}
-	old, err := os.ReadFile(path)
+	old, err := root.ReadFile(name)
 	if err != nil {
 		return err
 	}
 	if !bytes.Equal(old, b) {
-		return fmt.Errorf("%s is stale: run make captures-report", path)
+		return fmt.Errorf("testdata/captures/%s is stale: run make captures-report", name)
 	}
 	return nil
 }

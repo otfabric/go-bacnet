@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"net/netip"
 	"os"
 	"path/filepath"
@@ -129,16 +130,21 @@ func Dir() string {
 // LoadGolden reads every golden case (<source>/<capture>.json, next to the
 // capture it excerpts), ordered by ID.
 func LoadGolden() ([]*Golden, error) {
-	paths, err := filepath.Glob(filepath.Join(Dir(), "*", "*.json"))
+	root, err := os.OpenRoot(Dir())
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = root.Close() }()
+	paths, err := fs.Glob(root.FS(), "*/*.json")
 	if err != nil {
 		return nil, err
 	}
 	var out []*Golden
 	for _, path := range paths {
-		if filepath.Base(filepath.Dir(path)) == "report" {
+		if filepath.Dir(path) == "report" {
 			continue
 		}
-		b, err := os.ReadFile(path)
+		b, err := root.ReadFile(path)
 		if err != nil {
 			return nil, err
 		}
