@@ -40,6 +40,8 @@ jobs:
             echo "bacnet_stack_router=$(jq -r '.images["bacnet-stack-router"] // "none"' "$pin")"
             # New in bacnet-interop v0.13.0.
             echo "cbsigma=$(jq -r '.images.cbsigma // "none"' "$pin")"
+            # Legacy BACpypes (not BACpypes3), new after bacnet-interop v0.13.0.
+            echo "bacpypes=$(jq -r '.images.bacpypes // "none"' "$pin")"
           } >> "$GITHUB_OUTPUT"
 
       - name: Checkout bacnet-interop (pinned)
@@ -65,6 +67,7 @@ jobs:
             echo "SYSIOBACNET_IMAGE=${{ steps.pin.outputs.sysiobacnet }}"
             echo "BACNET_STACK_ROUTER_IMAGE=${{ steps.pin.outputs.bacnet_stack_router }}"
             echo "CBSIGMA_IMAGE=${{ steps.pin.outputs.cbsigma }}"
+            echo "BACPYPES_IMAGE=${{ steps.pin.outputs.bacpypes }}"
           } | tee interop-evidence.txt
           echo "## Interop evidence (pinned)" >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
@@ -100,6 +103,7 @@ jobs:
           SYSIOBACNET_IMAGE: ${{ steps.pin.outputs.sysiobacnet }}
           BACNET_STACK_ROUTER_IMAGE: ${{ steps.pin.outputs.bacnet_stack_router }}
           CBSIGMA_IMAGE: ${{ steps.pin.outputs.cbsigma }}
+          BACPYPES_IMAGE: ${{ steps.pin.outputs.bacpypes }}
         run: |
           set -euo pipefail
           docker pull "$BACNET_STACK_IMAGE"
@@ -107,7 +111,7 @@ jobs:
           docker pull "$BACNET4J_IMAGE"
           docker pull "$WORLDIETY_IMAGE"
           docker pull "$BIP_ROUTER_IMAGE"
-          for img in "$SYSIOBACNET_IMAGE" "$BACNET_STACK_ROUTER_IMAGE" "$CBSIGMA_IMAGE"; do
+          for img in "$SYSIOBACNET_IMAGE" "$BACNET_STACK_ROUTER_IMAGE" "$CBSIGMA_IMAGE" "$BACPYPES_IMAGE"; do
             [ "$img" = none ] || docker pull "$img"
           done
           # In-network re-exec uses golang:<go.mod major.minor>; pull before tests
@@ -139,6 +143,7 @@ jobs:
           SYSIOBACNET_IMAGE: ${{ steps.pin.outputs.sysiobacnet }}
           BACNET_STACK_ROUTER_IMAGE: ${{ steps.pin.outputs.bacnet_stack_router }}
           CBSIGMA_IMAGE: ${{ steps.pin.outputs.cbsigma }}
+          BACPYPES_IMAGE: ${{ steps.pin.outputs.bacpypes }}
           GOWORK: "off"
           CI: "true"
         run: make interop INTEROP_TIMEOUT=60m
@@ -245,6 +250,8 @@ jobs:
           SYSIOBACNET_IMAGE: bacnet-interop-sysiobacnet:local
           BACNET_STACK_ROUTER_IMAGE: bacnet-interop-bacnet-stack-router:local
           CBSIGMA_IMAGE: bacnet-interop-cbsigma:local
+          # "none" until bacnet-interop main has the legacy BACpypes adapter.
+          BACPYPES_IMAGE: ${{ hashFiles('bacnet-interop/adapters/bacpypes/Dockerfile') != '' && 'bacnet-interop-bacpypes:local' || 'none' }}
           GOWORK: "off"
           CI: "true"
         run: make interop INTEROP_TIMEOUT=60m
