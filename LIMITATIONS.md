@@ -9,10 +9,21 @@ and evidence: [docs/CLIENT_SUPPORT.md](docs/CLIENT_SUPPORT.md) and
 
 - **Nothing here is certified.** There is no BTL listing and no formal PICS;
   [docs/CLIENT_PROFILE.md](docs/CLIENT_PROFILE.md) is a descriptive profile.
-- **No physical devices are recorded.** Evidence comes from five open-source
-  stacks in containers and from Wireshark's dissector
-  ([INTEROP.md](INTEROP.md)). The checklist for field runs is
-  [docs/FIELD_VALIDATION.md](docs/FIELD_VALIDATION.md).
+- **No live device was tested.** Evidence comes from open-source stacks in
+  containers, Wireshark's dissector ([INTEROP.md](INTEROP.md)) and traffic
+  of physical devices recorded by others at plugfests and in labs
+  ([testdata/captures](testdata/captures/README.md)): the client against
+  their recorded answers, the server against their recorded requests where
+  the answer does not depend on the device's own objects. Behaviour the
+  recordings do not hold (most write paths, alarms and events at a real
+  device, BBMD forwarding between real BBMDs, segmented requests from the
+  go-bacnet client) is not verified against a device. The checklist for
+  field runs is [docs/FIELD_VALIDATION.md](docs/FIELD_VALIDATION.md).
+- **Recorded differences** from the devices are classified in
+  [testdata/captures/README.md](testdata/captures/README.md#differences-that-remain):
+  an empty ReadPropertyMultiple property list and the reserved max-APDU
+  codes are refused, where a Lithonia SYSC MLX answers; a password failure
+  is answered with class security, where older devices use services.
 
 ## Not implemented
 

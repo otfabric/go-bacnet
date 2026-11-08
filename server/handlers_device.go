@@ -100,6 +100,15 @@ func (s *Server) reinitializeDevice(ctx context.Context, req *apdu.ConfirmedRequ
 		if err := h(ctx, r.State); err != nil {
 			return fail(err)
 		}
+		return ack()
+	}
+	if r.State >= service.ReinitializedStartBackup && r.State <= service.ReinitializedAbortRestore {
+		// Without a hook the server has no backup or restore procedure
+		// (clause 19.1): refuse it rather than acknowledge a backup that
+		// will not happen. Recorded devices without backup support refuse
+		// START_BACKUP too: a WattStopper LMBC-300 with
+		// services/service-request-denied.
+		return fail(object.Err(bacnet.ErrorClassServices, bacnet.ErrorCodeServiceRequestDenied))
 	}
 	return ack()
 }

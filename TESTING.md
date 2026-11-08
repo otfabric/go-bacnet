@@ -19,6 +19,9 @@ capability in [docs/CLIENT_SUPPORT.md](docs/CLIENT_SUPPORT.md).
 | Cross-compile | `make cross` | none | not run in CI |
 | Interop | `make interop-pinned`, or `make interop` | Docker, a `bacnet-interop` checkout; `make interop-pinned` also needs `jq` | `interop.yml` |
 | Dissector oracle | `make dissector` | `tshark` | `interop.yml` |
+| Recorded traffic, golden | part of `make test` | none | part of the unit tier |
+| Recorded traffic, the two captures over 50 MB | `make captures-extended` | network (kargs.net), 161 MB | not run in CI |
+| Recorded traffic, regenerate | `make captures-generate`, `make captures-report` | `tshark`, the originals | not run in CI |
 
 `e2e/` runs the client on a real UDP socket against a device on another,
 over loopback. In most tests that device is built in the test from the public codecs (`bvlc`, `npdu`, `apdu`, `service`),
@@ -50,6 +53,18 @@ messages to a BBMD. `TestBACnetStackClientAgainstServer` (`make interop`)
 runs a bacnet-interop image in client mode against the server in a Go
 container on the image's network; it skips when the image has no client
 mode, as the pinned release does today.
+
+`internal/capture` reads recorded captures of physical devices
+([testdata/captures](testdata/captures/README.md)). They run in the unit
+tier, offline: `TestCorpus`, `TestCorpusReplay` and
+`TestCorpusServerParity` over every committed capture, and on the golden
+excerpts `internal/capture` compares every datagram
+with Wireshark's decode and encodes it again, `client`'s
+`TestCaptureReplay*` runs the client against the recorded answers (and with
+segments lost, duplicated or swapped), `server`'s `TestCaptureServer*`
+compares the server's answers with the devices', and the fuzz targets are
+seeded with the recorded octets. `make captures-extended` downloads the two
+captures over 50 MB and runs the corpus suites over them too.
 
 `internal/leak` fails `client`, `server`, `bbmd`, `internal/clock` and `e2e` when a test leaves a
 goroutine behind; it compares goroutine stacks, so the failure names it.

@@ -1,0 +1,439 @@
+[
+  {
+    "id": "alerton-plugfest",
+    "class": "A",
+    "devices": [
+      "BCM-Eth Controller BCM-Eth Loader 2.00 (Build 16)",
+      "VLC-853 Controller RL Z.01d VLC SN 0210813021528",
+      "Envision for BACtalk",
+      "SYSC MLX 2x65j"
+    ],
+    "frames": 102,
+    "decoded": 102,
+    "refused": 0,
+    "wireshark_agrees": 102,
+    "reencoded_byte_exact": 76,
+    "services": {
+      "IAm": 9,
+      "PrivateTransfer": 3,
+      "ReadPropertyACK": 17,
+      "ReadPropertyRequest": 22,
+      "TimeSynchronization": 2,
+      "WhoIs": 3,
+      "WritePropertyRequest": 4,
+      "[]service.ReadAccessResult": 7,
+      "[]service.ReadAccessSpecification": 9,
+      "apdu.ErrorDetail": 7
+    },
+    "classified_differences": 0,
+    "regression_frames": 0
+  },
+  {
+    "id": "atomic-read-file-segmented",
+    "class": "C",
+    "frames": 48,
+    "decoded": 48,
+    "refused": 0,
+    "wireshark_agrees": 48,
+    "reencoded_byte_exact": 24,
+    "services": {
+      "AtomicReadFileACK": 8,
+      "AtomicReadFileRequest": 8,
+      "ReadPropertyACK": 4,
+      "ReadPropertyRequest": 4
+    },
+    "classified_differences": 0,
+    "regression_frames": 0
+  },
+  {
+    "id": "bvll-foreign-device",
+    "class": "B",
+    "frames": 28,
+    "decoded": 28,
+    "refused": 0,
+    "wireshark_agrees": 28,
+    "reencoded_byte_exact": 28,
+    "services": {
+      "IAm": 12,
+      "ReadPropertyACK": 4,
+      "ReadPropertyRequest": 4,
+      "WhoIs": 4
+    },
+    "classified_differences": 0,
+    "regression_frames": 0
+  },
+  {
+    "id": "bvll-management-results",
+    "class": "C",
+    "frames": 8,
+    "decoded": 8,
+    "refused": 0,
+    "wireshark_agrees": 8,
+    "reencoded_byte_exact": 8,
+    "services": {},
+    "classified_differences": 0,
+    "regression_frames": 0
+  },
+  {
+    "id": "contemporary-controls-basrt",
+    "class": "A",
+    "devices": [
+      "BASRT-B 1.24"
+    ],
+    "frames": 30,
+    "decoded": 30,
+    "refused": 0,
+    "wireshark_agrees": 30,
+    "reencoded_byte_exact": 26,
+    "services": {
+      "IAm": 4,
+      "ReadPropertyACK": 8,
+      "ReadPropertyRequest": 12,
+      "WhoIs": 2,
+      "apdu.ErrorDetail": 4
+    },
+    "classified_differences": 0,
+    "regression_frames": 0
+  },
+  {
+    "id": "cov-plugfest-2011",
+    "class": "B",
+    "frames": 18,
+    "decoded": 18,
+    "refused": 0,
+    "wireshark_agrees": 18,
+    "reencoded_byte_exact": 14,
+    "services": {
+      "COVNotification": 4,
+      "IAm": 2,
+      "SubscribeCOVRequest": 4,
+      "WhoIs": 3
+    },
+    "classified_differences": 0,
+    "regression_frames": 0
+  },
+  {
+    "id": "critical-room-control",
+    "class": "A",
+    "devices": [
+      "Room Pressure Monitor 5.5"
+    ],
+    "frames": 19,
+    "decoded": 19,
+    "refused": 0,
+    "wireshark_agrees": 19,
+    "reencoded_byte_exact": 17,
+    "services": {
+      "ReadPropertyACK": 7,
+      "ReadPropertyRequest": 8,
+      "WritePropertyRequest": 2
+    },
+    "classified_differences": 0,
+    "regression_frames": 0
+  },
+  {
+    "id": "delta-plugfest",
+    "class": "A",
+    "devices": [
+      "SYSC MLX 2x65j",
+      "DSC-1616E 15604",
+      "DNT-T221 0028",
+      "DNT-T103 3319"
+    ],
+    "frames": 119,
+    "decoded": 119,
+    "refused": 0,
+    "wireshark_agrees": 119,
+    "reencoded_byte_exact": 82,
+    "services": {
+      "AtomicWriteFileACK": 1,
+      "AtomicWriteFileRequest": 1,
+      "COVNotification": 1,
+      "EventNotification": 2,
+      "IAm": 8,
+      "PrivateTransfer": 7,
+      "ReadPropertyACK": 5,
+      "ReadPropertyRequest": 9,
+      "ReinitializeDeviceRequest": 3,
+      "TimeSynchronization": 2,
+      "WhoIs": 4,
+      "WritePropertyRequest": 3,
+      "[]service.ReadAccessResult": 13,
+      "[]service.ReadAccessSpecification": 19,
+      "[]service.WriteAccessSpecification": 1,
+      "apdu.ErrorDetail": 7
+    },
+    "classified_differences": 0,
+    "regression_frames": 0
+  },
+  {
+    "id": "event-log",
+    "class": "B",
+    "frames": 2,
+    "decoded": 2,
+    "refused": 0,
+    "wireshark_agrees": 2,
+    "reencoded_byte_exact": 2,
+    "services": {
+      "ReadRangeACK": 1,
+      "ReadRangeRequest": 1
+    },
+    "classified_differences": 0,
+    "regression_frames": 1
+  },
+  {
+    "id": "lithonia-btl-plugfest",
+    "class": "A",
+    "devices": [
+      "SYSC MLX 2x63w"
+    ],
+    "frames": 68,
+    "decoded": 66,
+    "refused": 2,
+    "wireshark_agrees": 66,
+    "reencoded_byte_exact": 45,
+    "services": {
+      "DeviceCommunicationControlRequest": 4,
+      "IAm": 2,
+      "IHave": 2,
+      "ReadPropertyACK": 2,
+      "ReadPropertyRequest": 2,
+      "TimeSynchronization": 3,
+      "WhoHas": 2,
+      "WhoIs": 5,
+      "WritePropertyRequest": 4,
+      "[]service.ReadAccessResult": 5,
+      "[]service.ReadAccessSpecification": 10,
+      "apdu.ErrorDetail": 6
+    },
+    "classified_differences": 2,
+    "regression_frames": 0
+  },
+  {
+    "id": "lithonia-reinitialize",
+    "class": "B",
+    "frames": 33,
+    "decoded": 30,
+    "refused": 3,
+    "wireshark_agrees": 30,
+    "reencoded_byte_exact": 22,
+    "services": {
+      "IAm": 3,
+      "ReinitializeDeviceRequest": 8,
+      "WhoIs": 6,
+      "apdu.ErrorDetail": 3
+    },
+    "classified_differences": 1,
+    "regression_frames": 0
+  },
+  {
+    "id": "reliable-controls-routed",
+    "class": "A",
+    "devices": [
+      "MACH-ProSys 7.06.14765|01,01|--,--|--,--|--,--|--,--|--,--|--,--|--,--",
+      "ETHER-Link 6.64",
+      "MACH2 6.43"
+    ],
+    "frames": 104,
+    "decoded": 104,
+    "refused": 0,
+    "wireshark_agrees": 104,
+    "reencoded_byte_exact": 84,
+    "services": {
+      "IAm": 14,
+      "PrivateTransfer": 20,
+      "ReadPropertyACK": 6,
+      "ReadPropertyRequest": 6,
+      "WhoIs": 8,
+      "[]service.ReadAccessResult": 10,
+      "[]service.ReadAccessSpecification": 10
+    },
+    "classified_differences": 0,
+    "regression_frames": 0
+  },
+  {
+    "id": "router-drops-apdu-type",
+    "class": "C",
+    "frames": 15,
+    "decoded": 12,
+    "refused": 3,
+    "wireshark_agrees": 12,
+    "reencoded_byte_exact": 12,
+    "services": {
+      "ReadPropertyACK": 3,
+      "ReadPropertyRequest": 6,
+      "WritePropertyRequest": 3
+    },
+    "classified_differences": 1,
+    "regression_frames": 0
+  },
+  {
+    "id": "routing-table",
+    "class": "C",
+    "frames": 8,
+    "decoded": 8,
+    "refused": 0,
+    "wireshark_agrees": 8,
+    "reencoded_byte_exact": 8,
+    "services": {},
+    "classified_differences": 0,
+    "regression_frames": 0
+  },
+  {
+    "id": "sauter-plugfest-2011",
+    "class": "A",
+    "devices": [
+      "9260 Linux� Server 3.30",
+      "LMBC-300 04.22"
+    ],
+    "frames": 40,
+    "decoded": 40,
+    "refused": 0,
+    "wireshark_agrees": 40,
+    "reencoded_byte_exact": 35,
+    "services": {
+      "IAm": 6,
+      "ReadPropertyACK": 6,
+      "ReadPropertyRequest": 9,
+      "WhoIs": 5,
+      "WritePropertyRequest": 2,
+      "[]service.ReadAccessResult": 3,
+      "[]service.ReadAccessSpecification": 4,
+      "apdu.ErrorDetail": 3
+    },
+    "classified_differences": 0,
+    "regression_frames": 0
+  },
+  {
+    "id": "siemens-plugfest-2011",
+    "class": "A",
+    "devices": [
+      "LMBC-300 04.22"
+    ],
+    "frames": 106,
+    "decoded": 104,
+    "refused": 2,
+    "wireshark_agrees": 106,
+    "reencoded_byte_exact": 70,
+    "services": {
+      "COVNotification": 2,
+      "GetEventInformationRequest": 4,
+      "IAm": 8,
+      "ReadPropertyACK": 7,
+      "ReadPropertyRequest": 12,
+      "ReinitializeDeviceRequest": 4,
+      "SubscribeCOVRequest": 4,
+      "TimeSynchronization": 4,
+      "WhoIs": 6,
+      "WritePropertyRequest": 4,
+      "[]service.ReadAccessResult": 4,
+      "[]service.ReadAccessSpecification": 7,
+      "apdu.ErrorDetail": 10
+    },
+    "classified_differences": 0,
+    "regression_frames": 0
+  },
+  {
+    "id": "trane-plugfest-2011",
+    "class": "A",
+    "devices": [
+      "BSV v6.97",
+      "Tracer SC 2.6.30_HwVer12A-hydra",
+      "UC400 1.00.042"
+    ],
+    "frames": 62,
+    "decoded": 62,
+    "refused": 0,
+    "wireshark_agrees": 62,
+    "reencoded_byte_exact": 57,
+    "services": {
+      "IAm": 10,
+      "ReadPropertyACK": 16,
+      "ReadPropertyRequest": 17,
+      "WhoIs": 2,
+      "[]service.ReadAccessResult": 4,
+      "[]service.ReadAccessSpecification": 8
+    },
+    "classified_differences": 0,
+    "regression_frames": 0
+  },
+  {
+    "id": "trend-log-multiple",
+    "class": "B",
+    "frames": 100,
+    "decoded": 100,
+    "refused": 0,
+    "wireshark_agrees": 100,
+    "reencoded_byte_exact": 91,
+    "services": {
+      "*service.WritePropertyMultipleError": 1,
+      "EventNotification": 6,
+      "IAm": 9,
+      "PrivateTransfer": 6,
+      "ReadPropertyACK": 6,
+      "ReadPropertyRequest": 6,
+      "ReadRangeACK": 9,
+      "ReadRangeRequest": 9,
+      "WhoHas": 6,
+      "WhoIs": 15,
+      "WritePropertyRequest": 2,
+      "[]service.ReadAccessResult": 4,
+      "[]service.ReadAccessSpecification": 4,
+      "[]service.WriteAccessSpecification": 2
+    },
+    "classified_differences": 0,
+    "regression_frames": 8
+  },
+  {
+    "id": "tridium-plugfest",
+    "class": "A",
+    "devices": [
+      "NiagaraAX BACnet Advanced Workstation 3.7.18",
+      "NiagaraAX Station 3.6.38",
+      "9260 Linux� Server 3.30",
+      "LMBC-300 04.22"
+    ],
+    "frames": 127,
+    "decoded": 127,
+    "refused": 0,
+    "wireshark_agrees": 127,
+    "reencoded_byte_exact": 113,
+    "services": {
+      "COVNotification": 4,
+      "IAm": 15,
+      "ReadPropertyACK": 21,
+      "ReadPropertyRequest": 27,
+      "SubscribeCOVRequest": 6,
+      "WhoIs": 9,
+      "WritePropertyRequest": 4,
+      "[]service.ReadAccessResult": 7,
+      "[]service.ReadAccessSpecification": 13,
+      "apdu.ErrorDetail": 4
+    },
+    "classified_differences": 0,
+    "regression_frames": 0
+  },
+  {
+    "id": "wattstopper-weblink",
+    "class": "A",
+    "devices": [
+      "WebLink"
+    ],
+    "frames": 37,
+    "decoded": 35,
+    "refused": 2,
+    "wireshark_agrees": 35,
+    "reencoded_byte_exact": 32,
+    "services": {
+      "IAm": 5,
+      "PrivateTransfer": 2,
+      "ReadPropertyACK": 4,
+      "ReadPropertyRequest": 7,
+      "WhoIs": 9,
+      "[]service.ReadAccessSpecification": 4,
+      "apdu.ErrorDetail": 2
+    },
+    "classified_differences": 1,
+    "regression_frames": 0
+  }
+]

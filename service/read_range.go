@@ -56,13 +56,18 @@ type ReadRangeRequest struct {
 // LogRecords for typed Trend Log access; ItemData remains for generic ranges.
 // FirstSequence is set when present on the wire.
 type ReadRangeACK struct {
-	Object        bacnet.ObjectIdentifier
-	Property      bacnet.PropertyReference
-	ResultFlags   bacnet.BitString
-	ItemCount     uint32
-	ItemData      []bacnet.ApplicationValue
-	LogRecords    []LogRecord
-	FirstSequence *uint32
+	Object      bacnet.ObjectIdentifier
+	Property    bacnet.PropertyReference
+	ResultFlags bacnet.BitString
+	ItemCount   uint32
+	ItemData    []bacnet.ApplicationValue
+	// LogRecords holds the itemData of a Trend Log's Log_Buffer,
+	// LogMultipleRecords that of a Trend Log Multiple, EventLogRecords that
+	// of an Event Log: each object type logs its own record type.
+	LogRecords         []LogRecord
+	LogMultipleRecords []LogMultipleRecord
+	EventLogRecords    []EventLogRecord
+	FirstSequence      *uint32
 }
 
 // FirstItem reports the FIRST_ITEM result flag.
@@ -318,7 +323,8 @@ func EncodeReadRangeACK(ack ReadRangeACK) ([]byte, error) {
 		return nil, err
 	}
 	var body []bacnet.Element
-	if len(ack.LogRecords) > 0 {
+	switch {
+	case len(ack.LogRecords) > 0:
 		body = make([]bacnet.Element, 0, len(ack.LogRecords)*3)
 		for _, rec := range ack.LogRecords {
 			els, encErr := EncodeLogRecord(rec)
@@ -327,7 +333,23 @@ func EncodeReadRangeACK(ack ReadRangeACK) ([]byte, error) {
 			}
 			body = append(body, els...)
 		}
-	} else {
+	case len(ack.LogMultipleRecords) > 0:
+		for _, rec := range ack.LogMultipleRecords {
+			els, encErr := EncodeLogMultipleRecord(rec)
+			if encErr != nil {
+				return nil, encErr
+			}
+			body = append(body, els...)
+		}
+	case len(ack.EventLogRecords) > 0:
+		for _, rec := range ack.EventLogRecords {
+			els, encErr := EncodeEventLogRecord(rec)
+			if encErr != nil {
+				return nil, encErr
+			}
+			body = append(body, els...)
+		}
+	default:
 		body = make([]bacnet.Element, 0, len(ack.ItemData))
 		for _, item := range ack.ItemData {
 			body = append(body, bacnet.Element{Value: item})
@@ -470,11 +492,21 @@ func DecodeReadRangeACK(payload []byte, limits bacnet.DecodeLimits) (ReadRangeAC
 		return ReadRangeACK{}, fmt.Errorf("%w: ReadRangeACK itemCount mismatch", bacnet.ErrMalformed)
 	}
 	if ack.Property.Identifier == bacnet.PropertyLogBuffer {
-		records, splitErr := DecodeLogRecords(rawItemElements, int(ack.ItemCount))
+		// Each logging object has its own Log_Buffer record type: a Trend
+		// Log Multiple's (clause 12.30) and an Event Log's (12.27) differ
+		// from a Trend Log's BACnetLogRecord.
+		var splitErr error
+		switch ack.Object.Type {
+		case bacnet.ObjectTypeTrendLogMultiple:
+			ack.LogMultipleRecords, splitErr = DecodeLogMultipleRecords(rawItemElements, int(ack.ItemCount))
+		case bacnet.ObjectTypeEventLog:
+			ack.EventLogRecords, splitErr = DecodeEventLogRecords(rawItemElements, int(ack.ItemCount), limits)
+		default:
+			ack.LogRecords, splitErr = DecodeLogRecords(rawItemElements, int(ack.ItemCount))
+		}
 		if splitErr != nil {
 			return ReadRangeACK{}, splitErr
 		}
-		ack.LogRecords = records
 	}
 	return ack, nil
 }

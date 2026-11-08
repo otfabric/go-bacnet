@@ -1441,11 +1441,15 @@ ReadRangePageOptions bounds ReadRange paging helpers.
 
 ```go
 type ReadRangePageResult struct {
-	Pages         []service.ReadRangeACK
-	Items         []bacnet.ApplicationValue
-	LogRecords    []service.LogRecord
-	Partial       bool
-	StoppedReason string
+	Pages      []service.ReadRangeACK
+	Items      []bacnet.ApplicationValue
+	LogRecords []service.LogRecord
+	// LogMultipleRecords and EventLogRecords collect the pages' records of
+	// a Trend Log Multiple and an Event Log.
+	LogMultipleRecords []service.LogMultipleRecord
+	EventLogRecords    []service.EventLogRecord
+	Partial            bool
+	StoppedReason      string
 }
 ```
 

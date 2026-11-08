@@ -83,6 +83,7 @@ UDP datagram → bvlc.Parse → npdu.Parse → apdu.Parse → service.Decode...
 | `server` | root + siblings + `service`, `bip`, `server/object`, `internal/*` | `client`, `device`, `bbmd` |
 | `internal/segment` | stdlib only | every go-bacnet package |
 | `internal/link` | root, `bip`, `bvlc`, `npdu` | `apdu`, `service`, `client`, `server`, `server/object`, `bbmd` |
+| `internal/capture` (test infrastructure) | root, `bvlc`, `npdu`, `apdu`, `service` | `bip`, `client`, `server`, `server/object`, `bbmd`, `device` |
 | `server/object` | root, `service` | `client`, `server`, `bip`, wire codecs, `bbmd` |
 | `bbmd` | root, `bip`, `bvlc` | `client`, `server`, `server/object`, `service`, `apdu`, `npdu` |
 

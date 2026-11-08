@@ -6,6 +6,8 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/otfabric/go-bacnet/internal/capture"
+
 	"github.com/otfabric/go-bacnet"
 	"github.com/otfabric/go-bacnet/npdu"
 )
@@ -59,6 +61,9 @@ func TestGlobalBroadcastHopCountZeroAccepted(t *testing.T) {
 }
 
 func FuzzParseNPDU(f *testing.F) {
+	for _, s := range capture.LayerSeeds(capture.LayerNPDU, nil) { // recorded devices (testdata/captures)
+		f.Add(s)
+	}
 	seeds := [][]byte{
 		{0x01, 0x00, 0x10, 0x08},
 		{0x01, 0x20, 0xff, 0xff, 0x00, 0xff, 0x10, 0x08},

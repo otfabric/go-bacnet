@@ -22,8 +22,13 @@ New to BACnet? Start with [PROTOCOL.md](PROTOCOL.md).
 A client and, since v0.6.0, a server. The client is tested on every change against six independent
 open-source BACnet stacks running in containers (bacnet-stack, BACpypes3,
 BACnet4J, Worldiety, System.IO.BACnet, cB-Sigma; [INTEROP.md](INTEROP.md)) and its
-requests are checked against Wireshark's dissector. It has **not** been
-validated against physical controllers yet; the checklist for that is
+requests are checked against Wireshark's dissector. Recorded traffic of
+physical devices (234 captures of Trane, Tridium, Reliable Controls, Delta
+Controls, Alerton, WattStopper, Lithonia and other controllers, mostly at
+BACnet plugfests; [testdata/captures](testdata/captures/README.md)) is
+committed and decoded, compared with Wireshark and encoded again; the client runs against the devices' recorded
+answers and the server gets their recorded requests. No live device was
+tested; the checklist for that is
 [docs/FIELD_VALIDATION.md](docs/FIELD_VALIDATION.md). The server is
 tested against the go-bacnet client and against three independent clients,
 the bacnet-stack command-line tools, BACnet4J and BACpypes3 in bacnet-interop
@@ -203,6 +208,7 @@ logging, a complete server) are compiled as part of the test suite: see
 | [docs/CLIENT_PROFILE.md](docs/CLIENT_PROFILE.md) | Descriptive standards profile |
 | [docs/STANDARD_BASELINE.md](docs/STANDARD_BASELINE.md) | Normative baseline |
 | [docs/FIELD_VALIDATION.md](docs/FIELD_VALIDATION.md) | Physical-device checklist |
+| [testdata/captures/README.md](testdata/captures/README.md) | Recorded traffic of physical devices: sources, devices, what the tests check, differences |
 | [PLAN.md](PLAN.md) | Forward plan |
 | [RELEASE.md](RELEASE.md) | Release history |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Local checks and interop how-to |

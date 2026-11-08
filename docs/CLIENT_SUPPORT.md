@@ -79,7 +79,7 @@ transport the client uses lives in package `bip` from v0.6.0
 | ReadPropertyMultiple | Implemented | Multi-peer | |
 | WriteProperty | Implemented | Multi-peer | Priority + NULL relinquish |
 | WritePropertyMultiple | Implemented | Multi-peer | First-failed Error model |
-| ReadRange | Implemented | Multi-peer | By position, sequence number and time on bacnet-stack, BACnet4J and the cB-Sigma simulator; typed LogRecord |
+| ReadRange | Implemented | Multi-peer | By position, sequence number and time on bacnet-stack, BACnet4J and the cB-Sigma simulator; typed LogRecord. Trend Log Multiple (LogMultipleRecords) and Event Log (EventLogRecords) answers: recorded traffic of a PolarSoft and an Automated Logic device only ([testdata/captures](../testdata/captures/README.md)) |
 | ReadProperty of the Device wildcard | Implemented | Multi-peer | bacnet-stack, BACnet4J; not implemented by BACpypes3 / Worldiety adapter |
 | ReadRangeAll pager | Implemented | Multi-peer | By position and by sequence number to LAST_ITEM; MaxItems/MaxBytes/MaxPages |
 | ReadPropertyMultipleBatched | Implemented | Multi-peer | Split by property and merge; shrink after Abort on bacnet-stack |

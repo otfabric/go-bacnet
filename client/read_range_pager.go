@@ -23,11 +23,15 @@ type ReadRangePageOptions struct {
 
 // ReadRangePageResult aggregates paged ReadRange ACKs.
 type ReadRangePageResult struct {
-	Pages         []service.ReadRangeACK
-	Items         []bacnet.ApplicationValue
-	LogRecords    []service.LogRecord
-	Partial       bool
-	StoppedReason string
+	Pages      []service.ReadRangeACK
+	Items      []bacnet.ApplicationValue
+	LogRecords []service.LogRecord
+	// LogMultipleRecords and EventLogRecords collect the pages' records of
+	// a Trend Log Multiple and an Event Log.
+	LogMultipleRecords []service.LogMultipleRecord
+	EventLogRecords    []service.EventLogRecord
+	Partial            bool
+	StoppedReason      string
 }
 
 // ReadRangeAll pages ReadRange until the peer reports LAST_ITEM, returns an
@@ -67,6 +71,8 @@ func (c *Client) ReadRangeAll(ctx context.Context, target Target, req service.Re
 		out.Pages = append(out.Pages, ack)
 		out.Items = append(out.Items, ack.ItemData...)
 		out.LogRecords = append(out.LogRecords, ack.LogRecords...)
+		out.LogMultipleRecords = append(out.LogMultipleRecords, ack.LogMultipleRecords...)
+		out.EventLogRecords = append(out.EventLogRecords, ack.EventLogRecords...)
 		for _, v := range ack.ItemData {
 			approxBytes += estimateValueBytes(v)
 		}

@@ -33,3 +33,6 @@ cover*.out
 /examples/read-range/read-range
 /examples/who-has/who-has
 /examples/write-multiple/write-multiple
+
+# Captures over 50 MB, downloaded by make captures-fetch
+/testdata/captures/cache/

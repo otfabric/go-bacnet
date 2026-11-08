@@ -8,4 +8,4 @@ Provenance fields follow `bacnet-interop` schema conventions:
 - `deterministic_reencode_equal`
 - `original_bytes_equal`
 
-Independently generated vectors only — do not commit vendor captures without redistribution rights.
+Independently generated vectors only. Recorded captures of real devices live in [testdata/captures](../captures/README.md).

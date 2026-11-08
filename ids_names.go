@@ -45,6 +45,7 @@ var objectTypeNames = map[ObjectType]string{
 	ObjectTypeSchedule:          "schedule",
 	ObjectTypeMultiStateValue:   "multi-state-value",
 	ObjectTypeTrendLog:          "trend-log",
+	ObjectTypeEventLog:          "event-log",
 	ObjectTypeLifeSafetyPoint:   "life-safety-point",
 	ObjectTypeLifeSafetyZone:    "life-safety-zone",
 	ObjectTypeAccumulator:       "accumulator",

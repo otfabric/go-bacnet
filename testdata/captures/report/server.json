@@ -1,0 +1,97 @@
+{
+  "differs_from_device": {
+    "service 12: device abort segmentation-not-supported, go-bacnet complex-ack 12": {
+      "count": 1,
+      "classification": "answer size: the recorded device's answer did not fit the requester's max-APDU; go-bacnet's Device object holds less"
+    },
+    "service 12: device complex-ack 12, go-bacnet error property/unknown-property": {
+      "count": 1,
+      "classification": "object model: the recorded Device object and go-bacnet's implement different optional properties"
+    },
+    "service 12: device error property/unknown-property, go-bacnet complex-ack 12": {
+      "count": 10,
+      "classification": "object model: the recorded Device object and go-bacnet's implement different optional properties"
+    },
+    "service 12: device reject other, go-bacnet complex-ack 12": {
+      "count": 1,
+      "classification": "insufficient evidence: the device refuses the read with Reject other (a routed SPAK MSTP, max-APDU 50, does so for its object-list)"
+    },
+    "service 14: device abort segmentation-not-supported, go-bacnet complex-ack 14": {
+      "count": 10,
+      "classification": "answer size: the recorded device's answer did not fit the requester's max-APDU; go-bacnet's Device object holds less"
+    },
+    "service 14: device error property/unknown-property, go-bacnet complex-ack 14": {
+      "count": 1,
+      "classification": "object model: the recorded Device object and go-bacnet's implement different optional properties"
+    },
+    "service 14: device error services/other, go-bacnet complex-ack 14": {
+      "count": 1,
+      "classification": "vendor difference: the device answers a failed ReadPropertyMultiple access with an Error PDU; go-bacnet reports it inside the ComplexACK (clause 15.7.1.3)"
+    },
+    "service 14: device reject unrecognized-service, go-bacnet complex-ack 14": {
+      "count": 4,
+      "classification": "unsupported by the recorded device: go-bacnet's server implements the service"
+    },
+    "service 15: device error property/no-space-to-write-property, go-bacnet error property/unknown-property": {
+      "count": 1,
+      "classification": "object model: the property written exists in only one of the two Device objects"
+    },
+    "service 15: device error property/write-access-denied, go-bacnet error property/unknown-property": {
+      "count": 1,
+      "classification": "object model: the property written exists in only one of the two Device objects"
+    },
+    "service 15: device simple-ack, go-bacnet error property/unknown-property": {
+      "count": 1,
+      "classification": "object model: the property written is writable only at the recorded device"
+    },
+    "service 17: device error services/password-failure, go-bacnet error security/password-failure": {
+      "count": 2,
+      "classification": "vendor difference: the device answers class services; go-bacnet class security"
+    },
+    "service 17: device simple-ack, go-bacnet error services/service-request-denied": {
+      "count": 1,
+      "classification": "protocol revision: go-bacnet's Device (revision 20 or later) refuses the deprecated DISABLE; the recorded device predates it"
+    },
+    "service 18: device complex-ack 18, go-bacnet reject unrecognized-service": {
+      "count": 10,
+      "classification": "vendor-specific: go-bacnet serves ConfirmedPrivateTransfer only with a hook"
+    },
+    "service 18: device error object/unknown-object, go-bacnet reject unrecognized-service": {
+      "count": 2,
+      "classification": "vendor-specific: go-bacnet serves ConfirmedPrivateTransfer only with a hook"
+    },
+    "service 18: device error services/other, go-bacnet reject unrecognized-service": {
+      "count": 2,
+      "classification": "vendor-specific: go-bacnet serves ConfirmedPrivateTransfer only with a hook"
+    },
+    "service 20: device error services/password-failure, go-bacnet error security/password-failure": {
+      "count": 4,
+      "classification": "vendor difference: the device answers class services; go-bacnet class security"
+    },
+    "service 20: device reject parameter-out-of-range, go-bacnet error services/service-request-denied": {
+      "count": 2,
+      "classification": "vendor difference: refusing START_BACKUP, the device rejects (undefined-enumeration from a device older than backup and restore, parameter-out-of-range from the PolarSoft server); go-bacnet answers services/service-request-denied, as the LMBC-300 does"
+    },
+    "service 20: device reject undefined-enumeration, go-bacnet error services/service-request-denied": {
+      "count": 3,
+      "classification": "vendor difference: refusing START_BACKUP, the device rejects (undefined-enumeration from a device older than backup and restore, parameter-out-of-range from the PolarSoft server); go-bacnet answers services/service-request-denied, as the LMBC-300 does"
+    },
+    "service 29: device reject unrecognized-service, go-bacnet complex-ack 29": {
+      "count": 4,
+      "classification": "unsupported by the recorded device: go-bacnet's server implements the service"
+    },
+    "service 3: device reject unrecognized-service, go-bacnet complex-ack 3": {
+      "count": 4,
+      "classification": "unsupported by the recorded device: go-bacnet's server implements the service"
+    }
+  },
+  "same_as_device": {
+    "service 12: complex-ack 12": 103,
+    "service 12: error property/unknown-property": 7,
+    "service 14: complex-ack 14": 32,
+    "service 17: simple-ack": 1,
+    "service 18: reject unrecognized-service": 1,
+    "service 20: error services/service-request-denied": 2,
+    "service 20: simple-ack": 4
+  }
+}

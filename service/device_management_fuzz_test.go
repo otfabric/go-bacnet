@@ -5,11 +5,16 @@ package service_test
 import (
 	"testing"
 
+	"github.com/otfabric/go-bacnet/internal/capture"
+
 	"github.com/otfabric/go-bacnet"
 	"github.com/otfabric/go-bacnet/service"
 )
 
 func FuzzDecodeDeviceCommunicationControl(f *testing.F) {
+	for _, s := range capture.LayerSeeds(capture.LayerService, capture.ServiceIs(service.DeviceCommunicationControlRequest{})) { // recorded devices
+		f.Add(s)
+	}
 	limits := bacnet.DefaultDecodeLimits()
 	f.Add([]byte(nil))
 	if p, err := service.EncodeDeviceCommunicationControl(service.DeviceCommunicationControlRequest{
@@ -23,6 +28,9 @@ func FuzzDecodeDeviceCommunicationControl(f *testing.F) {
 }
 
 func FuzzDecodeReinitializeDevice(f *testing.F) {
+	for _, s := range capture.LayerSeeds(capture.LayerService, capture.ServiceIs(service.ReinitializeDeviceRequest{})) { // recorded devices
+		f.Add(s)
+	}
 	limits := bacnet.DefaultDecodeLimits()
 	f.Add([]byte(nil))
 	if p, err := service.EncodeReinitializeDevice(service.ReinitializeDeviceRequest{

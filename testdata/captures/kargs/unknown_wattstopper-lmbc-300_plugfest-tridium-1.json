@@ -1,0 +1,1916 @@
+{
+  "id": "tridium-plugfest",
+  "summary": "Plugfest: NiagaraAX Station 3.6.38 and the NiagaraAX BACnet Advanced Workstation 3.7.18 with a PolarSoft server routing to a WattStopper LMBC-300",
+  "source": {
+    "name": "plugfest-tridium-1.pcap",
+    "file": "kargs/unknown_wattstopper-lmbc-300_plugfest-tridium-1.pcap",
+    "url": "https://kargs.net/captures/plugfest-tridium-1.pcap",
+    "sha256": "54646e0a5d134362d50295208074fa7913166e07352fb8011f3cdb801dd681af",
+    "size": 584872,
+    "fetched": "2026-11-08",
+    "terms": "No licence or redistribution statement on the site; the files are committed byte-identical.",
+    "frames": 3583,
+    "datagrams": 3583
+  },
+  "class": "A",
+  "class_basis": "model and firmware from the devices' own Device objects: 9260 Linux� Server 3.30; LMBC-300 04.22; NiagaraAX BACnet Advanced Workstation 3.7.18; NiagaraAX Station 3.6.38",
+  "devices": [
+    {
+      "station": "172.16.36.1:47808|local:",
+      "instance": 36011,
+      "vendor_id": 36,
+      "vendor_name": "Tridium",
+      "model_name": "NiagaraAX BACnet Advanced Workstation",
+      "firmware_revision": "3.7.18",
+      "application_software_version": "Tridium 3.7.18",
+      "protocol_revision": 7,
+      "max_apdu": 1476,
+      "segmentation": 0,
+      "frames": [
+        333,
+        335
+      ],
+      "role": "NiagaraAX workstation (Tridium software)"
+    },
+    {
+      "station": "172.16.36.205:47808|local:",
+      "instance": 36381,
+      "vendor_id": 36,
+      "vendor_name": "Tridium",
+      "model_name": "NiagaraAX Station",
+      "firmware_revision": "3.6.38",
+      "application_software_version": "Tridium 3.6.38",
+      "protocol_revision": 7,
+      "max_apdu": 480,
+      "segmentation": 0,
+      "frames": [
+        3,
+        49,
+        53,
+        55,
+        57,
+        61
+      ],
+      "role": "NiagaraAX Station (Tridium software)"
+    },
+    {
+      "station": "172.16.86.1:47808|local:",
+      "instance": 86000,
+      "vendor_id": 4,
+      "vendor_name": "PolarSoft� Inc.",
+      "model_name": "9260 Linux� Server",
+      "firmware_revision": "3.30",
+      "application_software_version": "3.30",
+      "protocol_revision": 4,
+      "max_apdu": 1476,
+      "segmentation": 3,
+      "frames": [
+        2,
+        13,
+        15,
+        17,
+        19,
+        495
+      ],
+      "role": "PolarSoft server, router to network 8601"
+    },
+    {
+      "station": "172.16.86.1:47808|net=8601:52",
+      "instance": 86001,
+      "vendor_id": 86,
+      "vendor_name": "WattStopper",
+      "model_name": "LMBC-300",
+      "firmware_revision": "04.22",
+      "application_software_version": "04.22",
+      "protocol_revision": 10,
+      "max_apdu": 480,
+      "segmentation": 3,
+      "frames": [
+        5,
+        27,
+        29,
+        31,
+        33,
+        518
+      ],
+      "role": "WattStopper LMBC-300 lighting controller on network 8601"
+    }
+  ],
+  "frames": [
+    {
+      "frame": 1,
+      "time": "2011-11-15T17:41:29.067752Z",
+      "src": "172.16.36.1:47808",
+      "dst": "172.16.255.255:47808",
+      "hex": "810b000c0120ffff00ff1008",
+      "wireshark": {
+        "bvlc_function": "0x0b",
+        "npdu_control": "0x20",
+        "dnet": "65535",
+        "apdu_type": "1",
+        "unconfirmed_service": "8"
+      }
+    },
+    {
+      "frame": 2,
+      "time": "2011-11-15T17:41:29.069631Z",
+      "src": "172.16.86.1:47808",
+      "dst": "172.16.255.255:47808",
+      "hex": "810b00180120ffff00ff1000c402014ff02205c491032104",
+      "wireshark": {
+        "bvlc_function": "0x0b",
+        "npdu_control": "0x20",
+        "dnet": "65535",
+        "apdu_type": "1",
+        "unconfirmed_service": "0"
+      }
+    },
+    {
+      "frame": 3,
+      "time": "2011-11-15T17:41:29.070834Z",
+      "src": "172.16.36.205:47808",
+      "dst": "172.16.255.255:47808",
+      "hex": "810b00180120ffff00ff1000c402008e1d2201e091002124",
+      "wireshark": {
+        "bvlc_function": "0x0b",
+        "npdu_control": "0x20",
+        "dnet": "65535",
+        "apdu_type": "1",
+        "unconfirmed_service": "0"
+      }
+    },
+    {
+      "frame": 4,
+      "time": "2011-11-15T17:41:29.072313Z",
+      "src": "172.16.36.2:47808",
+      "dst": "172.16.255.255:47808",
+      "hex": "810b00180120ffff00ff1000c402008cac2205c491002124",
+      "wireshark": {
+        "bvlc_function": "0x0b",
+        "npdu_control": "0x20",
+        "dnet": "65535",
+        "apdu_type": "1",
+        "unconfirmed_service": "0"
+      }
+    },
+    {
+      "frame": 5,
+      "time": "2011-11-15T17:41:29.237464Z",
+      "src": "172.16.86.1:47808",
+      "dst": "172.16.255.255:47808",
+      "hex": "810b001c0128ffff0021990152fe1000c402014ff12201e091032156",
+      "wireshark": {
+        "bvlc_function": "0x0b",
+        "npdu_control": "0x28",
+        "dnet": "65535",
+        "snet": "8601",
+        "apdu_type": "1",
+        "unconfirmed_service": "0"
+      }
+    },
+    {
+      "frame": 6,
+      "time": "2011-11-15T17:41:29.555165Z",
+      "src": "172.16.36.1:47808",
+      "dst": "172.16.86.1:47808",
+      "hex": "810a001101040205160c0c02014ff0194d",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x04",
+        "apdu_type": "0",
+        "confirmed_service": "12",
+        "invoke_id": "22"
+      }
+    },
+    {
+      "frame": 7,
+      "time": "2011-11-15T17:41:29.556377Z",
+      "src": "172.16.86.1:47808",
+      "dst": "172.16.36.1:47808",
+      "hex": "810a002f010030160c0c02014ff0194d3e751b00506f6c6172536f6674204672656552616e676520526f757465723f",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x00",
+        "apdu_type": "3",
+        "confirmed_service": "12",
+        "invoke_id": "22"
+      }
+    },
+    {
+      "frame": 8,
+      "time": "2011-11-15T17:41:29.55827Z",
+      "src": "172.16.36.1:47808",
+      "dst": "172.16.86.1:47808",
+      "hex": "810a001301040205170c0c02014ff0194c2900",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x04",
+        "apdu_type": "0",
+        "confirmed_service": "12",
+        "invoke_id": "23"
+      }
+    },
+    {
+      "frame": 9,
+      "time": "2011-11-15T17:41:29.560358Z",
+      "src": "172.16.86.1:47808",
+      "dst": "172.16.36.1:47808",
+      "hex": "810a0016010030170c0c02014ff0194c29003e21013f",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x00",
+        "apdu_type": "3",
+        "confirmed_service": "12",
+        "invoke_id": "23"
+      }
+    },
+    {
+      "frame": 12,
+      "time": "2011-11-15T17:41:29.565021Z",
+      "src": "172.16.36.1:47808",
+      "dst": "172.16.86.1:47808",
+      "hex": "810a001101040205190c0c02014ff01979",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x04",
+        "apdu_type": "0",
+        "confirmed_service": "12",
+        "invoke_id": "25"
+      }
+    },
+    {
+      "frame": 13,
+      "time": "2011-11-15T17:41:29.566359Z",
+      "src": "172.16.86.1:47808",
+      "dst": "172.16.36.1:47808",
+      "hex": "810a0024010030190c0c02014ff019793e751000506f6c6172536f6674ae20496e632e3f",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x00",
+        "apdu_type": "3",
+        "confirmed_service": "12",
+        "invoke_id": "25"
+      }
+    },
+    {
+      "frame": 14,
+      "time": "2011-11-15T17:41:29.568125Z",
+      "src": "172.16.36.1:47808",
+      "dst": "172.16.86.1:47808",
+      "hex": "810a0011010402051a0c0c02014ff01946",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x04",
+        "apdu_type": "0",
+        "confirmed_service": "12",
+        "invoke_id": "26"
+      }
+    },
+    {
+      "frame": 15,
+      "time": "2011-11-15T17:41:29.569388Z",
+      "src": "172.16.86.1:47808",
+      "dst": "172.16.36.1:47808",
+      "hex": "810a00270100301a0c0c02014ff019463e75130039323630204c696e7578ae205365727665723f",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x00",
+        "apdu_type": "3",
+        "confirmed_service": "12",
+        "invoke_id": "26"
+      }
+    },
+    {
+      "frame": 16,
+      "time": "2011-11-15T17:41:29.57106Z",
+      "src": "172.16.36.1:47808",
+      "dst": "172.16.86.1:47808",
+      "hex": "810a0011010402051b0c0c02014ff0192c",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x04",
+        "apdu_type": "0",
+        "confirmed_service": "12",
+        "invoke_id": "27"
+      }
+    },
+    {
+      "frame": 17,
+      "time": "2011-11-15T17:41:29.572367Z",
+      "src": "172.16.86.1:47808",
+      "dst": "172.16.36.1:47808",
+      "hex": "810a00190100301b0c0c02014ff0192c3e750500332e33303f",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x00",
+        "apdu_type": "3",
+        "confirmed_service": "12",
+        "invoke_id": "27"
+      }
+    },
+    {
+      "frame": 18,
+      "time": "2011-11-15T17:41:29.573932Z",
+      "src": "172.16.36.1:47808",
+      "dst": "172.16.86.1:47808",
+      "hex": "810a0011010402051c0c0c02014ff0190c",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x04",
+        "apdu_type": "0",
+        "confirmed_service": "12",
+        "invoke_id": "28"
+      }
+    },
+    {
+      "frame": 19,
+      "time": "2011-11-15T17:41:29.575362Z",
+      "src": "172.16.86.1:47808",
+      "dst": "172.16.36.1:47808",
+      "hex": "810a00190100301c0c0c02014ff0190c3e750500332e33303f",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x00",
+        "apdu_type": "3",
+        "confirmed_service": "12",
+        "invoke_id": "28"
+      }
+    },
+    {
+      "frame": 20,
+      "time": "2011-11-15T17:41:29.899252Z",
+      "src": "172.16.36.1:47808",
+      "dst": "172.16.86.1:47808",
+      "hex": "810a0016012421990152ff02050f0c0c02014ff1194d",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x24",
+        "dnet": "8601",
+        "apdu_type": "0",
+        "confirmed_service": "12",
+        "invoke_id": "15"
+      }
+    },
+    {
+      "frame": 21,
+      "time": "2011-11-15T17:41:29.992321Z",
+      "src": "172.16.86.1:47808",
+      "dst": "172.16.36.1:47808",
+      "hex": "810a0027010821990152300f0c0c02014ff1194d3e750f004e6574776f726b204272696467653f",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x08",
+        "snet": "8601",
+        "apdu_type": "3",
+        "confirmed_service": "12",
+        "invoke_id": "15"
+      }
+    },
+    {
+      "frame": 22,
+      "time": "2011-11-15T17:41:29.994481Z",
+      "src": "172.16.36.1:47808",
+      "dst": "172.16.86.1:47808",
+      "hex": "810a0018012421990152ff0205100c0c02014ff1194c2900",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x24",
+        "dnet": "8601",
+        "apdu_type": "0",
+        "confirmed_service": "12",
+        "invoke_id": "16"
+      }
+    },
+    {
+      "frame": 23,
+      "time": "2011-11-15T17:41:30.143277Z",
+      "src": "172.16.86.1:47808",
+      "dst": "172.16.36.1:47808",
+      "hex": "810a001a01082199015230100c0c02014ff1194c29003e211a3f",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x08",
+        "snet": "8601",
+        "apdu_type": "3",
+        "confirmed_service": "12",
+        "invoke_id": "16"
+      }
+    },
+    {
+      "frame": 26,
+      "time": "2011-11-15T17:41:30.295269Z",
+      "src": "172.16.36.1:47808",
+      "dst": "172.16.86.1:47808",
+      "hex": "810a0016012421990152ff0205120c0c02014ff11979",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x24",
+        "dnet": "8601",
+        "apdu_type": "0",
+        "confirmed_service": "12",
+        "invoke_id": "18"
+      }
+    },
+    {
+      "frame": 27,
+      "time": "2011-11-15T17:41:30.439228Z",
+      "src": "172.16.86.1:47808",
+      "dst": "172.16.36.1:47808",
+      "hex": "810a002401082199015230120c0c02014ff119793e750c005761747453746f707065723f",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x08",
+        "snet": "8601",
+        "apdu_type": "3",
+        "confirmed_service": "12",
+        "invoke_id": "18"
+      }
+    },
+    {
+      "frame": 28,
+      "time": "2011-11-15T17:41:30.441426Z",
+      "src": "172.16.36.1:47808",
+      "dst": "172.16.86.1:47808",
+      "hex": "810a0016012421990152ff0205130c0c02014ff11946",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x24",
+        "dnet": "8601",
+        "apdu_type": "0",
+        "confirmed_service": "12",
+        "invoke_id": "19"
+      }
+    },
+    {
+      "frame": 29,
+      "time": "2011-11-15T17:41:30.605214Z",
+      "src": "172.16.86.1:47808",
+      "dst": "172.16.36.1:47808",
+      "hex": "810a002101082199015230130c0c02014ff119463e7509004c4d42432d3330303f",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x08",
+        "snet": "8601",
+        "apdu_type": "3",
+        "confirmed_service": "12",
+        "invoke_id": "19"
+      }
+    },
+    {
+      "frame": 30,
+      "time": "2011-11-15T17:41:30.607128Z",
+      "src": "172.16.36.1:47808",
+      "dst": "172.16.86.1:47808",
+      "hex": "810a0016012421990152ff0205140c0c02014ff1192c",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x24",
+        "dnet": "8601",
+        "apdu_type": "0",
+        "confirmed_service": "12",
+        "invoke_id": "20"
+      }
+    },
+    {
+      "frame": 31,
+      "time": "2011-11-15T17:41:30.744174Z",
+      "src": "172.16.86.1:47808",
+      "dst": "172.16.36.1:47808",
+      "hex": "810a001e01082199015230140c0c02014ff1192c3e75060030342e32323f",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x08",
+        "snet": "8601",
+        "apdu_type": "3",
+        "confirmed_service": "12",
+        "invoke_id": "20"
+      }
+    },
+    {
+      "frame": 32,
+      "time": "2011-11-15T17:41:30.746577Z",
+      "src": "172.16.36.1:47808",
+      "dst": "172.16.86.1:47808",
+      "hex": "810a0016012421990152ff0205150c0c02014ff1190c",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x24",
+        "dnet": "8601",
+        "apdu_type": "0",
+        "confirmed_service": "12",
+        "invoke_id": "21"
+      }
+    },
+    {
+      "frame": 33,
+      "time": "2011-11-15T17:41:30.891158Z",
+      "src": "172.16.86.1:47808",
+      "dst": "172.16.36.1:47808",
+      "hex": "810a001e01082199015230150c0c02014ff1190c3e75060030342e32323f",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x08",
+        "snet": "8601",
+        "apdu_type": "3",
+        "confirmed_service": "12",
+        "invoke_id": "21"
+      }
+    },
+    {
+      "frame": 34,
+      "time": "2011-11-15T17:41:31.268765Z",
+      "src": "172.16.86.42:47808",
+      "dst": "172.16.255.255:47808",
+      "hex": "810b00120120ffff000e10080a8e1d1a8e1d",
+      "wireshark": {
+        "bvlc_function": "0x0b",
+        "npdu_control": "0x20",
+        "dnet": "65535",
+        "apdu_type": "1",
+        "unconfirmed_service": "8"
+      }
+    },
+    {
+      "frame": 35,
+      "time": "2011-11-15T17:41:31.271887Z",
+      "src": "172.16.36.205:47808",
+      "dst": "172.16.255.255:47808",
+      "hex": "810b00180120ffff00ff1000c402008e1d2201e091002124",
+      "wireshark": {
+        "bvlc_function": "0x0b",
+        "npdu_control": "0x20",
+        "dnet": "65535",
+        "apdu_type": "1",
+        "unconfirmed_service": "0"
+      }
+    },
+    {
+      "frame": 36,
+      "time": "2011-11-15T17:41:31.272553Z",
+      "src": "172.16.86.42:47808",
+      "dst": "172.16.36.205:47808",
+      "hex": "810a001301040005010e0c02008e1d1e09081f",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x04",
+        "apdu_type": "0",
+        "confirmed_service": "14",
+        "invoke_id": "1"
+      }
+    },
+    {
+      "frame": 37,
+      "time": "2011-11-15T17:41:31.281631Z",
+      "src": "172.16.36.205:47808",
+      "dst": "172.16.86.42:47808",
+      "hex": "810a00090100710104",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x00",
+        "apdu_type": "7",
+        "invoke_id": "1"
+      }
+    },
+    {
+      "frame": 38,
+      "time": "2011-11-15T17:41:31.281698Z",
+      "src": "172.16.86.42:47808",
+      "dst": "172.16.36.205:47808",
+      "hex": "810a001301040005020e0c02008e1d1e09081f",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x04",
+        "apdu_type": "0",
+        "confirmed_service": "14",
+        "invoke_id": "2"
+      }
+    },
+    {
+      "frame": 39,
+      "time": "2011-11-15T17:41:31.290932Z",
+      "src": "172.16.36.205:47808",
+      "dst": "172.16.86.42:47808",
+      "hex": "810a00090100710204",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x00",
+        "apdu_type": "7",
+        "invoke_id": "2"
+      }
+    },
+    {
+      "frame": 40,
+      "time": "2011-11-15T17:41:31.291018Z",
+      "src": "172.16.86.42:47808",
+      "dst": "172.16.36.205:47808",
+      "hex": "810a001101040005030c0c02008e1d194b",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x04",
+        "apdu_type": "0",
+        "confirmed_service": "12",
+        "invoke_id": "3"
+      }
+    },
+    {
+      "frame": 41,
+      "time": "2011-11-15T17:41:31.294467Z",
+      "src": "172.16.36.205:47808",
+      "dst": "172.16.86.42:47808",
+      "hex": "810a0017010030030c0c02008e1d194b3ec402008e1d3f",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x00",
+        "apdu_type": "3",
+        "confirmed_service": "12",
+        "invoke_id": "3"
+      }
+    },
+    {
+      "frame": 42,
+      "time": "2011-11-15T17:41:31.294552Z",
+      "src": "172.16.86.42:47808",
+      "dst": "172.16.36.205:47808",
+      "hex": "810a001101040005040c0c02008e1d194d",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x04",
+        "apdu_type": "0",
+        "confirmed_service": "12",
+        "invoke_id": "4"
+      }
+    },
+    {
+      "frame": 43,
+      "time": "2011-11-15T17:41:31.298082Z",
+      "src": "172.16.36.205:47808",
+      "dst": "172.16.86.42:47808",
+      "hex": "810a0026010030040c0c02008e1d194d3e75120074726964506c75673230355f33363338313f",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x00",
+        "apdu_type": "3",
+        "confirmed_service": "12",
+        "invoke_id": "4"
+      }
+    },
+    {
+      "frame": 48,
+      "time": "2011-11-15T17:41:31.305463Z",
+      "src": "172.16.86.42:47808",
+      "dst": "172.16.36.205:47808",
+      "hex": "810a001101040005070c0c02008e1d1979",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x04",
+        "apdu_type": "0",
+        "confirmed_service": "12",
+        "invoke_id": "7"
+      }
+    },
+    {
+      "frame": 49,
+      "time": "2011-11-15T17:41:31.309009Z",
+      "src": "172.16.36.205:47808",
+      "dst": "172.16.86.42:47808",
+      "hex": "810a001c010030070c0c02008e1d19793e7508005472696469756d3f",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x00",
+        "apdu_type": "3",
+        "confirmed_service": "12",
+        "invoke_id": "7"
+      }
+    },
+    {
+      "frame": 52,
+      "time": "2011-11-15T17:41:31.312543Z",
+      "src": "172.16.86.42:47808",
+      "dst": "172.16.36.205:47808",
+      "hex": "810a001101040005090c0c02008e1d1946",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x04",
+        "apdu_type": "0",
+        "confirmed_service": "12",
+        "invoke_id": "9"
+      }
+    },
+    {
+      "frame": 53,
+      "time": "2011-11-15T17:41:31.316054Z",
+      "src": "172.16.36.205:47808",
+      "dst": "172.16.86.42:47808",
+      "hex": "810a0026010030090c0c02008e1d19463e7512004e69616761726141582053746174696f6e3f",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x00",
+        "apdu_type": "3",
+        "confirmed_service": "12",
+        "invoke_id": "9"
+      }
+    },
+    {
+      "frame": 54,
+      "time": "2011-11-15T17:41:31.316138Z",
+      "src": "172.16.86.42:47808",
+      "dst": "172.16.36.205:47808",
+      "hex": "810a0011010400050a0c0c02008e1d192c",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x04",
+        "apdu_type": "0",
+        "confirmed_service": "12",
+        "invoke_id": "10"
+      }
+    },
+    {
+      "frame": 55,
+      "time": "2011-11-15T17:41:31.319603Z",
+      "src": "172.16.36.205:47808",
+      "dst": "172.16.86.42:47808",
+      "hex": "810a001b0100300a0c0c02008e1d192c3e750700332e362e33383f",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x00",
+        "apdu_type": "3",
+        "confirmed_service": "12",
+        "invoke_id": "10"
+      }
+    },
+    {
+      "frame": 56,
+      "time": "2011-11-15T17:41:31.319712Z",
+      "src": "172.16.86.42:47808",
+      "dst": "172.16.36.205:47808",
+      "hex": "810a0011010400050b0c0c02008e1d190c",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x04",
+        "apdu_type": "0",
+        "confirmed_service": "12",
+        "invoke_id": "11"
+      }
+    },
+    {
+      "frame": 57,
+      "time": "2011-11-15T17:41:31.323336Z",
+      "src": "172.16.36.205:47808",
+      "dst": "172.16.86.42:47808",
+      "hex": "810a00230100300b0c0c02008e1d190c3e750f005472696469756d20332e362e33383f",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x00",
+        "apdu_type": "3",
+        "confirmed_service": "12",
+        "invoke_id": "11"
+      }
+    },
+    {
+      "frame": 60,
+      "time": "2011-11-15T17:41:31.326877Z",
+      "src": "172.16.86.42:47808",
+      "dst": "172.16.36.205:47808",
+      "hex": "810a0011010400050d0c0c02008e1d198b",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x04",
+        "apdu_type": "0",
+        "confirmed_service": "12",
+        "invoke_id": "13"
+      }
+    },
+    {
+      "frame": 61,
+      "time": "2011-11-15T17:41:31.330232Z",
+      "src": "172.16.36.205:47808",
+      "dst": "172.16.86.42:47808",
+      "hex": "810a00140100300d0c0c02008e1d198b3e21073f",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x00",
+        "apdu_type": "3",
+        "confirmed_service": "12",
+        "invoke_id": "13"
+      }
+    },
+    {
+      "frame": 80,
+      "time": "2011-11-15T17:41:31.36308Z",
+      "src": "172.16.86.42:47808",
+      "dst": "172.16.36.205:47808",
+      "hex": "810a001301040005170e0c000000001e09081f",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x04",
+        "apdu_type": "0",
+        "confirmed_service": "14",
+        "invoke_id": "23"
+      }
+    },
+    {
+      "frame": 81,
+      "time": "2011-11-15T17:41:31.368461Z",
+      "src": "172.16.36.205:47808",
+      "dst": "172.16.86.42:47808",
+      "hex": "810a008e010030170e0c000000001e294b4ec4000000004f294d4e751200506f696e74732e4e756d657269632e41494f294f4e91004f29554e44420000004f296f4e8204004f29244e91004f29514e104f29754e91404f29674e91004f291c4e71004f29164e443f8000004f291f4e71004f29454e44c3e5d5c34f29414e4447c350004f296a4e443c23d70a4f1f",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x00",
+        "apdu_type": "3",
+        "confirmed_service": "14",
+        "invoke_id": "23"
+      }
+    },
+    {
+      "frame": 82,
+      "time": "2011-11-15T17:41:31.368713Z",
+      "src": "172.16.86.42:47808",
+      "dst": "172.16.36.205:47808",
+      "hex": "810a001301040005180e0c004000001e09081f",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x04",
+        "apdu_type": "0",
+        "confirmed_service": "14",
+        "invoke_id": "24"
+      }
+    },
+    {
+      "frame": 83,
+      "time": "2011-11-15T17:41:31.375236Z",
+      "src": "172.16.36.205:47808",
+      "dst": "172.16.86.42:47808",
+      "hex": "810a00ab010030180e0c004000001e294b4ec4004000004f294d4e751200506f696e74732e4e756d657269632e414f4f294f4e91014f29554e44000000004f296f4e8204004f29244e91004f29514e104f29754e91304f29574e000000000000000000000000000000004f29684e44000000004f29674e91004f291c4e71004f29164e443f8000004f291f4e71004f29454e44000000004f29414e447f8000004f296a4e443dcccccd4f1f",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x00",
+        "apdu_type": "3",
+        "confirmed_service": "14",
+        "invoke_id": "24"
+      }
+    },
+    {
+      "frame": 332,
+      "time": "2011-11-15T17:41:35.375938Z",
+      "src": "172.16.86.42:47808",
+      "dst": "172.16.255.255:47808",
+      "hex": "810b00120120ffff000e10080a8cab1a8cab",
+      "wireshark": {
+        "bvlc_function": "0x0b",
+        "npdu_control": "0x20",
+        "dnet": "65535",
+        "apdu_type": "1",
+        "unconfirmed_service": "8"
+      }
+    },
+    {
+      "frame": 333,
+      "time": "2011-11-15T17:41:35.379256Z",
+      "src": "172.16.36.1:47808",
+      "dst": "172.16.255.255:47808",
+      "hex": "810b00180120ffff00ff1000c402008cab2205c491002124",
+      "wireshark": {
+        "bvlc_function": "0x0b",
+        "npdu_control": "0x20",
+        "dnet": "65535",
+        "apdu_type": "1",
+        "unconfirmed_service": "0"
+      }
+    },
+    {
+      "frame": 334,
+      "time": "2011-11-15T17:41:35.379899Z",
+      "src": "172.16.86.42:47808",
+      "dst": "172.16.36.1:47808",
+      "hex": "810a001301040005010e0c02008cab1e09081f",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x04",
+        "apdu_type": "0",
+        "confirmed_service": "14",
+        "invoke_id": "1"
+      }
+    },
+    {
+      "frame": 335,
+      "time": "2011-11-15T17:41:35.405687Z",
+      "src": "172.16.36.1:47808",
+      "dst": "172.16.86.42:47808",
+      "hex": "810a01a8010030010e0c02008cab1e294b4ec402008cab4f294d4e750d006367706c75675f33363031314f294f4e91084f29704e91004f29794e7508005472696469756d4f29784e21244f29464e7526004e6961676172614158204241436e657420416476616e63656420576f726b73746174696f6e4f292c4e750700332e372e31384f290c4e750f005472696469756d20332e372e31384f29624e21014f298b4e21074f29614e85060060cbe83ee84f29604e850501008000004f294c4ec402008cab4f293e4e2205c44f296b4e91004f290b4e220bb84f29494e21034f291e4e4f299b4e21024f293a4e750800756e6b6e6f776e4f291c4e751b004c6f63616c204241436e657420446576696365206f626a6563744f29a74e21ff4f29394eb40c2923464f29384ea46f0b0f024f29774e32012c4f29184e104f290a4e2207d04f29744e4f29984e4f29404e217f4f293f4e21014f299a4e4f299d4e2ea4ffffffffb4ffffffff2f4f29994e21b44f29984e4f29ce4e4f29cc4e2205a04f29c14e114f29c34e21004f2a053a4e91004f2a053b4e213c4f2a053c4e21b44f2a053d4e213c4f1f",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x00",
+        "apdu_type": "3",
+        "confirmed_service": "14",
+        "invoke_id": "1"
+      }
+    },
+    {
+      "frame": 336,
+      "time": "2011-11-15T17:41:35.413326Z",
+      "src": "172.16.86.42:47808",
+      "dst": "172.16.36.1:47808",
+      "hex": "810a001301040005020e0c02008cab1e09081f",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x04",
+        "apdu_type": "0",
+        "confirmed_service": "14",
+        "invoke_id": "2"
+      }
+    },
+    {
+      "frame": 337,
+      "time": "2011-11-15T17:41:35.416995Z",
+      "src": "172.16.36.1:47808",
+      "dst": "172.16.86.42:47808",
+      "hex": "810a01a8010030020e0c02008cab1e294b4ec402008cab4f294d4e750d006367706c75675f33363031314f294f4e91084f29704e91004f29794e7508005472696469756d4f29784e21244f29464e7526004e6961676172614158204241436e657420416476616e63656420576f726b73746174696f6e4f292c4e750700332e372e31384f290c4e750f005472696469756d20332e372e31384f29624e21014f298b4e21074f29614e85060060cbe83ee84f29604e850501008000004f294c4ec402008cab4f293e4e2205c44f296b4e91004f290b4e220bb84f29494e21034f291e4e4f299b4e21024f293a4e750800756e6b6e6f776e4f291c4e751b004c6f63616c204241436e657420446576696365206f626a6563744f29a74e21ff4f29394eb40c2923494f29384ea46f0b0f024f29774e32012c4f29184e104f290a4e2207d04f29744e4f29984e4f29404e217f4f293f4e21014f299a4e4f299d4e2ea4ffffffffb4ffffffff2f4f29994e21b44f29984e4f29ce4e4f29cc4e2205a04f29c14e114f29c34e21004f2a053a4e91004f2a053b4e213c4f2a053c4e21b44f2a053d4e213c4f1f",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x00",
+        "apdu_type": "3",
+        "confirmed_service": "14",
+        "invoke_id": "2"
+      }
+    },
+    {
+      "frame": 338,
+      "time": "2011-11-15T17:41:35.422612Z",
+      "src": "172.16.86.42:47808",
+      "dst": "172.16.36.1:47808",
+      "hex": "810a001101040005030c0c02008cab194b",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x04",
+        "apdu_type": "0",
+        "confirmed_service": "12",
+        "invoke_id": "3"
+      }
+    },
+    {
+      "frame": 339,
+      "time": "2011-11-15T17:41:35.424494Z",
+      "src": "172.16.36.1:47808",
+      "dst": "172.16.86.42:47808",
+      "hex": "810a0017010030030c0c02008cab194b3ec402008cab3f",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x00",
+        "apdu_type": "3",
+        "confirmed_service": "12",
+        "invoke_id": "3"
+      }
+    },
+    {
+      "frame": 340,
+      "time": "2011-11-15T17:41:35.424596Z",
+      "src": "172.16.86.42:47808",
+      "dst": "172.16.36.1:47808",
+      "hex": "810a001101040005040c0c02008cab194d",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x04",
+        "apdu_type": "0",
+        "confirmed_service": "12",
+        "invoke_id": "4"
+      }
+    },
+    {
+      "frame": 341,
+      "time": "2011-11-15T17:41:35.426467Z",
+      "src": "172.16.36.1:47808",
+      "dst": "172.16.86.42:47808",
+      "hex": "810a0021010030040c0c02008cab194d3e750d006367706c75675f33363031313f",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x00",
+        "apdu_type": "3",
+        "confirmed_service": "12",
+        "invoke_id": "4"
+      }
+    },
+    {
+      "frame": 378,
+      "time": "2011-11-15T17:41:42.582703Z",
+      "src": "172.16.36.2:47808",
+      "dst": "172.16.255.255:47808",
+      "hex": "810b000801001008",
+      "wireshark": {
+        "bvlc_function": "0x0b",
+        "npdu_control": "0x00",
+        "apdu_type": "1",
+        "unconfirmed_service": "8"
+      }
+    },
+    {
+      "frame": 379,
+      "time": "2011-11-15T17:41:42.583606Z",
+      "src": "172.16.36.2:47808",
+      "dst": "172.16.86.1:47808",
+      "hex": "810a000c0120219900ff1008",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x20",
+        "dnet": "8601",
+        "apdu_type": "1",
+        "unconfirmed_service": "8"
+      }
+    },
+    {
+      "frame": 380,
+      "time": "2011-11-15T17:41:42.584628Z",
+      "src": "172.16.86.1:47808",
+      "dst": "172.16.255.255:47808",
+      "hex": "810b00180120ffff00ff1000c402014ff02205c491032104",
+      "wireshark": {
+        "bvlc_function": "0x0b",
+        "npdu_control": "0x20",
+        "dnet": "65535",
+        "apdu_type": "1",
+        "unconfirmed_service": "0"
+      }
+    },
+    {
+      "frame": 381,
+      "time": "2011-11-15T17:41:42.585076Z",
+      "src": "172.16.36.1:47808",
+      "dst": "172.16.255.255:47808",
+      "hex": "810b00180120ffff00ff1000c402008cab2205c491002124",
+      "wireshark": {
+        "bvlc_function": "0x0b",
+        "npdu_control": "0x20",
+        "dnet": "65535",
+        "apdu_type": "1",
+        "unconfirmed_service": "0"
+      }
+    },
+    {
+      "frame": 383,
+      "time": "2011-11-15T17:41:42.683512Z",
+      "src": "172.16.86.1:47808",
+      "dst": "172.16.255.255:47808",
+      "hex": "810b001c0128ffff0021990152fe1000c402014ff12201e091032156",
+      "wireshark": {
+        "bvlc_function": "0x0b",
+        "npdu_control": "0x28",
+        "dnet": "65535",
+        "snet": "8601",
+        "apdu_type": "1",
+        "unconfirmed_service": "0"
+      }
+    },
+    {
+      "frame": 412,
+      "time": "2011-11-15T17:41:50.410647Z",
+      "src": "172.16.36.1:47808",
+      "dst": "172.16.255.255:47808",
+      "hex": "810b000c0120ffff00ff1008",
+      "wireshark": {
+        "bvlc_function": "0x0b",
+        "npdu_control": "0x20",
+        "dnet": "65535",
+        "apdu_type": "1",
+        "unconfirmed_service": "8"
+      }
+    },
+    {
+      "frame": 413,
+      "time": "2011-11-15T17:41:50.412286Z",
+      "src": "172.16.36.2:47808",
+      "dst": "172.16.255.255:47808",
+      "hex": "810b00180120ffff00ff1000c402008cac2205c491002124",
+      "wireshark": {
+        "bvlc_function": "0x0b",
+        "npdu_control": "0x20",
+        "dnet": "65535",
+        "apdu_type": "1",
+        "unconfirmed_service": "0"
+      }
+    },
+    {
+      "frame": 494,
+      "time": "2011-11-15T17:42:07.712566Z",
+      "src": "172.16.36.1:47808",
+      "dst": "172.16.86.1:47808",
+      "hex": "810a0013010402052d0e0c02014ff01e09081f",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x04",
+        "apdu_type": "0",
+        "confirmed_service": "14",
+        "invoke_id": "45"
+      }
+    },
+    {
+      "frame": 495,
+      "time": "2011-11-15T17:42:07.714231Z",
+      "src": "172.16.86.1:47808",
+      "dst": "172.16.36.1:47808",
+      "hex": "810a01040100302d0e0c02014ff01e294b4ec402014ff04f294d4e751b00506f6c6172536f6674204672656552616e676520526f757465724f294f4e91084f291c4e71004f293a4e71004f29704e91004f29794e751000506f6c6172536f6674ae20496e632e4f29784e21044f29464e75130039323630204c696e7578ae205365727665724f292c4e750500332e33304f290c4e750500332e33304f29624e21014f298b4e21044f29614e850605000b8000204f29604e84070080004f294c4ec402014ff04f293e4e2205c44f296b4e91034f290b4e21034f29494e21004f29404e217f4f293f4e21644f291e4e4f299b4e21014f29a84e750800342d4652522d314f1f",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x00",
+        "apdu_type": "3",
+        "confirmed_service": "14",
+        "invoke_id": "45"
+      }
+    },
+    {
+      "frame": 515,
+      "time": "2011-11-15T17:42:08.943059Z",
+      "src": "172.16.36.1:47808",
+      "dst": "172.16.86.1:47808",
+      "hex": "810a0018012421990152ff0205260e0c02014ff11e09081f",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x24",
+        "dnet": "8601",
+        "apdu_type": "0",
+        "confirmed_service": "14",
+        "invoke_id": "38"
+      }
+    },
+    {
+      "frame": 516,
+      "time": "2011-11-15T17:42:09.155621Z",
+      "src": "172.16.86.1:47808",
+      "dst": "172.16.36.1:47808",
+      "hex": "810a000d010821990152712604",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x08",
+        "snet": "8601",
+        "apdu_type": "7",
+        "invoke_id": "38"
+      }
+    },
+    {
+      "frame": 517,
+      "time": "2011-11-15T17:42:09.159321Z",
+      "src": "172.16.36.1:47808",
+      "dst": "172.16.86.1:47808",
+      "hex": "810a0018012421990152ff0205270e0c02014ff11e09691f",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x24",
+        "dnet": "8601",
+        "apdu_type": "0",
+        "confirmed_service": "14",
+        "invoke_id": "39"
+      }
+    },
+    {
+      "frame": 518,
+      "time": "2011-11-15T17:42:09.450887Z",
+      "src": "172.16.86.1:47808",
+      "dst": "172.16.36.1:47808",
+      "hex": "810a015101082199015230270e0c02014ff11e294b4ec402014ff14f294d4e750f004e6574776f726b204272696467654f294f4e91084f29704e91004f29794e750c005761747453746f707065724f29784e21564f29464e7509004c4d42432d3330304f292c4e75060030342e32324f290c4e75060030342e32324f29624e21014f298b4e210a4f29614e850600040b4802604f29604e8508057c8010000000004f294c4ec402014ff1c400400001c400400002c400800001c400800191c4008001f5c400800385c400800386c400800387c400800388c400800389c40080038ac400c00065c400c00066c400c00067c400c00068c400c00069c400c000c9c401000001c401000002c401400001c401400002c401400003c401400065c401400066c404c000014f293e4e2201e04f296b4e91034f290b4e220bb84f29494e21034f291e4e4f299b4e21074f29984e4f1f",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x08",
+        "snet": "8601",
+        "apdu_type": "3",
+        "confirmed_service": "14",
+        "invoke_id": "39"
+      }
+    },
+    {
+      "frame": 519,
+      "time": "2011-11-15T17:42:09.456367Z",
+      "src": "172.16.36.1:47808",
+      "dst": "172.16.86.1:47808",
+      "hex": "810a0018012421990152ff0205280e0c02014ff11e09501f",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x24",
+        "dnet": "8601",
+        "apdu_type": "0",
+        "confirmed_service": "14",
+        "invoke_id": "40"
+      }
+    },
+    {
+      "frame": 520,
+      "time": "2011-11-15T17:42:09.622612Z",
+      "src": "172.16.86.1:47808",
+      "dst": "172.16.36.1:47808",
+      "hex": "810a004601082199015230280e0c02014ff11e29404e217f4f293f4e21044f291c4e75090031383838353436334f293a4e75110044656661756c74204c6f636174696f6e4f1f",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x08",
+        "snet": "8601",
+        "apdu_type": "3",
+        "confirmed_service": "14",
+        "invoke_id": "40"
+      }
+    },
+    {
+      "frame": 533,
+      "time": "2011-11-15T17:42:15.913181Z",
+      "src": "172.16.36.1:47808",
+      "dst": "172.16.86.1:47808",
+      "hex": "810a0018012421990152ff02052f0e0c02014ff11e09081f",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x24",
+        "dnet": "8601",
+        "apdu_type": "0",
+        "confirmed_service": "14",
+        "invoke_id": "47"
+      }
+    },
+    {
+      "frame": 535,
+      "time": "2011-11-15T17:42:16.116593Z",
+      "src": "172.16.86.1:47808",
+      "dst": "172.16.36.1:47808",
+      "hex": "810a000d010821990152712f04",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x08",
+        "snet": "8601",
+        "apdu_type": "7",
+        "invoke_id": "47"
+      }
+    },
+    {
+      "frame": 1368,
+      "time": "2011-11-15T17:44:31.486654Z",
+      "src": "172.16.36.2:47808",
+      "dst": "172.16.86.1:47808",
+      "hex": "810a0016012421990152ff0205260c0c02014ff1197a",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x24",
+        "dnet": "8601",
+        "apdu_type": "0",
+        "confirmed_service": "12",
+        "invoke_id": "38"
+      }
+    },
+    {
+      "frame": 1370,
+      "time": "2011-11-15T17:44:31.637051Z",
+      "src": "172.16.86.1:47808",
+      "dst": "172.16.36.2:47808",
+      "hex": "810a001101082199015250260c91029120",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x08",
+        "snet": "8601",
+        "apdu_type": "5",
+        "confirmed_service": "12",
+        "invoke_id": "38"
+      }
+    },
+    {
+      "frame": 1376,
+      "time": "2011-11-15T17:44:32.007432Z",
+      "src": "172.16.36.2:47808",
+      "dst": "172.16.86.1:47808",
+      "hex": "810a0016012421990152ff0205290c0c02014ff11977",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x24",
+        "dnet": "8601",
+        "apdu_type": "0",
+        "confirmed_service": "12",
+        "invoke_id": "41"
+      }
+    },
+    {
+      "frame": 1378,
+      "time": "2011-11-15T17:44:32.162974Z",
+      "src": "172.16.86.1:47808",
+      "dst": "172.16.36.2:47808",
+      "hex": "810a001101082199015250290c91029120",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x08",
+        "snet": "8601",
+        "apdu_type": "5",
+        "confirmed_service": "12",
+        "invoke_id": "41"
+      }
+    },
+    {
+      "frame": 1894,
+      "time": "2011-11-15T17:46:18.039962Z",
+      "src": "172.16.36.1:47808",
+      "dst": "172.16.86.1:47808",
+      "hex": "810a001b012421990152ff0205030509011c00c0006529013a012c",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x24",
+        "dnet": "8601",
+        "apdu_type": "0",
+        "confirmed_service": "5",
+        "invoke_id": "3"
+      }
+    },
+    {
+      "frame": 1896,
+      "time": "2011-11-15T17:46:18.171648Z",
+      "src": "172.16.86.1:47808",
+      "dst": "172.16.36.1:47808",
+      "hex": "810a000d010821990152200305",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x08",
+        "snet": "8601",
+        "apdu_type": "2",
+        "confirmed_service": "5",
+        "invoke_id": "3"
+      }
+    },
+    {
+      "frame": 1898,
+      "time": "2011-11-15T17:46:18.440644Z",
+      "src": "172.16.86.1:47808",
+      "dst": "172.16.36.1:47808",
+      "hex": "810a002c0108219901520003010109011c02014ff12c00c000653a012c4e09552e91002f096f2e8204002f4f",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x08",
+        "snet": "8601",
+        "apdu_type": "0",
+        "confirmed_service": "1",
+        "invoke_id": "1"
+      }
+    },
+    {
+      "frame": 1899,
+      "time": "2011-11-15T17:46:18.470941Z",
+      "src": "172.16.36.1:47808",
+      "dst": "172.16.86.1:47808",
+      "hex": "810a000e012021990152ff200101",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x20",
+        "dnet": "8601",
+        "apdu_type": "2",
+        "confirmed_service": "1",
+        "invoke_id": "1"
+      }
+    },
+    {
+      "frame": 1906,
+      "time": "2011-11-15T17:46:37.662897Z",
+      "src": "172.16.86.1:47808",
+      "dst": "172.16.36.1:47808",
+      "hex": "810a002c0108219901520003020109011c02014ff12c00c000653a01194e09552e91012f096f2e8204002f4f",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x08",
+        "snet": "8601",
+        "apdu_type": "0",
+        "confirmed_service": "1",
+        "invoke_id": "2"
+      }
+    },
+    {
+      "frame": 1907,
+      "time": "2011-11-15T17:46:37.66565Z",
+      "src": "172.16.36.1:47808",
+      "dst": "172.16.86.1:47808",
+      "hex": "810a000e012021990152ff200201",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x20",
+        "dnet": "8601",
+        "apdu_type": "2",
+        "confirmed_service": "1",
+        "invoke_id": "2"
+      }
+    },
+    {
+      "frame": 1940,
+      "time": "2011-11-15T17:47:04.990557Z",
+      "src": "172.16.36.1:47808",
+      "dst": "172.16.86.1:47808",
+      "hex": "810a001b012421990152ff02050d0509011c00c0006629003a012c",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x24",
+        "dnet": "8601",
+        "apdu_type": "0",
+        "confirmed_service": "5",
+        "invoke_id": "13"
+      }
+    },
+    {
+      "frame": 1941,
+      "time": "2011-11-15T17:47:05.172867Z",
+      "src": "172.16.86.1:47808",
+      "dst": "172.16.36.1:47808",
+      "hex": "810a000d010821990152200d05",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x08",
+        "snet": "8601",
+        "apdu_type": "2",
+        "confirmed_service": "5",
+        "invoke_id": "13"
+      }
+    },
+    {
+      "frame": 1943,
+      "time": "2011-11-15T17:47:05.284867Z",
+      "src": "172.16.86.1:47808",
+      "dst": "172.16.36.1:47808",
+      "hex": "810a002a010821990152100209011c02014ff12c00c000663a012c4e09552e91002f096f2e8204002f4f",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x08",
+        "snet": "8601",
+        "apdu_type": "1",
+        "unconfirmed_service": "2"
+      }
+    },
+    {
+      "frame": 2126,
+      "time": "2011-11-15T17:48:14.065935Z",
+      "src": "172.16.86.1:47808",
+      "dst": "172.16.36.1:47808",
+      "hex": "810a002a010821990152100209011c02014ff12c00c000673a012c4e09552e91002f096f2e8204002f4f",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x08",
+        "snet": "8601",
+        "apdu_type": "1",
+        "unconfirmed_service": "2"
+      }
+    },
+    {
+      "frame": 2136,
+      "time": "2011-11-15T17:48:21.577513Z",
+      "src": "172.16.36.2:47808",
+      "dst": "172.16.86.1:47808",
+      "hex": "810a00d5012421990152ff0205120e0c02014ff11e09701f0c008000011e09551f0c008001911e09551f0c008001f51e09551f0c008003851e09551f0c008003861e09551f0c008003871e09551f0c008003881e09551f0c008003891e09551f0c0080038a1e09551f0c00c000651e09551f0c00c000661e09551f0c00c000671e09551f0c00c000681e09551f0c00c000691e09551f0c00c000c91e09551f0c014000011e09551f0c014000021e09551f0c014000031e09551f0c014000651e09551f0c014000661e09551f0c04c000011e09551f",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x24",
+        "dnet": "8601",
+        "apdu_type": "0",
+        "confirmed_service": "14",
+        "invoke_id": "18"
+      }
+    },
+    {
+      "frame": 2152,
+      "time": "2011-11-15T17:48:36.051705Z",
+      "src": "172.16.36.2:47808",
+      "dst": "172.16.86.1:47808",
+      "hex": "810a001b012421990152ff0205160509011c0040000129013a0384",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x24",
+        "dnet": "8601",
+        "apdu_type": "0",
+        "confirmed_service": "5",
+        "invoke_id": "22"
+      }
+    },
+    {
+      "frame": 2155,
+      "time": "2011-11-15T17:48:37.989475Z",
+      "src": "172.16.86.1:47808",
+      "dst": "172.16.36.2:47808",
+      "hex": "810a00110108219901525016059101912d",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x08",
+        "snet": "8601",
+        "apdu_type": "5",
+        "confirmed_service": "5",
+        "invoke_id": "22"
+      }
+    },
+    {
+      "frame": 2162,
+      "time": "2011-11-15T17:48:42.795198Z",
+      "src": "172.16.36.2:47808",
+      "dst": "172.16.86.1:47808",
+      "hex": "810a0019012421990152ff02051a0f0c0040000119553e003f",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x24",
+        "dnet": "8601",
+        "apdu_type": "0",
+        "confirmed_service": "15",
+        "invoke_id": "26"
+      }
+    },
+    {
+      "frame": 2164,
+      "time": "2011-11-15T17:48:42.885681Z",
+      "src": "172.16.36.2:47808",
+      "dst": "172.16.86.1:47808",
+      "hex": "810a001b012421990152ff02051b0509011c0040000229013a0384",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x24",
+        "dnet": "8601",
+        "apdu_type": "0",
+        "confirmed_service": "5",
+        "invoke_id": "27"
+      }
+    },
+    {
+      "frame": 2166,
+      "time": "2011-11-15T17:48:43.616718Z",
+      "src": "172.16.86.1:47808",
+      "dst": "172.16.36.2:47808",
+      "hex": "810a000d010821990152201a0f",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x08",
+        "snet": "8601",
+        "apdu_type": "2",
+        "confirmed_service": "15",
+        "invoke_id": "26"
+      }
+    },
+    {
+      "frame": 2167,
+      "time": "2011-11-15T17:48:43.618406Z",
+      "src": "172.16.36.2:47808",
+      "dst": "172.16.86.1:47808",
+      "hex": "810a0019012421990152ff02051c0f0c0040000219553e003f",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x24",
+        "dnet": "8601",
+        "apdu_type": "0",
+        "confirmed_service": "15",
+        "invoke_id": "28"
+      }
+    },
+    {
+      "frame": 2169,
+      "time": "2011-11-15T17:48:43.805607Z",
+      "src": "172.16.86.1:47808",
+      "dst": "172.16.36.2:47808",
+      "hex": "810a0011010821990152501b059101912d",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x08",
+        "snet": "8601",
+        "apdu_type": "5",
+        "confirmed_service": "5",
+        "invoke_id": "27"
+      }
+    },
+    {
+      "frame": 2171,
+      "time": "2011-11-15T17:48:44.580503Z",
+      "src": "172.16.86.1:47808",
+      "dst": "172.16.36.2:47808",
+      "hex": "810a000d010821990152201c0f",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x08",
+        "snet": "8601",
+        "apdu_type": "2",
+        "confirmed_service": "15",
+        "invoke_id": "28"
+      }
+    },
+    {
+      "frame": 2185,
+      "time": "2011-11-15T17:48:55.856565Z",
+      "src": "172.16.36.2:47808",
+      "dst": "172.16.86.1:47808",
+      "hex": "810a0018012421990152ff0205210e0c010000011e09551f",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x24",
+        "dnet": "8601",
+        "apdu_type": "0",
+        "confirmed_service": "14",
+        "invoke_id": "33"
+      }
+    },
+    {
+      "frame": 2190,
+      "time": "2011-11-15T17:49:01.800013Z",
+      "src": "172.16.36.2:47808",
+      "dst": "172.16.86.1:47808",
+      "hex": "810a0016012421990152ff0205220c0c02014ff11970",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x24",
+        "dnet": "8601",
+        "apdu_type": "0",
+        "confirmed_service": "12",
+        "invoke_id": "34"
+      }
+    },
+    {
+      "frame": 2193,
+      "time": "2011-11-15T17:49:02.77877Z",
+      "src": "172.16.36.2:47808",
+      "dst": "172.16.86.1:47808",
+      "hex": "810a0019012421990152ff0205240f0c0100000119553e003f",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x24",
+        "dnet": "8601",
+        "apdu_type": "0",
+        "confirmed_service": "15",
+        "invoke_id": "36"
+      }
+    },
+    {
+      "frame": 2210,
+      "time": "2011-11-15T17:49:13.809604Z",
+      "src": "172.16.36.2:47808",
+      "dst": "172.16.86.1:47808",
+      "hex": "810a0016012421990152ff0205250c0c02014ff11970",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x24",
+        "dnet": "8601",
+        "apdu_type": "0",
+        "confirmed_service": "12",
+        "invoke_id": "37"
+      }
+    },
+    {
+      "frame": 2283,
+      "time": "2011-11-15T17:49:51.867324Z",
+      "src": "172.16.36.2:47808",
+      "dst": "172.16.86.1:47808",
+      "hex": "810a001b012421990152ff0205310509011c0040000229013a0384",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x24",
+        "dnet": "8601",
+        "apdu_type": "0",
+        "confirmed_service": "5",
+        "invoke_id": "49"
+      }
+    },
+    {
+      "frame": 2287,
+      "time": "2011-11-15T17:49:54.760989Z",
+      "src": "172.16.36.2:47808",
+      "dst": "172.16.86.1:47808",
+      "hex": "810a0019012421990152ff0205320f0c0040000219553e003f",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x24",
+        "dnet": "8601",
+        "apdu_type": "0",
+        "confirmed_service": "15",
+        "invoke_id": "50"
+      }
+    },
+    {
+      "frame": 2312,
+      "time": "2011-11-15T17:50:07.303123Z",
+      "src": "172.16.36.1:47808",
+      "dst": "172.16.86.1:47808",
+      "hex": "810a0016012421990152ff0205320509011c00c00066",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x24",
+        "dnet": "8601",
+        "apdu_type": "0",
+        "confirmed_service": "5",
+        "invoke_id": "50"
+      }
+    },
+    {
+      "frame": 3352,
+      "time": "2011-11-15T18:00:03.531246Z",
+      "src": "172.16.36.207:47808",
+      "dst": "172.16.255.255:47808",
+      "hex": "810b00180120ffff00ff1000c402008e1d2201e091002124",
+      "wireshark": {
+        "bvlc_function": "0x0b",
+        "npdu_control": "0x20",
+        "dnet": "65535",
+        "apdu_type": "1",
+        "unconfirmed_service": "0"
+      }
+    },
+    {
+      "frame": 3391,
+      "time": "2011-11-15T18:01:50.515243Z",
+      "src": "172.16.36.207:47808",
+      "dst": "172.16.255.255:47808",
+      "hex": "810b001c0128ffff000e110152fe1000c402014ff12201e091032156",
+      "wireshark": {
+        "bvlc_function": "0x0b",
+        "npdu_control": "0x28",
+        "dnet": "65535",
+        "snet": "3601",
+        "apdu_type": "1",
+        "unconfirmed_service": "0"
+      }
+    },
+    {
+      "frame": 3394,
+      "time": "2011-11-15T18:02:03.367925Z",
+      "src": "172.16.36.207:47808",
+      "dst": "172.16.255.255:47808",
+      "hex": "810b000801001008",
+      "wireshark": {
+        "bvlc_function": "0x0b",
+        "npdu_control": "0x00",
+        "apdu_type": "1",
+        "unconfirmed_service": "8"
+      }
+    },
+    {
+      "frame": 3414,
+      "time": "2011-11-15T18:02:10.41629Z",
+      "src": "172.16.36.207:47808",
+      "dst": "172.16.255.255:47808",
+      "hex": "810b001c0128ffff000e110152fe1000c402014ff12201e091032156",
+      "wireshark": {
+        "bvlc_function": "0x0b",
+        "npdu_control": "0x28",
+        "dnet": "65535",
+        "snet": "3601",
+        "apdu_type": "1",
+        "unconfirmed_service": "0"
+      }
+    },
+    {
+      "frame": 3417,
+      "time": "2011-11-15T18:03:01.89513Z",
+      "src": "172.16.36.1:47808",
+      "dst": "172.16.86.1:47808",
+      "hex": "810a001101040205430c0c02014ff01970",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x04",
+        "apdu_type": "0",
+        "confirmed_service": "12",
+        "invoke_id": "67"
+      }
+    },
+    {
+      "frame": 3424,
+      "time": "2011-11-15T18:03:52.908397Z",
+      "src": "172.16.36.1:47808",
+      "dst": "172.16.86.1:47808",
+      "hex": "810a001101040205440c0c02014ff01970",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x04",
+        "apdu_type": "0",
+        "confirmed_service": "12",
+        "invoke_id": "68"
+      }
+    },
+    {
+      "frame": 3433,
+      "time": "2011-11-15T18:04:55.887986Z",
+      "src": "172.16.36.169:47808",
+      "dst": "172.16.255.255:47808",
+      "hex": "810b0007018100",
+      "wireshark": {
+        "bvlc_function": "0x0b",
+        "npdu_control": "0x81",
+        "network_message": "0x00"
+      }
+    },
+    {
+      "frame": 3434,
+      "time": "2011-11-15T18:04:56.104427Z",
+      "src": "172.16.36.169:47808",
+      "dst": "172.16.255.255:47808",
+      "hex": "810b00180120ffff00ff1000c402008d492201e091002124",
+      "wireshark": {
+        "bvlc_function": "0x0b",
+        "npdu_control": "0x20",
+        "dnet": "65535",
+        "apdu_type": "1",
+        "unconfirmed_service": "0"
+      }
+    },
+    {
+      "frame": 3460,
+      "time": "2011-11-15T18:08:28.597158Z",
+      "src": "172.16.36.169:47808",
+      "dst": "172.16.255.255:47808",
+      "hex": "810b00090180010e11",
+      "wireshark": {
+        "bvlc_function": "0x0b",
+        "npdu_control": "0x80",
+        "dnet": "3601",
+        "network_message": "0x01"
+      }
+    },
+    {
+      "frame": 3461,
+      "time": "2011-11-15T18:08:28.61663Z",
+      "src": "172.16.36.169:47808",
+      "dst": "172.16.255.255:47808",
+      "hex": "810b00180120ffff00ff1000c402008d492201e091002124",
+      "wireshark": {
+        "bvlc_function": "0x0b",
+        "npdu_control": "0x20",
+        "dnet": "65535",
+        "apdu_type": "1",
+        "unconfirmed_service": "0"
+      }
+    },
+    {
+      "frame": 3463,
+      "time": "2011-11-15T18:08:50.994072Z",
+      "src": "172.16.36.169:47808",
+      "dst": "172.16.255.255:47808",
+      "hex": "810b000c0120ffff00ff1008",
+      "wireshark": {
+        "bvlc_function": "0x0b",
+        "npdu_control": "0x20",
+        "dnet": "65535",
+        "apdu_type": "1",
+        "unconfirmed_service": "8"
+      }
+    },
+    {
+      "frame": 3549,
+      "time": "2011-11-15T18:35:17.441487Z",
+      "src": "172.16.36.169:47808",
+      "dst": "172.16.255.255:47808",
+      "hex": "810b0007018100",
+      "wireshark": {
+        "bvlc_function": "0x0b",
+        "npdu_control": "0x81",
+        "network_message": "0x00"
+      }
+    },
+    {
+      "frame": 3552,
+      "time": "2011-11-15T18:35:30.167862Z",
+      "src": "172.16.36.2:47808",
+      "dst": "172.16.255.255:47808",
+      "hex": "810b00090181000e11",
+      "wireshark": {
+        "bvlc_function": "0x0b",
+        "npdu_control": "0x81",
+        "dnet": "3601",
+        "network_message": "0x00"
+      }
+    },
+    {
+      "frame": 3553,
+      "time": "2011-11-15T18:35:33.168395Z",
+      "src": "172.16.36.2:47808",
+      "dst": "172.16.255.255:47808",
+      "hex": "810b00090181000e11",
+      "wireshark": {
+        "bvlc_function": "0x0b",
+        "npdu_control": "0x81",
+        "dnet": "3601",
+        "network_message": "0x00"
+      }
+    },
+    {
+      "frame": 3555,
+      "time": "2011-11-15T18:35:47.333624Z",
+      "src": "172.16.36.1:47808",
+      "dst": "172.16.255.255:47808",
+      "hex": "810b00090181000e11",
+      "wireshark": {
+        "bvlc_function": "0x0b",
+        "npdu_control": "0x81",
+        "dnet": "3601",
+        "network_message": "0x00"
+      }
+    },
+    {
+      "frame": 3556,
+      "time": "2011-11-15T18:35:50.513804Z",
+      "src": "172.16.36.169:47808",
+      "dst": "172.16.255.255:47808",
+      "hex": "810b00090180010e11",
+      "wireshark": {
+        "bvlc_function": "0x0b",
+        "npdu_control": "0x80",
+        "dnet": "3601",
+        "network_message": "0x01"
+      }
+    },
+    {
+      "frame": 3562,
+      "time": "2011-11-15T18:37:06.563276Z",
+      "src": "172.16.36.169:47808",
+      "dst": "172.16.255.255:47808",
+      "hex": "810b000c0120ffff00ff1008",
+      "wireshark": {
+        "bvlc_function": "0x0b",
+        "npdu_control": "0x20",
+        "dnet": "65535",
+        "apdu_type": "1",
+        "unconfirmed_service": "8"
+      }
+    }
+  ]
+}

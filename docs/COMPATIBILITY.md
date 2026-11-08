@@ -46,8 +46,23 @@ independent endpoint stacks behind it.
 
 ## Hardware devices
 
-Field runs use [FIELD_VALIDATION.md](FIELD_VALIDATION.md). No physical devices
-are recorded yet.
+Field runs use [FIELD_VALIDATION.md](FIELD_VALIDATION.md). No live field
+run is recorded yet. Traffic of physical devices recorded by others, and how
+go-bacnet's client and server compare with it, is in
+[testdata/captures](../testdata/captures/README.md); the device quirks it
+shows:
+
+| Device | Quirk | go-bacnet |
+|---|---|---|
+| Lithonia SYSC MLX 2x63w | Answers a ReadPropertyMultiple with an empty listOfPropertyReferences with an empty listOfResults; answers max-APDU code 6 (reserved) with Abort other | Refuses both |
+| Lithonia, Delta DSC-1616E | Password failure with error class services | Class security |
+| WattStopper LMBC-300 04.22, PolarSoft 9260 3.30, Lithonia | Refuse ReinitializeDevice START_BACKUP (service-request-denied, Reject parameter-out-of-range, Reject undefined-enumeration) | The server without a `Reinitialize` hook answers service-request-denied |
+| Siemens (vendor 7) | ConfirmedPrivateTransfer 511 with untagged octets in serviceParameters | Refused, as Wireshark marks it malformed |
+| PolarSoft 9260 3.30 | Latin-1 "®" in vendor and model names marked UTF-8 | Octets kept as received |
+| Critical Room Control Room Pressure Monitor 5.5 | Vendor and model names end in a NUL | Kept as received |
+| A plugfest router (172.16.86.6) | Forwards answers without their first APDU octet | Refused |
+| WattStopper WebLink | NPDUs with SNET after the hop count, SNET bit clear | Refused |
+| Alerton Envision, Delta DNT-T103, Reliable Controls | Actual window 1 for every segmented answer, SegmentACK for each segment | Client acknowledges as they do (replayed) |
 
 | Device | Firmware | Topology | Library | Date | Services / notes |
 |---|---|---|---|---|---|
