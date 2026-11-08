@@ -116,6 +116,27 @@ func TestReinitializeDevice(t *testing.T) {
 	h.expectType(apdu.TypeReject)
 }
 
+// Without a Reinitialize hook the server has no backup or restore
+// procedure: it refuses START_BACKUP to ABORT_RESTORE with
+// services/service-request-denied, as a recorded WattStopper LMBC-300 does
+// (testdata/captures, siemens-plugfest-2011 frame 216), and acknowledges
+// the other states.
+func TestReinitializeDeviceWithoutHook(t *testing.T) {
+	h := newHarness(t)
+	for i, st := range []service.ReinitializedStateOfDevice{
+		service.ReinitializedColdstart, service.ReinitializedWarmstart, service.ReinitializedStartBackup,
+		service.ReinitializedEndBackup, service.ReinitializedStartRestore, service.ReinitializedEndRestore,
+		service.ReinitializedAbortRestore, service.ReinitializedActivateChanges,
+	} {
+		h.confirmed(uint8(i), apdu.ServiceReinitializeDevice, mustEncode(t)(service.EncodeReinitializeDevice(service.ReinitializeDeviceRequest{State: st})))
+		if st >= service.ReinitializedStartBackup && st <= service.ReinitializedAbortRestore {
+			h.expectError(bacnet.ErrorClassServices, bacnet.ErrorCodeServiceRequestDenied)
+			continue
+		}
+		h.expectType(apdu.TypeSimpleACK)
+	}
+}
+
 func TestMessagingHooks(t *testing.T) {
 	var syncs, groups, texts, transfers atomic.Int32
 	h := newHarness(t, WithHooks(Hooks{

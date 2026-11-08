@@ -79,8 +79,10 @@ type Hooks struct {
 	// object. Default: allow.
 	BeforeDelete func(ctx context.Context, obj bacnet.ObjectIdentifier) error
 	// Reinitialize is called for ReinitializeDevice after the password was
-	// checked; the SimpleACK is sent when it returns nil. Default: accept
-	// and do nothing.
+	// checked; the SimpleACK is sent when it returns nil. Default:
+	// acknowledge COLDSTART, WARMSTART and ACTIVATE_CHANGES and do nothing,
+	// and refuse START_BACKUP to ABORT_RESTORE with
+	// services/service-request-denied (there is no backup procedure).
 	Reinitialize func(ctx context.Context, state service.ReinitializedStateOfDevice) error
 	// TimeSync is called for TimeSynchronization (utc false) and
 	// UTCTimeSynchronization (utc true).
