@@ -7,16 +7,14 @@ Behavioural contracts are in [API.md](../API.md#server) and
 [SERVER_PLAN.md](SERVER_PLAN.md). Client capabilities are in
 [CLIENT_SUPPORT.md](CLIENT_SUPPORT.md).
 
-**Library version:** v0.6.0  
-**Independent clients:** four, each an unmodified upstream stack in a
-bacnet-interop client-mode image (bacnet-interop v0.12.0 and later; pin v0.13.0,
+**Library version:** v0.8.0  
+**Independent clients:** six, each an unmodified upstream stack in a
+bacnet-interop client-mode image (bacnet-interop v0.12.0 and later; pin v0.14.0,
 `interop/server_clients_test.go`,
 [INTEROP.md](../INTEROP.md#independent-clients-against-the-server)):
 the bacnet-stack 1.6.1 command-line tools, BACnet4J 6.1.1, BACpypes3
 0.0.110, @bacnet-js/client 3.3.2 (bacnet-js) and legacy BACpypes 0.19.0
-(PyPI `bacpypes`, BACpypes3's predecessor by the same author); the images of
-the last two are not in the pin yet, the evidence is from images built from
-bacnet-interop. They run four scenario files against the server:
+(PyPI `bacpypes`, BACpypes3's predecessor by the same author). They run four scenario files against the server:
 `server-baseline-v1` (discovery, reads and writes), `server-services-v1`
 (COV, ReadRange, device management, files, lists, object creation, alarms,
 time synchronization, private transfer, WriteGroup), `server-bbmd-v1` (the
@@ -27,9 +25,8 @@ text messages, ConfirmedPrivateTransfer). A row names the clients whose
 scenarios for it pass. The bacnet-stack tools are built without
 segmentation and do not run `server-extended-v1`; a `known-difference` or
 `unsupported` result is a recorded limit of the client (bacnet-interop
-PEER_SUPPORT.md) and is not counted as evidence. A fourth client,
-ulbios/bacnet (commit `227d6227`, bacnet-interop 0.14.0, run as a local
-image; not yet in the pin), issues Who-Is, ReadProperty and WriteProperty
+PEER_SUPPORT.md) and is not counted as evidence. The sixth client,
+ulbios/bacnet (commit `227d6227`, bacnet-interop 0.14.0), issues Who-Is, ReadProperty and WriteProperty
 only: of `server-baseline-v1` it passes `who-is.global`,
 `rp.unknown-object`, `wp.av1.pv.priority8`, `wp.av1.pv.relinquish8` and
 `wp.unknown-object`; every other scenario of the four files is

@@ -57,8 +57,8 @@ skips with a message naming the bacnet-interop version it needs
 
 ## Peers
 
-Pin: [`bacnet-interop` v0.13.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.13.0),
-all eight images by digest (`interop/bacnet-interop-pin.json`). Against the
+Pin: [`bacnet-interop` v0.14.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.14.0),
+all eleven images by digest (`interop/bacnet-interop-pin.json`). Against the
 published images nothing fails; the skips are things a stack does not have
 and scenarios that need a newer adapter release.
 
@@ -70,9 +70,9 @@ and scenarios that need a newer adapter release.
 | Worldiety | `3cb2aa80` | Go | Native transport and APDU layer; adapter object model |
 | System.IO.BACnet | 4.0.0 | C# | Device; the stack behind YABE |
 | cB-Sigma (`cbsigma`) | bacnet `v0.2.0` device role, bacnet-sim `v0.1.0` | Go | Device; a simulator with fault switches ([below](#cb-sigma)) |
-| bacnet-js (`bacnet-js`) | `@bacnet-js/client` 3.3.2 | TypeScript (Node.js) | Device (adapter object model) and client; not in the pin yet ([below](#bacnet-js)) |
-| ulbios (`ulbios`) | ulbios/bacnet `227d6227` (no tags upstream) | Go | Device and client; Who-Is, ReadProperty and WriteProperty only ([below](#ulbios)). Not in the v0.13.0 pin: run against an image built from bacnet-interop, its tests skip with `ULBIOS_IMAGE=none` |
-| Legacy BACpypes (`bacpypes`) | PyPI `bacpypes` 0.19.0 | Python | Device (+ BBMD) and client; not in the pin yet ([below](#legacy-bacpypes)) |
+| bacnet-js (`bacnet-js`) | `@bacnet-js/client` 3.3.2 | TypeScript (Node.js) | Device (adapter object model) and client ([below](#bacnet-js)) |
+| ulbios (`ulbios`) | ulbios/bacnet `227d6227` (no tags upstream) | Go | Device and client; Who-Is, ReadProperty and WriteProperty only ([below](#ulbios)) |
+| Legacy BACpypes (`bacpypes`) | PyPI `bacpypes` 0.19.0 | Python | Device (+ BBMD) and client ([below](#legacy-bacpypes)) |
 | bacnet-stack-router | bacnet-stack 1.6.1 `apps/router` | C | Native BACnet/IP router |
 | bip-router | — | Python | Topology aid written for the tests; not evidence about a stack |
 
@@ -216,7 +216,7 @@ Each result line becomes a subtest: `pass` passes, `fail` and `infra-error`
 fail, and `unsupported` and `known-difference` skip. For a scenario whose
 expectation is that a request was sent (an unconfirmed service), the
 server's hooks report what arrived and the test checks it. The images are
-those of the pin (bacnet-interop v0.13.0; client mode exists from v0.12.0),
+those of the pin (bacnet-interop v0.14.0; client mode exists from v0.12.0),
 with each stack unmodified.
 
 | Client | `server-baseline-v1` (23) | `server-services-v1` (36) | `server-bbmd-v1` (5) | `server-extended-v1` (23) |
@@ -224,9 +224,9 @@ with each stack unmodified.
 | bacnet-stack 1.6.1, command-line tools | All pass | 35 pass; `rle.nc1` known difference | All pass | Not run: built without segmentation, no tools for these services |
 | BACnet4J 6.1.1, `LocalDevice` | All pass | All pass | 2 pass; Read-BDT, Read-FDT, Write-BDT unsupported (no client for them) | 22 pass; `scovpm.unknown-object-second` known difference |
 | BACpypes3 0.0.110, `Application` | All pass | 35 pass; `ale.unknown-object` known difference | All pass | 15 pass; 5 known differences; the 3 `scovpm` scenarios unsupported |
-| bacnet-js 3.3.2, `BACnetClient` (image built from bacnet-interop branch `feat/bacnet-js`) | 21 pass; `wpm.unknown-object-second`, `wpm.wrong-type` known differences | 29 pass; 5 unsupported (`ale.nc1`, `ale.unknown-object`, `rle.nc1`, `co.not-creatable`, `wg.group1`), 2 not tested (their read-backs) | 2 pass; Read-BDT, Read-FDT, Write-BDT unsupported | 13 pass; 9 unsupported (segmented request, `scovpm`, filtered GetEnrollmentSummary, text messages), 1 not tested |
-| ulbios `227d6227` (local image, not in the pin) | 5 pass, 5 known differences, 13 unsupported | 4 known differences, 32 unsupported | 1 known difference, 4 unsupported | 2 known differences, 21 unsupported |
-| Legacy BACpypes 0.19.0, `Application` (local build) | All pass | All pass | All pass | 20 pass; the 3 `scovpm` scenarios unsupported (no APDU) |
+| bacnet-js 3.3.2, `BACnetClient` | 21 pass; `wpm.unknown-object-second`, `wpm.wrong-type` known differences | 29 pass; 5 unsupported (`ale.nc1`, `ale.unknown-object`, `rle.nc1`, `co.not-creatable`, `wg.group1`), 2 not tested (their read-backs) | 2 pass; Read-BDT, Read-FDT, Write-BDT unsupported | 13 pass; 9 unsupported (segmented request, `scovpm`, filtered GetEnrollmentSummary, text messages), 1 not tested |
+| ulbios `227d6227` | 5 pass, 5 known differences, 13 unsupported | 4 known differences, 32 unsupported | 1 known difference, 4 unsupported | 2 known differences, 21 unsupported |
+| Legacy BACpypes 0.19.0, `Application` | All pass | All pass | All pass | 20 pass; the 3 `scovpm` scenarios unsupported (no APDU) |
 
 The known differences are limits of the client recorded in bacnet-interop
 PEER_SUPPORT.md, each with the octets the server sent:
@@ -314,9 +314,7 @@ Both are Go, by one author, independent of go-bacnet.
 ## ulbios
 
 `interop/ulbios_test.go`, against bacnet-interop's `ulbios` image (new in
-v0.14.0, not yet in the pin: the runs below are against
-`bacnet-interop-ulbios:local` built from the bacnet-interop branch that adds
-it). [ulbios/bacnet](https://github.com/ulbios/bacnet) is a small MIT Go
+v0.14.0, `ULBIOS_IMAGE`, "none" skips). [ulbios/bacnet](https://github.com/ulbios/bacnet) is a small MIT Go
 library, independent of go-bacnet, pinned by commit `227d6227` (it has no
 tags). Its parser knows Who-Is, I-Am, ReadProperty, WriteProperty,
 Simple-ACK, Complex-ACK and Error; its encoders REAL, NULL, one-octet
@@ -349,7 +347,7 @@ client.
 ## bacnet-js
 
 `interop/bacnetjs_test.go`, against bacnet-interop's `bacnet-js` image
-(not released yet; `BACNETJS_IMAGE`, default `bacnet-interop-bacnet-js:local`,
+(new in v0.14.0; `BACNETJS_IMAGE`, default `bacnet-interop-bacnet-js:local`,
 "none" skips). Upstream is [@bacnet-js/client](https://github.com/bacnet-js/client)
 3.3.2 (TypeScript, MIT, the node-bacstack lineage), independent of go-bacnet.
 It decodes every request and encodes every answer; it has no object model
@@ -394,8 +392,7 @@ dropped.
 ## Legacy BACpypes
 
 `interop/bacpypes_test.go`, against bacnet-interop's `bacpypes` image
-(`BACPYPES_IMAGE`; a local build of the adapter, not yet in a release or the
-pin, so `make interop-pinned` passes "none" and the tests skip). PyPI
+(new in v0.14.0; `BACPYPES_IMAGE`, "none" skips). PyPI
 `bacpypes` 0.19.0, the asyncore code base that BACpypes3 replaced: the same
 author, a separate package and repository. Agreement between it and
 BACpypes3 is weaker evidence than agreement with an unrelated stack.
@@ -432,6 +429,12 @@ the timeout with `DecodeLimits.MaxAPDUSize` 1476, which drops the longer
 segments.
 
 ## What the peer tests found
+
+Legacy BACpypes sends segments 5 octets longer than the Max APDU the client
+advertises (above, "Oversized segments"); up to v0.7.0 the client dropped
+them at its default decode limit and the read timed out. Fixed in v0.8.0:
+the client receives APDUs up to the datagram bound by default, as the server
+does; `TestSegmentLongerThanAdvertisedMaxAPDU` keeps it fixed.
 
 With a receive window above 1 (`client.WithSegmentWindow`), go-bacnet up to
 v0.5.x did not acknowledge segment 0 of a segmented answer, so every one

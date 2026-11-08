@@ -7,8 +7,8 @@ Server capabilities are in [SERVER_SUPPORT.md](SERVER_SUPPORT.md). The UDP
 transport the client uses lives in package `bip` from v0.6.0
 (`client.Transport` is an alias); the client's behaviour is unchanged.
 
-**Library version:** v0.6.0 (previous release [v0.5.0](https://github.com/otfabric/go-bacnet/releases/tag/v0.5.0))  
-**Interop pin:** bacnet-interop v0.13.0 (six peer stacks; see [INTEROP.md](../INTEROP.md)). bacnet-js, ulbios and legacy BACpypes are evidence from images built from bacnet-interop, not yet in the pin
+**Library version:** v0.8.0 (previous release [v0.7.0](https://github.com/otfabric/go-bacnet/releases/tag/v0.7.0))  
+**Interop pin:** bacnet-interop v0.14.0 (nine peer stacks; see [INTEROP.md](../INTEROP.md))
 
 | Client support | Meaning |
 |---|---|
@@ -66,7 +66,7 @@ transport the client uses lives in package `bip` from v0.6.0
 | Error / Reject / Abort | Implemented | Multi-peer | |
 | Segmented confirmed-request send | Implemented | Multi-peer | BACpypes3, legacy BACpypes (client windows 1, 2, 4, 16 against device windows 1, 2, 4; a 3000-octet AtomicWriteFile) cB-Sigma (both roles) and bacnet-js live; BACnet4J rejects. Segment 0 goes alone; the rest follow in the actual window of its SegmentACK (clause 5.4.4) |
 | Segmented ComplexACK receive | Implemented | Multi-peer | Window 1 by default (`WithSegmentWindow`); segment 0 is acknowledged at once, asserted at windows 1, 2, 4 and 16 against cB-Sigma, BACpypes3 and legacy BACpypes (also against legacy BACpypes device windows 1, 2, 4 and 8); a segment lost inside a window is NAKed and recovered (cB-Sigma simulator); Worldiety continuation deviation. Legacy BACpypes sends segments 5 octets longer than the client's Max APDU (1481 for 1476): the default decode limits receive them (the client advertises at most 1476 and accepts APDUs up to the datagram bound); `DecodeLimits.MaxAPDUSize` 1476 drops them and the answer times out |
-| Timeout and cancellation | Implemented | Multi-peer | An unused port, BACnet4J muted with DeviceCommunicationControl, and ulbios, which answers nothing it cannot decode (ulbios image from bacnet-interop 0.14.0, run as a local build; not yet in the pin); see API.md |
+| Timeout and cancellation | Implemented | Multi-peer | An unused port, BACnet4J muted with DeviceCommunicationControl, and ulbios, which answers nothing it cannot decode (ulbios image from bacnet-interop 0.14.0); see API.md |
 | Outcome-unknown after send | Implemented | Multi-peer | Unanswered write; policy registry covers all side-effecting services. ulbios leaves WriteProperty of NULL or CharacterString, WritePropertyMultiple, SubscribeCOV, DeviceCommunicationControl and ReinitializeDevice unanswered: each ends outcome-unknown |
 | Rejecting unserved confirmed requests | Implemented | Codec/unit | Reject / Abort to requests a client does not serve |
 | Event dispatcher (async) | Implemented | Codec/unit | Opt-in `WithEventDispatcher`; sync handler default |

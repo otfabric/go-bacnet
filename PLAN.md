@@ -2,10 +2,11 @@
 
 ## Current release
 
-go-bacnet v0.6.0: the BACnet/IP client, tested against bacnet-stack,
-BACpypes3, BACnet4J, Worldiety, System.IO.BACnet and cB-Sigma devices, and a
-server, tested against the bacnet-stack, BACnet4J and BACpypes3 clients
-([bacnet-interop v0.13.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.13.0)).
+go-bacnet v0.8.0: the BACnet/IP client, tested against bacnet-stack,
+BACpypes3, legacy BACpypes, BACnet4J, Worldiety, System.IO.BACnet, cB-Sigma,
+ulbios and bacnet-js devices, and a server, tested against the bacnet-stack,
+BACnet4J, BACpypes3, legacy BACpypes, bacnet-js and ulbios clients
+([bacnet-interop v0.14.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.14.0)).
 [RELEASE.md](RELEASE.md) has the changes.
 
 Status: **container-interoperability validated at pin**; **field validation
