@@ -70,6 +70,7 @@ and scenarios that need a newer adapter release.
 | Worldiety | `3cb2aa80` | Go | Native transport and APDU layer; adapter object model |
 | System.IO.BACnet | 4.0.0 | C# | Device; the stack behind YABE |
 | cB-Sigma (`cbsigma`) | bacnet `v0.2.0` device role, bacnet-sim `v0.1.0` | Go | Device; a simulator with fault switches ([below](#cb-sigma)) |
+| bacnet-js (`bacnet-js`) | `@bacnet-js/client` 3.3.2 | TypeScript (Node.js) | Device (adapter object model) and client; not in the pin yet ([below](#bacnet-js)) |
 | bacnet-stack-router | bacnet-stack 1.6.1 `apps/router` | C | Native BACnet/IP router |
 | bip-router | — | Python | Topology aid written for the tests; not evidence about a stack |
 
@@ -203,8 +204,8 @@ Wireshark is not acceptance by a device. Verified with Wireshark 4.2, 4.4 and
 The tests above drive peer devices with the go-bacnet client. The reverse
 direction runs a peer stack as a **client** against the go-bacnet server
 (bacnet-interop `docs/CLIENT_DRIVER_CONTRACT.md`).
-`TestBACnetStackClientAgainstServer`, `TestBACnet4JClientAgainstServer` and
-`TestBACpypes3ClientAgainstServer` start the server in a Go container, once
+`TestBACnetStackClientAgainstServer`, `TestBACnet4JClientAgainstServer`,
+`TestBACpypes3ClientAgainstServer` and `TestBacnetJSClientAgainstServer` start the server in a Go container, once
 per scenario file, with the device fixture the file requires. They then run
 the client image in client mode on the same docker network, on Linux and
 Docker Desktop alike, because some clients bind to the device by Who-Is.
@@ -220,6 +221,7 @@ with each stack unmodified.
 | bacnet-stack 1.6.1, command-line tools | All pass | 35 pass; `rle.nc1` known difference | All pass | Not run: built without segmentation, no tools for these services |
 | BACnet4J 6.1.1, `LocalDevice` | All pass | All pass | 2 pass; Read-BDT, Read-FDT, Write-BDT unsupported (no client for them) | 22 pass; `scovpm.unknown-object-second` known difference |
 | BACpypes3 0.0.110, `Application` | All pass | 35 pass; `ale.unknown-object` known difference | All pass | 15 pass; 5 known differences; the 3 `scovpm` scenarios unsupported |
+| bacnet-js 3.3.2, `BACnetClient` (image built from bacnet-interop branch `feat/bacnet-js`) | 21 pass; `wpm.unknown-object-second`, `wpm.wrong-type` known differences | 29 pass; 5 unsupported (`ale.nc1`, `ale.unknown-object`, `rle.nc1`, `co.not-creatable`, `wg.group1`), 2 not tested (their read-backs) | 2 pass; Read-BDT, Read-FDT, Write-BDT unsupported | 13 pass; 9 unsupported (segmented request, `scovpm`, filtered GetEnrollmentSummary, text messages), 1 not tested |
 
 The known differences are limits of the client recorded in bacnet-interop
 PEER_SUPPORT.md, each with the octets the server sent:
@@ -236,6 +238,15 @@ PEER_SUPPORT.md, each with the octets the server sent:
   `scovp.unknown-property`) or an empty GetAlarmSummary or
   GetEnrollmentSummary ACK (`gas.normal`, `gas.av2.after-normal`,
   `ges.offnormal-filter.normal`), and has no SubscribeCOVPropertyMultiple.
+- bacnet-js decodes a WritePropertyMultiple-Error with its plain Error
+  decoder (`client.ts _processError`), so the first failed write is lost
+  and class and code come out wrong (`wpm.unknown-object-second`,
+  `wpm.wrong-type`). Its unsupported scenarios are requests it has no
+  encoder for (list elements of a BACnetDestination, CreateObject by type,
+  WriteGroup, text messages, COV-multiple, BVLC tables, a filtered
+  GetEnrollmentSummary) or cannot segment (a 3000-octet AtomicWriteFile).
+  Its 3000-octet AtomicReadFile takes the server's segmented ComplexACK
+  (`arf.file3.segmented-reply` passes).
 
 Also not covered: an empty GetEventInformation reply, which `bacge` cannot
 decode (also against a bacnet-stack device), and BBMD-to-BBMD forwarding.
@@ -285,6 +296,51 @@ Both are Go, by one author, independent of go-bacnet.
 
 BACnet/IPv6 and BACnet/SC are out of scope: go-bacnet is a BACnet/IP (IPv4)
 client.
+
+## bacnet-js
+
+`interop/bacnetjs_test.go`, against bacnet-interop's `bacnet-js` image
+(not released yet; `BACNETJS_IMAGE`, default `bacnet-interop-bacnet-js:local`,
+"none" skips). Upstream is [@bacnet-js/client](https://github.com/bacnet-js/client)
+3.3.2 (TypeScript, MIT, the node-bacstack lineage), independent of go-bacnet.
+It decodes every request and encodes every answer; it has no object model
+and no service procedures, so those are the adapter's (A below). The suite
+runs on `device-baseline-v2` and, for ReadRange, files, object lifecycle and
+alarms, on `device-server-v1`. bacnet-js is also in the cross-peer tests
+(wildcard Device instance, endpoint-only target, object list, batched RPM,
+relinquish, read-only write, snapshot, unknown object, ReadRange pager, COV
+renewal, broadcast discovery).
+
+| Scenario | bacnet-js |
+|---|:---:|
+| Who-Is in and out of range, Who-Has by name, by identifier, unknown name | ✅ |
+| ReadProperty, object-list (whole, `[0]`, invalid index), wildcard Device instance, errors | A |
+| ReadPropertyMultiple with per-property errors; ALL | A |
+| WriteProperty, WritePriority, relinquish, wrong type, write-access-denied | A |
+| WritePropertyMultiple of two specifications; WritePropertyMultiple-Error naming the first failed write; the earlier write stays done | A |
+| Segmented WPM request (client segments for a 50-octet target) | ✅ reassembled by upstream |
+| RPM ALL to a client that accepts 50 octets | ✅ Abort segmentation-not-supported (no segmented send upstream) |
+| SubscribeCOV confirmed and unconfirmed, SubscribeCOVProperty with increment, errors | A |
+| ReadRange by position (positive and negative count), sequence number, time; paged; errors | A |
+| AtomicReadFile / AtomicWriteFile stream and record, append, errors, 3000 octets in one read refused, in chunks read | A |
+| CreateObject, DeleteObject and their errors | A |
+| GetEventInformation, GetEnrollmentSummary, AcknowledgeAlarm and their errors | A |
+| GetEnrollmentSummary with an event-state filter | ⚠ offnormal answered; normal gets no answer |
+| GetAlarmSummary with an alarm | ⚠ go-bacnet refuses the ACK (context tags) |
+| ReinitializeDevice, DeviceCommunicationControl | A |
+| TimeSynchronization, UTC time synchronization, Confirmed/UnconfirmedPrivateTransfer | ✅ |
+| AddListElement, RemoveListElement | ✅ Error services/reject-unrecognized-service |
+| ConfirmedTextMessage | — no answer |
+
+The two ⚠ rows are upstream defects, recorded as such and asserted so a
+change is noticed (docs/COMPATIBILITY.md). Neither is a go-bacnet defect:
+`AlarmSummary.encode` writes the object identifier, alarm state and
+acknowledged transitions with context tags 12, 9 and 8
+(`cc 00 80 00 02 99 03 8a 05 60` for AV-2) where clause 13.10.2 has
+application tags, and `GetEnrollmentSummary.decode` treats the primitive
+`[2]` event-state filter of clause 13.11.1.1.3 as an opening tag: `29 00`
+decodes by accident, `29 02` throws inside upstream and the request is
+dropped.
 
 ## What the peer tests found
 
