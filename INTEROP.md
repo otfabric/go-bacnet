@@ -6,7 +6,11 @@ What each peer stack can and cannot do is recorded in
 
 All of this is evidence against open-source stacks in containers. None of it
 is evidence about a particular vendor's controller; see
-[docs/FIELD_VALIDATION.md](docs/FIELD_VALIDATION.md).
+[docs/FIELD_VALIDATION.md](docs/FIELD_VALIDATION.md). Recorded traffic of
+physical controllers (Trane, Tridium, Reliable Controls, Delta, Alerton,
+WattStopper, Lithonia and others) is a separate evidence tier, in
+[testdata/captures](testdata/captures/README.md): it runs offline in
+`make test`, not against the devices.
 
 ## How it works
 

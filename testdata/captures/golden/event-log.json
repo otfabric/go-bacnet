@@ -1,0 +1,55 @@
+{
+  "id": "event-log",
+  "summary": "ReadRange of an Event Log's Log_Buffer (BACnetEventLogRecord with event notifications)",
+  "source": {
+    "name": "eventLog_ReadRange.pcap",
+    "url": "https://kargs.net/captures/eventLog_ReadRange.pcap",
+    "sha256": "2a31e88f799aee5b41eb51c3054476817be0ef3d8961e24ab59adf0095e822a8",
+    "size": 388,
+    "fetched": "2026-11-08",
+    "terms": "No licence or redistribution statement on kargs.net/captures; the originals are not redistributed here. Excerpts of individual datagrams only (README.md).",
+    "frames": 2,
+    "datagrams": 2
+  },
+  "class": "B",
+  "class_basis": "no I-Am in this file; 192.168.1.104 announces vendor 24 (Automated Logic) in TrendLogMultipleReadRangeSimple.pcap of the same lab network",
+  "regressions": [
+    {
+      "frames": [
+        2
+      ],
+      "classification": "codec bug (fixed)",
+      "detail": "service.DecodeReadRangeACK decoded every Log_Buffer as BACnetLogRecord and refused an Event Log's BACnetEventLogRecords (\"not context boolean\"); now EventLogRecords with the decoded notifications"
+    }
+  ],
+  "frames": [
+    {
+      "frame": 1,
+      "time": "2011-09-07T22:41:13.059174Z",
+      "src": "192.168.1.101:47808",
+      "dst": "192.168.1.104:47808",
+      "hex": "810a001101040005961a0c064000011983",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x04",
+        "apdu_type": "0",
+        "confirmed_service": "26",
+        "invoke_id": "150"
+      }
+    },
+    {
+      "frame": 2,
+      "time": "2011-09-07T22:41:13.138338Z",
+      "src": "192.168.1.104:47808",
+      "dst": "192.168.1.101:47808",
+      "hex": "810a00e7010030961a0c0640000119833a05c049035e0ea46f090703b4120519400f1e0a05001f0ea46f090703b41205205f0f1e1e09641c04000fa02c030000013e0c1205205f3f4901590169047d13004c4f3120466c6f6174696e67204c696d697489009901a900b902ce4e0c428800001a04802c429000003c400000004fcf1f1f0ea46f090703b412052a5f0f1e1e09641c04000fa02c030000013e2ea46f090703b412052a5f2f3f4901590369047d13004c4f3120466c6f6174696e67204c696d697489009901a902b900ce4e0c428cd6631a04002c429000003c400000004fcf1f1f5f",
+      "wireshark": {
+        "bvlc_function": "0x0a",
+        "npdu_control": "0x00",
+        "apdu_type": "3",
+        "confirmed_service": "26",
+        "invoke_id": "150"
+      }
+    }
+  ]
+}

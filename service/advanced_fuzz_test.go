@@ -5,11 +5,16 @@ package service_test
 import (
 	"testing"
 
+	"github.com/otfabric/go-bacnet/internal/capture"
+
 	"github.com/otfabric/go-bacnet"
 	"github.com/otfabric/go-bacnet/service"
 )
 
 func FuzzDecodeAtomicReadFileACK(f *testing.F) {
+	for _, s := range capture.LayerSeeds(capture.LayerService, capture.ServiceIs(service.AtomicReadFileACK{})) { // recorded devices
+		f.Add(s)
+	}
 	ack, _ := service.EncodeAtomicReadFileACK(service.AtomicReadFileACK{
 		EndOfFile: true, Access: service.FileAccessStream, Data: []byte("x"),
 	})
@@ -21,6 +26,9 @@ func FuzzDecodeAtomicReadFileACK(f *testing.F) {
 }
 
 func FuzzDecodePrivateTransfer(f *testing.F) {
+	for _, s := range capture.LayerSeeds(capture.LayerService, capture.ServiceIs(service.PrivateTransfer{})) { // recorded devices
+		f.Add(s)
+	}
 	raw, _ := service.EncodePrivateTransfer(service.PrivateTransfer{VendorID: 1, ServiceNumber: 2})
 	f.Add(raw)
 	f.Fuzz(func(t *testing.T, payload []byte) {

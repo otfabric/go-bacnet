@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/otfabric/go-bacnet/internal/capture"
+
 	"github.com/otfabric/go-bacnet"
 	"github.com/otfabric/go-bacnet/apdu"
 	"github.com/otfabric/go-bacnet/bip"
@@ -81,6 +83,9 @@ func fuzzSeeds() [][2][]byte {
 // pending call must end once its context is cancelled, and Close must
 // return.
 func FuzzClientReceive(f *testing.F) {
+	for _, s := range capture.LayerSeeds(capture.LayerBVLC, nil) { // recorded devices (testdata/captures)
+		f.Add(s, s)
+	}
 	for _, s := range fuzzSeeds() {
 		f.Add(s[0], s[1])
 	}

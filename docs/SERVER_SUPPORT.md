@@ -127,7 +127,7 @@ Limits:
 | Service | Clause | Support | Evidence | Notes |
 |---|---|---|---|---|
 | DeviceCommunicationControl | 16.1 | Implemented | Internal e2e, Unit, Independent client (bacnet-stack, BACnet4J, BACpypes3) | Enable, disable-initiation, duration, password. DISABLE is refused with services/service-request-denied from protocol revision 20 (bacnet-stack, h_dcc.c). Who-Is is answered while initiation is disabled |
-| ReinitializeDevice | 16.4 | Implemented | Internal e2e, Unit, Independent client (bacnet-stack, BACnet4J, BACpypes3) | Password; `Hooks.Reinitialize` performs the action; without it the request is acknowledged |
+| ReinitializeDevice | 16.4 | Implemented | Internal e2e, Unit, Independent client (bacnet-stack, BACnet4J, BACpypes3) | Password; `Hooks.Reinitialize` performs the action; without it COLDSTART, WARMSTART and ACTIVATE_CHANGES are acknowledged and START_BACKUP to ABORT_RESTORE get services/service-request-denied (no backup procedure), as the recorded WattStopper LMBC-300 answers ([testdata/captures](../testdata/captures/README.md)) |
 | TimeSynchronization / UTCTimeSynchronization | 16.7, 16.8 | Hook | Internal e2e, Unit, Independent client (bacnet-stack, BACnet4J, BACpypes3) | `Hooks.TimeSync` |
 | ConfirmedPrivateTransfer / UnconfirmedPrivateTransfer | 16.2, 16.3 | Hook | Internal e2e, Unit, Independent client (bacnet-stack: unconfirmed; BACnet4J, BACpypes3: confirmed) | `Hooks.PrivateTransfer`; the returned elements are the result block |
 | ConfirmedTextMessage / UnconfirmedTextMessage | 16.5, 16.6 | Hook | Internal e2e, Unit, Independent client (BACnet4J, BACpypes3) | `Hooks.TextMessage` |

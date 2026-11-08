@@ -50,6 +50,11 @@ func TestImportBoundaries(t *testing.T) {
 			"github.com/otfabric/go-bacnet/apdu", "github.com/otfabric/go-bacnet/service",
 			"github.com/otfabric/go-bacnet/client", "github.com/otfabric/go-bacnet/server",
 			"github.com/otfabric/go-bacnet/server/object", "github.com/otfabric/go-bacnet/bbmd"},
+		// Test infrastructure for recorded traffic: decodes with the codecs,
+		// so that the client and server suites can use it.
+		"internal/capture": {"github.com/otfabric/go-bacnet/client", "github.com/otfabric/go-bacnet/server",
+			"github.com/otfabric/go-bacnet/server/object", "github.com/otfabric/go-bacnet/bbmd",
+			"github.com/otfabric/go-bacnet/device", "github.com/otfabric/go-bacnet/bip"},
 		"internal/link": {"github.com/otfabric/go-bacnet/apdu", "github.com/otfabric/go-bacnet/service",
 			"github.com/otfabric/go-bacnet/client", "github.com/otfabric/go-bacnet/server",
 			"github.com/otfabric/go-bacnet/server/object", "github.com/otfabric/go-bacnet/bbmd"},

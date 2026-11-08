@@ -33,3 +33,6 @@ cover*.out
 /examples/read-range/read-range
 /examples/who-has/who-has
 /examples/write-multiple/write-multiple
+
+# Original captures, downloaded by make captures-fetch (not redistributed)
+/testdata/captures/cache/

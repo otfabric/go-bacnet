@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/otfabric/go-bacnet/internal/capture"
+
 	"github.com/otfabric/go-bacnet"
 	"github.com/otfabric/go-bacnet/apdu"
 	"github.com/otfabric/go-bacnet/bip"
@@ -114,6 +116,9 @@ func fuzzServerSeeds(tb testing.TB) [][]byte {
 // server must not panic, every frame it sends must parse, and Close must
 // end every goroutine it started.
 func FuzzServerReceive(f *testing.F) {
+	for _, s := range capture.LayerSeeds(capture.LayerBVLC, nil) { // recorded devices (testdata/captures)
+		f.Add(s, s)
+	}
 	seeds := fuzzServerSeeds(f)
 	for i, s := range seeds {
 		f.Add(s, seeds[(i+1)%len(seeds)])

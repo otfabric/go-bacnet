@@ -6,6 +6,8 @@ import (
 	"bytes"
 	"testing"
 
+	"github.com/otfabric/go-bacnet/internal/capture"
+
 	"github.com/otfabric/go-bacnet"
 	"github.com/otfabric/go-bacnet/bvlc"
 )
@@ -60,6 +62,9 @@ func TestBVLCLengthMismatch(t *testing.T) {
 }
 
 func FuzzParseBVLC(f *testing.F) {
+	for _, s := range capture.LayerSeeds(capture.LayerBVLC, nil) { // recorded devices (testdata/captures)
+		f.Add(s)
+	}
 	enc, _ := bvlc.Append(nil, bvlc.Message{Function: bvlc.FunctionOriginalBroadcastNPDU, Payload: []byte{1, 0}})
 	f.Add(enc)
 	f.Fuzz(func(t *testing.T, data []byte) {

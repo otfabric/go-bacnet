@@ -296,10 +296,15 @@ func (c *Client) ReadPropertyMultiple(ctx context.Context, target Target, specs 
 ## ReadRange
 
 `ReadRange` returns `service.ReadRangeACK` with `ResultFlags`, `ItemCount`,
-`ItemData`, optional `FirstSequence`, and `LogRecords` when the property is
-`Log_Buffer` and the itemData stream is well-formed `BACnetLogRecord`
-SEQUENCEs. Prefer `LogRecords` for typed Trend Log access; `ItemData` remains
-the flat tag stream for generic ranges. Inspect `FirstItem` / `LastItem` /
+`ItemData`, optional `FirstSequence`, and, when the property is
+`Log_Buffer`, the typed records of the object's record type:
+`LogRecords` (BACnetLogRecord) for a Trend Log or another object,
+`LogMultipleRecords` (`service.LogMultipleRecord`, BACnetLogMultipleRecord:
+log status, the list of logged values or a time change) for a Trend Log
+Multiple, and `EventLogRecords` (`service.EventLogRecord`,
+BACnetEventLogRecord: log status, the event notification or a time change)
+for an Event Log. `ItemData` remains the flat tag stream for generic
+ranges. Inspect `FirstItem` / `LastItem` /
 `MoreItems` for paging. Item values are cloned on decode (caller-owned).
 
 ## Who-Has / I-Have
@@ -427,8 +432,9 @@ Do not retain aliased slices after the datagram buffer is reused.
   outcome-unknown
 - EventNotification handlers run on the receive path: do not block or call
   Client RPCs from the callback (deadlock risk); panics are recovered
-- ReadRangeACK with property `Log_Buffer` requires a successful typed
-  `LogRecord` split; known NotificationParameters CHOICEs reject malformed
+- ReadRangeACK with property `Log_Buffer` requires a successful typed split
+  into the record type of the object (`LogRecords`, `LogMultipleRecords` or
+  `EventLogRecords`); known NotificationParameters CHOICEs reject malformed
   contents (unknown/unimplemented CHOICEs remain opaque)
 
 ## Server
@@ -528,7 +534,10 @@ as device/operational-problem.
 
 `Hooks` functions run on a worker with the request's context:
 `BeforeWrite` and `BeforeDelete` can refuse with a BACnet error;
-`Reinitialize` performs a ReinitializeDevice; `TimeSync`, `PrivateTransfer`,
+`Reinitialize` performs a ReinitializeDevice (without it COLDSTART,
+WARMSTART and ACTIVATE_CHANGES are acknowledged and the backup and restore
+states START_BACKUP to ABORT_RESTORE get services/service-request-denied);
+`TimeSync`, `PrivateTransfer`,
 `TextMessage` and `WriteGroup` are the whole service, so without them the
 service is not advertised and a confirmed request gets Reject
 unrecognized-service.

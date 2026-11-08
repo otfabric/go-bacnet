@@ -6,6 +6,8 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/otfabric/go-bacnet/internal/capture"
+
 	"github.com/otfabric/go-bacnet"
 	"github.com/otfabric/go-bacnet/apdu"
 )
@@ -43,6 +45,9 @@ func TestParseRejectsReservedAndInvalidFraming(t *testing.T) {
 }
 
 func FuzzParseAPDU(f *testing.F) {
+	for _, s := range capture.LayerSeeds(capture.LayerAPDU, nil) { // recorded devices (testdata/captures)
+		f.Add(s)
+	}
 	seeds := [][]byte{
 		{0x02, 0x63, 0x01, 0x0c, 0x0c, 0x00, 0x00, 0x00, 0x01, 0x19, 0x55},
 		{0x10, 0x08},

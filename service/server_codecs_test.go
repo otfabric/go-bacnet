@@ -7,6 +7,8 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/otfabric/go-bacnet/internal/capture"
+
 	"github.com/otfabric/go-bacnet"
 	"github.com/otfabric/go-bacnet/service"
 )
@@ -105,6 +107,9 @@ func TestEncodeCOVNotificationErrors(t *testing.T) {
 }
 
 func FuzzDecodeReadPropertyMultiple(f *testing.F) {
+	for _, s := range capture.LayerSeeds(capture.LayerService, capture.ServiceIs([]service.ReadAccessSpecification(nil))) { // recorded devices
+		f.Add(s)
+	}
 	limits := bacnet.DefaultDecodeLimits()
 	f.Add([]byte(nil))
 	if p, err := service.EncodeReadPropertyMultiple([]service.ReadAccessSpecification{{

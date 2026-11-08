@@ -2,7 +2,7 @@
 
 ## What this is
 
-Pure Go BACnet/IP client and server library (ANSI/ASHRAE 135-2024 baseline, Annex J over IPv4). The client is tested against independent stacks; the server (`server`, `server/object`, `bbmd`) against the go-bacnet client and independent clients (docs/SERVER_SUPPORT.md). No dependencies outside the standard library. Profile: **protocol-library**. The API is v0. Not BTL listed; not yet validated against physical devices.
+Pure Go BACnet/IP client and server library (ANSI/ASHRAE 135-2024 baseline, Annex J over IPv4). The client is tested against independent stacks; the server (`server`, `server/object`, `bbmd`) against the go-bacnet client and independent clients (docs/SERVER_SUPPORT.md). No dependencies outside the standard library. Profile: **protocol-library**. The API is v0. Not BTL listed; no live device tested. Recorded traffic of physical devices is in testdata/captures (excerpts only: the originals are not redistributed).
 
 ## Organisation standards
 
@@ -16,7 +16,7 @@ This repository follows **otfabric/engineering policy 1.2**, profile **protocol-
 | What is supported and how well it is verified | docs/CLIENT_SUPPORT.md, docs/SERVER_SUPPORT.md, LIMITATIONS.md |
 | Peer results and quirks | INTEROP.md, docs/COMPATIBILITY.md |
 | Behavioural contract | API.md, ERRORS.md |
-| Physical device evidence | docs/FIELD_VALIDATION.md |
+| Physical device evidence | testdata/captures/README.md (recorded traffic), docs/FIELD_VALIDATION.md (field runs) |
 | Release history | RELEASE.md (`## vX.Y.Z` … `---`) |
 
 Repository-local truth order, when these disagree: current code and tests, then `go.mod`, then this file, then README.md, API.md and the other documents. Verify current behaviour and correct stale documentation in the same change.
@@ -39,6 +39,7 @@ Repository-local truth order, when these disagree: current code and tests, then 
 | a decoder | `make fuzz` |
 | a client request or a server reply | `make dissector` (tshark) |
 | interop-relevant behaviour | `make interop-pinned` (Docker, jq) |
+| the capture reader, golden cases or a codec the recordings exercise | `make captures-report`, `make captures-extended` |
 
 ## Definition of Done
 

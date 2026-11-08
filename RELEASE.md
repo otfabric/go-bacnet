@@ -1,5 +1,38 @@
 # go-bacnet Releases
 
+## v0.7.0
+
+**Date:** 2026-11-08
+**Previous release:** v0.6.0
+
+Requires **Go 1.26+**. Interop pin unchanged: [`bacnet-interop` v0.12.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.12.0). go-bacnet is now tested against recorded traffic of physical BACnet devices: 217 captures from [kargs.net/captures](https://kargs.net/captures/), 36 of them identifying the devices by model and firmware (Trane Tracer SC, UC400 and BSV; Tridium NiagaraAX; Reliable Controls MACH-ProSys, ETHER-Link and MACH2; Delta Controls DSC-1616E, DNT-T103 and DNT-T221; Alerton BCM-Eth and VLC-853; WattStopper LMBC-300; Lithonia SYSC MLX; Contemporary Controls BASRT-B and others). The originals are not redistributed: 20 golden cases commit 1,072 excerpted datagrams ([testdata/captures](testdata/captures/README.md)). They found two defects, both fixed. No live device was tested; nothing here is a conformance claim.
+
+### Fixed
+
+- `service.DecodeReadRangeACK` decoded every Log_Buffer as BACnetLogRecord. It refused a Trend Log Multiple's BACnetLogMultipleRecords and an Event Log's BACnetEventLogRecords ("not context boolean"), so `client.ReadRange` and `ReadRangeAll` failed on both, and the client aborted a segmented answer. Recorded: a PolarSoft device's Trend Log Multiple and an Automated Logic device's Event Log.
+- The server acknowledged ReinitializeDevice START_BACKUP to ABORT_RESTORE without a `Hooks.Reinitialize`, though it has no backup or restore procedure. Without a hook those states now get services/service-request-denied, as a recorded WattStopper LMBC-300 answers (the recorded PolarSoft server and a Lithonia device refuse them with a Reject). COLDSTART, WARMSTART and ACTIVATE_CHANGES are still acknowledged, and a hook still decides every state.
+
+### Added
+
+- `service.ReadRangeACK.LogMultipleRecords` (`service.LogMultipleRecord`, `LogMultipleValue`) and `EventLogRecords` (`service.EventLogRecord`), chosen by the object type of the answer; `LogDataChoice`; `DecodeLogMultipleRecords`, `DecodeEventLogRecords`, `EncodeLogMultipleRecord`, `EncodeEventLogRecord`. `EncodeReadRangeACK` encodes both.
+- `bacnet.ObjectTypeEventLog` (25).
+- `testdata/captures`: [README.md](testdata/captures/README.md) (sources, terms, evidence classes, devices, differences), [manifest.json](testdata/captures/manifest.json) (all 217 files: URL, SHA256, class and its basis, devices, go-bacnet and Wireshark counts), SHA256SUMS, `golden/` and the machine-readable coverage report `report/`.
+- `make captures-fetch` downloads the originals into a git-ignored cache and verifies their SHA256; `make captures-extended` re-derives the manifest from them; `make captures-generate` and `make captures-report` rebuild the golden cases and the report.
+
+### Tests
+
+- `internal/capture` reads pcap and pcapng (Ethernet, VLAN, Linux cooked, raw IPv4; IPv4 reassembly), decodes BVLC, NPDU, APDU and the services, reassembles segmented messages and correlates confirmed transactions by requester, responder and invoke ID. Every golden datagram decodes as Wireshark 4.6.9 decodes it, field by field, and encodes again to the recorded octets at every layer; go-bacnet refuses exactly what Wireshark marks malformed, apart from classified differences.
+- `client`: `TestCaptureReplay` runs the client against 254 recorded answers (12 segmented). The client's requests carry the recorded service octets, its SegmentACKs the recorded sequence numbers and windows, and it returns the recorded values and errors. `TestCaptureReplayDisrupted` replays segmented answers with segments duplicated, lost or swapped.
+- `server`: `TestCaptureServerParity` gives the server the recorded requests whose answer does not depend on the device's objects; 150 answers equal the devices', the other 66 are classified. `TestCaptureBVLLResultParity` checks the recorded BVLC-Result NAK codes. `TestCaptureMutatedRequests` sends about 20,000 malformed variants of the recorded requests.
+- `TestReinitializeDeviceWithoutHook`; the recorded Trend Log Multiple and Event Log answers as unit tests that decode and encode byte for byte; `FuzzDecodeLogMultipleRecords`.
+- The BVLC, NPDU and APDU fuzz targets, `FuzzServerReceive`, `FuzzClientReceive` and ten service decoder fuzz targets are seeded with the recorded octets.
+
+### Interoperability
+
+Recorded differences, classified in [testdata/captures/README.md](testdata/captures/README.md#differences-that-remain) and [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md): a Lithonia SYSC MLX answers a ReadPropertyMultiple with an empty property list, and a request with the reserved max-APDU code 6, which go-bacnet refuses; older devices answer a password failure with class services, go-bacnet with class security; a plugfest router and a WattStopper WebLink forward malformed NPDUs or APDUs, which go-bacnet refuses.
+
+---
+
 ## v0.6.0
 
 **Date:** 2026-11-06

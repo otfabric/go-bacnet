@@ -1,0 +1,5370 @@
+{
+  "generated": "2026-11-08",
+  "wireshark": "TShark (Wireshark) 4.6.9 (v4.6.9-0-g2d548b197c75).",
+  "sources": [
+    {
+      "id": "kargs",
+      "url": "https://kargs.net/captures/",
+      "revision": "directory listing of 2026-11-08 (217 files)",
+      "fetched": "2026-11-08",
+      "terms": "No licence or redistribution statement on kargs.net/captures; the originals are not redistributed here. Excerpts of individual datagrams only (README.md).",
+      "notes": "Steve Karg's collection of BACnet captures (BACnet Stack author; ASHRAE SSPC 135 member): plugfest and field recordings of vendor devices, and test traffic of the BACnet Stack demo applications. github.com/EmreEkin/ICS-Pcaps BacNET/ holds 16 of these files re-saved as pcap (no licence either) and is not used separately."
+    }
+  ],
+  "files": [
+    {
+      "source": "kargs",
+      "name": "BACnet-BBMD-on-same-subnet.cap",
+      "url": "https://kargs.net/captures/BACnet-BBMD-on-same-subnet.cap",
+      "sha256": "206d976d00202045a45e167b735b46ec9b51ef562e41f31077887cfb4fd2bc91",
+      "size": 1298,
+      "class": "B",
+      "class_basis": "vendor IDs in I-Am only (18, 24, 86); model not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 14,
+        "datagrams": 14,
+        "decoded": 14,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 14,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "BACnet-MSTP-SNAP-Mixed.cap",
+      "url": "https://kargs.net/captures/BACnet-MSTP-SNAP-Mixed.cap",
+      "sha256": "72003d0d4852941a44cf10fe48bc27e461a20a31f808a9de4505f64bdb5c843c",
+      "size": 113787,
+      "class": "B",
+      "class_basis": "vendor IDs in I-Am only (24); model not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 2326,
+        "datagrams": 68,
+        "decoded": 68,
+        "transactions": 31,
+        "answered": 31,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 68,
+        "wireshark_malformed": 0
+      },
+      "devices": [
+        "BACnet Stack at SourceForge GNU Demo 0.4.1 (vendor 260, instance 86114)"
+      ]
+    },
+    {
+      "source": "kargs",
+      "name": "BACnet-exception-schedule-property-1.pcapng",
+      "url": "https://kargs.net/captures/BACnet-exception-schedule-property-1.pcapng",
+      "sha256": "c597d9dd433fcca462ac8b25564e3a79e418d239fefe26e25657d196dec91eec",
+      "size": 492,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 2,
+        "datagrams": 2,
+        "decoded": 2,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 2,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 2,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "BACnet-exception-schedule-property-2.pcapng",
+      "url": "https://kargs.net/captures/BACnet-exception-schedule-property-2.pcapng",
+      "sha256": "7a087916e9a5b0dec8e1c7e53629bd43622fc2cdc014d1d752fb8ec5dc5df84e",
+      "size": 504,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 1,
+        "datagrams": 1,
+        "decoded": 1,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 1,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 1,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "BACnetARRAY-element-0.cap",
+      "url": "https://kargs.net/captures/BACnetARRAY-element-0.cap",
+      "sha256": "b53cd60d1320d3be0e329e0ce4b15c2d2ed83373a124bbb95e878d71e933de44",
+      "size": 495,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 6,
+        "datagrams": 6,
+        "decoded": 6,
+        "transactions": 3,
+        "answered": 3,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 6,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "BACnetARRAY-elements.cap",
+      "url": "https://kargs.net/captures/BACnetARRAY-elements.cap",
+      "sha256": "d210c0407255ca0114e58a675173d5803278ffaa67a17eacf5c5e10071151dd3",
+      "size": 3339,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 40,
+        "datagrams": 40,
+        "decoded": 40,
+        "transactions": 4,
+        "answered": 4,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 40,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "BACnetDeviceObjectReference.pcap",
+      "url": "https://kargs.net/captures/BACnetDeviceObjectReference.pcap",
+      "sha256": "958f0bc237cadd36e5a4ac0b2c88bf2ca2f405fded8878950790e9e4935c4420",
+      "size": 582,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 6,
+        "datagrams": 4,
+        "decoded": 4,
+        "transactions": 2,
+        "answered": 2,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 4,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "BACnetIP-MSTP-Mix.cap",
+      "url": "https://kargs.net/captures/BACnetIP-MSTP-Mix.cap",
+      "sha256": "0c4bfd74c3d55f92f7c2fd05631acee76e2796ea000a07140decf58cee7d46a7",
+      "size": 118053,
+      "class": "B",
+      "class_basis": "vendor IDs in I-Am only (24); model not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 2411,
+        "datagrams": 72,
+        "decoded": 72,
+        "transactions": 31,
+        "answered": 31,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 72,
+        "wireshark_malformed": 0
+      },
+      "devices": [
+        "BACnet Stack at SourceForge GNU Demo 0.4.1 (vendor 260, instance 86114)"
+      ]
+    },
+    {
+      "source": "kargs",
+      "name": "BACnetL_SchedRPM.pcapng",
+      "url": "https://kargs.net/captures/BACnetL_SchedRPM.pcapng",
+      "sha256": "65d2f0a179b2e7fa9d206355efb29b2383e0fb9ff50ab47621aaa1112644065a",
+      "size": 596,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 2,
+        "datagrams": 2,
+        "decoded": 2,
+        "transactions": 1,
+        "answered": 1,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 2,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "BBMD_Results.pcap",
+      "url": "https://kargs.net/captures/BBMD_Results.pcap",
+      "sha256": "c03e03a25d8dd59672e69df55fb4a5cbfbec9ecc344e747622c5166b85c08911",
+      "size": 598,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 8,
+        "datagrams": 8,
+        "decoded": 8,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 8,
+        "wireshark_malformed": 0
+      },
+      "golden": [
+        "bvll-management-results"
+      ]
+    },
+    {
+      "source": "kargs",
+      "name": "BBMD_readproperty.pcap",
+      "url": "https://kargs.net/captures/BBMD_readproperty.pcap",
+      "sha256": "b14d6198f60296a28b45a7c7991e9bffe0245665117b64e09861ff289da8537a",
+      "size": 26425,
+      "class": "D",
+      "class_basis": "BACnet Stack demo applications (vendor 260 or model GNU)",
+      "readable": true,
+      "stats": {
+        "frames": 336,
+        "datagrams": 336,
+        "decoded": 336,
+        "transactions": 88,
+        "answered": 88,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 336,
+        "wireshark_malformed": 0
+      },
+      "devices": [
+        "BACnet Stack at SourceForge GNU 0.4.3 (vendor 260, instance 12345)"
+      ]
+    },
+    {
+      "source": "kargs",
+      "name": "Bug 4.ncf",
+      "url": "https://kargs.net/captures/Bug%204.ncf",
+      "sha256": "147cf77042f31bea5355cad4d7e670425923ac6898ae0e6524c19f6621e18fa8",
+      "size": 2765,
+      "class": "-",
+      "class_basis": "not a pcap or pcapng file: capture: unsupported or malformed capture file",
+      "readable": false,
+      "stats": {
+        "frames": 0,
+        "datagrams": 0,
+        "decoded": 0,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 0,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "CEN_10.pcap",
+      "url": "https://kargs.net/captures/CEN_10.pcap",
+      "sha256": "b50a6cdb3c7b731ce795a79035511213214bc2c5bb54dd2b856c63ea9669c5e0",
+      "size": 156,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 1,
+        "datagrams": 1,
+        "decoded": 1,
+        "transactions": 1,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 1,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "CEN_9_11.pcap",
+      "url": "https://kargs.net/captures/CEN_9_11.pcap",
+      "sha256": "dc2676829fd47dfa422aad2d589bb21860bb21ee3c72a51373adf1ab417ed8d4",
+      "size": 723,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 8,
+        "datagrams": 8,
+        "decoded": 8,
+        "transactions": 2,
+        "answered": 2,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 8,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "COV_AWF_ARF.cap",
+      "url": "https://kargs.net/captures/COV_AWF_ARF.cap",
+      "sha256": "dda02995ffa93fe96f23b91c7cb80ac75e2a7ad60a31d019b84abf1060c06562",
+      "size": 397490,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 1350,
+        "datagrams": 1350,
+        "decoded": 1350,
+        "transactions": 656,
+        "answered": 656,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 1350,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "ContextTagAbove14Sample_1.pcap",
+      "url": "https://kargs.net/captures/ContextTagAbove14Sample_1.pcap",
+      "sha256": "eef960f9f167f7cd358ee1eb9cdbcb49a0318f282807a4c0fd3c9b9f0bff5c50",
+      "size": 247,
+      "class": "D",
+      "class_basis": "hand-made sample for a Wireshark dissector bug",
+      "readable": true,
+      "stats": {
+        "frames": 2,
+        "datagrams": 2,
+        "decoded": 1,
+        "rejected": {
+          "bvlc": 1
+        },
+        "transactions": 1,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 1,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "CriticalRoom55-1.cap",
+      "url": "https://kargs.net/captures/CriticalRoom55-1.cap",
+      "sha256": "8f57176010c5059cea00069b705c7cd86cac3e1cacc4d4a370078c78487ef6f6",
+      "size": 2144,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 26,
+        "datagrams": 26,
+        "decoded": 17,
+        "rejected": {
+          "apdu": 9
+        },
+        "transactions": 13,
+        "answered": 4,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 26,
+        "wireshark_malformed": 3
+      },
+      "golden": [
+        "router-drops-apdu-type"
+      ]
+    },
+    {
+      "source": "kargs",
+      "name": "CriticalRoom55-2.cap",
+      "url": "https://kargs.net/captures/CriticalRoom55-2.cap",
+      "sha256": "d8de03c6d135eac02999db2a587959eef39d813fef6020ed025592663a4e8871",
+      "size": 22464,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 280,
+        "datagrams": 280,
+        "decoded": 140,
+        "rejected": {
+          "apdu": 140
+        },
+        "transactions": 140,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 280,
+        "wireshark_malformed": 15
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "DRI CAVE log udp-0168-20081216-1117-03.cap",
+      "url": "https://kargs.net/captures/DRI%20CAVE%20log%20udp-0168-20081216-1117-03.cap",
+      "sha256": "d8212013d122d67c59e945664ff7c123509c3885e6429254daf107b4ee33419a",
+      "size": 21537,
+      "class": "A",
+      "class_basis": "model and firmware from the devices' own Device objects: WebLink",
+      "readable": true,
+      "stats": {
+        "frames": 246,
+        "datagrams": 240,
+        "decoded": 226,
+        "rejected": {
+          "apdu": 14
+        },
+        "transactions": 46,
+        "answered": 42,
+        "orphan_answers": 14,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 246,
+        "wireshark_malformed": 0
+      },
+      "devices": [
+        "WebLink (vendor 86, instance 86000)"
+      ],
+      "golden": [
+        "wattstopper-weblink"
+      ]
+    },
+    {
+      "source": "kargs",
+      "name": "EastKentuckyExpo-WP1.txt",
+      "url": "https://kargs.net/captures/EastKentuckyExpo-WP1.txt",
+      "sha256": "1803f95a0948cecba9bddbae195144b431a0443e47ba68e51c54bbd42852964d",
+      "size": 3442,
+      "class": "-",
+      "class_basis": "not a pcap or pcapng file: capture: unsupported or malformed capture file",
+      "readable": false,
+      "stats": {
+        "frames": 0,
+        "datagrams": 0,
+        "decoded": 0,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 0,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "EastKentuckyExpo-WP2.txt",
+      "url": "https://kargs.net/captures/EastKentuckyExpo-WP2.txt",
+      "sha256": "7873ce3ec16d99d9311cccfe1a82d8dde62cb795694ec63b0ad05f885ea0c468",
+      "size": 9175,
+      "class": "-",
+      "class_basis": "not a pcap or pcapng file: capture: unsupported or malformed capture file",
+      "readable": false,
+      "stats": {
+        "frames": 0,
+        "datagrams": 0,
+        "decoded": 0,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 0,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "Ethereal-Misinterpreted-Packet.cap",
+      "url": "https://kargs.net/captures/Ethereal-Misinterpreted-Packet.cap",
+      "sha256": "b89741ff5dec94b3769dab87ceb7316bf1758a4962aeb647f3b823254b7a4a09",
+      "size": 252,
+      "class": "D",
+      "class_basis": "sample for a dissector bug",
+      "readable": true,
+      "stats": {
+        "frames": 1,
+        "datagrams": 1,
+        "decoded": 1,
+        "transactions": 1,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 1,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "I-Am-Router-To-Network.cap",
+      "url": "https://kargs.net/captures/I-Am-Router-To-Network.cap",
+      "sha256": "e106e21808d11a323a5aebc6fa6d96ee5ebdf474a7b3ea0da7f28d7a5d6d36c0",
+      "size": 842,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 10,
+        "datagrams": 10,
+        "decoded": 10,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 10,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "LGE Test.CBL",
+      "url": "https://kargs.net/captures/LGE%20Test.CBL",
+      "sha256": "894e016834803de8bcf6856745d65064cc8cb47e23741d68ab0f12d3669e6f94",
+      "size": 10665,
+      "class": "-",
+      "class_basis": "not a pcap or pcapng file: capture: unsupported or malformed capture file",
+      "readable": false,
+      "stats": {
+        "frames": 0,
+        "datagrams": 0,
+        "decoded": 0,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 0,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "LGE-LITH.CAP",
+      "url": "https://kargs.net/captures/LGE-LITH.CAP",
+      "sha256": "e36646321aa722536a0d7d9002de59e15ceb65148b6386229181ff04796361e6",
+      "size": 162035,
+      "class": "-",
+      "class_basis": "not a pcap or pcapng file: capture: unsupported or malformed capture file",
+      "readable": false,
+      "stats": {
+        "frames": 0,
+        "datagrams": 0,
+        "decoded": 0,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 0,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "MSTP_Malformed_Packets.pcap",
+      "url": "https://kargs.net/captures/MSTP_Malformed_Packets.pcap",
+      "sha256": "105c203c529242a80ff257547e1918000d10a802ef4bc4c5200c462c24914829",
+      "size": 42584,
+      "class": "D",
+      "class_basis": "deliberately malformed test traffic (file name)",
+      "readable": true,
+      "stats": {
+        "frames": 1497,
+        "datagrams": 0,
+        "decoded": 0,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 0,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ms/tp": 1497
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "NPDU.cap",
+      "url": "https://kargs.net/captures/NPDU.cap",
+      "sha256": "3f025f92125c13f5401533a463ffdd827693b0408e7d57e1a954234c16a51c38",
+      "size": 2512,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 36,
+        "datagrams": 36,
+        "decoded": 36,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 36,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "PrivateTransferError-octetstring.cap",
+      "url": "https://kargs.net/captures/PrivateTransferError-octetstring.cap",
+      "sha256": "9482b08a5b031aab002500ac309888edd814eeafed3eab89c4e1fe9c3615d702",
+      "size": 576,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 7,
+        "datagrams": 5,
+        "decoded": 5,
+        "transactions": 1,
+        "answered": 1,
+        "orphan_answers": 1,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 5,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "PrivateTransferError.cap",
+      "url": "https://kargs.net/captures/PrivateTransferError.cap",
+      "sha256": "23ebfe35f7a1ba45b0d42a6a175225744dc7d3970850d30f15725bc7e14d248e",
+      "size": 112,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 1,
+        "datagrams": 1,
+        "decoded": 1,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 1,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 1,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "RPM_ALL_Allobjecttypes1.pcap",
+      "url": "https://kargs.net/captures/RPM_ALL_Allobjecttypes1.pcap",
+      "sha256": "eb4810f7ffb6f3daa557d622fbef66ce39d2cdcfdc9785293203e2447ac61215",
+      "size": 12679,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 64,
+        "datagrams": 64,
+        "decoded": 64,
+        "transactions": 31,
+        "answered": 31,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 64,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "ReadPropertyMultiple.cap",
+      "url": "https://kargs.net/captures/ReadPropertyMultiple.cap",
+      "sha256": "ee9f4ab1af4ce64c121082ea0f1cedcbc5c69704fbcfade75d9bcf0fd1f29ed6",
+      "size": 1182,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 4,
+        "datagrams": 4,
+        "decoded": 4,
+        "transactions": 2,
+        "answered": 2,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 4,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "ReadPropertyMultipleDeviceAll.cap",
+      "url": "https://kargs.net/captures/ReadPropertyMultipleDeviceAll.cap",
+      "sha256": "fc1526f791bd170d8c71c1a74ce5ed9343e962af32853f70c1aff139944a0355",
+      "size": 651,
+      "class": "D",
+      "class_basis": "BACnet Stack demo applications (vendor 260 or model GNU)",
+      "readable": true,
+      "stats": {
+        "frames": 2,
+        "datagrams": 2,
+        "decoded": 2,
+        "transactions": 1,
+        "answered": 1,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 2,
+        "wireshark_malformed": 0
+      },
+      "devices": [
+        "ASHRAE GNU 0.3.2 (vendor 0, instance 0)"
+      ]
+    },
+    {
+      "source": "kargs",
+      "name": "Subordinate List.pcap",
+      "url": "https://kargs.net/captures/Subordinate%20List.pcap",
+      "sha256": "35de677c5fa8eb6634b92ce96b286486cf48dc0212501c209d510f9806e184c3",
+      "size": 215,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 2,
+        "datagrams": 2,
+        "decoded": 2,
+        "transactions": 1,
+        "answered": 1,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 2,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "Subordinate List2.pcap",
+      "url": "https://kargs.net/captures/Subordinate%20List2.pcap",
+      "sha256": "2a69b562c2a7d783a7bce116bf5152a90aa2c7567b80c64f087d848e38d96e5f",
+      "size": 415,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 4,
+        "datagrams": 4,
+        "decoded": 4,
+        "transactions": 2,
+        "answered": 2,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 4,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "SubordinateListDecodeSample.pcap",
+      "url": "https://kargs.net/captures/SubordinateListDecodeSample.pcap",
+      "sha256": "c657bc384917575d44ba5e9b5e2d83a895ce5e817fb3228802875bb3af659fc1",
+      "size": 376,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 4,
+        "datagrams": 2,
+        "decoded": 2,
+        "transactions": 1,
+        "answered": 1,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 2,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ethernet": 2
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "SynergyBlinkWarn.cap",
+      "url": "https://kargs.net/captures/SynergyBlinkWarn.cap",
+      "sha256": "500a90155f80060a094e92cbdee07f5c542ee8aa28bf839a1dbd5df5305243cb",
+      "size": 3658,
+      "class": "B",
+      "class_basis": "vendor IDs in I-Am only (42); model not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 44,
+        "datagrams": 42,
+        "decoded": 42,
+        "transactions": 20,
+        "answered": 20,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 42,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ethernet": 2
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "SynergyReadProperties.cap",
+      "url": "https://kargs.net/captures/SynergyReadProperties.cap",
+      "sha256": "133ddf7fdceb3465478f7b93301118779f7bf8c671a8e2250cb25816027ad54a",
+      "size": 4580,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 56,
+        "datagrams": 54,
+        "decoded": 54,
+        "transactions": 27,
+        "answered": 27,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 54,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ethernet": 2
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "SynergyWriteProperty.cap",
+      "url": "https://kargs.net/captures/SynergyWriteProperty.cap",
+      "sha256": "500a90155f80060a094e92cbdee07f5c542ee8aa28bf839a1dbd5df5305243cb",
+      "size": 3658,
+      "class": "B",
+      "class_basis": "vendor IDs in I-Am only (42); model not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 44,
+        "datagrams": 42,
+        "decoded": 42,
+        "transactions": 20,
+        "answered": 20,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 42,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ethernet": 2
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "Sysco-1.cap",
+      "url": "https://kargs.net/captures/Sysco-1.cap",
+      "sha256": "c4569edf2ee2f0e761ac1923b84e47b4dbfb6062721060bde57232c568bc85ee",
+      "size": 566520,
+      "class": "B",
+      "class_basis": "vendor IDs in I-Am only (11, 18, 4, 86); model not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 7052,
+        "datagrams": 3492,
+        "decoded": 3492,
+        "transactions": 49,
+        "answered": 46,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 3492,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ethernet": 3314
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "Sysco-2.cap",
+      "url": "https://kargs.net/captures/Sysco-2.cap",
+      "sha256": "107f02946df92c9a0633d2f7e3a55856cd48d9c0d354d4c53012556942324bff",
+      "size": 6299,
+      "class": "B",
+      "class_basis": "vendor IDs in I-Am only (4, 86); model not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 76,
+        "datagrams": 73,
+        "decoded": 73,
+        "transactions": 16,
+        "answered": 14,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 73,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "Sysco-3.cap",
+      "url": "https://kargs.net/captures/Sysco-3.cap",
+      "sha256": "67149824dcb33df49524c8c674bc3ec6c7d14d3aa327656c29129e92792e6bcc",
+      "size": 5230,
+      "class": "B",
+      "class_basis": "vendor IDs in I-Am only (4, 86); model not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 63,
+        "datagrams": 60,
+        "decoded": 60,
+        "transactions": 18,
+        "answered": 14,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 60,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "TA02 MST.cap",
+      "url": "https://kargs.net/captures/TA02%20MST.cap",
+      "sha256": "60665c5f383b7b19b9014524bebe0317f7641d5072b63b9c7396fb76a5876f4c",
+      "size": 296433,
+      "class": "C",
+      "class_basis": "no BACnet/IP datagrams (other data link only)",
+      "readable": true,
+      "stats": {
+        "frames": 7534,
+        "datagrams": 0,
+        "decoded": 0,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 0,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ms/tp": 7534
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "TAO2 TES.39A.cap",
+      "url": "https://kargs.net/captures/TAO2%20TES.39A.cap",
+      "sha256": "79434b5f2018b24a8ed017df04c7a9bd416ef204f1c38ac3c9fae5198eeb41f3",
+      "size": 12264420,
+      "class": "C",
+      "class_basis": "no BACnet/IP datagrams (other data link only)",
+      "readable": true,
+      "stats": {
+        "frames": 310484,
+        "datagrams": 0,
+        "decoded": 0,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 0,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ms/tp": 310484
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "TC51103_BTL-9.21.1.X3_bool_ext_3.pcap",
+      "url": "https://kargs.net/captures/TC51103_BTL-9.21.1.X3_bool_ext_3.pcap",
+      "sha256": "d97fc3dd64786f5743f2c70fb8dc9914420c0a747d17870286f89eb6e0d484a4",
+      "size": 1184,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 14,
+        "datagrams": 14,
+        "decoded": 14,
+        "transactions": 4,
+        "answered": 4,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 14,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "TC51103_BTL-9.21.1.X3_int_ext_1.pcap",
+      "url": "https://kargs.net/captures/TC51103_BTL-9.21.1.X3_int_ext_1.pcap",
+      "sha256": "ccdbfa658b1b4217600867bd300bb405a5731cf2e3911ae3cb1d484172f62434",
+      "size": 1614,
+      "class": "B",
+      "class_basis": "vendor IDs in I-Am only (15); model not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 18,
+        "datagrams": 18,
+        "decoded": 18,
+        "transactions": 5,
+        "answered": 5,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 18,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "TestRun4 - Internal side of Router.pcap",
+      "url": "https://kargs.net/captures/TestRun4%20-%20Internal%20side%20of%20Router.pcap",
+      "sha256": "c4d508531ff0ed04d1991ccd91041971ff0d0ac5cb6fdfeb8133efb4830e8c0f",
+      "size": 25047,
+      "class": "A",
+      "class_basis": "model and firmware from the devices' own Device objects: ETHER-Link 6.64; MACH2 6.43",
+      "readable": true,
+      "stats": {
+        "frames": 243,
+        "datagrams": 235,
+        "decoded": 235,
+        "transactions": 74,
+        "answered": 74,
+        "orphan_answers": 0,
+        "segmented_transactions": 3,
+        "segment_acks": 9,
+        "wireshark_bvlc": 235,
+        "wireshark_malformed": 0
+      },
+      "devices": [
+        "Reliable Controls Corporation ETHER-Link 6.64 (vendor 35, instance 33000)",
+        "Reliable Controls Corporation MACH2 6.43 (vendor 35, instance 33003)"
+      ]
+    },
+    {
+      "source": "kargs",
+      "name": "TestRun4 - Outside of Router.pcap",
+      "url": "https://kargs.net/captures/TestRun4%20-%20Outside%20of%20Router.pcap",
+      "sha256": "f3c4cd3cd85edc05375a2fce8739866cd0af8de54f5de5ee1eaef7ccf40f0854",
+      "size": 42386,
+      "class": "A",
+      "class_basis": "model and firmware from the devices' own Device objects: ETHER-Link 6.64; MACH-ProSys 7.06.14765|01,01|--,--|--,--|--,--|--,--|--,--|--,--|--,--; MACH2 6.43",
+      "readable": true,
+      "stats": {
+        "frames": 414,
+        "datagrams": 294,
+        "decoded": 294,
+        "transactions": 91,
+        "answered": 78,
+        "orphan_answers": 17,
+        "segmented_transactions": 6,
+        "segment_acks": 18,
+        "wireshark_bvlc": 294,
+        "wireshark_malformed": 0
+      },
+      "devices": [
+        "Reliable Controls Corporation ETHER-Link 6.64 (vendor 35, instance 33000)",
+        "Reliable Controls Corporation MACH-ProSys 7.06.14765|01,01|--,--|--,--|--,--|--,--|--,--|--,--|--,-- (vendor 35, instance 35200)",
+        "Reliable Controls Corporation MACH2 6.43 (vendor 0, instance 0)",
+        "Reliable Controls Corporation MACH2 6.43 (vendor 35, instance 33003)"
+      ]
+    },
+    {
+      "source": "kargs",
+      "name": "TestRun5 - Internal side of Router.pcap",
+      "url": "https://kargs.net/captures/TestRun5%20-%20Internal%20side%20of%20Router.pcap",
+      "sha256": "95e709bf4b467c657544491198c0c4eb68835c5b27903ed48ff46a3e3ad60bab",
+      "size": 11047,
+      "class": "A",
+      "class_basis": "model and firmware from the devices' own Device objects: MACH2 6.43",
+      "readable": true,
+      "stats": {
+        "frames": 133,
+        "datagrams": 128,
+        "decoded": 128,
+        "transactions": 45,
+        "answered": 45,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 128,
+        "wireshark_malformed": 0
+      },
+      "devices": [
+        "Reliable Controls Corporation MACH2 6.43 (vendor 35, instance 33003)"
+      ]
+    },
+    {
+      "source": "kargs",
+      "name": "TestRun5 - Outside of Router.pcap",
+      "url": "https://kargs.net/captures/TestRun5%20-%20Outside%20of%20Router.pcap",
+      "sha256": "b86a9d86180e7b229c935b94f793d08b7170d466be557428e897a3d78ab65dad",
+      "size": 24534,
+      "class": "A",
+      "class_basis": "model and firmware from the devices' own Device objects: MACH-ProSys 7.06.14765|01,01|--,--|--,--|--,--|--,--|--,--|--,--|--,--; MACH2 6.43",
+      "readable": true,
+      "stats": {
+        "frames": 291,
+        "datagrams": 149,
+        "decoded": 149,
+        "transactions": 42,
+        "answered": 26,
+        "orphan_answers": 27,
+        "segmented_transactions": 1,
+        "segment_acks": 3,
+        "wireshark_bvlc": 149,
+        "wireshark_malformed": 0
+      },
+      "devices": [
+        "Reliable Controls Corporation MACH-ProSys 7.06.14765|01,01|--,--|--,--|--,--|--,--|--,--|--,--|--,-- (vendor 35, instance 35200)",
+        "Reliable Controls Corporation MACH2 6.43 (vendor 0, instance 0)"
+      ]
+    },
+    {
+      "source": "kargs",
+      "name": "TestRun8 - Internal side of Router.pcap",
+      "url": "https://kargs.net/captures/TestRun8%20-%20Internal%20side%20of%20Router.pcap",
+      "sha256": "9e6d68d9cfc64b7d41f5c4ede5d72e101966df9fe66c0167c323b5366d3393fc",
+      "size": 46370,
+      "class": "A",
+      "class_basis": "model and firmware from the devices' own Device objects: ETHER-Link 6.64; MACH2 6.43",
+      "readable": true,
+      "stats": {
+        "frames": 471,
+        "datagrams": 458,
+        "decoded": 458,
+        "transactions": 169,
+        "answered": 168,
+        "orphan_answers": 0,
+        "segmented_transactions": 5,
+        "segment_acks": 15,
+        "wireshark_bvlc": 458,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ethernet": 1
+      },
+      "devices": [
+        "Reliable Controls Corporation ETHER-Link 6.64 (vendor 35, instance 33000)",
+        "Reliable Controls Corporation MACH2 6.43 (vendor 35, instance 33003)"
+      ]
+    },
+    {
+      "source": "kargs",
+      "name": "TestRun8 - Outside of Router.pcap",
+      "url": "https://kargs.net/captures/TestRun8%20-%20Outside%20of%20Router.pcap",
+      "sha256": "c5a2df6f576e30d5ff5c0f6a59dcd20ef68ae0746f863d577c5774327358a055",
+      "size": 72232,
+      "class": "A",
+      "class_basis": "model and firmware from the devices' own Device objects: ETHER-Link 6.64; MACH-ProSys 7.06.14765|01,01|--,--|--,--|--,--|--,--|--,--|--,--|--,--; MACH2 6.43",
+      "readable": true,
+      "stats": {
+        "frames": 734,
+        "datagrams": 533,
+        "decoded": 533,
+        "transactions": 196,
+        "answered": 196,
+        "orphan_answers": 0,
+        "segmented_transactions": 9,
+        "segment_acks": 27,
+        "wireshark_bvlc": 533,
+        "wireshark_malformed": 0
+      },
+      "devices": [
+        "Reliable Controls Corporation ETHER-Link 6.64 (vendor 35, instance 33000)",
+        "Reliable Controls Corporation MACH-ProSys 7.06.14765|01,01|--,--|--,--|--,--|--,--|--,--|--,--|--,-- (vendor 35, instance 35200)",
+        "Reliable Controls Corporation MACH2 6.43 (vendor 35, instance 33003)"
+      ],
+      "golden": [
+        "reliable-controls-routed"
+      ]
+    },
+    {
+      "source": "kargs",
+      "name": "TimeSync_Decode_Noon.pcap",
+      "url": "https://kargs.net/captures/TimeSync_Decode_Noon.pcap",
+      "sha256": "d00dc1b74dc17cf58641a293ef8585d439704e8420e2d40424fc39e49d5835c5",
+      "size": 100,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 1,
+        "datagrams": 1,
+        "decoded": 1,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 1,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "Tower333 Lighting 5min MSTP.ncf",
+      "url": "https://kargs.net/captures/Tower333%20Lighting%205min%20MSTP.ncf",
+      "sha256": "e215b139314479f0b6d7be28d191abadd42df096baa0ea2033757de43feeb141",
+      "size": 312065,
+      "class": "-",
+      "class_basis": "not a pcap or pcapng file: capture: unsupported or malformed capture file",
+      "readable": false,
+      "stats": {
+        "frames": 0,
+        "datagrams": 0,
+        "decoded": 0,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 0,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "Tower333 lighting 5min IP.pcap",
+      "url": "https://kargs.net/captures/Tower333%20lighting%205min%20IP.pcap",
+      "sha256": "f322cf85d861227e2a3997e242adb9d3a828452220820207375f2a167f79ead5",
+      "size": 994023,
+      "class": "B",
+      "class_basis": "vendor IDs in I-Am only (86); model not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 9230,
+        "datagrams": 8304,
+        "decoded": 7374,
+        "rejected": {
+          "service": 930
+        },
+        "transactions": 2568,
+        "answered": 2538,
+        "orphan_answers": 130,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 8304,
+        "wireshark_malformed": 359
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "TrendLogMultipleReadRange.pcap",
+      "url": "https://kargs.net/captures/TrendLogMultipleReadRange.pcap",
+      "sha256": "ef46b47ac6bb0847da8b03abadcd5482ef02b0698b8cf725a30ae10dd2d0605d",
+      "size": 1451,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 5,
+        "datagrams": 5,
+        "decoded": 5,
+        "transactions": 1,
+        "answered": 1,
+        "orphan_answers": 0,
+        "segmented_transactions": 1,
+        "segment_acks": 2,
+        "wireshark_bvlc": 5,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "TrendLogMultipleReadRange2.pcap",
+      "url": "https://kargs.net/captures/TrendLogMultipleReadRange2.pcap",
+      "sha256": "cd70af68a6a8cbbdaf517f48a6d54c0f0ed4e51062cf0e1a488808dc2a32cdc8",
+      "size": 588,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 2,
+        "datagrams": 2,
+        "decoded": 2,
+        "transactions": 1,
+        "answered": 1,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 2,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "TrendLogMultipleReadRange3.pcap",
+      "url": "https://kargs.net/captures/TrendLogMultipleReadRange3.pcap",
+      "sha256": "50dc12a2e4d8de2aebcd3d9ee2a2664335d1a2f9e51c64e687e188f9e4fa4410",
+      "size": 2282,
+      "class": "B",
+      "class_basis": "vendor IDs in I-Am only (4); model not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 15,
+        "datagrams": 15,
+        "decoded": 15,
+        "transactions": 3,
+        "answered": 3,
+        "orphan_answers": 0,
+        "segmented_transactions": 1,
+        "segment_acks": 2,
+        "wireshark_bvlc": 15,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "TrendLogMultipleReadRangeSimple.pcap",
+      "url": "https://kargs.net/captures/TrendLogMultipleReadRangeSimple.pcap",
+      "sha256": "b891b26747cf69745ebc9e6052b442733781c952554c9962c11e1e5b222b8db6",
+      "size": 83513,
+      "class": "B",
+      "class_basis": "vendor IDs in I-Am only (16, 24, 4); model not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 807,
+        "datagrams": 807,
+        "decoded": 807,
+        "transactions": 225,
+        "answered": 214,
+        "orphan_answers": 1,
+        "segmented_transactions": 1,
+        "segment_acks": 2,
+        "wireshark_bvlc": 807,
+        "wireshark_malformed": 0
+      },
+      "golden": [
+        "trend-log-multiple"
+      ]
+    },
+    {
+      "source": "kargs",
+      "name": "TrendLogMultipleUsage.pcap",
+      "url": "https://kargs.net/captures/TrendLogMultipleUsage.pcap",
+      "sha256": "64c09d6bdbb60925eba146cef02eb91c3349233a5eb29345e7f9cc23d9ca5094",
+      "size": 9178,
+      "class": "B",
+      "class_basis": "vendor IDs in I-Am only (4); model not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 71,
+        "datagrams": 71,
+        "decoded": 71,
+        "transactions": 21,
+        "answered": 21,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 71,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "WhoIsRouterToNetwork-test.cap",
+      "url": "https://kargs.net/captures/WhoIsRouterToNetwork-test.cap",
+      "sha256": "b07f439dd1d66d2bb6eb399792a6d38bbd642685170ef7fd014365748a7278ac",
+      "size": 734,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 10,
+        "datagrams": 10,
+        "decoded": 10,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 10,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "WhoIsRouterToNetwork.cap",
+      "url": "https://kargs.net/captures/WhoIsRouterToNetwork.cap",
+      "sha256": "11f81916f6f53905b69c6f6dd129ad1154c761bbc0035080c9b92037fd862faf",
+      "size": 708,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 10,
+        "datagrams": 10,
+        "decoded": 10,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 10,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "WhoIs_I-Am_Epics.cap",
+      "url": "https://kargs.net/captures/WhoIs_I-Am_Epics.cap",
+      "sha256": "3c660536d36ef8b157aae34149577d70b78791872c298a666665d97acfa4b5c1",
+      "size": 9019,
+      "class": "A",
+      "class_basis": "model and firmware from the devices' own Device objects: VLC-16160C3 V1.12",
+      "readable": true,
+      "stats": {
+        "frames": 113,
+        "datagrams": 96,
+        "decoded": 96,
+        "transactions": 26,
+        "answered": 26,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 96,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ethernet": 8
+      },
+      "devices": [
+        "Alerton BACtalk VLC-16160C3 V1.12 (vendor 18, instance 9999)"
+      ]
+    },
+    {
+      "source": "kargs",
+      "name": "WireSharkError_ArrayIndex.pcap",
+      "url": "https://kargs.net/captures/WireSharkError_ArrayIndex.pcap",
+      "sha256": "b81f12cff8e5787493127c97aacf400891e917ac35e6e479690fafbcfb0259ab",
+      "size": 190,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 2,
+        "datagrams": 2,
+        "decoded": 2,
+        "transactions": 1,
+        "answered": 1,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 2,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "WireSharkError_BufferReadyNotification.pcap",
+      "url": "https://kargs.net/captures/WireSharkError_BufferReadyNotification.pcap",
+      "sha256": "b50a6cdb3c7b731ce795a79035511213214bc2c5bb54dd2b856c63ea9669c5e0",
+      "size": 156,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 1,
+        "datagrams": 1,
+        "decoded": 1,
+        "transactions": 1,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 1,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "WireSharkOfNewObjects.pcap",
+      "url": "https://kargs.net/captures/WireSharkOfNewObjects.pcap",
+      "sha256": "aeba69f2de4a675fa14136a7179bc1887a99b55daeea97ce9b5cd32bed1ede9c",
+      "size": 98783,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 863,
+        "datagrams": 163,
+        "decoded": 163,
+        "transactions": 69,
+        "answered": 69,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 163,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ethernet": 166
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "WriteProperty_BinaryOutput.cap",
+      "url": "https://kargs.net/captures/WriteProperty_BinaryOutput.cap",
+      "sha256": "6aea426788f3cde551c79a1b724c9cbe3061860caadf5a98151e1eb7f4151161",
+      "size": 3573,
+      "class": "B",
+      "class_basis": "vendor IDs in I-Am only (24); model not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 44,
+        "datagrams": 44,
+        "decoded": 44,
+        "transactions": 10,
+        "answered": 10,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 44,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "action-list.pcap",
+      "url": "https://kargs.net/captures/action-list.pcap",
+      "sha256": "604e1a4b4f960339902309a6053288b33421dec8f599d84efd1be9183364e224",
+      "size": 432,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 2,
+        "datagrams": 2,
+        "decoded": 2,
+        "transactions": 1,
+        "answered": 1,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 2,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "aha_220_to_20_lost_b.cap",
+      "url": "https://kargs.net/captures/aha_220_to_20_lost_b.cap",
+      "sha256": "2d211bea546ed6710197fdd9fd59634f84542fef53ed4808b0e8e202f5f32ffb",
+      "size": 1637809,
+      "class": "C",
+      "class_basis": "no BACnet/IP datagrams (other data link only)",
+      "readable": true,
+      "stats": {
+        "frames": 65535,
+        "datagrams": 0,
+        "decoded": 0,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 0,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ms/tp": 65535
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "alerton-plugfest-2.cap",
+      "url": "https://kargs.net/captures/alerton-plugfest-2.cap",
+      "sha256": "ca1f1917c2d6057921e5fd180bf9e4efaac3c5b734726c486d77072c9c501893",
+      "size": 6217010,
+      "class": "A",
+      "class_basis": "model and firmware from the devices' own Device objects: BCM-Eth Controller BCM-Eth Loader 2.00 (Build 16); BCM-MS/TP Controller BCM-MS/TP Loader 2.00 (Build 14); Envision for BACtalk; SPAK MSTP SY20V200; SYSC MLX 2x65j; VAV-SD RL Z.01e VLC   SN 0211112020619; VLC-853 Controller RL Z.01d VLC   SN 0210813021528",
+      "readable": true,
+      "stats": {
+        "frames": 38162,
+        "datagrams": 37633,
+        "decoded": 37633,
+        "transactions": 17448,
+        "answered": 17448,
+        "orphan_answers": 4,
+        "segmented_transactions": 687,
+        "segment_acks": 1652,
+        "wireshark_bvlc": 37633,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ethernet": 93
+      },
+      "devices": [
+        "BCM-Eth Controller BCM-Eth Loader 2.00 (Build 16) (vendor 18, instance 18100)",
+        "BCM-MS/TP Controller BCM-MS/TP Loader 2.00 (Build 14) (vendor 18, instance 18200)",
+        "Envision for BACtalk (vendor 18, instance 18000)",
+        "Lithonia Lighting SPAK MSTP SY20V200 (vendor 42, instance 42222)",
+        "Lithonia Lighting, Inc. SYSC MLX 2x65j (vendor 42, instance 42333)",
+        "VAV-SD RL Z.01e VLC SN 0211112020619 (vendor 18, instance 18102)",
+        "VLC-853 Controller RL Z.01d VLC SN 0210813021528 (vendor 18, instance 18101)"
+      ],
+      "golden": [
+        "alerton-plugfest"
+      ]
+    },
+    {
+      "source": "kargs",
+      "name": "alerton-plugfest-3.cap",
+      "url": "https://kargs.net/captures/alerton-plugfest-3.cap",
+      "sha256": "afaa90664cf2d9085b21874a9c135ce0b6a2265a3e54877b846ba19a873b27b9",
+      "size": 248180,
+      "class": "A",
+      "class_basis": "model and firmware from the devices' own Device objects: BCM-Eth Controller BCM-Eth Loader 2.00 (Build 16); BCM-MS/TP Controller BCM-MS/TP Loader 2.00 (Build 14); SPAK MSTP SY20V200; SYSC MLX 2x65j; VAV-SD RL Z.01e VLC   SN 0211112020619; VLC-853 Controller RL Z.01d VLC   SN 0210813021528",
+      "readable": true,
+      "stats": {
+        "frames": 2626,
+        "datagrams": 2379,
+        "decoded": 2379,
+        "transactions": 1125,
+        "answered": 1113,
+        "orphan_answers": 38,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 2379,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ethernet": 71
+      },
+      "devices": [
+        "BCM-Eth Controller BCM-Eth Loader 2.00 (Build 16) (vendor 18, instance 18100)",
+        "BCM-MS/TP Controller BCM-MS/TP Loader 2.00 (Build 14) (vendor 18, instance 18200)",
+        "Lithonia Lighting SPAK MSTP SY20V200 (vendor 42, instance 42222)",
+        "SYSC MLX 2x65j (vendor 42, instance 42333)",
+        "VAV-SD RL Z.01e VLC SN 0211112020619 (vendor 18, instance 18102)",
+        "VLC-853 Controller RL Z.01d VLC SN 0210813021528 (vendor 18, instance 18101)"
+      ]
+    },
+    {
+      "source": "kargs",
+      "name": "alerton-plugfest.cap",
+      "url": "https://kargs.net/captures/alerton-plugfest.cap",
+      "sha256": "b6f378a3ab83b8a8df7b52671e0ac1991b1b43a1d03360ac26b24a7a68abf727",
+      "size": 82007159,
+      "class": "A",
+      "class_basis": "model and firmware from the devices' own Device objects: BCM-Eth Controller; BCM-MS/TP Controller; Envision for BACtalk Windows; SPAK MSTP SY20V200; SYSC MLX 2x65j; VAV-SD RL Z.01e VLC   SN 0211112020619; VLC-853 Controller",
+      "readable": true,
+      "stats": {
+        "frames": 344299,
+        "datagrams": 255355,
+        "decoded": 255355,
+        "transactions": 113627,
+        "answered": 113625,
+        "orphan_answers": 1,
+        "segmented_transactions": 8877,
+        "segment_acks": 18425,
+        "wireshark_bvlc": 255355,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ethernet": 88168
+      },
+      "devices": [
+        "ALERTON TECHNOLOGIES VAV-SD RL Z.01e VLC SN 0211112020619 (vendor 18, instance 18102)",
+        "Alerton Envision for BACtalk Windows (vendor 18, instance 18000)",
+        "BCM-Eth Controller (vendor 18, instance 18100)",
+        "BCM-MS/TP Controller (vendor 18, instance 18200)",
+        "Lithonia Lighting, Inc. SYSC MLX 2x65j (vendor 42, instance 42333)",
+        "SPAK MSTP SY20V200 (vendor 42, instance 42222)",
+        "VLC-853 Controller (vendor 18, instance 18101)"
+      ]
+    },
+    {
+      "source": "kargs",
+      "name": "arf-empty-file.cap",
+      "url": "https://kargs.net/captures/arf-empty-file.cap",
+      "sha256": "7eec3bfe53eef4c0127ec22b3f086162862c4a4d79746a0440fc7304a542b823",
+      "size": 186,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 2,
+        "datagrams": 2,
+        "decoded": 2,
+        "transactions": 1,
+        "answered": 1,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 2,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "atomic-empty-file.cap",
+      "url": "https://kargs.net/captures/atomic-empty-file.cap",
+      "sha256": "0ffa69601d9bdb7ee8139889979a051c26fbae401ab699f4c548d7e32ee6f963",
+      "size": 340,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 4,
+        "datagrams": 4,
+        "decoded": 4,
+        "transactions": 2,
+        "answered": 2,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 4,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "atomic-read-file-1470.cap",
+      "url": "https://kargs.net/captures/atomic-read-file-1470.cap",
+      "sha256": "6700c81c8142a8c298766aaec6d0e014f9b2ecb44cad27f534608a88c4b05814",
+      "size": 86740,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 124,
+        "datagrams": 63,
+        "decoded": 63,
+        "transactions": 28,
+        "answered": 2,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 63,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ethernet": 9
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "atomic-read-file-480.cap",
+      "url": "https://kargs.net/captures/atomic-read-file-480.cap",
+      "sha256": "5271dffd22bf87a3fb2c831b25150e34cf4bfef9e8c25beda7c054b975c1e4bb",
+      "size": 17861,
+      "class": "B",
+      "class_basis": "vendor IDs in I-Am only (42); model not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 62,
+        "datagrams": 59,
+        "decoded": 59,
+        "transactions": 28,
+        "answered": 28,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 59,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ethernet": 3
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "atomic-read-file-50.cap",
+      "url": "https://kargs.net/captures/atomic-read-file-50.cap",
+      "sha256": "24fffece65c8252e04e3d37cd13e75f34cf9d31231e86a5f7ad11d1929ee54d5",
+      "size": 81800,
+      "class": "B",
+      "class_basis": "vendor IDs in I-Am only (42); model not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 862,
+        "datagrams": 859,
+        "decoded": 859,
+        "transactions": 428,
+        "answered": 428,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 859,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ethernet": 3
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "atomic-read-file-50x1500k.cap",
+      "url": "https://kargs.net/captures/atomic-read-file-50x1500k.cap",
+      "sha256": "ecea566cf9d4e1c560de954f3659c72e7d1aee6a8a4bfd2a742a896630dfa673",
+      "size": 9405940,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 100638,
+        "datagrams": 100632,
+        "decoded": 100632,
+        "transactions": 50312,
+        "answered": 50312,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 100632,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ethernet": 6
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "atomic-read-file.cap",
+      "url": "https://kargs.net/captures/atomic-read-file.cap",
+      "sha256": "edd370e1017668ce42e7f9ec9c6baf957902361c0c551ab8396f4c709579ce7d",
+      "size": 37564,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 128,
+        "datagrams": 128,
+        "decoded": 128,
+        "transactions": 64,
+        "answered": 64,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 128,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "atomic-write-file-2.cap",
+      "url": "https://kargs.net/captures/atomic-write-file-2.cap",
+      "sha256": "a3f4e91f3a19c6e947261431e117d726561ada319f2b9ff63797bfc70c8cd9fd",
+      "size": 945031,
+      "class": "B",
+      "class_basis": "vendor IDs in I-Am only (42); model not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 3124,
+        "datagrams": 3118,
+        "decoded": 3118,
+        "transactions": 1557,
+        "answered": 1557,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 3118,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ethernet": 6
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "atomic-write-file-3.cap",
+      "url": "https://kargs.net/captures/atomic-write-file-3.cap",
+      "sha256": "261e4185c26b77a91e84094bd2723d8d0ae359d42c8e6a980f92e5d5aa9e8c38",
+      "size": 18888,
+      "class": "B",
+      "class_basis": "vendor IDs in I-Am only (42); model not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 73,
+        "datagrams": 69,
+        "decoded": 69,
+        "transactions": 30,
+        "answered": 30,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 69,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ethernet": 4
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "atomic-write-file-480.cap",
+      "url": "https://kargs.net/captures/atomic-write-file-480.cap",
+      "sha256": "d9e00ab4b873b8d23cc810390ce5f865bf7bbf78e295280777253409f1dc31db",
+      "size": 22120,
+      "class": "B",
+      "class_basis": "vendor IDs in I-Am only (42); model not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 116,
+        "datagrams": 86,
+        "decoded": 86,
+        "transactions": 28,
+        "answered": 28,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 86,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ethernet": 30
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "atomic-write-file-50x1k.cap",
+      "url": "https://kargs.net/captures/atomic-write-file-50x1k.cap",
+      "sha256": "83c50afb768176800427618401a88236220a399b1912a25031f488b63193270f",
+      "size": 21006,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 237,
+        "datagrams": 237,
+        "decoded": 237,
+        "transactions": 98,
+        "answered": 98,
+        "orphan_answers": 2,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 237,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "atomic-write-file-seg.cap",
+      "url": "https://kargs.net/captures/atomic-write-file-seg.cap",
+      "sha256": "c27a7607b05d346643acd7568cbdeb6c9548728c33a5c133969085e030669413",
+      "size": 1089847,
+      "class": "B",
+      "class_basis": "vendor IDs in I-Am only (42); model not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 3744,
+        "datagrams": 574,
+        "decoded": 574,
+        "transactions": 278,
+        "answered": 278,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 574,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ethernet": 3170
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "atomic-write-file.cap",
+      "url": "https://kargs.net/captures/atomic-write-file.cap",
+      "sha256": "413099a62a89988cfe6aeebeec0b85722bfd6fccab87f42ae12e0211e1d20d86",
+      "size": 944914,
+      "class": "B",
+      "class_basis": "vendor IDs in I-Am only (42); model not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 3122,
+        "datagrams": 3119,
+        "decoded": 3119,
+        "transactions": 1557,
+        "answered": 1557,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 3119,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ethernet": 3
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "atomic_write_file_bad_ack.cap",
+      "url": "https://kargs.net/captures/atomic_write_file_bad_ack.cap",
+      "sha256": "36f04ba9ab95bc39cb721443b523de329464a6215fc2d24bfc38224eca9cd88b",
+      "size": 1995,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 8,
+        "datagrams": 8,
+        "decoded": 8,
+        "transactions": 3,
+        "answered": 3,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 8,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "bacapp-malform.cap",
+      "url": "https://kargs.net/captures/bacapp-malform.cap",
+      "sha256": "29a0a04caff2c049a22817d1164e1b71a28144eae7a02e11bb4d654df13a67b3",
+      "size": 139107,
+      "class": "D",
+      "class_basis": "deliberately malformed test traffic (file name, malformed BVLC lengths)",
+      "readable": true,
+      "stats": {
+        "frames": 1682,
+        "datagrams": 1673,
+        "decoded": 838,
+        "rejected": {
+          "bvlc": 835
+        },
+        "transactions": 832,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 1673,
+        "wireshark_malformed": 557
+      },
+      "non_ip": {
+        "ethernet": 9
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "bacnet-arcnet.cap",
+      "url": "https://kargs.net/captures/bacnet-arcnet.cap",
+      "sha256": "9e50c9db9d4bda8a45246c00cd971d4b2593d06a8e323cd11289e8a7f0782025",
+      "size": 22743,
+      "class": "C",
+      "class_basis": "no BACnet/IP datagrams (other data link only)",
+      "readable": true,
+      "stats": {
+        "frames": 564,
+        "datagrams": 0,
+        "decoded": 0,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 0,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "arcnet": 564
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "bacnet-ethernet-device.cap",
+      "url": "https://kargs.net/captures/bacnet-ethernet-device.cap",
+      "sha256": "4a04a50a6a590446dad48ec69cec63852260de633082616881e7a2752beea6c5",
+      "size": 10713,
+      "class": "B",
+      "class_basis": "vendor IDs in I-Am only (18, 42); model not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 158,
+        "datagrams": 9,
+        "decoded": 9,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 9,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ethernet": 149
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "bacnet-ethernet.cap",
+      "url": "https://kargs.net/captures/bacnet-ethernet.cap",
+      "sha256": "7f088de440950ba5c517d8433aee180d5840ceab7b451649ea6ac9f5d5e2955a",
+      "size": 56636,
+      "class": "B",
+      "class_basis": "vendor IDs in I-Am only (18, 42); model not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 848,
+        "datagrams": 8,
+        "decoded": 8,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 8,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ethernet": 840
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "bacnet-ip.cap",
+      "url": "https://kargs.net/captures/bacnet-ip.cap",
+      "sha256": "d2ab3c2ed1a767381f847e6749b2290d51d0493f0d2fc32e81be016986c4499e",
+      "size": 69015,
+      "class": "B",
+      "class_basis": "vendor IDs in I-Am only (42); model not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 834,
+        "datagrams": 833,
+        "decoded": 833,
+        "transactions": 416,
+        "answered": 416,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 833,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ethernet": 1
+      },
+      "devices": [
+        "Lithonia Lighting Simple BACnet Server 1.00 (vendor 42, instance 111)"
+      ]
+    },
+    {
+      "source": "kargs",
+      "name": "bacnet-properties.cap",
+      "url": "https://kargs.net/captures/bacnet-properties.cap",
+      "sha256": "6a450b63eabfe299c11c728fb395c4ce91f6521f4ca60711f10a994f25c9e901",
+      "size": 251735,
+      "class": "B",
+      "class_basis": "vendor IDs in I-Am only (42); model not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 4120,
+        "datagrams": 2,
+        "decoded": 2,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 2,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ethernet": 4118
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "bacnet-services.cap",
+      "url": "https://kargs.net/captures/bacnet-services.cap",
+      "sha256": "0469ba567f8c16764147803b3afa37bed0a0005c8ec5011a05b5022609a3d1ef",
+      "size": 649998,
+      "class": "A",
+      "class_basis": "model and firmware from the devices' own Device objects: SYSC MLX 2.62",
+      "readable": true,
+      "stats": {
+        "frames": 7158,
+        "datagrams": 7049,
+        "decoded": 7049,
+        "transactions": 3410,
+        "answered": 3410,
+        "orphan_answers": 0,
+        "segmented_transactions": 1,
+        "segment_acks": 2,
+        "wireshark_bvlc": 7049,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ethernet": 109
+      },
+      "devices": [
+        "Lithonia Lighting, Inc. SYSC MLX 2.62 (vendor 42, instance 29)"
+      ]
+    },
+    {
+      "source": "kargs",
+      "name": "bacnet-stack-services.cap",
+      "url": "https://kargs.net/captures/bacnet-stack-services.cap",
+      "sha256": "08433f9d6d23fa9c9209ac82e884ebf1ad0350ba28ab09244df65a06b3833fef",
+      "size": 14514,
+      "class": "B",
+      "class_basis": "vendor IDs in I-Am only (42); model not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 113,
+        "datagrams": 87,
+        "decoded": 82,
+        "rejected": {
+          "apdu": 4,
+          "npdu": 1
+        },
+        "transactions": 26,
+        "answered": 25,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 87,
+        "wireshark_malformed": 4
+      },
+      "non_ip": {
+        "ethernet": 26
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "bacrpm-test.cap",
+      "url": "https://kargs.net/captures/bacrpm-test.cap",
+      "sha256": "b251aef6cb2b3bc20c3606da0e5d0cbd7904a20266f5f30a0da07165e54016c3",
+      "size": 14292,
+      "class": "D",
+      "class_basis": "BACnet Stack demo applications (vendor 260 or model GNU)",
+      "readable": true,
+      "stats": {
+        "frames": 112,
+        "datagrams": 112,
+        "decoded": 112,
+        "transactions": 12,
+        "answered": 12,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 112,
+        "wireshark_malformed": 0
+      },
+      "devices": [
+        "BACnet Stack at SourceForge GNU 0.5.0 (vendor 260, instance 12345)"
+      ]
+    },
+    {
+      "source": "kargs",
+      "name": "bad_hub_restart.cap",
+      "url": "https://kargs.net/captures/bad_hub_restart.cap",
+      "sha256": "90ca4273e27b288dd5b768aec77a941db97bdd1b917ce4b503a81cd57e640f9f",
+      "size": 524159,
+      "class": "C",
+      "class_basis": "no BACnet/IP datagrams (other data link only)",
+      "readable": true,
+      "stats": {
+        "frames": 1456,
+        "datagrams": 0,
+        "decoded": 0,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 0,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "bip-discover.cap",
+      "url": "https://kargs.net/captures/bip-discover.cap",
+      "sha256": "96c992d31afac75cdc5a6e86aad95b0f32559a164305346dce3fcd3043f37683",
+      "size": 28194,
+      "class": "B",
+      "class_basis": "vendor IDs in I-Am only (42); model not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 348,
+        "datagrams": 178,
+        "decoded": 178,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 178,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ethernet": 170
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "bip-readprop-2.cap",
+      "url": "https://kargs.net/captures/bip-readprop-2.cap",
+      "sha256": "67a52be4632f2f51fab17082a0bc8fa1f31844ac253ac3071746f74b840bdde6",
+      "size": 1157116,
+      "class": "A",
+      "class_basis": "model and firmware from the devices' own Device objects: Room Pressure Monitor\u0000 5.5",
+      "readable": true,
+      "stats": {
+        "frames": 14138,
+        "datagrams": 14138,
+        "decoded": 14138,
+        "transactions": 7062,
+        "answered": 7061,
+        "orphan_answers": 7,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 14138,
+        "wireshark_malformed": 0
+      },
+      "devices": [
+        "Critical Room Control Room Pressure Monitor 5.5 (vendor 0, instance 0)"
+      ]
+    },
+    {
+      "source": "kargs",
+      "name": "bip-readprop.cap",
+      "url": "https://kargs.net/captures/bip-readprop.cap",
+      "sha256": "4784f8f9bcdb05a47d02a71fa5af386fc829c3883e1644774cbf5c47db83dda2",
+      "size": 379272,
+      "class": "A",
+      "class_basis": "model and firmware from the devices' own Device objects: Room Pressure Monitor\u0000 5.5",
+      "readable": true,
+      "stats": {
+        "frames": 4631,
+        "datagrams": 4631,
+        "decoded": 4631,
+        "transactions": 2314,
+        "answered": 2313,
+        "orphan_answers": 1,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 4631,
+        "wireshark_malformed": 0
+      },
+      "devices": [
+        "Critical Room Control Room Pressure Monitor 5.5 (vendor 0, instance 0)"
+      ],
+      "golden": [
+        "critical-room-control"
+      ]
+    },
+    {
+      "source": "kargs",
+      "name": "bip-readwrite-test.cap",
+      "url": "https://kargs.net/captures/bip-readwrite-test.cap",
+      "sha256": "a01fdd82837c32709e4b2690bb699f65f91ca73c967a6211f132325b725c4dbd",
+      "size": 2097222,
+      "class": "A",
+      "class_basis": "model and firmware from the devices' own Device objects: Room Pressure Monitor\u0000 5.5",
+      "readable": true,
+      "stats": {
+        "frames": 25626,
+        "datagrams": 25626,
+        "decoded": 25626,
+        "transactions": 12800,
+        "answered": 12800,
+        "orphan_answers": 13,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 25626,
+        "wireshark_malformed": 0
+      },
+      "devices": [
+        "Critical Room Control Room Pressure Monitor 5.5 (vendor 0, instance 0)"
+      ]
+    },
+    {
+      "source": "kargs",
+      "name": "bo_command_failure.pcap",
+      "url": "https://kargs.net/captures/bo_command_failure.pcap",
+      "sha256": "b878f47f95065dc6a686ac38fd0207f10aba5808b5fe3136e8fcfe5dcb467520",
+      "size": 153,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 1,
+        "datagrams": 1,
+        "decoded": 1,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 1,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "bo_command_failure_original.pcap",
+      "url": "https://kargs.net/captures/bo_command_failure_original.pcap",
+      "sha256": "d057c259d575b33ba3bee954227c603984c551ddff0b28dc3cd88604b47bcf02",
+      "size": 8091,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 28,
+        "datagrams": 8,
+        "decoded": 8,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 8,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "btl-plugfest.cap",
+      "url": "https://kargs.net/captures/btl-plugfest.cap",
+      "sha256": "53599ef3fa517a3c798755a63f425efead8d8b61a08d01da1dcf25b06076a663",
+      "size": 60359,
+      "class": "A",
+      "class_basis": "model and firmware from the devices' own Device objects: SYSC MLX 2x63w",
+      "readable": true,
+      "stats": {
+        "frames": 645,
+        "datagrams": 645,
+        "decoded": 643,
+        "rejected": {
+          "apdu": 1,
+          "service": 1
+        },
+        "transactions": 205,
+        "answered": 186,
+        "orphan_answers": 2,
+        "segmented_transactions": 2,
+        "segment_acks": 4,
+        "wireshark_bvlc": 645,
+        "wireshark_malformed": 0
+      },
+      "devices": [
+        "Lithonia Lighting, Inc. SYSC MLX 2x63w (vendor 42, instance 4200)"
+      ],
+      "golden": [
+        "lithonia-btl-plugfest"
+      ]
+    },
+    {
+      "source": "kargs",
+      "name": "bvlc-bac4-rp.cap",
+      "url": "https://kargs.net/captures/bvlc-bac4-rp.cap",
+      "sha256": "e72cad35a7a320ebb2eac08dabbe10c44517fcb12d6a2612787beb2e414d8f37",
+      "size": 10072,
+      "class": "A",
+      "class_basis": "model and firmware from the devices' own Device objects: BASRT-B 1.24",
+      "readable": true,
+      "stats": {
+        "frames": 126,
+        "datagrams": 126,
+        "decoded": 126,
+        "transactions": 56,
+        "answered": 56,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 126,
+        "wireshark_malformed": 0
+      },
+      "devices": [
+        "BACnet Stack at SourceForge GNU Demo 0.4.3 (vendor 260, instance 86114)",
+        "Contemporary Control Systems, Inc. BASRT-B 1.24 (vendor 245, instance 0)"
+      ],
+      "golden": [
+        "contemporary-controls-basrt"
+      ]
+    },
+    {
+      "source": "kargs",
+      "name": "bvlc-bac4.cap",
+      "url": "https://kargs.net/captures/bvlc-bac4.cap",
+      "sha256": "213044d52fe56dda3f64cca3829353cd0cdd06dda4ccfb08c9366faa972db223",
+      "size": 5236,
+      "class": "B",
+      "class_basis": "vendor IDs in I-Am only (245); model not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 63,
+        "datagrams": 63,
+        "decoded": 63,
+        "transactions": 26,
+        "answered": 26,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 63,
+        "wireshark_malformed": 0
+      },
+      "devices": [
+        "BACnet Stack at SourceForge GNU Demo 0.4.3 (vendor 260, instance 86114)"
+      ]
+    },
+    {
+      "source": "kargs",
+      "name": "bvlc-fdreg-readprop-47809.cap",
+      "url": "https://kargs.net/captures/bvlc-fdreg-readprop-47809.cap",
+      "sha256": "67673bf9a6cfe1fdf98c7a0dc0eb741db1502bcac8dc4a754c5c6abe225cdff5",
+      "size": 26930,
+      "class": "B",
+      "class_basis": "vendor IDs in I-Am only (18, 86); model not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 337,
+        "datagrams": 337,
+        "decoded": 337,
+        "transactions": 136,
+        "answered": 136,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 337,
+        "wireshark_malformed": 0
+      },
+      "devices": [
+        "BACnet Stack at SourceForge GNU 0.4.5 (vendor 260, instance 1234)",
+        "BACnet Stack at SourceForge GNU 0.4.5 (vendor 260, instance 12345)"
+      ],
+      "golden": [
+        "bvll-foreign-device"
+      ]
+    },
+    {
+      "source": "kargs",
+      "name": "bvlc-loop.cap",
+      "url": "https://kargs.net/captures/bvlc-loop.cap",
+      "sha256": "d9f1a6aad51007c8a3dc9859570f9a3aa5f63b263c055baba29fb4f42de97da6",
+      "size": 2501622,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 31678,
+        "datagrams": 110,
+        "decoded": 110,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 110,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "bvlc.pcap",
+      "url": "https://kargs.net/captures/bvlc.pcap",
+      "sha256": "33e6592db7e6abceb9a2b6fba603ac1a3c0b8f9fa6e663b79874a30866fa5d43",
+      "size": 547,
+      "class": "C",
+      "class_basis": "no BACnet/IP datagrams (other data link only)",
+      "readable": true,
+      "stats": {
+        "frames": 1,
+        "datagrams": 0,
+        "decoded": 0,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 0,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "cimetrics_mstp.pcap",
+      "url": "https://kargs.net/captures/cimetrics_mstp.pcap",
+      "sha256": "2bdee288fb36dc4dd1a249a468f0811ef4d64aa77a3648897385695a6248437e",
+      "size": 90610,
+      "class": "C",
+      "class_basis": "no BACnet/IP datagrams (other data link only)",
+      "readable": true,
+      "stats": {
+        "frames": 1915,
+        "datagrams": 0,
+        "decoded": 0,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 0,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "config-tool-discover.cap",
+      "url": "https://kargs.net/captures/config-tool-discover.cap",
+      "sha256": "0c28ccc5ca085eae669300f42ccfd30863f6eb3da5be26a1b19937a1a20c650e",
+      "size": 837397,
+      "class": "B",
+      "class_basis": "vendor IDs in I-Am only (42); model not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 2726,
+        "datagrams": 10,
+        "decoded": 10,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 10,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ethernet": 2716
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "confirmedEventNotification.cap",
+      "url": "https://kargs.net/captures/confirmedEventNotification.cap",
+      "sha256": "3213ee41968e8980dfc1b4821a0fab99072f5586bcfd3094e6263c4642ea24e9",
+      "size": 1053,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 10,
+        "datagrams": 10,
+        "decoded": 10,
+        "transactions": 5,
+        "answered": 5,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 10,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "cov-testing-1.pcap",
+      "url": "https://kargs.net/captures/cov-testing-1.pcap",
+      "sha256": "be12ea933d041f23034d8bc33a1e82aa1863a94e5092afb868c5c86c0ab773e0",
+      "size": 24241,
+      "class": "B",
+      "class_basis": "vendor IDs in I-Am only (86); model not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 285,
+        "datagrams": 285,
+        "decoded": 285,
+        "transactions": 123,
+        "answered": 116,
+        "orphan_answers": 11,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 285,
+        "wireshark_malformed": 0
+      },
+      "golden": [
+        "cov-plugfest-2011"
+      ]
+    },
+    {
+      "source": "kargs",
+      "name": "cov-testing-2.pcap",
+      "url": "https://kargs.net/captures/cov-testing-2.pcap",
+      "sha256": "9c65f9cac62299f9deaf293428b0a2b44bfa99d842fc2376ea0d6ae666e82976",
+      "size": 26203,
+      "class": "B",
+      "class_basis": "vendor IDs in I-Am only (18, 86); model not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 270,
+        "datagrams": 270,
+        "decoded": 270,
+        "transactions": 80,
+        "answered": 78,
+        "orphan_answers": 9,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 270,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "cov-testing-3.pcap",
+      "url": "https://kargs.net/captures/cov-testing-3.pcap",
+      "sha256": "f998e642ebeb38f1455e738f9ab3f0df0f4f7715f2eb6b09a17d572ea76745c5",
+      "size": 235424,
+      "class": "B",
+      "class_basis": "vendor IDs in I-Am only (18, 86); model not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 2388,
+        "datagrams": 2388,
+        "decoded": 2388,
+        "transactions": 18,
+        "answered": 13,
+        "orphan_answers": 9,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 2388,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "device-address-binding.pcap",
+      "url": "https://kargs.net/captures/device-address-binding.pcap",
+      "sha256": "b31fe6fe8b50f95f485d45d190a6b9a0598579b20f0274f807f92f569b682a8f",
+      "size": 394,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 4,
+        "datagrams": 4,
+        "decoded": 4,
+        "transactions": 1,
+        "answered": 1,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 4,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "epics-1.cap",
+      "url": "https://kargs.net/captures/epics-1.cap",
+      "sha256": "ea110f33a6b821acdcf1abe6d67070e790807226af3996a12b6b7f91f8f2fdfd",
+      "size": 39983,
+      "class": "B",
+      "class_basis": "vendor IDs in I-Am only (42); model not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 498,
+        "datagrams": 497,
+        "decoded": 497,
+        "transactions": 247,
+        "answered": 247,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 497,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ethernet": 1
+      },
+      "devices": [
+        "Lithonia Lighting Simple BACnet Client 1.00 (vendor 42, instance 124)"
+      ]
+    },
+    {
+      "source": "kargs",
+      "name": "epics-2.cap",
+      "url": "https://kargs.net/captures/epics-2.cap",
+      "sha256": "2d3aefc74a3765a6bde93ae253472b77a8020183b352290582b687652ea388bf",
+      "size": 162545,
+      "class": "A",
+      "class_basis": "model and firmware from the devices' own Device objects: LGE BOOT(id=0,ver=3.02:003,crc=0x0CF5) MAIN(id=3,ver=1.60:037,crc=0x2D64); SYSC MLX 2x63w",
+      "readable": true,
+      "stats": {
+        "frames": 1978,
+        "datagrams": 1957,
+        "decoded": 1957,
+        "transactions": 966,
+        "answered": 966,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 1957,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ethernet": 21
+      },
+      "devices": [
+        "AutomatedLogic LGE BOOT(id=0,ver=3.02:003,crc=0x0CF5) MAIN(id=3,ver=1.60:037,crc=0x2D64) (vendor 24, instance 4194303)",
+        "Lithonia Lighting Simple BACnet Server 1.00 (vendor 42, instance 111)",
+        "Lithonia Lighting, Inc. SYSC MLX 2x63w (vendor 42, instance 127)",
+        "Lithonia Lighting, Inc. SYSC MLX 2x63w (vendor 42, instance 133)"
+      ]
+    },
+    {
+      "source": "kargs",
+      "name": "eventLog_ReadRange.pcap",
+      "url": "https://kargs.net/captures/eventLog_ReadRange.pcap",
+      "sha256": "2a31e88f799aee5b41eb51c3054476817be0ef3d8961e24ab59adf0095e822a8",
+      "size": 388,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 2,
+        "datagrams": 2,
+        "decoded": 2,
+        "transactions": 1,
+        "answered": 1,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 2,
+        "wireshark_malformed": 0
+      },
+      "golden": [
+        "event-log"
+      ]
+    },
+    {
+      "source": "kargs",
+      "name": "eventLog_rpm.pcap",
+      "url": "https://kargs.net/captures/eventLog_rpm.pcap",
+      "sha256": "138dc3d0d20806ae4dda7444db699bbf2c1c447c878888b2bc051cfe08ff0507",
+      "size": 390,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 2,
+        "datagrams": 2,
+        "decoded": 2,
+        "transactions": 1,
+        "answered": 1,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 2,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "eventTimeStamp_rp.pcap",
+      "url": "https://kargs.net/captures/eventTimeStamp_rp.pcap",
+      "sha256": "272877acbcfb239821fa48a477cc5e6be09eb0fa8bdc6adae6f2f4a114de3dad",
+      "size": 194,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 2,
+        "datagrams": 2,
+        "decoded": 2,
+        "transactions": 1,
+        "answered": 1,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 2,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "eventTimeStamp_rpm.pcap",
+      "url": "https://kargs.net/captures/eventTimeStamp_rpm.pcap",
+      "sha256": "e809535a6a90468261a4a279bcb677a9b1387b460eab331d778d594cfa4794f6",
+      "size": 418,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 2,
+        "datagrams": 2,
+        "decoded": 2,
+        "transactions": 1,
+        "answered": 1,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 2,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "foreign-device-npdu.cap",
+      "url": "https://kargs.net/captures/foreign-device-npdu.cap",
+      "sha256": "377b33ddc43832315a272fb98207be9770efb2a31313a5bde2d97940508c1c1f",
+      "size": 15187316,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 186836,
+        "datagrams": 126,
+        "decoded": 126,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 126,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "getEventInformation.pcap",
+      "url": "https://kargs.net/captures/getEventInformation.pcap",
+      "sha256": "9266d057b12ce6d3a019ff66c6b21ac2a7ae0b59368ae6a24f198f7bfe78dec7",
+      "size": 617,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 3,
+        "datagrams": 2,
+        "decoded": 2,
+        "transactions": 1,
+        "answered": 1,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 2,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "i-am-vendor-id-over-255.cap",
+      "url": "https://kargs.net/captures/i-am-vendor-id-over-255.cap",
+      "sha256": "3b13bee01a6315fbf0c3765a720c604748846fc78307a1a1a85af3873d3a9159",
+      "size": 1018,
+      "class": "B",
+      "class_basis": "vendor IDs in I-Am only (18, 245, 307, 86); model not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 11,
+        "datagrams": 11,
+        "decoded": 11,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 11,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "lmbc-300-bootload.pcap",
+      "url": "https://kargs.net/captures/lmbc-300-bootload.pcap",
+      "sha256": "413bb262feeed638615efca68254a492f783cb366166c009b993faa82eb5cc1b",
+      "size": 2719509,
+      "class": "C",
+      "class_basis": "no BACnet/IP datagrams (other data link only)",
+      "readable": true,
+      "stats": {
+        "frames": 102114,
+        "datagrams": 0,
+        "decoded": 0,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 0,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ms/tp": 102114
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "load-control-properties.cap",
+      "url": "https://kargs.net/captures/load-control-properties.cap",
+      "sha256": "9d0a5d1e03a3ec6826db9241b4a608bc7354298fec0c6c8733897268e8f1372e",
+      "size": 365,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 2,
+        "datagrams": 2,
+        "decoded": 2,
+        "transactions": 1,
+        "answered": 1,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 2,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "load-control.cap",
+      "url": "https://kargs.net/captures/load-control.cap",
+      "sha256": "fea9f2010c7cc7c6b3575e728b22f42646a18beb2eaa2b04ddb34b00f02db593",
+      "size": 1170,
+      "class": "D",
+      "class_basis": "BACnet Stack demo applications (vendor 260 or model GNU)",
+      "readable": true,
+      "stats": {
+        "frames": 6,
+        "datagrams": 6,
+        "decoded": 6,
+        "transactions": 3,
+        "answered": 3,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 6,
+        "wireshark_malformed": 0
+      },
+      "devices": [
+        "BACnet Stack at SourceForge GNU 0.5.2 (vendor 0, instance 0)"
+      ]
+    },
+    {
+      "source": "kargs",
+      "name": "log-buffer_readRange.pcap",
+      "url": "https://kargs.net/captures/log-buffer_readRange.pcap",
+      "sha256": "f7e7793a00ccbabeea3e722fc1ac3cdc499802bd3e88da14cffe283b508d8aec",
+      "size": 317,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 2,
+        "datagrams": 2,
+        "decoded": 2,
+        "transactions": 1,
+        "answered": 1,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 2,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "loop2.cap",
+      "url": "https://kargs.net/captures/loop2.cap",
+      "sha256": "4bf24baaebaf16c3d71c7d480c48b3a1c8458ad557a53e351427cfd94fef0a1e",
+      "size": 422,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 2,
+        "datagrams": 2,
+        "decoded": 2,
+        "transactions": 1,
+        "answered": 1,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 2,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "mstp-cimetrics.cap",
+      "url": "https://kargs.net/captures/mstp-cimetrics.cap",
+      "sha256": "2bdee288fb36dc4dd1a249a468f0811ef4d64aa77a3648897385695a6248437e",
+      "size": 90610,
+      "class": "C",
+      "class_basis": "no BACnet/IP datagrams (other data link only)",
+      "readable": true,
+      "stats": {
+        "frames": 1915,
+        "datagrams": 0,
+        "decoded": 0,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 0,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "mstp-test-4.cap",
+      "url": "https://kargs.net/captures/mstp-test-4.cap",
+      "sha256": "a16c4678aec1095a3fbc011adf64f096cc28377e16c68bad97b4ee4071898505",
+      "size": 75680,
+      "class": "C",
+      "class_basis": "no BACnet/IP datagrams (other data link only)",
+      "readable": true,
+      "stats": {
+        "frames": 3147,
+        "datagrams": 0,
+        "decoded": 0,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 0,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ms/tp": 3147
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "mstp-whois-basrt-mix.cap",
+      "url": "https://kargs.net/captures/mstp-whois-basrt-mix.cap",
+      "sha256": "dac7735f05cfc74c18de6161846841db9ec85e35cf2d1238e385f9bcf627ac19",
+      "size": 56186,
+      "class": "B",
+      "class_basis": "vendor IDs in I-Am only (18); model not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 924,
+        "datagrams": 22,
+        "decoded": 22,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 22,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "mstp-whois-basrt-mix2.cap",
+      "url": "https://kargs.net/captures/mstp-whois-basrt-mix2.cap",
+      "sha256": "4e9e443c26d353b2f8ef94c65ea2cbbd0602b870f489094b73fdd1b2a53c77e5",
+      "size": 41120,
+      "class": "B",
+      "class_basis": "vendor IDs in I-Am only (18); model not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 856,
+        "datagrams": 22,
+        "decoded": 22,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 22,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "mstp-whois-iam.cap",
+      "url": "https://kargs.net/captures/mstp-whois-iam.cap",
+      "sha256": "9f06345d650cd30e785411f2e06d9694f3b11a92f641d170a117093d0e101dea",
+      "size": 3039,
+      "class": "B",
+      "class_basis": "vendor IDs in I-Am only (18, 42); model not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 38,
+        "datagrams": 19,
+        "decoded": 19,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 19,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ethernet": 19
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "mstp_20090227094623.cap",
+      "url": "https://kargs.net/captures/mstp_20090227094623.cap",
+      "sha256": "7258bf5db18d0a9f08e633ab7c43616a6e4259692af88915a0706496ca803bad",
+      "size": 23982,
+      "class": "C",
+      "class_basis": "no BACnet/IP datagrams (other data link only)",
+      "readable": true,
+      "stats": {
+        "frames": 666,
+        "datagrams": 0,
+        "decoded": 0,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 0,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ms/tp": 666
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "mstp_20090304105820.cap",
+      "url": "https://kargs.net/captures/mstp_20090304105820.cap",
+      "sha256": "2a274a5a905c100141b05b72ff73a92172f42b87ec16cebd50f4158bc7583e76",
+      "size": 261601,
+      "class": "C",
+      "class_basis": "no BACnet/IP datagrams (other data link only)",
+      "readable": true,
+      "stats": {
+        "frames": 10205,
+        "datagrams": 0,
+        "decoded": 0,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 0,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ms/tp": 10205
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "mstp_20090304110410.cap",
+      "url": "https://kargs.net/captures/mstp_20090304110410.cap",
+      "sha256": "a8d5678af97c48f280f25e36ea6d009c2329effed95b032e52d552ffbad0cf3c",
+      "size": 1291231,
+      "class": "C",
+      "class_basis": "no BACnet/IP datagrams (other data link only)",
+      "readable": true,
+      "stats": {
+        "frames": 49495,
+        "datagrams": 0,
+        "decoded": 0,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 0,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ms/tp": 49495
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "mstp_20090807145500.cap",
+      "url": "https://kargs.net/captures/mstp_20090807145500.cap",
+      "sha256": "ead935cc7909b448141d4bfae522feef07933b2174f29be0800bc7835600ec80",
+      "size": 535726,
+      "class": "C",
+      "class_basis": "no BACnet/IP datagrams (other data link only)",
+      "readable": true,
+      "stats": {
+        "frames": 21508,
+        "datagrams": 0,
+        "decoded": 0,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 0,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ms/tp": 21508
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "mstp_20091013121352.cap",
+      "url": "https://kargs.net/captures/mstp_20091013121352.cap",
+      "sha256": "007d6e1107ec33c5e3c274e26e19e454ee34dc95eac18a1929d5551955cf7fb6",
+      "size": 16896,
+      "class": "C",
+      "class_basis": "no BACnet/IP datagrams (other data link only)",
+      "readable": true,
+      "stats": {
+        "frames": 703,
+        "datagrams": 0,
+        "decoded": 0,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 0,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ms/tp": 703
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "mstp_20091013121410.cap",
+      "url": "https://kargs.net/captures/mstp_20091013121410.cap",
+      "sha256": "d5c0b5045b6feef7a71bad1e2cc7d4cbbc255d93ee3fd540a5d2c2f1b4ed1511",
+      "size": 104072,
+      "class": "C",
+      "class_basis": "no BACnet/IP datagrams (other data link only)",
+      "readable": true,
+      "stats": {
+        "frames": 4118,
+        "datagrams": 0,
+        "decoded": 0,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 0,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ms/tp": 4118
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "mstp_20091013122053.cap",
+      "url": "https://kargs.net/captures/mstp_20091013122053.cap",
+      "sha256": "ad555603a17d7336a3497363e961da4bb6617fba156bd305f89e4eaa057eb02a",
+      "size": 237749,
+      "class": "C",
+      "class_basis": "no BACnet/IP datagrams (other data link only)",
+      "readable": true,
+      "stats": {
+        "frames": 9736,
+        "datagrams": 0,
+        "decoded": 0,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 0,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ms/tp": 9736
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "mstp_20091013122451.cap",
+      "url": "https://kargs.net/captures/mstp_20091013122451.cap",
+      "sha256": "ba0786c732b3857c65331c199e534e93626fbb39ed7c950baaf90537c77fcf4d",
+      "size": 193881,
+      "class": "C",
+      "class_basis": "no BACnet/IP datagrams (other data link only)",
+      "readable": true,
+      "stats": {
+        "frames": 7686,
+        "datagrams": 0,
+        "decoded": 0,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 0,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ms/tp": 7686
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "mstp_20091013123108.cap",
+      "url": "https://kargs.net/captures/mstp_20091013123108.cap",
+      "sha256": "ee9a6c82448ea494298d4f09d494bf29e25f717551df8ce5e3256ff30a72675d",
+      "size": 331686,
+      "class": "C",
+      "class_basis": "no BACnet/IP datagrams (other data link only)",
+      "readable": true,
+      "stats": {
+        "frames": 13283,
+        "datagrams": 0,
+        "decoded": 0,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 0,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ms/tp": 13283
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "mstp_20091013124218.cap",
+      "url": "https://kargs.net/captures/mstp_20091013124218.cap",
+      "sha256": "6422510599b453a8f16e26b32f37421da0b3a54111e1c6a3f5d8a4e0d4f301f1",
+      "size": 1648881,
+      "class": "C",
+      "class_basis": "no BACnet/IP datagrams (other data link only)",
+      "readable": true,
+      "stats": {
+        "frames": 65535,
+        "datagrams": 0,
+        "decoded": 0,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 0,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ms/tp": 65535
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "mstp_20091013130259.cap",
+      "url": "https://kargs.net/captures/mstp_20091013130259.cap",
+      "sha256": "7799c96ec8e005aef1b95ef914842046acbdca436e7514ed4084531ab2920294",
+      "size": 1622198,
+      "class": "C",
+      "class_basis": "no BACnet/IP datagrams (other data link only)",
+      "readable": true,
+      "stats": {
+        "frames": 65267,
+        "datagrams": 0,
+        "decoded": 0,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 0,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ms/tp": 65267
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "mstp_20091013162906.cap",
+      "url": "https://kargs.net/captures/mstp_20091013162906.cap",
+      "sha256": "88ffcb680bddb5ee6350a865afacac7e9a54183e127ad2f20ee72d1afe70a218",
+      "size": 234199,
+      "class": "C",
+      "class_basis": "no BACnet/IP datagrams (other data link only)",
+      "readable": true,
+      "stats": {
+        "frames": 1856,
+        "datagrams": 0,
+        "decoded": 0,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 0,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ms/tp": 1856
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "mstp_20091014093519.cap",
+      "url": "https://kargs.net/captures/mstp_20091014093519.cap",
+      "sha256": "7c13a33d3a2c1c081870c0af928943cfba5ab4cdc748bbec581d0b0de5a54387",
+      "size": 770405,
+      "class": "C",
+      "class_basis": "no BACnet/IP datagrams (other data link only)",
+      "readable": true,
+      "stats": {
+        "frames": 29298,
+        "datagrams": 0,
+        "decoded": 0,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 0,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ms/tp": 29298
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "mstp_20091014112427.cap",
+      "url": "https://kargs.net/captures/mstp_20091014112427.cap",
+      "sha256": "6e32bbaca6794d2ec8fb34e0ab67265c319e020c05e1f282b3d5c75b3aa5367e",
+      "size": 466809,
+      "class": "C",
+      "class_basis": "no BACnet/IP datagrams (other data link only)",
+      "readable": true,
+      "stats": {
+        "frames": 17819,
+        "datagrams": 0,
+        "decoded": 0,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 0,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ms/tp": 17819
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "mstp_20140225214217.cap",
+      "url": "https://kargs.net/captures/mstp_20140225214217.cap",
+      "sha256": "6d2310fd151c4e742ce0d33c3653972fc44c2fded54a0b751e103982a702b4a9",
+      "size": 91372,
+      "class": "C",
+      "class_basis": "no BACnet/IP datagrams (other data link only)",
+      "readable": true,
+      "stats": {
+        "frames": 3687,
+        "datagrams": 0,
+        "decoded": 0,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 0,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ms/tp": 3687
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "mstp_mix_basrt_V124.cap",
+      "url": "https://kargs.net/captures/mstp_mix_basrt_V124.cap",
+      "sha256": "e190af73dbf2b0d7eed9e984569d9dd719d27b72dd38412921fcfe3dce083080",
+      "size": 344322,
+      "class": "A",
+      "class_basis": "model and firmware from the devices' own Device objects: LI_NB 1.04",
+      "readable": true,
+      "stats": {
+        "frames": 6642,
+        "datagrams": 529,
+        "decoded": 529,
+        "transactions": 158,
+        "answered": 158,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 529,
+        "wireshark_malformed": 0
+      },
+      "devices": [
+        "Watt Stopper Inc. LI_NB 1.04 (vendor 86, instance 86)"
+      ]
+    },
+    {
+      "source": "kargs",
+      "name": "mstp_mix_basrt_V124_bad.cap",
+      "url": "https://kargs.net/captures/mstp_mix_basrt_V124_bad.cap",
+      "sha256": "bd1102307aa1ffbd6a42058d06f532fb8c02ae5a8eebb56d29267283071b2aac",
+      "size": 344322,
+      "class": "D",
+      "class_basis": "corrupted traffic recorded to test a router (file name)",
+      "readable": true,
+      "stats": {
+        "frames": 6642,
+        "datagrams": 421,
+        "decoded": 333,
+        "rejected": {
+          "apdu": 13,
+          "bvlc": 9,
+          "npdu": 24,
+          "service": 42
+        },
+        "transactions": 97,
+        "answered": 33,
+        "orphan_answers": 71,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 451,
+        "wireshark_malformed": 55
+      },
+      "devices": [
+        "Watt Stopper Inc. LI_NB 1.04 (vendor 86, instance 86)"
+      ]
+    },
+    {
+      "source": "kargs",
+      "name": "mstp_wtap.cap",
+      "url": "https://kargs.net/captures/mstp_wtap.cap",
+      "sha256": "839e3d6bec816555070adc61c3aca82c1e42f62f7c00ca2de47ecd0791445068",
+      "size": 46098,
+      "class": "C",
+      "class_basis": "no BACnet/IP datagrams (other data link only)",
+      "readable": true,
+      "stats": {
+        "frames": 1836,
+        "datagrams": 0,
+        "decoded": 0,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 0,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ms/tp": 1836
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "nb-binary-output.cap",
+      "url": "https://kargs.net/captures/nb-binary-output.cap",
+      "sha256": "9a790fd78a9901b0fb477a8fb601c1cd141e5126fdc75afa2b393369bc83d426",
+      "size": 19826,
+      "class": "B",
+      "class_basis": "vendor IDs in I-Am only (86); model not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 244,
+        "datagrams": 244,
+        "decoded": 244,
+        "transactions": 61,
+        "answered": 61,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 244,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "plugfest-2011-delta-1.pcap",
+      "url": "https://kargs.net/captures/plugfest-2011-delta-1.pcap",
+      "sha256": "6c7ff6feba6bb111346a3bfcd65a62d2ed3c6b331f6c56d76321847a2f97b599",
+      "size": 531597,
+      "class": "C",
+      "class_basis": "no BACnet/IP datagrams (other data link only)",
+      "readable": true,
+      "stats": {
+        "frames": 19483,
+        "datagrams": 0,
+        "decoded": 0,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 0,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ms/tp": 19483
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "plugfest-2011-delta-2.pcap",
+      "url": "https://kargs.net/captures/plugfest-2011-delta-2.pcap",
+      "sha256": "3bd33d8f9fc76082992c78d2a77cb87c1131ca1fcb09e7fe06fab41f26a11345",
+      "size": 86211,
+      "class": "C",
+      "class_basis": "no BACnet/IP datagrams (other data link only)",
+      "readable": true,
+      "stats": {
+        "frames": 3287,
+        "datagrams": 0,
+        "decoded": 0,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 0,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ms/tp": 3287
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "plugfest-2011-delta-3.pcap",
+      "url": "https://kargs.net/captures/plugfest-2011-delta-3.pcap",
+      "sha256": "2d314dc7315dd4ed45512daeacbe4d78020f716afddbdfc32050afda2d104f62",
+      "size": 1533960,
+      "class": "C",
+      "class_basis": "no BACnet/IP datagrams (other data link only)",
+      "readable": true,
+      "stats": {
+        "frames": 56748,
+        "datagrams": 0,
+        "decoded": 0,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 0,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ms/tp": 56748
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "plugfest-2011-mstp-roundtable.pcap",
+      "url": "https://kargs.net/captures/plugfest-2011-mstp-roundtable.pcap",
+      "sha256": "007404a0da5d0e8e4fc2c548f30c15e9235cb02915ca9ff6c96939c0167ca7d9",
+      "size": 105591,
+      "class": "A",
+      "class_basis": "model and firmware from the devices' own Device objects: LMBC-300",
+      "readable": true,
+      "stats": {
+        "frames": 1170,
+        "datagrams": 1170,
+        "decoded": 1170,
+        "transactions": 99,
+        "answered": 19,
+        "orphan_answers": 35,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 1170,
+        "wireshark_malformed": 0
+      },
+      "devices": [
+        "LMBC-300 (vendor 86, instance 86208)",
+        "LMBC-300 (vendor 86, instance 86210)",
+        "LMBC-300 (vendor 86, instance 86211)",
+        "LMBC-300 (vendor 86, instance 86212)",
+        "LMBC-300 (vendor 86, instance 86213)",
+        "LMBC-300 (vendor 86, instance 86214)",
+        "LMBC-300 (vendor 86, instance 86215)",
+        "LMBC-300 (vendor 86, instance 86216)",
+        "LMBC-300 (vendor 86, instance 86217)",
+        "LMBC-300 (vendor 86, instance 86218)",
+        "LMBC-300 (vendor 86, instance 86219)",
+        "LMBC-300 (vendor 86, instance 86220)",
+        "LMBC-300 (vendor 86, instance 86221)",
+        "LMBC-300 (vendor 86, instance 86222)",
+        "LMBC-300 (vendor 86, instance 86223)",
+        "LMBC-300 (vendor 86, instance 86224)",
+        "LMBC-300 (vendor 86, instance 86225)",
+        "LMBC-300 (vendor 86, instance 86226)",
+        "LMBC-300 (vendor 86, instance 86227)",
+        "WattStopper LMBC-300 (vendor 86, instance 86323)"
+      ]
+    },
+    {
+      "source": "kargs",
+      "name": "plugfest-2011-sauter-1.pcap",
+      "url": "https://kargs.net/captures/plugfest-2011-sauter-1.pcap",
+      "sha256": "917cc9635eac774b73b8d53688f5d8500ecdf263377631e7407fd482f8f44299",
+      "size": 142794,
+      "class": "A",
+      "class_basis": "model and firmware from the devices' own Device objects: 9260 Linux� Server 3.30; LMBC-300 04.22",
+      "readable": true,
+      "stats": {
+        "frames": 1360,
+        "datagrams": 1360,
+        "decoded": 1360,
+        "transactions": 654,
+        "answered": 652,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 1360,
+        "wireshark_malformed": 0
+      },
+      "devices": [
+        "PolarSoft� Inc. 9260 Linux� Server 3.30 (vendor 4, instance 86000)",
+        "WattStopper LMBC-300 04.22 (vendor 86, instance 86001)"
+      ],
+      "golden": [
+        "sauter-plugfest-2011"
+      ]
+    },
+    {
+      "source": "kargs",
+      "name": "plugfest-2011-siemens-1.pcap",
+      "url": "https://kargs.net/captures/plugfest-2011-siemens-1.pcap",
+      "sha256": "0b47db34b00f8ca01fe40aae6420b83068fda47d3f7aee7da719272fea57635f",
+      "size": 481671,
+      "class": "A",
+      "class_basis": "model and firmware from the devices' own Device objects: 9260 Linux� Server 3.30; LMBC-300 04.22",
+      "readable": true,
+      "stats": {
+        "frames": 5263,
+        "datagrams": 5263,
+        "decoded": 5260,
+        "rejected": {
+          "service": 3
+        },
+        "transactions": 2570,
+        "answered": 2568,
+        "orphan_answers": 4,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 5263,
+        "wireshark_malformed": 3
+      },
+      "devices": [
+        "9260 Linux� Server 3.30 (vendor 4, instance 86000)",
+        "WattStopper LMBC-300 04.22 (vendor 86, instance 86001)"
+      ],
+      "golden": [
+        "siemens-plugfest-2011"
+      ]
+    },
+    {
+      "source": "kargs",
+      "name": "plugfest-2011-trane-1.pcap",
+      "url": "https://kargs.net/captures/plugfest-2011-trane-1.pcap",
+      "sha256": "02d7f79f4c228b5607853be4014b3449777613e6d8eb78a82969d6318f9282df",
+      "size": 228744,
+      "class": "A",
+      "class_basis": "model and firmware from the devices' own Device objects: BSV v6.97; Tracer SC 2.6.30_HwVer12A-hydra; UC400 1.00.042",
+      "readable": true,
+      "stats": {
+        "frames": 2260,
+        "datagrams": 2260,
+        "decoded": 2260,
+        "transactions": 1118,
+        "answered": 1118,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 2260,
+        "wireshark_malformed": 0
+      },
+      "devices": [
+        "Trane BSV v6.97 (vendor 2, instance 2100)",
+        "Trane Tracer SC 2.6.30_HwVer12A-hydra (vendor 2, instance 30000)",
+        "Trane UC400 1.00.042 (vendor 2, instance 3)"
+      ],
+      "golden": [
+        "trane-plugfest-2011"
+      ]
+    },
+    {
+      "source": "kargs",
+      "name": "plugfest-delta-2.cap",
+      "url": "https://kargs.net/captures/plugfest-delta-2.cap",
+      "sha256": "9ddba8ed65fe4baf4f620d8ed3b60b52eb36dfdfe190686e7c9ff050fad08a9b",
+      "size": 3560002,
+      "class": "A",
+      "class_basis": "model and firmware from the devices' own Device objects: DAC-T305 15604; DNT-T103 3319; DNT-T221 0028; DSC-1616E 15604; OWS340; SPAK MSTP SY20V200; SYSC MLX 2x65j",
+      "readable": true,
+      "stats": {
+        "frames": 19576,
+        "datagrams": 14246,
+        "decoded": 14246,
+        "transactions": 6201,
+        "answered": 6166,
+        "orphan_answers": 4,
+        "segmented_transactions": 86,
+        "segment_acks": 333,
+        "wireshark_bvlc": 14246,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ethernet": 5330
+      },
+      "devices": [
+        "DAC-T305 15604 (vendor 8, instance 8105)",
+        "DNT-T103 3319 (vendor 8, instance 8015)",
+        "DNT-T221 0028 (vendor 8, instance 8110)",
+        "DSC-1616E 15604 (vendor 8, instance 8100)",
+        "Lithonia Lighting SPAK MSTP SY20V200 (vendor 42, instance 42222)",
+        "Lithonia Lighting, Inc. SYSC MLX 2x65j (vendor 42, instance 42333)",
+        "OWS340 (vendor 8, instance 8055)"
+      ]
+    },
+    {
+      "source": "kargs",
+      "name": "plugfest-delta-2b.cap",
+      "url": "https://kargs.net/captures/plugfest-delta-2b.cap",
+      "sha256": "3aaf28dbf6a90dd96490f462a3bbcefe2e5b7f9cb65b9fed2ebf1f9ff34f8db0",
+      "size": 1393026,
+      "class": "A",
+      "class_basis": "model and firmware from the devices' own Device objects: DAC-T305 15604; DNT-T103 3319; DNT-T221 0028; DSC-1616E 15604; OWS340; SPAK MSTP SY20V200; SYSC MLX 2x65j",
+      "readable": true,
+      "stats": {
+        "frames": 12193,
+        "datagrams": 10628,
+        "decoded": 10628,
+        "transactions": 4837,
+        "answered": 4826,
+        "orphan_answers": 10,
+        "segmented_transactions": 56,
+        "segment_acks": 228,
+        "wireshark_bvlc": 10628,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ethernet": 640
+      },
+      "devices": [
+        "DAC-T305 15604 (vendor 8, instance 8105)",
+        "DNT-T103 3319 (vendor 8, instance 8015)",
+        "DNT-T221 0028 (vendor 8, instance 8110)",
+        "Delta Controls DSC-1616E 15604 (vendor 8, instance 8100)",
+        "Lithonia Lighting SPAK MSTP SY20V200 (vendor 42, instance 42222)",
+        "Lithonia Lighting, Inc. SYSC MLX 2x65j (vendor 42, instance 42333)",
+        "OWS340 (vendor 8, instance 8055)"
+      ],
+      "golden": [
+        "delta-plugfest"
+      ]
+    },
+    {
+      "source": "kargs",
+      "name": "plugfest-tridium-1.pcap",
+      "url": "https://kargs.net/captures/plugfest-tridium-1.pcap",
+      "sha256": "54646e0a5d134362d50295208074fa7913166e07352fb8011f3cdb801dd681af",
+      "size": 584872,
+      "class": "A",
+      "class_basis": "model and firmware from the devices' own Device objects: 9260 Linux� Server 3.30; LMBC-300 04.22; NiagaraAX BACnet Advanced Workstation 3.7.18; NiagaraAX Station 3.6.38",
+      "readable": true,
+      "stats": {
+        "frames": 3583,
+        "datagrams": 3583,
+        "decoded": 3583,
+        "transactions": 1586,
+        "answered": 1534,
+        "orphan_answers": 21,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 3583,
+        "wireshark_malformed": 0
+      },
+      "devices": [
+        "PolarSoft� Inc. 9260 Linux� Server 3.30 (vendor 4, instance 86000)",
+        "Tridium NiagaraAX BACnet Advanced Workstation 3.7.18 (vendor 36, instance 36011)",
+        "Tridium NiagaraAX Station 3.6.38 (vendor 36, instance 36381)",
+        "WattStopper LMBC-300 04.22 (vendor 86, instance 86001)"
+      ],
+      "golden": [
+        "tridium-plugfest"
+      ]
+    },
+    {
+      "source": "kargs",
+      "name": "plugfest-tridium-2.pcap",
+      "url": "https://kargs.net/captures/plugfest-tridium-2.pcap",
+      "sha256": "2effbe74bedc7db14c8c75a207051758c0ab6bc853717d57dbeb4e3dfbfb9a0b",
+      "size": 52776,
+      "class": "A",
+      "class_basis": "model and firmware from the devices' own Device objects: 9260 Linux� Server 3.30",
+      "readable": true,
+      "stats": {
+        "frames": 644,
+        "datagrams": 644,
+        "decoded": 644,
+        "transactions": 241,
+        "answered": 241,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 644,
+        "wireshark_malformed": 0
+      },
+      "devices": [
+        "PolarSoft� Inc. 9260 Linux� Server 3.30 (vendor 4, instance 86000)"
+      ]
+    },
+    {
+      "source": "kargs",
+      "name": "polarsoft-free-range-router-init-routing-table.cap",
+      "url": "https://kargs.net/captures/polarsoft-free-range-router-init-routing-table.cap",
+      "sha256": "d43ad58ccee68281281e21b59e44086e1b77ee2e40712009a88a13df6fb81f85",
+      "size": 899,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 12,
+        "datagrams": 12,
+        "decoded": 11,
+        "rejected": {
+          "apdu": 1
+        },
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 1,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 12,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "polarsoft-free-range-router.cap",
+      "url": "https://kargs.net/captures/polarsoft-free-range-router.cap",
+      "sha256": "bc61761e6ea77613b809a6874aa69f529597e4ecb8b41b0cd96a7dc7376c11b2",
+      "size": 1318327,
+      "class": "A",
+      "class_basis": "model and firmware from the devices' own Device objects: Room Pressure Monitor\u0000 5.5; SAM60-64E Linux Server 3.01",
+      "readable": true,
+      "stats": {
+        "frames": 27761,
+        "datagrams": 219,
+        "decoded": 218,
+        "rejected": {
+          "apdu": 1
+        },
+        "transactions": 98,
+        "answered": 98,
+        "orphan_answers": 1,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 220,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ethernet": 17
+      },
+      "devices": [
+        "BACnet Stack at SourceForge GNU Demo 0.4.1 (vendor 260, instance 86114)",
+        "Critical Room Control Room Pressure Monitor 5.5 (vendor 0, instance 0)",
+        "PolarSoft Inc. SAM60-64E Linux Server 3.01 (vendor 4, instance 4000)"
+      ]
+    },
+    {
+      "source": "kargs",
+      "name": "properties.cap",
+      "url": "https://kargs.net/captures/properties.cap",
+      "sha256": "54ddbf6ec32bbbd2d4d8205b7bcbafd18db2c9986f601c1c4e52b0293047df41",
+      "size": 57924,
+      "class": "A",
+      "class_basis": "model and firmware from the devices' own Device objects: SYSC MLX 2x64k",
+      "readable": true,
+      "stats": {
+        "frames": 748,
+        "datagrams": 488,
+        "decoded": 488,
+        "transactions": 120,
+        "answered": 120,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 488,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ethernet": 260
+      },
+      "devices": [
+        "ASHRAE GNU 1.0 (vendor 0, instance 123)",
+        "Lithonia Lighting, Inc. SYSC MLX 2x64k (vendor 42, instance 126)"
+      ]
+    },
+    {
+      "source": "kargs",
+      "name": "read-file.cap",
+      "url": "https://kargs.net/captures/read-file.cap",
+      "sha256": "5b9c246ec412f9c81f3d2238951e4462c40563a9f8d0b30a6ab816b0393fdde0",
+      "size": 424077,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 1327,
+        "datagrams": 1327,
+        "decoded": 1327,
+        "transactions": 185,
+        "answered": 185,
+        "orphan_answers": 0,
+        "segmented_transactions": 161,
+        "segment_acks": 322,
+        "wireshark_bvlc": 1327,
+        "wireshark_malformed": 0
+      },
+      "golden": [
+        "atomic-read-file-segmented"
+      ]
+    },
+    {
+      "source": "kargs",
+      "name": "read-properties.cap",
+      "url": "https://kargs.net/captures/read-properties.cap",
+      "sha256": "0558eff68259b667142e033ae01c9cd9b494d1b77f676bdb011b23f9108b6194",
+      "size": 9834,
+      "class": "A",
+      "class_basis": "model and firmware from the devices' own Device objects: LSi Controller BACtalk LSi   v3.10 A; SYSC MLX 2x62i",
+      "readable": true,
+      "stats": {
+        "frames": 122,
+        "datagrams": 117,
+        "decoded": 117,
+        "transactions": 56,
+        "answered": 56,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 117,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ethernet": 5
+      },
+      "devices": [
+        "Alerton Technologies, Inc. LSi Controller BACtalk LSi v3.10 A (vendor 18, instance 201)",
+        "Lithonia Lighting, Inc. SYSC MLX 2x62i (vendor 42, instance 61)"
+      ]
+    },
+    {
+      "source": "kargs",
+      "name": "read-property-bad.cap",
+      "url": "https://kargs.net/captures/read-property-bad.cap",
+      "sha256": "48435bfc37553709659f7c30ae294aca338758524d5a7f5b0f07aca02744f1fc",
+      "size": 147622,
+      "class": "C",
+      "class_basis": "no BACnet/IP datagrams (other data link only)",
+      "readable": true,
+      "stats": {
+        "frames": 1896,
+        "datagrams": 0,
+        "decoded": 0,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 0,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ethernet": 1896
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "read-property-epics.cap",
+      "url": "https://kargs.net/captures/read-property-epics.cap",
+      "sha256": "3743817eaf1e9849fcc84cffd1e9a3fde660bb8761e329ab1eb3eda0ba37b9a6",
+      "size": 234348,
+      "class": "A",
+      "class_basis": "model and firmware from the devices' own Device objects: SYSC MLX 2x63net",
+      "readable": true,
+      "stats": {
+        "frames": 2882,
+        "datagrams": 2882,
+        "decoded": 2882,
+        "transactions": 1441,
+        "answered": 1441,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 2882,
+        "wireshark_malformed": 0
+      },
+      "devices": [
+        "Lithonia Lighting, Inc. SYSC MLX 2x63net (vendor 0, instance 0)"
+      ]
+    },
+    {
+      "source": "kargs",
+      "name": "read-property-synergy.cap",
+      "url": "https://kargs.net/captures/read-property-synergy.cap",
+      "sha256": "684b9392785f8e9f4f6112c2f93300b983cea2fb4142e00f5c58f4fc65415803",
+      "size": 27656,
+      "class": "C",
+      "class_basis": "no BACnet/IP datagrams (other data link only)",
+      "readable": true,
+      "stats": {
+        "frames": 365,
+        "datagrams": 0,
+        "decoded": 0,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 0,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ethernet": 365
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "read-property.cap",
+      "url": "https://kargs.net/captures/read-property.cap",
+      "sha256": "508bda0fd649f7cb4ef2ed36b554496dbe4a238171fbba0569820cc460c8efed",
+      "size": 557971,
+      "class": "C",
+      "class_basis": "no BACnet/IP datagrams (other data link only)",
+      "readable": true,
+      "stats": {
+        "frames": 5383,
+        "datagrams": 0,
+        "decoded": 0,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 0,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ethernet": 5383
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "readfile.cap",
+      "url": "https://kargs.net/captures/readfile.cap",
+      "sha256": "5e00642dbf712c3accf9bb852ae5fba09041a07de09fd5536d8ea4e5fa587c77",
+      "size": 35078,
+      "class": "B",
+      "class_basis": "vendor IDs in I-Am only (42); model not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 352,
+        "datagrams": 349,
+        "decoded": 349,
+        "transactions": 173,
+        "answered": 173,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 349,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ethernet": 3
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "readrange_malformed.cap",
+      "url": "https://kargs.net/captures/readrange_malformed.cap",
+      "sha256": "91c740a338b97bf232f5acae95e7d92abe569d46e498b8205b9d4de714b7c6df",
+      "size": 1029,
+      "class": "D",
+      "class_basis": "deliberately malformed test traffic (file name)",
+      "readable": true,
+      "stats": {
+        "frames": 1,
+        "datagrams": 1,
+        "decoded": 1,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 1,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 1,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "reinit-device.cap",
+      "url": "https://kargs.net/captures/reinit-device.cap",
+      "sha256": "5e1fc72e60aeeee13ef6c787ca49231e9cbb75c8fc22243638c3b3e9b9a76614",
+      "size": 53632,
+      "class": "B",
+      "class_basis": "vendor IDs in I-Am only (42); model not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 778,
+        "datagrams": 282,
+        "decoded": 279,
+        "rejected": {
+          "service": 3
+        },
+        "transactions": 29,
+        "answered": 29,
+        "orphan_answers": 3,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 282,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ethernet": 496
+      },
+      "golden": [
+        "lithonia-reinitialize"
+      ]
+    },
+    {
+      "source": "kargs",
+      "name": "router.cap",
+      "url": "https://kargs.net/captures/router.cap",
+      "sha256": "8d40f19ad177bfcad047e1e18670389009c35916b34aeff952df60560e316258",
+      "size": 1846,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 26,
+        "datagrams": 26,
+        "decoded": 26,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 26,
+        "wireshark_malformed": 0
+      },
+      "golden": [
+        "routing-table"
+      ]
+    },
+    {
+      "source": "kargs",
+      "name": "routers.cap",
+      "url": "https://kargs.net/captures/routers.cap",
+      "sha256": "da83fb0f645c2cd4af53aadb547a94ad1874e866214c6e02b784cf8465267eba",
+      "size": 1302,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 18,
+        "datagrams": 18,
+        "decoded": 18,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 18,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "rp-device.cap",
+      "url": "https://kargs.net/captures/rp-device.cap",
+      "sha256": "36455110665fa3010692046410ce7c2c0d5fb06c873e9ff97bc60faa84fbc2fa",
+      "size": 7294,
+      "class": "A",
+      "class_basis": "model and firmware from the devices' own Device objects: LI_NB-24 1.06",
+      "readable": true,
+      "stats": {
+        "frames": 90,
+        "datagrams": 90,
+        "decoded": 90,
+        "transactions": 45,
+        "answered": 45,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 90,
+        "wireshark_malformed": 0
+      },
+      "devices": [
+        "Watt Stopper Inc. LI_NB-24 1.06 (vendor 0, instance 0)"
+      ]
+    },
+    {
+      "source": "kargs",
+      "name": "rp-shed-level.cap",
+      "url": "https://kargs.net/captures/rp-shed-level.cap",
+      "sha256": "c0c67c47b5c3233f9ced196d1a7fa4524b26f0aecd932ab2b21931bce1ece9e7",
+      "size": 181,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 2,
+        "datagrams": 2,
+        "decoded": 2,
+        "transactions": 1,
+        "answered": 1,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 2,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "rp.cap",
+      "url": "https://kargs.net/captures/rp.cap",
+      "sha256": "cbe1b298d64e011052ac3f6bba7dfb07ca0ad37117e5b0a2d12687709e1b99ea",
+      "size": 7066,
+      "class": "B",
+      "class_basis": "vendor IDs in I-Am only (18, 42); model not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 110,
+        "datagrams": 10,
+        "decoded": 10,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 10,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ethernet": 100
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "rpm-error.cap",
+      "url": "https://kargs.net/captures/rpm-error.cap",
+      "sha256": "8f69b1e74d8c5e62c94d7f32278813689d39566aff36a2a39796790252de1bd2",
+      "size": 8125,
+      "class": "B",
+      "class_basis": "vendor IDs in I-Am only (24, 293); model not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 87,
+        "datagrams": 87,
+        "decoded": 87,
+        "transactions": 13,
+        "answered": 13,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 87,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "rpm.cap",
+      "url": "https://kargs.net/captures/rpm.cap",
+      "sha256": "4f7d9a444ceb8eb35bea5fcc83bbdbee172b3c0284e04d62d9189d31cc9f4fae",
+      "size": 783,
+      "class": "A",
+      "class_basis": "model and firmware from the devices' own Device objects: SYSC MLX 2x63x",
+      "readable": true,
+      "stats": {
+        "frames": 4,
+        "datagrams": 4,
+        "decoded": 4,
+        "transactions": 2,
+        "answered": 2,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 4,
+        "wireshark_malformed": 0
+      },
+      "devices": [
+        "Lithonia Lighting, Inc. SYSC MLX 2x63x (vendor 0, instance 0)"
+      ]
+    },
+    {
+      "source": "kargs",
+      "name": "rpm_multiple_scheduler_bug.pcap",
+      "url": "https://kargs.net/captures/rpm_multiple_scheduler_bug.pcap",
+      "sha256": "2cc20ee30cb57bd5ddd93fecfb4f972f2aec221b79a4af3484156b0b6cc3ddfb",
+      "size": 478,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 2,
+        "datagrams": 2,
+        "decoded": 2,
+        "transactions": 1,
+        "answered": 1,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 2,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "schedule-rpm-foreign.pcap",
+      "url": "https://kargs.net/captures/schedule-rpm-foreign.pcap",
+      "sha256": "5e45e95b8f180c52e15cb8d13d944969d3763b2824e3bd2daa91e0fc5bc16957",
+      "size": 4611,
+      "class": "B",
+      "class_basis": "vendor IDs in I-Am only (10); model not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 30,
+        "datagrams": 30,
+        "decoded": 30,
+        "transactions": 5,
+        "answered": 5,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 30,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "signed_value_negative.cap",
+      "url": "https://kargs.net/captures/signed_value_negative.cap",
+      "sha256": "54e72f9d535f00d44876cc816dcb29ffb02d44539b900de1323af1d4f96819e0",
+      "size": 189,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 2,
+        "datagrams": 2,
+        "decoded": 2,
+        "transactions": 1,
+        "answered": 1,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 2,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "single-RPM.pcap",
+      "url": "https://kargs.net/captures/single-RPM.pcap",
+      "sha256": "3f54756203bc764e813d2f4b31707363b106bb40e46d7d5031bdd951ffcad561",
+      "size": 1234,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 2,
+        "datagrams": 2,
+        "decoded": 2,
+        "transactions": 1,
+        "answered": 1,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 2,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "softdel-BTL.cap",
+      "url": "https://kargs.net/captures/softdel-BTL.cap",
+      "sha256": "fc6276837476b4a0836169b8e6a013be07c6e8429a971a63661747f8e1e5a758",
+      "size": 73702443,
+      "class": "A",
+      "class_basis": "model and firmware from the devices' own Device objects: ETHER-Link; SPAK MSTP SY20V200; SYSC MLX 2x65j",
+      "readable": true,
+      "stats": {
+        "frames": 301638,
+        "datagrams": 293726,
+        "decoded": 293726,
+        "transactions": 80863,
+        "answered": 80853,
+        "orphan_answers": 2,
+        "segmented_transactions": 43953,
+        "segment_acks": 87901,
+        "wireshark_bvlc": 293726,
+        "wireshark_malformed": 0
+      },
+      "devices": [
+        "ETHER-Link (vendor 35, instance 223003)",
+        "SPAK MSTP SY20V200 (vendor 42, instance 42222)",
+        "SYSC MLX 2x65j (vendor 42, instance 42333)"
+      ]
+    },
+    {
+      "source": "kargs",
+      "name": "special-events.pcap",
+      "url": "https://kargs.net/captures/special-events.pcap",
+      "sha256": "63bb211cb1470d01df882e669210f85328fcf63773f0c15590795e1ddbe02ea1",
+      "size": 8174,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 30,
+        "datagrams": 3,
+        "decoded": 3,
+        "transactions": 1,
+        "answered": 1,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 3,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "startup-exchange.cap",
+      "url": "https://kargs.net/captures/startup-exchange.cap",
+      "sha256": "b65e7ffbd9a70276a2d352cca86a78473b525bedabe9547629d1456d2cecf9f0",
+      "size": 1143,
+      "class": "B",
+      "class_basis": "vendor IDs in I-Am only (18, 42); model not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 14,
+        "datagrams": 9,
+        "decoded": 9,
+        "transactions": 2,
+        "answered": 2,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 9,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ethernet": 5
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "state_text.cap",
+      "url": "https://kargs.net/captures/state_text.cap",
+      "sha256": "67ff00d1ff95ddbf7964fe45e99aeb6646383e06dca6c9df7eb5d810ee7bbc78",
+      "size": 2318,
+      "class": "B",
+      "class_basis": "vendor IDs in I-Am only (86); model not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 28,
+        "datagrams": 28,
+        "decoded": 28,
+        "transactions": 7,
+        "answered": 7,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 28,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "state_text_good.cap",
+      "url": "https://kargs.net/captures/state_text_good.cap",
+      "sha256": "ac0b18af2d5f3977c50e4499570e11e19ae2a47054d9ce5d079c7514eeca12e9",
+      "size": 10049,
+      "class": "B",
+      "class_basis": "vendor IDs in I-Am only (86); model not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 124,
+        "datagrams": 124,
+        "decoded": 124,
+        "transactions": 31,
+        "answered": 31,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 124,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "subordinatelist_rpm.pcap",
+      "url": "https://kargs.net/captures/subordinatelist_rpm.pcap",
+      "sha256": "4580e9eb5cfc487e71e4c0899c8285f2beda5c66c712f4e2f1b89f510d728ed6",
+      "size": 390,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 2,
+        "datagrams": 2,
+        "decoded": 2,
+        "transactions": 1,
+        "answered": 1,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 2,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "synergy-binding-2x63y.cap",
+      "url": "https://kargs.net/captures/synergy-binding-2x63y.cap",
+      "sha256": "79bc0edb778c7260302d5bc9dce38d1b8b087619567a16cd91bafac8c6d9f956",
+      "size": 3879,
+      "class": "B",
+      "class_basis": "vendor IDs in I-Am only (42); model not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 47,
+        "datagrams": 38,
+        "decoded": 38,
+        "transactions": 13,
+        "answered": 13,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 38,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ethernet": 9
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "synergy-broken-rpm.cap",
+      "url": "https://kargs.net/captures/synergy-broken-rpm.cap",
+      "sha256": "f43b250b9eeb833d46c07a84dbc88bf4d69228d0c410dde7f734e8b1e2002f7a",
+      "size": 9942,
+      "class": "A",
+      "class_basis": "model and firmware from the devices' own Device objects: SYSC MLX 2x63x",
+      "readable": true,
+      "stats": {
+        "frames": 62,
+        "datagrams": 54,
+        "decoded": 53,
+        "rejected": {
+          "service": 1
+        },
+        "transactions": 24,
+        "answered": 18,
+        "orphan_answers": 1,
+        "segmented_transactions": 2,
+        "segment_acks": 0,
+        "wireshark_bvlc": 54,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ethernet": 8
+      },
+      "devices": [
+        "Lithonia Lighting, Inc. SYSC MLX 2x63x (vendor 42, instance 133)"
+      ]
+    },
+    {
+      "source": "kargs",
+      "name": "synergy-device.cap",
+      "url": "https://kargs.net/captures/synergy-device.cap",
+      "sha256": "00ab4b3aa84f0dc1455efe606dc06dcb7b9764482788bdf5273aae63cd7bb2f4",
+      "size": 37164,
+      "class": "A",
+      "class_basis": "model and firmware from the devices' own Device objects: SYSC MLX 2x64h",
+      "readable": true,
+      "stats": {
+        "frames": 440,
+        "datagrams": 438,
+        "decoded": 438,
+        "transactions": 218,
+        "answered": 218,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 438,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ethernet": 2
+      },
+      "devices": [
+        "Lithonia Lighting, Inc. SYSC MLX 2x64h (vendor 42, instance 126)"
+      ]
+    },
+    {
+      "source": "kargs",
+      "name": "tac-plugfest-epics.txt",
+      "url": "https://kargs.net/captures/tac-plugfest-epics.txt",
+      "sha256": "a20f43a68826851030d23959aee01798f03a8bd57935a8d9339a9d0ab30459fd",
+      "size": 21289,
+      "class": "-",
+      "class_basis": "not a pcap or pcapng file: capture: unsupported or malformed capture file",
+      "readable": false,
+      "stats": {
+        "frames": 0,
+        "datagrams": 0,
+        "decoded": 0,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 0,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "time-sync.cap",
+      "url": "https://kargs.net/captures/time-sync.cap",
+      "sha256": "33ca2908a5aeae723302fbcb19722394193d4ca5f3bb4d0f6abe5bc8cc26b781",
+      "size": 180,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 2,
+        "datagrams": 1,
+        "decoded": 1,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 1,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ethernet": 1
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "tridium jace2.pcap",
+      "url": "https://kargs.net/captures/tridium%20jace2.pcap",
+      "sha256": "4f8ddcac19b462fcb5f6d7479e4a9b239abf51653a21577afd20ad40cb1991e1",
+      "size": 2168976,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 19665,
+        "datagrams": 1437,
+        "decoded": 1437,
+        "transactions": 494,
+        "answered": 413,
+        "orphan_answers": 285,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 1437,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "u+4_MSTP.pcap",
+      "url": "https://kargs.net/captures/u+4_MSTP.pcap",
+      "sha256": "d020a42aea7c3707761f0e4c775cca9eea2bfb33d28be83bbef8e3f745c107d8",
+      "size": 1387,
+      "class": "C",
+      "class_basis": "no BACnet/IP datagrams (other data link only)",
+      "readable": true,
+      "stats": {
+        "frames": 29,
+        "datagrams": 0,
+        "decoded": 0,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 0,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "weekend.cap",
+      "url": "https://kargs.net/captures/weekend.cap",
+      "sha256": "db46234519508e340fa78947149c21ec794ded2a6c23dd2fe0b68621a9bb23be",
+      "size": 128760,
+      "class": "B",
+      "class_basis": "vendor IDs in I-Am only (42); model not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 1609,
+        "datagrams": 1450,
+        "decoded": 1450,
+        "transactions": 642,
+        "answered": 642,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 1450,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ethernet": 159
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "who-has-I-have.cap",
+      "url": "https://kargs.net/captures/who-has-I-have.cap",
+      "sha256": "e96d503752b026f102657c305c46fb55f1a98c2e39df1c1b730941091ed5421e",
+      "size": 18396,
+      "class": "B",
+      "class_basis": "vendor IDs in I-Am only (24, 42); model not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 251,
+        "datagrams": 111,
+        "decoded": 110,
+        "rejected": {
+          "service": 1
+        },
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 111,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ethernet": 140
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "who-has.cap",
+      "url": "https://kargs.net/captures/who-has.cap",
+      "sha256": "261e4185c26b77a91e84094bd2723d8d0ae359d42c8e6a980f92e5d5aa9e8c38",
+      "size": 18888,
+      "class": "B",
+      "class_basis": "vendor IDs in I-Am only (42); model not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 73,
+        "datagrams": 69,
+        "decoded": 69,
+        "transactions": 30,
+        "answered": 30,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 69,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ethernet": 4
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "who-is-i-am.cap",
+      "url": "https://kargs.net/captures/who-is-i-am.cap",
+      "sha256": "9c76c2ab38862a1c8a5323bcac55f51807f5d15d611e03aa6ca0bdef6d1084fd",
+      "size": 1698,
+      "class": "B",
+      "class_basis": "vendor IDs in I-Am only (18, 42); model not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 23,
+        "datagrams": 10,
+        "decoded": 10,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 10,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ethernet": 13
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "whois-basrtp-b-1.cap",
+      "url": "https://kargs.net/captures/whois-basrtp-b-1.cap",
+      "sha256": "45225d725cd0e94e2b1a94929f1f2e26e9a4618d4b43e6a21fb5618891979513",
+      "size": 67960,
+      "class": "C",
+      "class_basis": "no BACnet/IP datagrams (other data link only)",
+      "readable": true,
+      "stats": {
+        "frames": 2828,
+        "datagrams": 0,
+        "decoded": 0,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 0,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ms/tp": 2828
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "whois-basrtp-b-2.cap",
+      "url": "https://kargs.net/captures/whois-basrtp-b-2.cap",
+      "sha256": "a16c4678aec1095a3fbc011adf64f096cc28377e16c68bad97b4ee4071898505",
+      "size": 75680,
+      "class": "C",
+      "class_basis": "no BACnet/IP datagrams (other data link only)",
+      "readable": true,
+      "stats": {
+        "frames": 3147,
+        "datagrams": 0,
+        "decoded": 0,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 0,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ms/tp": 3147
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "whois-iam.cap",
+      "url": "https://kargs.net/captures/whois-iam.cap",
+      "sha256": "95341229c32e5154be5148e361e67c82cb95b07028e7c3d31c663b9037698d96",
+      "size": 512,
+      "class": "B",
+      "class_basis": "vendor IDs in I-Am only (42); model not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 6,
+        "datagrams": 6,
+        "decoded": 6,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 6,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "wireshark_BBMDError.pcap",
+      "url": "https://kargs.net/captures/wireshark_BBMDError.pcap",
+      "sha256": "c03e03a25d8dd59672e69df55fb4a5cbfbec9ecc344e747622c5166b85c08911",
+      "size": 598,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 8,
+        "datagrams": 8,
+        "decoded": 8,
+        "transactions": 0,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 8,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "wireshark_CEN_9_11.pcap",
+      "url": "https://kargs.net/captures/wireshark_CEN_9_11.pcap",
+      "sha256": "dc2676829fd47dfa422aad2d589bb21860bb21ee3c72a51373adf1ab417ed8d4",
+      "size": 723,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 8,
+        "datagrams": 8,
+        "decoded": 8,
+        "transactions": 2,
+        "answered": 2,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 8,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "wp-rp-index.cap",
+      "url": "https://kargs.net/captures/wp-rp-index.cap",
+      "sha256": "ecd25a94abd67f2ba383a935dc33292d6e1b580dec6d20153c38834770d54d23",
+      "size": 24535,
+      "class": "B",
+      "class_basis": "vendor IDs in I-Am only (42); model not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 314,
+        "datagrams": 191,
+        "decoded": 191,
+        "transactions": 35,
+        "answered": 35,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 191,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ethernet": 123
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "wp-weekly-schedule-index.cap",
+      "url": "https://kargs.net/captures/wp-weekly-schedule-index.cap",
+      "sha256": "15d14370a147690dc609aebbf89701bfdd5f54ca1c07e3b1f46ba24e3529436e",
+      "size": 1315,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 13,
+        "datagrams": 13,
+        "decoded": 13,
+        "transactions": 13,
+        "answered": 0,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 13,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "wp-weekly-schedule-test.cap",
+      "url": "https://kargs.net/captures/wp-weekly-schedule-test.cap",
+      "sha256": "94784a82fa9d50485f624adb04dec4fa29c2710ee4d231f027007439f6fe9baa",
+      "size": 2410,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 28,
+        "datagrams": 28,
+        "decoded": 27,
+        "rejected": {
+          "bvlc": 1
+        },
+        "transactions": 13,
+        "answered": 13,
+        "orphan_answers": 1,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 28,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "wp_weekly_schedule.cap",
+      "url": "https://kargs.net/captures/wp_weekly_schedule.cap",
+      "sha256": "8e357e5a98379b2c7e6033c0d9adf3a784f3a38ee964e61f9a7e9e5fdeb2de98",
+      "size": 1714,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 20,
+        "datagrams": 20,
+        "decoded": 20,
+        "transactions": 10,
+        "answered": 10,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 20,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "write-property-array.cap",
+      "url": "https://kargs.net/captures/write-property-array.cap",
+      "sha256": "22afb9cf4cd3ea19f6e46495d0e1fd333033f5d7848bb008013a17a57c4d5a49",
+      "size": 4681,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 50,
+        "datagrams": 50,
+        "decoded": 50,
+        "transactions": 10,
+        "answered": 10,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 50,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "write-property-multiple.cap",
+      "url": "https://kargs.net/captures/write-property-multiple.cap",
+      "sha256": "d01382e680d753c91b6627a2fb5dd84cb8838e698a48befe28663cf987fdee0f",
+      "size": 413,
+      "class": "C",
+      "class_basis": "device origin not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 6,
+        "datagrams": 2,
+        "decoded": 2,
+        "transactions": 1,
+        "answered": 1,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 2,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "write-property-wattstopper-panel.cap",
+      "url": "https://kargs.net/captures/write-property-wattstopper-panel.cap",
+      "sha256": "f853cddefdf84ef8aeff70cc046a0d5fef35e7291088e337d714c02c8f1bd1ad",
+      "size": 2392,
+      "class": "B",
+      "class_basis": "vendor IDs in I-Am only (86); model not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 30,
+        "datagrams": 30,
+        "decoded": 30,
+        "transactions": 6,
+        "answered": 6,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 30,
+        "wireshark_malformed": 0
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "write-property.cap",
+      "url": "https://kargs.net/captures/write-property.cap",
+      "sha256": "642b204d4868789b5f6c352a1a49de3251016713fc5b721a33901137b5e9c242",
+      "size": 677810,
+      "class": "B",
+      "class_basis": "vendor IDs in I-Am only (42); model not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 1641,
+        "datagrams": 54,
+        "decoded": 38,
+        "rejected": {
+          "npdu": 16
+        },
+        "transactions": 16,
+        "answered": 16,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 54,
+        "wireshark_malformed": 16
+      },
+      "non_ip": {
+        "ethernet": 1
+      }
+    },
+    {
+      "source": "kargs",
+      "name": "write-property2.cap",
+      "url": "https://kargs.net/captures/write-property2.cap",
+      "sha256": "6ecc8c6e3a436e6479340b2a2a533c19b788c88addb5870464da9093f42d9ab8",
+      "size": 1675,
+      "class": "B",
+      "class_basis": "vendor IDs in I-Am only (42); model not in the traffic",
+      "readable": true,
+      "stats": {
+        "frames": 20,
+        "datagrams": 18,
+        "decoded": 18,
+        "transactions": 8,
+        "answered": 8,
+        "orphan_answers": 0,
+        "segmented_transactions": 0,
+        "segment_acks": 0,
+        "wireshark_bvlc": 18,
+        "wireshark_malformed": 0
+      },
+      "non_ip": {
+        "ethernet": 2
+      }
+    }
+  ]
+}

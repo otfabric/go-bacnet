@@ -1,0 +1,150 @@
+[
+  {
+    "id": "alerton-plugfest",
+    "replayed_by_service": {
+      "ReadPropertyRequest": 22,
+      "WritePropertyRequest": 4,
+      "[]service.ReadAccessSpecification": 8
+    },
+    "segmented_answers": 3,
+    "not_replayable": 4
+  },
+  {
+    "id": "atomic-read-file-segmented",
+    "replayed_by_service": {
+      "AtomicReadFileRequest": 8,
+      "ReadPropertyRequest": 4
+    },
+    "segmented_answers": 4,
+    "not_replayable": 0
+  },
+  {
+    "id": "bvll-foreign-device",
+    "replayed_by_service": {
+      "ReadPropertyRequest": 4
+    },
+    "segmented_answers": 0,
+    "not_replayable": 0
+  },
+  {
+    "id": "contemporary-controls-basrt",
+    "replayed_by_service": {
+      "ReadPropertyRequest": 12
+    },
+    "segmented_answers": 0,
+    "not_replayable": 0
+  },
+  {
+    "id": "critical-room-control",
+    "replayed_by_service": {
+      "ReadPropertyRequest": 7,
+      "WritePropertyRequest": 2
+    },
+    "segmented_answers": 0,
+    "not_replayable": 0
+  },
+  {
+    "id": "delta-plugfest",
+    "replayed_by_service": {
+      "ReadPropertyRequest": 7,
+      "WritePropertyRequest": 3,
+      "[]service.ReadAccessSpecification": 15
+    },
+    "segmented_answers": 2,
+    "not_replayable": 10
+  },
+  {
+    "id": "event-log",
+    "replayed_by_service": {
+      "ReadRangeRequest": 1
+    },
+    "segmented_answers": 0,
+    "not_replayable": 0
+  },
+  {
+    "id": "lithonia-btl-plugfest",
+    "replayed_by_service": {
+      "ReadPropertyRequest": 2,
+      "WritePropertyRequest": 4,
+      "[]service.ReadAccessSpecification": 8
+    },
+    "segmented_answers": 2,
+    "not_replayable": 4
+  },
+  {
+    "id": "reliable-controls-routed",
+    "replayed_by_service": {
+      "ReadPropertyRequest": 6,
+      "[]service.ReadAccessSpecification": 10
+    },
+    "segmented_answers": 0,
+    "not_replayable": 10
+  },
+  {
+    "id": "router-drops-apdu-type",
+    "replayed_by_service": {
+      "ReadPropertyRequest": 3
+    },
+    "segmented_answers": 0,
+    "not_replayable": 0
+  },
+  {
+    "id": "sauter-plugfest-2011",
+    "replayed_by_service": {
+      "ReadPropertyRequest": 8,
+      "WritePropertyRequest": 2,
+      "[]service.ReadAccessSpecification": 4
+    },
+    "segmented_answers": 0,
+    "not_replayable": 0
+  },
+  {
+    "id": "siemens-plugfest-2011",
+    "replayed_by_service": {
+      "ReadPropertyRequest": 11,
+      "WritePropertyRequest": 4,
+      "[]service.ReadAccessSpecification": 6
+    },
+    "segmented_answers": 0,
+    "not_replayable": 16
+  },
+  {
+    "id": "trane-plugfest-2011",
+    "replayed_by_service": {
+      "ReadPropertyRequest": 17,
+      "[]service.ReadAccessSpecification": 8
+    },
+    "segmented_answers": 0,
+    "not_replayable": 0
+  },
+  {
+    "id": "trend-log-multiple",
+    "replayed_by_service": {
+      "ReadPropertyRequest": 6,
+      "ReadRangeRequest": 9,
+      "WritePropertyRequest": 2,
+      "[]service.ReadAccessSpecification": 4
+    },
+    "segmented_answers": 1,
+    "not_replayable": 6
+  },
+  {
+    "id": "tridium-plugfest",
+    "replayed_by_service": {
+      "ReadPropertyRequest": 23,
+      "WritePropertyRequest": 2,
+      "[]service.ReadAccessSpecification": 11
+    },
+    "segmented_answers": 0,
+    "not_replayable": 6
+  },
+  {
+    "id": "wattstopper-weblink",
+    "replayed_by_service": {
+      "ReadPropertyRequest": 6,
+      "[]service.ReadAccessSpecification": 1
+    },
+    "segmented_answers": 0,
+    "not_replayable": 0
+  }
+]

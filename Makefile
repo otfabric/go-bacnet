@@ -9,7 +9,7 @@ PKGS     := ./...
 DOCSYNC_VERSION := v0.3.1
 FUZZTIME ?= 5s
 
-.PHONY: help test test-race chaos vet lint lint-ci fmt tidy vuln coverage coverage-check coverage-pkg-check e2e check fuzz bench cross imports interop interop-required interop-pinned dissector clean docs-check
+.PHONY: help test test-race chaos vet lint lint-ci fmt tidy vuln coverage coverage-check coverage-pkg-check e2e check fuzz bench cross imports interop interop-required interop-pinned dissector clean docs-check captures-fetch captures-extended captures-generate captures-report
 
 help: ## Show available targets
 	@awk 'BEGIN {FS = ":.*## "}; /^[a-zA-Z0-9_.-]+:.*## / {printf "%-14s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -156,6 +156,20 @@ interop-pinned: ## Pull the pinned peer images and run interop against them (nee
 dissector: ## Check every client request and server reply against Wireshark's dissector (needs tshark)
 	@echo "Dissector oracle: go test -tags=dissector ./interop/"
 	@BACNET_DISSECTOR_REQUIRED=1 go test -tags=dissector -count=1 -run '^TestDissector' ./interop/
+
+# Recorded traffic of physical devices (testdata/captures/README.md). The
+# golden excerpts run in `make test`; these targets need the originals.
+captures-fetch: ## Download the original captures into the git-ignored cache and verify their SHA256
+	@./scripts/fetch-captures.sh
+
+captures-extended: captures-fetch ## Re-derive every manifest entry from the original captures
+	@BACNET_CAPTURE_EXTENDED=1 go test -count=1 -run '^TestExtendedCorpus$$' ./internal/capture/
+
+captures-generate: captures-fetch ## Rebuild manifest.json, SHA256SUMS and golden/*.json from the originals (needs tshark)
+	@BACNET_CAPTURE_GENERATE=1 go test -count=1 -run '^TestGenerate$$' ./internal/capture/
+
+captures-report: ## Rewrite testdata/captures/report/*.json from the golden suites
+	@BACNET_CAPTURE_REPORT=1 go test -count=1 -run '^TestCapture|^TestGolden' ./internal/capture/ ./client/ ./server/
 
 # The documents against the code (DOC-008): docsync, as docs-check.yml runs it.
 docs-check: ## Check that the documents agree with the code (docsync)
