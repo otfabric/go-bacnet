@@ -1,0 +1,88 @@
+name: Self-interop
+run-name: "Self-interop against bacnet-interop-otfabric:latest, by @${{ github.actor }} on ${{ github.ref_name }}"
+
+# Manual only. This commit against the latest published image of go-bacnet
+# itself (ghcr.io/otfabric/bacnet-interop-otfabric:latest, from
+# otfabric/bacnet-interop own/go-bacnet), in both roles: the released client
+# against this commit's server, and this commit's client against the released
+# device. The e2e tests run both sides from one commit; this one finds a
+# change on the wire that breaks an earlier release.
+#
+# Not part of the Interop workflow, which runs against the independent
+# references, and never a required check. Nothing is pinned or committed, so
+# it cannot ask for a release. A pass is not independent verification
+# (INTEROP.md).
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  IMAGE: ghcr.io/otfabric/bacnet-interop-otfabric:latest
+
+jobs:
+  self-interop:
+    name: This commit against bacnet-interop-otfabric:latest
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      # The fixtures and scenario files of the pinned bacnet-interop release,
+      # as in the Interop workflow.
+      - name: Load bacnet-interop pin
+        id: pin
+        run: echo "ref=$(jq -r .ref interop/bacnet-interop-pin.json)" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout bacnet-interop (pinned)
+        uses: actions/checkout@v7
+        with:
+          repository: otfabric/bacnet-interop
+          ref: ${{ steps.pin.outputs.ref }}
+          path: bacnet-interop
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      - name: Pull the image
+        run: docker pull "${IMAGE}"
+
+      - name: Versions
+        id: versions
+        env:
+          SHA: ${{ github.sha }}
+          REF: ${{ github.ref_name }}
+          PIN: ${{ steps.pin.outputs.ref }}
+        run: |
+          digest=$(docker inspect --format '{{index .RepoDigests 0}}' "${IMAGE}")
+          echo "digest=${digest}" >> "$GITHUB_OUTPUT"
+          {
+            echo "## Versions"
+            echo
+            echo "| | |"
+            echo "|---|---|"
+            echo "| go-bacnet under test | \`${REF}\` at \`${SHA}\` (\`$(git describe --tags --always)\`) |"
+            echo "| Go | \`$(go env GOVERSION)\` |"
+            echo "| Fixtures and scenarios | bacnet-interop \`${PIN}\` |"
+            echo "| Image | \`${IMAGE}\` |"
+            echo "| Image digest | \`${digest}\` |"
+            echo "| Image reports | \`$(docker run --rm "${IMAGE}" version)\` |"
+            docker run --rm "${IMAGE}" print-capabilities | jq -r '"| go-bacnet in the image | `\(.upstream.version)` at `\(.upstream.revision)` |"'
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Run the self-interop tests
+        env:
+          BACNET_INTEROP_OTFABRIC_IMAGE: ${{ steps.versions.outputs.digest }}
+          BACNET_INTEROP_ROOT: ${{ github.workspace }}/bacnet-interop
+        run: |
+          set -o pipefail
+          GOWORK=off go test -v -tags interop -count=1 -timeout 25m -run '^TestOtfabric' ./interop/ 2>&1 | tee interop.log
+          {
+            echo "## Result"
+            echo
+            echo "- $(grep -c -- '--- PASS' interop.log) passed, $(grep -c -- '--- SKIP' interop.log) skipped, $(grep -c -- '--- FAIL' interop.log) failed"
+          } | tee -a "$GITHUB_STEP_SUMMARY"

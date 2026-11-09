@@ -118,6 +118,20 @@ skipping the peer silently. `interop/doc.go` lists the environment variables.
 Scenario results: [INTEROP.md](INTEROP.md). Peer notes:
 [bacnet-interop PEER_SUPPORT.md](https://github.com/otfabric/bacnet-interop/blob/main/PEER_SUPPORT.md).
 
+The **Self-interop** workflow (manual, never a required check) runs this
+commit against `ghcr.io/otfabric/bacnet-interop-otfabric:latest`, the image
+of the latest go-bacnet release that bacnet-interop builds by hand
+(`own/go-bacnet`). Locally:
+
+```bash
+BACNET_INTEROP_OTFABRIC_IMAGE=ghcr.io/otfabric/bacnet-interop-otfabric:latest \
+  GOWORK=off go test -v -tags interop -count=1 -run '^TestOtfabric' ./interop/
+```
+
+The tests (`interop/otfabric_test.go`) skip when the variable is not set.
+Nothing pins the image, so a failure there does not block a release. Like a
+failure against a reference, it goes to the maintainer before any fix.
+
 ## Pull requests
 
 1. Discuss non-trivial API changes first

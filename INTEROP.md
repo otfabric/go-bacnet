@@ -428,6 +428,19 @@ default receives APDUs up to the datagram bound, as the server does
 the timeout with `DecodeLimits.MaxAPDUSize` 1476, which drops the longer
 segments.
 
+## Against our own released image
+
+`interop/otfabric_test.go` runs this commit against
+`ghcr.io/otfabric/bacnet-interop-otfabric` (bacnet-interop `own/go-bacnet`),
+which is the latest go-bacnet release behind the bacnet-interop contracts. The
+released client runs every scenario file against this commit's server, and
+this commit's client reads the released device. The test runs only with
+`BACNET_INTEROP_OTFABRIC_IMAGE` set, which the manual **Self-interop** workflow
+does. It finds a wire change that breaks an earlier release. It is not
+independent evidence, because both sides are go-bacnet, so it adds nothing to
+the peer results above. The released client reports `reinit.undefined-state`
+as `unsupported`, because its `service.EncodeReinitializeDevice` refuses state 9.
+
 ## What the peer tests found
 
 Legacy BACpypes sends segments 5 octets longer than the Max APDU the client

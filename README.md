@@ -37,7 +37,9 @@ bacnet-js and ulbios (Who-Is, ReadProperty and WriteProperty only) in
 bacnet-interop client-mode containers (discovery, property access, COV, ReadRange, files,
 lists, object creation, alarms, device management, segmentation and the
 BBMD), and its replies are checked against Wireshark's dissector
-([docs/SERVER_SUPPORT.md](docs/SERVER_SUPPORT.md)). The API is v0 and can
+([docs/SERVER_SUPPORT.md](docs/SERVER_SUPPORT.md)). A manual workflow
+also runs each commit against the published image of the latest release, in both
+roles; that is not independent evidence ([INTEROP.md](INTEROP.md#against-our-own-released-image)). The API is v0 and can
 still change between minor versions; [RELEASE.md](RELEASE.md) lists every
 change.
 
