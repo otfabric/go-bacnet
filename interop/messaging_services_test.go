@@ -6,8 +6,6 @@ package interop
 
 import (
 	"context"
-	"os"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -17,16 +15,7 @@ import (
 
 func deviceBaselineV6Path(t *testing.T) string {
 	t.Helper()
-	for _, p := range []string{
-		filepath.Join("..", "bacnet-interop", "fixtures", "device", "device-baseline-v6.json"),
-		filepath.Join("..", "..", "bacnet-interop", "fixtures", "device", "device-baseline-v6.json"),
-	} {
-		if _, err := os.Stat(p); err == nil {
-			return p
-		}
-	}
-	t.Fatal("device-baseline-v6.json not found")
-	return ""
+	return deviceFixturePath(t, "device-baseline-v6")
 }
 
 type messagingPeer struct {
