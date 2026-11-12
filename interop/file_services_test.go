@@ -7,8 +7,6 @@ package interop
 import (
 	"context"
 	"encoding/base64"
-	"os"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -18,16 +16,7 @@ import (
 
 func deviceBaselineV4Path(t *testing.T) string {
 	t.Helper()
-	for _, p := range []string{
-		filepath.Join("..", "bacnet-interop", "fixtures", "device", "device-baseline-v4.json"),
-		filepath.Join("..", "..", "bacnet-interop", "fixtures", "device", "device-baseline-v4.json"),
-	} {
-		if _, err := os.Stat(p); err == nil {
-			return p
-		}
-	}
-	t.Fatal("device-baseline-v4.json not found; set BACNET_INTEROP_ROOT or open sibling checkout")
-	return ""
+	return deviceFixturePath(t, "device-baseline-v4")
 }
 
 // Peers with upstream-native File + AtomicReadFile server support at current pins.

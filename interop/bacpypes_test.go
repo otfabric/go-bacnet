@@ -10,8 +10,6 @@ import (
 	"fmt"
 	"math"
 	"net/netip"
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -67,16 +65,7 @@ func startBACpypesServerFixture(t *testing.T, env ...string) (deviceFixture, *pe
 
 func deviceServerV1Path(t *testing.T) string {
 	t.Helper()
-	for _, p := range []string{
-		filepath.Join("..", "bacnet-interop", "fixtures", "device", "device-server-v1.json"),
-		filepath.Join("..", "..", "bacnet-interop", "fixtures", "device", "device-server-v1.json"),
-	} {
-		if _, err := os.Stat(p); err == nil {
-			return p
-		}
-	}
-	t.Fatal("device-server-v1.json not found; open a sibling bacnet-interop checkout")
-	return ""
+	return deviceFixturePath(t, "device-server-v1")
 }
 
 // ---- discovery and reads --------------------------------------------------

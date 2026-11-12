@@ -6,8 +6,6 @@ package interop
 
 import (
 	"context"
-	"os"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -17,16 +15,7 @@ import (
 
 func deviceBaselineV5Path(t *testing.T) string {
 	t.Helper()
-	for _, p := range []string{
-		filepath.Join("..", "bacnet-interop", "fixtures", "device", "device-baseline-v5.json"),
-		filepath.Join("..", "..", "bacnet-interop", "fixtures", "device", "device-baseline-v5.json"),
-	} {
-		if _, err := os.Stat(p); err == nil {
-			return p
-		}
-	}
-	t.Fatal("device-baseline-v5.json not found")
-	return ""
+	return deviceFixturePath(t, "device-baseline-v5")
 }
 
 // Peers with upstream-native CreateObject/DeleteObject for analog-value at current pins.
