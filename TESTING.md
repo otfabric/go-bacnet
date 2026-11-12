@@ -110,3 +110,9 @@ crashers as an artifact. To promote one: copy the file there if it came from
 the artifact, fix the decoder, and commit the file, so that `go test` replays
 it. A new target also goes in the matrix of `fuzz-nightly.yml`, which is
 listed by hand.
+
+The nightly job runs on Go 1.27, not on the `go.mod` minimum. Go 1.26 can
+end a fuzz run whose `-fuzztime` has expired with `context deadline exceeded`
+and no failing input ([go.dev/issue/75804](https://go.dev/issue/75804)). Such
+a failure records nothing to promote. A failure with a crasher file always
+has one.
