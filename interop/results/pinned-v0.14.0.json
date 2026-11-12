@@ -1,0 +1,3994 @@
+{
+ "run": "make interop-pinned",
+ "date": "2026-11-12",
+ "bacnetInterop": "v0.14.0",
+ "images": {
+  "bacnet-stack": "ghcr.io/otfabric/bacnet-interop-bacnet-stack@sha256:32ef96b955d6d2a5799fce734571d6e618d7ec4e5035b20dfe136251a62bb69a",
+  "bacpypes3": "ghcr.io/otfabric/bacnet-interop-bacpypes3@sha256:c3306164d69270f20e425d908c9a389b26b452c71fb77b26bdfaff668145d8df",
+  "bacnet4j": "ghcr.io/otfabric/bacnet-interop-bacnet4j@sha256:ba9c3c4faa4b813dcea4c0ea13b7d109633b654181021f7e8a869570586da7fc",
+  "worldiety": "ghcr.io/otfabric/bacnet-interop-worldiety@sha256:01834def5d023195559d5b27aaffd959530c7a8d02071d49639c6de6df5239ef",
+  "sysiobacnet": "ghcr.io/otfabric/bacnet-interop-sysiobacnet@sha256:1d38d9044f862b1f7954887b1b25f249f8f93db107771827dae48d394b685959",
+  "cbsigma": "ghcr.io/otfabric/bacnet-interop-cbsigma@sha256:f5f2d27b0e472960c53364774ab9fb65bba5bc5e344601c7b1679da1bc034b9e",
+  "bacpypes": "ghcr.io/otfabric/bacnet-interop-bacpypes@sha256:51e0822226a724c58abb30b3c4fa160480f693a3ff09636d621aeb75cab960d7",
+  "ulbios": "ghcr.io/otfabric/bacnet-interop-ulbios@sha256:94a0e233a20c8d08c15ba1b2c9fc8471d9c8def95ee65d7df932c1a642816dd0",
+  "bacnet-js": "ghcr.io/otfabric/bacnet-interop-bacnet-js@sha256:d92537fc6b08df87fc084cc7949a899825b01d3973dc878064e6bd1cf6bf89d6",
+  "bip-router": "ghcr.io/otfabric/bacnet-interop-bip-router@sha256:3ac38fdbf5ed56d988d7c2cf5e36022cf6745b74a5e6a653687fee7305eba114",
+  "bacnet-stack-router": "ghcr.io/otfabric/bacnet-interop-bacnet-stack-router@sha256:5922d92825fa27013de2acfe14557baa5d0dcaf2c8087a9902b92ac22f9e38ae"
+ },
+ "goBacnetCommit": "67ff46a12f16d8907fc019eb31c39b5b57b3e5ef",
+ "host": "darwin/arm64, Docker 29.9.3, go1.27.4",
+ "durationSeconds": 3187,
+ "totals": {
+  "topLevel": {
+   "pass": 279,
+   "fail": 0,
+   "skip": 14
+  },
+  "withSubtests": {
+   "pass": 821,
+   "fail": 0,
+   "skip": 135
+  }
+ },
+ "tests": [
+  {
+   "test": "TestAddRemoveListElementRecipientList",
+   "status": "pass"
+  },
+  {
+   "test": "TestAddRemoveListElementRecipientList/bacnet-stack",
+   "status": "pass"
+  },
+  {
+   "test": "TestAddRemoveListElementRecipientList/bacnet4j",
+   "status": "pass"
+  },
+  {
+   "test": "TestAtomicReadFileRecord",
+   "status": "pass"
+  },
+  {
+   "test": "TestAtomicReadFileRecord/bacnet-stack",
+   "status": "pass"
+  },
+  {
+   "test": "TestAtomicReadFileRecord/bacnet4j",
+   "status": "pass"
+  },
+  {
+   "test": "TestAtomicReadFileStream",
+   "status": "pass"
+  },
+  {
+   "test": "TestAtomicReadFileStream/bacnet-stack",
+   "status": "pass"
+  },
+  {
+   "test": "TestAtomicReadFileStream/bacnet4j",
+   "status": "pass"
+  },
+  {
+   "test": "TestAtomicWriteFileStreamReadback",
+   "status": "pass"
+  },
+  {
+   "test": "TestAtomicWriteFileStreamReadback/bacnet-stack",
+   "status": "pass"
+  },
+  {
+   "test": "TestAtomicWriteFileStreamReadback/bacnet4j",
+   "status": "pass"
+  },
+  {
+   "test": "TestAuthRequestUnrecognizedService",
+   "status": "pass"
+  },
+  {
+   "test": "TestAuthRequestUnrecognizedService/bacnet-stack",
+   "status": "pass"
+  },
+  {
+   "test": "TestAuthRequestUnrecognizedService/bacnet4j",
+   "status": "pass"
+  },
+  {
+   "test": "TestAuthRequestUnrecognizedService/bacpypes3",
+   "status": "pass"
+  },
+  {
+   "test": "TestAuthRequestUnrecognizedService/sysiobacnet",
+   "status": "pass"
+  },
+  {
+   "test": "TestAuthRequestUnrecognizedService/worldiety",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JCOVNotificationMultipleLive",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JCOVSubscribeNotifyCancel",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-baseline-v1",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-baseline-v1/rp.av1.object-identifier",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-baseline-v1/rp.av1.object-name",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-baseline-v1/rp.av1.object-type",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-baseline-v1/rp.bv1.present-value",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-baseline-v1/rp.device.object-name",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-baseline-v1/rp.not-an-array",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-baseline-v1/rp.unknown-object",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-baseline-v1/rp.unknown-property",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-baseline-v1/rpm.av1.name-and-type",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-baseline-v1/rpm.unknown-object",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-baseline-v1/who-has.name",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-baseline-v1/who-has.object",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-baseline-v1/who-has.unknown-name",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-baseline-v1/who-is.global",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-baseline-v1/who-is.outside-range",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-baseline-v1/who-is.range",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-baseline-v1/wp.av1.pv.priority8",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-baseline-v1/wp.av1.pv.relinquish8",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-baseline-v1/wp.av1.pv.wrong-type",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-baseline-v1/wp.unknown-object",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-baseline-v1/wpm.av1.pv.priority8",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-baseline-v1/wpm.unknown-object-second",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-baseline-v1/wpm.wrong-type",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-bbmd-v1",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-bbmd-v1/read-bdt",
+   "status": "skip",
+   "reason": "read-bdt: unsupported BACnet4J has no client for the BVLC table functions (IpNetwork serves them as a BBMD only)"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-bbmd-v1/read-fdt.contains-client",
+   "status": "skip",
+   "reason": "read-fdt: unsupported BACnet4J has no client for the BVLC table functions (IpNetwork serves them as a BBMD only)"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-bbmd-v1/rp.device.object-name",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-bbmd-v1/who-is.via-bbmd",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-bbmd-v1/write-bdt.nak",
+   "status": "skip",
+   "reason": "write-bdt: unsupported BACnet4J has no client for the BVLC table functions (IpNetwork serves them as a BBMD only)"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-extended-v1",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-extended-v1/arf.file3.after-write",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-extended-v1/arf.file3.segmented-reply",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-extended-v1/awf.file3.segmented-request",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-extended-v1/cpt.vendor999",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-extended-v1/ctm.normal",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-extended-v1/ctm.urgent",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-extended-v1/gas.av2.after-normal",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-extended-v1/gas.av2.high-limit",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-extended-v1/gas.normal",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-extended-v1/ges.av2.high-limit",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-extended-v1/ges.normal",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-extended-v1/ges.offnormal-filter.high-limit",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-extended-v1/ges.offnormal-filter.normal",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-extended-v1/scovp.av1.pv.cancel",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-extended-v1/scovp.av1.pv.increment",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-extended-v1/scovp.unknown-object",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-extended-v1/scovp.unknown-property",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-extended-v1/scovpm.av1-av2",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-extended-v1/scovpm.cancel",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-extended-v1/scovpm.unknown-object-second",
+   "status": "skip",
+   "reason": "subscribe-cov-property-multiple: known-difference BACnet4J decodes SubscribeCOVPropertyMultiple-Error as a CHOICE and drops firstFailedSubscription; error class and code agree (PEER_SUPPORT.md)"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-extended-v1/utm.normal",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-extended-v1/wp.av2.high",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-extended-v1/wp.av2.normal",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-services-v1",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-services-v1/ack.av1.no-alarm",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-services-v1/ack.av2",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-services-v1/ale.nc1",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-services-v1/ale.unknown-object",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-services-v1/arf.file1",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-services-v1/arf.file1.after-write",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-services-v1/arf.record-file2",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-services-v1/arf.unknown-object",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-services-v1/awf.file1",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-services-v1/co.av150",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-services-v1/co.not-creatable",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-services-v1/cov.av1.cancel",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-services-v1/cov.av1.subscribe-confirmed",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-services-v1/cov.av1.subscribe-unconfirmed",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-services-v1/cov.unknown-object",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-services-v1/dcc.disable",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-services-v1/dcc.disable-initiation",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-services-v1/dcc.enable",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-services-v1/do.av150",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-services-v1/do.av150.again",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-services-v1/do.device",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-services-v1/ge.av2.high-limit",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-services-v1/reinit.undefined-state",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-services-v1/reinit.warmstart",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-services-v1/rle.nc1",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-services-v1/rp.nc1.recipient-list",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-services-v1/rp.nc1.recipient-list.after-remove",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-services-v1/rr.av1.not-a-list",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-services-v1/rr.tl1.by-position",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-services-v1/rr.tl1.by-position-middle",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-services-v1/ts.local",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-services-v1/ts.utc",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-services-v1/upt.vendor999",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-services-v1/wg.group1",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-services-v1/wp.av2.high",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JClientAgainstServer/server-services-v1/wp.av2.normal",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JDeleteFDTEntry",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JDeviceCommunicationControlDisable",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JDeviceCommunicationControlDisableInitiation",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JDeviceCommunicationControlEnable",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JDeviceCommunicationControlPassword",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JDeviceCommunicationControlUnexpectedPassword",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JEventNotificationReceive",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JForeignDeviceWhoIsReadProperty",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JGetEnrollmentSummary",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JNativeRouter",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JReadAnalogValue",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JReadBDT",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JReadDeviceObjectName",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JReadFDTAfterFD",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JReadPropertyMultiple",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JReadPropertyMultiplePartialError",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JReadPropertyUnknownPropertyError",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JReadRangeAllBySequenceNumber",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JReadRangeByPosition",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JReadRangeByPositionCarriesFirstSequence",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JReadRangeBySequenceNumber",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JReadRangeByTime",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JReinitializeDeviceWarmstart",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JRejectUnrecognizedService",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JRoutedReadProperty",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JSegmentedReadPropertyMultiple",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JSegmentedWritePropertyMultipleSend",
+   "status": "skip",
+   "reason": "BACnet4J does not accept segmented confirmed-request receive"
+  },
+  {
+   "test": "TestBACnet4JSubscribeCOVProperty",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JSubscribeCOVProperty/bacnet4j",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JSubscribeCOVPropertyMultipleParsed",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JWhoAmIYouAreUnsupported",
+   "status": "skip",
+   "reason": "BACnet4J 6.1.1 has no WhoAmI/YouAre service classes; see bacnet-interop/PEER_SUPPORT.md"
+  },
+  {
+   "test": "TestBACnet4JWhoHasIHave",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JWhoIsIAm",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JWriteBDTIdentity",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JWritePropertyMultipleFirstFailed",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JWritePropertyMultipleReadbackReset",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JWritePropertyMultipleUnknownPropertyAccepted",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JWritePropertyMultipleWrongDatatypeError",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnet4JWritePropertyReadbackReset",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnetStackClientAgainstServer",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnetStackClientAgainstServer/server-baseline-v1",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnetStackClientAgainstServer/server-baseline-v1/rp.av1.object-identifier",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnetStackClientAgainstServer/server-baseline-v1/rp.av1.object-name",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnetStackClientAgainstServer/server-baseline-v1/rp.av1.object-type",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnetStackClientAgainstServer/server-baseline-v1/rp.bv1.present-value",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnetStackClientAgainstServer/server-baseline-v1/rp.device.object-name",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnetStackClientAgainstServer/server-baseline-v1/rp.not-an-array",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnetStackClientAgainstServer/server-baseline-v1/rp.unknown-object",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnetStackClientAgainstServer/server-baseline-v1/rp.unknown-property",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnetStackClientAgainstServer/server-baseline-v1/rpm.av1.name-and-type",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnetStackClientAgainstServer/server-baseline-v1/rpm.unknown-object",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnetStackClientAgainstServer/server-baseline-v1/who-has.name",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnetStackClientAgainstServer/server-baseline-v1/who-has.object",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnetStackClientAgainstServer/server-baseline-v1/who-has.unknown-name",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnetStackClientAgainstServer/server-baseline-v1/who-is.global",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnetStackClientAgainstServer/server-baseline-v1/who-is.outside-range",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnetStackClientAgainstServer/server-baseline-v1/who-is.range",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnetStackClientAgainstServer/server-baseline-v1/wp.av1.pv.priority8",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnetStackClientAgainstServer/server-baseline-v1/wp.av1.pv.relinquish8",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnetStackClientAgainstServer/server-baseline-v1/wp.av1.pv.wrong-type",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnetStackClientAgainstServer/server-baseline-v1/wp.unknown-object",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnetStackClientAgainstServer/server-baseline-v1/wpm.av1.pv.priority8",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnetStackClientAgainstServer/server-baseline-v1/wpm.unknown-object-second",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnetStackClientAgainstServer/server-baseline-v1/wpm.wrong-type",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnetStackClientAgainstServer/server-bbmd-v1",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnetStackClientAgainstServer/server-bbmd-v1/read-bdt",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnetStackClientAgainstServer/server-bbmd-v1/read-fdt.contains-client",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnetStackClientAgainstServer/server-bbmd-v1/rp.device.object-name",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnetStackClientAgainstServer/server-bbmd-v1/who-is.via-bbmd",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnetStackClientAgainstServer/server-bbmd-v1/write-bdt.nak",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnetStackClientAgainstServer/server-services-v1",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnetStackClientAgainstServer/server-services-v1/ack.av1.no-alarm",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnetStackClientAgainstServer/server-services-v1/ack.av2",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnetStackClientAgainstServer/server-services-v1/ale.nc1",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnetStackClientAgainstServer/server-services-v1/ale.unknown-object",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnetStackClientAgainstServer/server-services-v1/arf.file1",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnetStackClientAgainstServer/server-services-v1/arf.file1.after-write",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnetStackClientAgainstServer/server-services-v1/arf.record-file2",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnetStackClientAgainstServer/server-services-v1/arf.unknown-object",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnetStackClientAgainstServer/server-services-v1/awf.file1",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnetStackClientAgainstServer/server-services-v1/co.av150",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnetStackClientAgainstServer/server-services-v1/co.not-creatable",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnetStackClientAgainstServer/server-services-v1/cov.av1.cancel",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnetStackClientAgainstServer/server-services-v1/cov.av1.subscribe-confirmed",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnetStackClientAgainstServer/server-services-v1/cov.av1.subscribe-unconfirmed",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnetStackClientAgainstServer/server-services-v1/cov.unknown-object",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnetStackClientAgainstServer/server-services-v1/dcc.disable",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnetStackClientAgainstServer/server-services-v1/dcc.disable-initiation",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnetStackClientAgainstServer/server-services-v1/dcc.enable",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnetStackClientAgainstServer/server-services-v1/do.av150",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnetStackClientAgainstServer/server-services-v1/do.av150.again",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnetStackClientAgainstServer/server-services-v1/do.device",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnetStackClientAgainstServer/server-services-v1/ge.av2.high-limit",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnetStackClientAgainstServer/server-services-v1/reinit.undefined-state",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnetStackClientAgainstServer/server-services-v1/reinit.warmstart",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnetStackClientAgainstServer/server-services-v1/rle.nc1",
+   "status": "skip",
+   "reason": "remove-list-element: known-difference bacrle prints no RemoveListElement result (its handlers are registered for AddListElement)"
+  },
+  {
+   "test": "TestBACnetStackClientAgainstServer/server-services-v1/rp.nc1.recipient-list",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnetStackClientAgainstServer/server-services-v1/rp.nc1.recipient-list.after-remove",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnetStackClientAgainstServer/server-services-v1/rr.av1.not-a-list",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnetStackClientAgainstServer/server-services-v1/rr.tl1.by-position",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnetStackClientAgainstServer/server-services-v1/rr.tl1.by-position-middle",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnetStackClientAgainstServer/server-services-v1/ts.local",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnetStackClientAgainstServer/server-services-v1/ts.utc",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnetStackClientAgainstServer/server-services-v1/upt.vendor999",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnetStackClientAgainstServer/server-services-v1/wg.group1",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnetStackClientAgainstServer/server-services-v1/wp.av2.high",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnetStackClientAgainstServer/server-services-v1/wp.av2.normal",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACnetStackRoutedReadProperty",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3AbortWhenSegmentedResponseNotAccepted",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3AuditLogQuery",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3AuditNotifications",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3COVRenew",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3COVSubscribeNotifyCancel",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-baseline-v1",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-baseline-v1/rp.av1.object-identifier",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-baseline-v1/rp.av1.object-name",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-baseline-v1/rp.av1.object-type",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-baseline-v1/rp.bv1.present-value",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-baseline-v1/rp.device.object-name",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-baseline-v1/rp.not-an-array",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-baseline-v1/rp.unknown-object",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-baseline-v1/rp.unknown-property",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-baseline-v1/rpm.av1.name-and-type",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-baseline-v1/rpm.unknown-object",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-baseline-v1/who-has.name",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-baseline-v1/who-has.object",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-baseline-v1/who-has.unknown-name",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-baseline-v1/who-is.global",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-baseline-v1/who-is.outside-range",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-baseline-v1/who-is.range",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-baseline-v1/wp.av1.pv.priority8",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-baseline-v1/wp.av1.pv.relinquish8",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-baseline-v1/wp.av1.pv.wrong-type",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-baseline-v1/wp.unknown-object",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-baseline-v1/wpm.av1.pv.priority8",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-baseline-v1/wpm.unknown-object-second",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-baseline-v1/wpm.wrong-type",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-bbmd-v1",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-bbmd-v1/read-bdt",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-bbmd-v1/read-fdt.contains-client",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-bbmd-v1/rp.device.object-name",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-bbmd-v1/who-is.via-bbmd",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-bbmd-v1/write-bdt.nak",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-extended-v1",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-extended-v1/arf.file3.after-write",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-extended-v1/arf.file3.segmented-reply",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-extended-v1/awf.file3.segmented-request",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-extended-v1/cpt.vendor999",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-extended-v1/ctm.normal",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-extended-v1/ctm.urgent",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-extended-v1/gas.av2.after-normal",
+   "status": "skip",
+   "reason": "get-alarm-summary: known-difference BACpypes3 0.0.110 cannot decode an empty GetAlarmSummary-ACK (listOfAlarmSummaries is a required element); AttributeError: listOfAlarmSummaries is a required element of GetAlarmSummaryACK; answer octets ''"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-extended-v1/gas.av2.high-limit",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-extended-v1/gas.normal",
+   "status": "skip",
+   "reason": "get-alarm-summary: known-difference BACpypes3 0.0.110 cannot decode an empty GetAlarmSummary-ACK (listOfAlarmSummaries is a required element); AttributeError: listOfAlarmSummaries is a required element of GetAlarmSummaryACK; answer octets ''"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-extended-v1/ges.av2.high-limit",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-extended-v1/ges.normal",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-extended-v1/ges.offnormal-filter.high-limit",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-extended-v1/ges.offnormal-filter.normal",
+   "status": "skip",
+   "reason": "get-enrollment-summary: known-difference BACpypes3 0.0.110 cannot decode an empty GetEnrollmentSummary-ACK (listOfEnrollmentSummaries is a required element); AttributeError: listOfEnrollmentSummaries is a required element of GetEnrollmentSummaryACK; answer octets ''"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-extended-v1/scovp.av1.pv.cancel",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-extended-v1/scovp.av1.pv.increment",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-extended-v1/scovp.unknown-object",
+   "status": "skip",
+   "reason": "subscribe-cov-property: known-difference BACpypes3 0.0.110 cannot decode an Error of SubscribeCOVProperty (service choice 28 is not in its error_types); RuntimeError: unrecognized service choice: 28; answer octets '9101911f'"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-extended-v1/scovp.unknown-property",
+   "status": "skip",
+   "reason": "subscribe-cov-property: known-difference BACpypes3 0.0.110 cannot decode an Error of SubscribeCOVProperty (service choice 28 is not in its error_types); RuntimeError: unrecognized service choice: 28; answer octets '91029120'"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-extended-v1/scovpm.av1-av2",
+   "status": "skip",
+   "reason": "subscribe-cov-property-multiple: unsupported BACpypes3 0.0.110 has no SubscribeCOVPropertyMultiple request APDU and no ConfirmedCOVNotificationMultiple/UnconfirmedCOVNotificationMultiple type, so its Application cannot issue the request or decode the notification"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-extended-v1/scovpm.cancel",
+   "status": "skip",
+   "reason": "subscribe-cov-property-multiple: unsupported BACpypes3 0.0.110 has no SubscribeCOVPropertyMultiple request APDU and no ConfirmedCOVNotificationMultiple/UnconfirmedCOVNotificationMultiple type, so its Application cannot issue the request or decode the notification"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-extended-v1/scovpm.unknown-object-second",
+   "status": "skip",
+   "reason": "subscribe-cov-property-multiple: unsupported BACpypes3 0.0.110 has no SubscribeCOVPropertyMultiple request APDU and no ConfirmedCOVNotificationMultiple/UnconfirmedCOVNotificationMultiple type, so its Application cannot issue the request or decode the notification"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-extended-v1/utm.normal",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-extended-v1/wp.av2.high",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-extended-v1/wp.av2.normal",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-services-v1",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-services-v1/ack.av1.no-alarm",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-services-v1/ack.av2",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-services-v1/ale.nc1",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-services-v1/ale.unknown-object",
+   "status": "skip",
+   "reason": "add-list-element: known-difference BACpypes3 0.0.110 cannot decode the ChangeList-Error the device answered (ChangeListError has no service_choice); AttributeError: 'ChangeListError' object has no attribute 'service_choice'; answer octets '0e9101911f0f1900'"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-services-v1/arf.file1",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-services-v1/arf.file1.after-write",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-services-v1/arf.record-file2",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-services-v1/arf.unknown-object",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-services-v1/awf.file1",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-services-v1/co.av150",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-services-v1/co.not-creatable",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-services-v1/cov.av1.cancel",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-services-v1/cov.av1.subscribe-confirmed",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-services-v1/cov.av1.subscribe-unconfirmed",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-services-v1/cov.unknown-object",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-services-v1/dcc.disable",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-services-v1/dcc.disable-initiation",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-services-v1/dcc.enable",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-services-v1/do.av150",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-services-v1/do.av150.again",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-services-v1/do.device",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-services-v1/ge.av2.high-limit",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-services-v1/reinit.undefined-state",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-services-v1/reinit.warmstart",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-services-v1/rle.nc1",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-services-v1/rp.nc1.recipient-list",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-services-v1/rp.nc1.recipient-list.after-remove",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-services-v1/rr.av1.not-a-list",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-services-v1/rr.tl1.by-position",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-services-v1/rr.tl1.by-position-middle",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-services-v1/ts.local",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-services-v1/ts.utc",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-services-v1/upt.vendor999",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-services-v1/wg.group1",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-services-v1/wp.av2.high",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ClientAgainstServer/server-services-v1/wp.av2.normal",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3DeleteFDTEntry",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3DeviceCommunicationControlDisableInitiation",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3DeviceCommunicationControlDisableNotEnforced",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3DeviceCommunicationControlEnable",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3DeviceCommunicationControlPassword",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3EventNotificationReceive",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ForeignDeviceWhoIsReadProperty",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3GetEnrollmentSummary",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3LifeSafetyUnsupported",
+   "status": "skip",
+   "reason": "BACpypes3 LifeSafetyOperation unsupported-upstream; see bacnet-interop/PEER_SUPPORT.md"
+  },
+  {
+   "test": "TestBACpypes3ReadAnalogValue",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ReadBDT",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ReadDeviceObjectName",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ReadFDTAfterFD",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ReadPropertyMultiple",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ReadPropertyMultiplePartialError",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ReadPropertyUnknownPropertyError",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3ReinitializeDeviceWarmstart",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3RoutedWhoIsRouterReadProperty",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3SegmentedReadPropertyMultiple",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3SegmentedWritePropertyMultipleSend",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3SubscribeCOVMultipleLifecycle",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3SubscribeCOVPropertyMultipleDecodeEvidence",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3VTDecodeEvidence",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3WhoAmIYouAreUnsupported",
+   "status": "skip",
+   "reason": "BACpypes3 Who-Am-I/You-Are unsupported-upstream; see bacnet-interop/PEER_SUPPORT.md"
+  },
+  {
+   "test": "TestBACpypes3WhoHasIHave",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3WhoIsIAm",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3WriteBDTNAK",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3WritePropertyMultipleFirstFailed",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3WritePropertyMultipleReadbackReset",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypes3WritePropertyReadbackReset",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesBBMDSegmentedAnswer",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesBBMDSegmentedAnswer/window-1",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesBBMDSegmentedAnswer/window-4",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesBBMDTables",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesCOV",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesCOV/confirmed-false",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesCOV/confirmed-true",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesCOVProperty",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesCOVPropertyUnknownPropertyAccepted",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesCOVUnknownObject",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-baseline-v1",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-baseline-v1/rp.av1.object-identifier",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-baseline-v1/rp.av1.object-name",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-baseline-v1/rp.av1.object-type",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-baseline-v1/rp.bv1.present-value",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-baseline-v1/rp.device.object-name",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-baseline-v1/rp.not-an-array",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-baseline-v1/rp.unknown-object",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-baseline-v1/rp.unknown-property",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-baseline-v1/rpm.av1.name-and-type",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-baseline-v1/rpm.unknown-object",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-baseline-v1/who-has.name",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-baseline-v1/who-has.object",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-baseline-v1/who-has.unknown-name",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-baseline-v1/who-is.global",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-baseline-v1/who-is.outside-range",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-baseline-v1/who-is.range",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-baseline-v1/wp.av1.pv.priority8",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-baseline-v1/wp.av1.pv.relinquish8",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-baseline-v1/wp.av1.pv.wrong-type",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-baseline-v1/wp.unknown-object",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-baseline-v1/wpm.av1.pv.priority8",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-baseline-v1/wpm.unknown-object-second",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-baseline-v1/wpm.wrong-type",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-bbmd-v1",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-bbmd-v1/read-bdt",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-bbmd-v1/read-fdt.contains-client",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-bbmd-v1/rp.device.object-name",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-bbmd-v1/who-is.via-bbmd",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-bbmd-v1/write-bdt.nak",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-extended-v1",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-extended-v1/arf.file3.after-write",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-extended-v1/arf.file3.segmented-reply",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-extended-v1/awf.file3.segmented-request",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-extended-v1/cpt.vendor999",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-extended-v1/ctm.normal",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-extended-v1/ctm.urgent",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-extended-v1/gas.av2.after-normal",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-extended-v1/gas.av2.high-limit",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-extended-v1/gas.normal",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-extended-v1/ges.av2.high-limit",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-extended-v1/ges.normal",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-extended-v1/ges.offnormal-filter.high-limit",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-extended-v1/ges.offnormal-filter.normal",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-extended-v1/scovp.av1.pv.cancel",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-extended-v1/scovp.av1.pv.increment",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-extended-v1/scovp.unknown-object",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-extended-v1/scovp.unknown-property",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-extended-v1/scovpm.av1-av2",
+   "status": "skip",
+   "reason": "subscribe-cov-property-multiple: unsupported BACpypes 0.19.0 has no SubscribeCOVPropertyMultiple request APDU and no COVNotificationMultiple type (bacpypes/apdu.py registers no confirmed service 30)"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-extended-v1/scovpm.cancel",
+   "status": "skip",
+   "reason": "subscribe-cov-property-multiple: unsupported BACpypes 0.19.0 has no SubscribeCOVPropertyMultiple request APDU and no COVNotificationMultiple type (bacpypes/apdu.py registers no confirmed service 30)"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-extended-v1/scovpm.unknown-object-second",
+   "status": "skip",
+   "reason": "subscribe-cov-property-multiple: unsupported BACpypes 0.19.0 has no SubscribeCOVPropertyMultiple request APDU and no COVNotificationMultiple type (bacpypes/apdu.py registers no confirmed service 30)"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-extended-v1/utm.normal",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-extended-v1/wp.av2.high",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-extended-v1/wp.av2.normal",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-services-v1",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-services-v1/ack.av1.no-alarm",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-services-v1/ack.av2",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-services-v1/ale.nc1",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-services-v1/ale.unknown-object",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-services-v1/arf.file1",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-services-v1/arf.file1.after-write",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-services-v1/arf.record-file2",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-services-v1/arf.unknown-object",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-services-v1/awf.file1",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-services-v1/co.av150",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-services-v1/co.not-creatable",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-services-v1/cov.av1.cancel",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-services-v1/cov.av1.subscribe-confirmed",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-services-v1/cov.av1.subscribe-unconfirmed",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-services-v1/cov.unknown-object",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-services-v1/dcc.disable",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-services-v1/dcc.disable-initiation",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-services-v1/dcc.enable",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-services-v1/do.av150",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-services-v1/do.av150.again",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-services-v1/do.device",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-services-v1/ge.av2.high-limit",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-services-v1/reinit.undefined-state",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-services-v1/reinit.warmstart",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-services-v1/rle.nc1",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-services-v1/rp.nc1.recipient-list",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-services-v1/rp.nc1.recipient-list.after-remove",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-services-v1/rr.av1.not-a-list",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-services-v1/rr.tl1.by-position",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-services-v1/rr.tl1.by-position-middle",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-services-v1/ts.local",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-services-v1/ts.utc",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-services-v1/upt.vendor999",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-services-v1/wg.group1",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-services-v1/wp.av2.high",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesClientAgainstServer/server-services-v1/wp.av2.normal",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesDeleteFDTEntry",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesDeviceCommunicationControlDisable",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesDeviceCommunicationControlDisableInitiation",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesDeviceCommunicationControlPassword",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesFileFixtureV4",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesFileFixtureV4/record",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesFileFixtureV4/stream",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesFileFixtureV4/write-readback",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesFiles",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesMessagingSemanticReceipt",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesOversizedSegments",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesReadBDT",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesReadFDTAfterFD",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesReadPropertyAndErrors",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesReadPropertyMultiple",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesReadRange",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesReinitializeDevice",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesSegmentedAnswerSmallDeviceAPDU",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesSegmentedAnswers",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesSegmentedAnswers/device-window-1/client-window-1",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesSegmentedAnswers/device-window-1/client-window-4",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesSegmentedAnswers/device-window-2/client-window-1",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesSegmentedAnswers/device-window-2/client-window-16",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesSegmentedAnswers/device-window-4/client-window-2",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesSegmentedAnswers/device-window-4/client-window-4",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesSegmentedAnswers/device-window-8/client-window-16",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesSegmentedRequests",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesSegmentedRequests/device-window-1/client-window-4",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesSegmentedRequests/device-window-2/client-window-1",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesSegmentedRequests/device-window-2/client-window-16",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesSegmentedRequests/device-window-2/client-window-2",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesSegmentedRequests/device-window-4/client-window-4",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesUnsupportedServicesReject",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesWhoHas",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesWhoHas/absent-object",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesWhoHas/by-identifier",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesWhoHas/by-name",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesWhoIsIAm",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesWritePriorityAndRelinquish",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesWritePropertyMultipleFirstFailed",
+   "status": "pass"
+  },
+  {
+   "test": "TestBACpypesWritePropertyMultipleReadbackReset",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSAlarmsAndEvents",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-baseline-v1",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-baseline-v1/rp.av1.object-identifier",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-baseline-v1/rp.av1.object-name",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-baseline-v1/rp.av1.object-type",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-baseline-v1/rp.bv1.present-value",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-baseline-v1/rp.device.object-name",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-baseline-v1/rp.not-an-array",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-baseline-v1/rp.unknown-object",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-baseline-v1/rp.unknown-property",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-baseline-v1/rpm.av1.name-and-type",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-baseline-v1/rpm.unknown-object",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-baseline-v1/who-has.name",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-baseline-v1/who-has.object",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-baseline-v1/who-has.unknown-name",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-baseline-v1/who-is.global",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-baseline-v1/who-is.outside-range",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-baseline-v1/who-is.range",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-baseline-v1/wp.av1.pv.priority8",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-baseline-v1/wp.av1.pv.relinquish8",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-baseline-v1/wp.av1.pv.wrong-type",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-baseline-v1/wp.unknown-object",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-baseline-v1/wpm.av1.pv.priority8",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-baseline-v1/wpm.unknown-object-second",
+   "status": "skip",
+   "reason": "write-property-multiple: known-difference bacnet-js decodes a WritePropertyMultiple-Error with the plain Error decoder (client.ts _processError, services/Error.ts): no firstFailedWriteAttempt, and the [0] constructed errorType is read as if it were application-tagged"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-baseline-v1/wpm.wrong-type",
+   "status": "skip",
+   "reason": "write-property-multiple: known-difference bacnet-js decodes a WritePropertyMultiple-Error with the plain Error decoder (client.ts _processError, services/Error.ts): no firstFailedWriteAttempt, and the [0] constructed errorType is read as if it were application-tagged"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-bbmd-v1",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-bbmd-v1/read-bdt",
+   "status": "skip",
+   "reason": "read-bdt: unsupported bacnet-js 3.3.2 has no Read-Broadcast-Distribution-Table encoder (bvlc.ts encodes the BVLC header only)"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-bbmd-v1/read-fdt.contains-client",
+   "status": "skip",
+   "reason": "read-fdt: unsupported bacnet-js 3.3.2 has no Read-Foreign-Device-Table encoder (bvlc.ts encodes the BVLC header only)"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-bbmd-v1/rp.device.object-name",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-bbmd-v1/who-is.via-bbmd",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-bbmd-v1/write-bdt.nak",
+   "status": "skip",
+   "reason": "write-bdt: unsupported bacnet-js 3.3.2 has no Write-Broadcast-Distribution-Table encoder (bvlc.ts encodes the BVLC header only)"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-extended-v1",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-extended-v1/arf.file3.after-write",
+   "status": "skip",
+   "reason": "atomic-read-file: not-tested depends on awf.file3.segmented-request, which was unsupported with this client"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-extended-v1/arf.file3.segmented-reply",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-extended-v1/awf.file3.segmented-request",
+   "status": "skip",
+   "reason": "atomic-write-file: unsupported the request (3000 octets of file data) exceeds the DUT's max APDU (1476); bacnet-js sends no segmented requests (no client method sets SEGMENTED_MESSAGE, client.ts)"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-extended-v1/cpt.vendor999",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-extended-v1/ctm.normal",
+   "status": "skip",
+   "reason": "confirmed-text-message: unsupported bacnet-js 3.3.2 has no ConfirmedTextMessage encoder (no service in src/lib/services)"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-extended-v1/ctm.urgent",
+   "status": "skip",
+   "reason": "confirmed-text-message: unsupported bacnet-js 3.3.2 has no ConfirmedTextMessage encoder (no service in src/lib/services)"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-extended-v1/gas.av2.after-normal",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-extended-v1/gas.av2.high-limit",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-extended-v1/gas.normal",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-extended-v1/ges.av2.high-limit",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-extended-v1/ges.normal",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-extended-v1/ges.offnormal-filter.high-limit",
+   "status": "skip",
+   "reason": "get-enrollment-summary: unsupported GetEnrollmentSummary.encode drops eventStateFilter offnormal (0) (\"if (eventStateFilter)\") and wraps every other filter in opening/closing tags where clause 13.11.1.1 has a primitive [2] ENUMERATED, so the filtered request cannot be issued"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-extended-v1/ges.offnormal-filter.normal",
+   "status": "skip",
+   "reason": "get-enrollment-summary: unsupported GetEnrollmentSummary.encode drops eventStateFilter offnormal (0) (\"if (eventStateFilter)\") and wraps every other filter in opening/closing tags where clause 13.11.1.1 has a primitive [2] ENUMERATED, so the filtered request cannot be issued"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-extended-v1/scovp.av1.pv.cancel",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-extended-v1/scovp.av1.pv.increment",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-extended-v1/scovp.unknown-object",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-extended-v1/scovp.unknown-property",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-extended-v1/scovpm.av1-av2",
+   "status": "skip",
+   "reason": "subscribe-cov-property-multiple: unsupported bacnet-js 3.3.2 has no SubscribeCOVPropertyMultiple encoder and no COV-notification-multiple decoder"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-extended-v1/scovpm.cancel",
+   "status": "skip",
+   "reason": "subscribe-cov-property-multiple: unsupported bacnet-js 3.3.2 has no SubscribeCOVPropertyMultiple encoder and no COV-notification-multiple decoder"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-extended-v1/scovpm.unknown-object-second",
+   "status": "skip",
+   "reason": "subscribe-cov-property-multiple: unsupported bacnet-js 3.3.2 has no SubscribeCOVPropertyMultiple encoder and no COV-notification-multiple decoder"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-extended-v1/utm.normal",
+   "status": "skip",
+   "reason": "unconfirmed-text-message: unsupported bacnet-js 3.3.2 has no UnconfirmedTextMessage encoder (no service in src/lib/services)"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-extended-v1/wp.av2.high",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-extended-v1/wp.av2.normal",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-services-v1",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-services-v1/ack.av1.no-alarm",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-services-v1/ack.av2",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-services-v1/ale.nc1",
+   "status": "skip",
+   "reason": "add-list-element: unsupported AddListElement.encode (also used by removeListElement) encodes every list element with bacappEncodeApplicationData, which has no context-tagged form; a BACnetDestination recipient is a context-tagged CHOICE (clause 21), so the element cannot be encoded"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-services-v1/ale.unknown-object",
+   "status": "skip",
+   "reason": "add-list-element: unsupported AddListElement.encode (also used by removeListElement) encodes every list element with bacappEncodeApplicationData, which has no context-tagged form; a BACnetDestination recipient is a context-tagged CHOICE (clause 21), so the element cannot be encoded"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-services-v1/arf.file1",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-services-v1/arf.file1.after-write",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-services-v1/arf.record-file2",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-services-v1/arf.unknown-object",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-services-v1/awf.file1",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-services-v1/co.av150",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-services-v1/co.not-creatable",
+   "status": "skip",
+   "reason": "create-object: unsupported CreateObject.encode always sends the objectIdentifier choice of objectSpecifier; the objectType choice (no instance) cannot be issued"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-services-v1/cov.av1.cancel",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-services-v1/cov.av1.subscribe-confirmed",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-services-v1/cov.av1.subscribe-unconfirmed",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-services-v1/cov.unknown-object",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-services-v1/dcc.disable",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-services-v1/dcc.disable-initiation",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-services-v1/dcc.enable",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-services-v1/do.av150",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-services-v1/do.av150.again",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-services-v1/do.device",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-services-v1/ge.av2.high-limit",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-services-v1/reinit.undefined-state",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-services-v1/reinit.warmstart",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-services-v1/rle.nc1",
+   "status": "skip",
+   "reason": "remove-list-element: unsupported AddListElement.encode (also used by removeListElement) encodes every list element with bacappEncodeApplicationData, which has no context-tagged form; a BACnetDestination recipient is a context-tagged CHOICE (clause 21), so the element cannot be encoded"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-services-v1/rp.nc1.recipient-list",
+   "status": "skip",
+   "reason": "read-property: not-tested depends on ale.nc1, which was unsupported with this client"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-services-v1/rp.nc1.recipient-list.after-remove",
+   "status": "skip",
+   "reason": "read-property: not-tested depends on rle.nc1, which was unsupported with this client"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-services-v1/rr.av1.not-a-list",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-services-v1/rr.tl1.by-position",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-services-v1/rr.tl1.by-position-middle",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-services-v1/ts.local",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-services-v1/ts.utc",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-services-v1/upt.vendor999",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-services-v1/wg.group1",
+   "status": "skip",
+   "reason": "write-group: unsupported bacnet-js 3.3.2 has no WriteGroup encoder (no service in src/lib/services)"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-services-v1/wp.av2.high",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSClientAgainstServer/server-services-v1/wp.av2.normal",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSDeviceManagementAndUnconfirmed",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSDiscovery",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSEnrollmentSummaryFilter",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSFiles",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSObjectLifecycle",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSReadProperty",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSReadPropertyMultiple",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSReadRange",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSSegmentedRequest",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSSegmentedResponseRefused",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSUnsupportedServices",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSWriteAndCOV",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetJSWritePropertyMultiple",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetStackAbortSegmentationNotSupported",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetStackAuditLogQueryACK",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetStackAuditNotifications",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetStackCOVSubscribeNotifyCancel",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetStackDeleteFDTEntry",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetStackDeviceCommunicationControlDisableDenied",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetStackDeviceCommunicationControlDisableDenied/bacnet-stack",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetStackDeviceCommunicationControlDisableInitiation",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetStackDeviceCommunicationControlDisableInitiation/bacnet-stack",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetStackDeviceCommunicationControlEnable",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetStackForeignDeviceWhoIsReadProperty",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetStackNativeRouter",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetStackNativeRouter/bacnet-stack",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetStackNativeRouter/bacpypes3",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetStackRPMBatchedShrinksAfterAbort",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetStackRPMBatchedShrinksAfterAbort/bacnet-stack",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetStackReadAnalogValue",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetStackReadBDT",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetStackReadDeviceObjectName",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetStackReadFDTAfterFD",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetStackReadObjectListElementByElement",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetStackReadObjectListElementByElement/bacnet-stack",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetStackReadPropertyMultiple",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetStackReadPropertyMultiplePartialError",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetStackReadPropertyUnknownPropertyError",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetStackReadRangeAllBySequenceNumber",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetStackReadRangeByPosition",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetStackReadRangeBySequenceNumber",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetStackReadRangeByTime",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetStackReinitializeDeviceWarmstart",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetStackRejectUnrecognizedService",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetStackWhoAmIYouAre",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetStackWhoHasIHave",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetStackWhoIsIAm",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetStackWriteBDTNAK",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetStackWritePropertyMultipleFirstFailed",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetStackWritePropertyMultipleReadbackReset",
+   "status": "pass"
+  },
+  {
+   "test": "TestBacnetStackWritePropertyReadbackReset",
+   "status": "pass"
+  },
+  {
+   "test": "TestBroadcastDiscover",
+   "status": "pass"
+  },
+  {
+   "test": "TestBroadcastDiscover/bacnet-js",
+   "status": "pass"
+  },
+  {
+   "test": "TestBroadcastDiscover/bacnet-stack",
+   "status": "pass"
+  },
+  {
+   "test": "TestBroadcastDiscover/bacnet4j",
+   "status": "pass"
+  },
+  {
+   "test": "TestBroadcastDiscover/bacpypes3",
+   "status": "pass"
+  },
+  {
+   "test": "TestBroadcastDiscover/worldiety",
+   "status": "pass"
+  },
+  {
+   "test": "TestCBSigmaDeviceRPMAndSegmentation",
+   "status": "pass"
+  },
+  {
+   "test": "TestCBSigmaDeviceWhoHasByName",
+   "status": "pass"
+  },
+  {
+   "test": "TestCBSigmaDeviceWhoIsReadAndObjectList",
+   "status": "pass"
+  },
+  {
+   "test": "TestCBSigmaDeviceWritePriorityAndCOV",
+   "status": "pass"
+  },
+  {
+   "test": "TestCBSigmaDeviceWritePropertyMultiple",
+   "status": "pass"
+  },
+  {
+   "test": "TestCBSigmaSegmentedRequests",
+   "status": "pass"
+  },
+  {
+   "test": "TestCBSigmaSegmentedRequests/device",
+   "status": "pass"
+  },
+  {
+   "test": "TestCBSigmaSegmentedRequests/sim",
+   "status": "pass"
+  },
+  {
+   "test": "TestCBSigmaSimAlarmsAndEvents",
+   "status": "pass"
+  },
+  {
+   "test": "TestCBSigmaSimDeviceManagementAndTimeSync",
+   "status": "pass"
+  },
+  {
+   "test": "TestCBSigmaSimForeignDevice",
+   "status": "pass"
+  },
+  {
+   "test": "TestCBSigmaSimForeignDeviceNAK",
+   "status": "pass"
+  },
+  {
+   "test": "TestCBSigmaSimNoEvents",
+   "status": "pass"
+  },
+  {
+   "test": "TestCBSigmaSimReadRange",
+   "status": "pass"
+  },
+  {
+   "test": "TestCBSigmaSimReadRangeBySequenceRefused",
+   "status": "pass"
+  },
+  {
+   "test": "TestCBSigmaSimReadWriteCOV",
+   "status": "pass"
+  },
+  {
+   "test": "TestCBSigmaSimRejectRPMAndWPM",
+   "status": "pass"
+  },
+  {
+   "test": "TestCBSigmaSimSegmentation",
+   "status": "pass"
+  },
+  {
+   "test": "TestCBSigmaSimSegmentation/drop-segment-2/window-1",
+   "status": "pass"
+  },
+  {
+   "test": "TestCBSigmaSimSegmentation/drop-segment-2/window-4",
+   "status": "pass"
+  },
+  {
+   "test": "TestCBSigmaSimSegmentation/drop-segment-3/window-4",
+   "status": "pass"
+  },
+  {
+   "test": "TestCBSigmaSimSegmentation/plain/window-1",
+   "status": "pass"
+  },
+  {
+   "test": "TestCBSigmaSimSegmentation/plain/window-4",
+   "status": "pass"
+  },
+  {
+   "test": "TestCBSigmaSimSegmentation/sim-window-1/window-4",
+   "status": "pass"
+  },
+  {
+   "test": "TestCBSigmaSimSegmentation/stall-before-segment-2/window-1",
+   "status": "pass"
+  },
+  {
+   "test": "TestCBSigmaSimSegmentation/stall-before-segment-2/window-4",
+   "status": "pass"
+  },
+  {
+   "test": "TestCBSigmaSimUnconfirmedMessaging",
+   "status": "pass"
+  },
+  {
+   "test": "TestCOVNotificationMultipleBACnet4JVector",
+   "status": "pass"
+  },
+  {
+   "test": "TestCOVRenewKeepsSubscriptionAlive",
+   "status": "pass"
+  },
+  {
+   "test": "TestCOVRenewKeepsSubscriptionAlive/bacnet-js",
+   "status": "pass"
+  },
+  {
+   "test": "TestCOVRenewKeepsSubscriptionAlive/bacnet-stack",
+   "status": "pass"
+  },
+  {
+   "test": "TestCOVRenewKeepsSubscriptionAlive/bacnet4j",
+   "status": "pass"
+  },
+  {
+   "test": "TestCOVRenewKeepsSubscriptionAlive/bacpypes3",
+   "status": "pass"
+  },
+  {
+   "test": "TestCreateDeleteObject",
+   "status": "pass"
+  },
+  {
+   "test": "TestCreateDeleteObject/bacnet-stack",
+   "status": "pass"
+  },
+  {
+   "test": "TestCreateDeleteObject/bacnet4j",
+   "status": "pass"
+  },
+  {
+   "test": "TestDeviceSnapshot",
+   "status": "pass"
+  },
+  {
+   "test": "TestDeviceSnapshot/bacnet-js",
+   "status": "pass"
+  },
+  {
+   "test": "TestDeviceSnapshot/bacnet-stack",
+   "status": "pass"
+  },
+  {
+   "test": "TestDeviceSnapshot/bacnet4j",
+   "status": "pass"
+  },
+  {
+   "test": "TestDeviceSnapshot/bacpypes3",
+   "status": "pass"
+  },
+  {
+   "test": "TestDeviceSnapshot/worldiety",
+   "status": "pass"
+  },
+  {
+   "test": "TestEndpointOnlyTarget",
+   "status": "pass"
+  },
+  {
+   "test": "TestEndpointOnlyTarget/bacnet-js",
+   "status": "pass"
+  },
+  {
+   "test": "TestEndpointOnlyTarget/bacnet-stack",
+   "status": "pass"
+  },
+  {
+   "test": "TestEndpointOnlyTarget/bacnet4j",
+   "status": "pass"
+  },
+  {
+   "test": "TestEndpointOnlyTarget/bacpypes3",
+   "status": "pass"
+  },
+  {
+   "test": "TestEndpointOnlyTarget/worldiety",
+   "status": "pass"
+  },
+  {
+   "test": "TestFileAccessMethodMismatch",
+   "status": "pass"
+  },
+  {
+   "test": "TestFileAccessMethodMismatch/bacnet-stack",
+   "status": "pass"
+  },
+  {
+   "test": "TestFileAccessMethodMismatch/bacnet4j",
+   "status": "pass"
+  },
+  {
+   "test": "TestFileStreamHelpers",
+   "status": "pass"
+  },
+  {
+   "test": "TestFileStreamHelpers/bacnet-stack",
+   "status": "pass"
+  },
+  {
+   "test": "TestFileStreamHelpers/bacnet4j",
+   "status": "pass"
+  },
+  {
+   "test": "TestGetAlarmSummaryOutOfRange",
+   "status": "pass"
+  },
+  {
+   "test": "TestGetAlarmSummaryOutOfRange/bacnet-stack",
+   "status": "pass"
+  },
+  {
+   "test": "TestGetAlarmSummaryOutOfRange/bacnet4j",
+   "status": "pass"
+  },
+  {
+   "test": "TestGetEventInformationAndAcknowledgeAlarm",
+   "status": "pass"
+  },
+  {
+   "test": "TestGetEventInformationAndAcknowledgeAlarm/bacnet-stack",
+   "status": "pass"
+  },
+  {
+   "test": "TestGetEventInformationAndAcknowledgeAlarm/bacnet4j",
+   "status": "pass"
+  },
+  {
+   "test": "TestLifeSafetyOperation",
+   "status": "pass"
+  },
+  {
+   "test": "TestLifeSafetyOperation/bacnet-stack",
+   "status": "pass"
+  },
+  {
+   "test": "TestLifeSafetyOperation/bacnet4j",
+   "status": "pass"
+  },
+  {
+   "test": "TestMessagingSemanticReceipt",
+   "status": "pass"
+  },
+  {
+   "test": "TestMessagingSemanticReceipt/bacnet-stack",
+   "status": "pass"
+  },
+  {
+   "test": "TestMessagingSemanticReceipt/bacnet4j",
+   "status": "pass"
+  },
+  {
+   "test": "TestMessagingSemanticReceipt/bacpypes3",
+   "status": "pass"
+  },
+  {
+   "test": "TestOtfabricClientAgainstServer",
+   "status": "skip",
+   "reason": "BACNET_INTEROP_OTFABRIC_IMAGE is not set: the self-interop tests run only by hand"
+  },
+  {
+   "test": "TestOtfabricDevice",
+   "status": "skip",
+   "reason": "BACNET_INTEROP_OTFABRIC_IMAGE is not set: the self-interop tests run only by hand"
+  },
+  {
+   "test": "TestParseRelease",
+   "status": "pass"
+  },
+  {
+   "test": "TestReadDeviceByWildcardInstance",
+   "status": "pass"
+  },
+  {
+   "test": "TestReadDeviceByWildcardInstance/bacnet-js",
+   "status": "pass"
+  },
+  {
+   "test": "TestReadDeviceByWildcardInstance/bacnet-stack",
+   "status": "pass"
+  },
+  {
+   "test": "TestReadDeviceByWildcardInstance/bacnet4j",
+   "status": "pass"
+  },
+  {
+   "test": "TestReadDeviceByWildcardInstanceUnsupported",
+   "status": "pass"
+  },
+  {
+   "test": "TestReadDeviceByWildcardInstanceUnsupported/bacpypes3",
+   "status": "pass"
+  },
+  {
+   "test": "TestReadDeviceByWildcardInstanceUnsupported/worldiety",
+   "status": "pass"
+  },
+  {
+   "test": "TestReadEmptyListProperty",
+   "status": "pass"
+  },
+  {
+   "test": "TestReadEmptyListProperty/bacnet-stack",
+   "status": "pass"
+  },
+  {
+   "test": "TestReadEmptyListProperty/bacnet4j",
+   "status": "pass"
+  },
+  {
+   "test": "TestReadEmptyListProperty/bacpypes3",
+   "status": "pass"
+  },
+  {
+   "test": "TestReadObjectList",
+   "status": "pass"
+  },
+  {
+   "test": "TestReadObjectList/bacnet-js",
+   "status": "pass"
+  },
+  {
+   "test": "TestReadObjectList/bacnet-stack",
+   "status": "pass"
+  },
+  {
+   "test": "TestReadObjectList/bacnet4j",
+   "status": "pass"
+  },
+  {
+   "test": "TestReadObjectList/bacpypes3",
+   "status": "pass"
+  },
+  {
+   "test": "TestReadObjectList/worldiety",
+   "status": "pass"
+  },
+  {
+   "test": "TestReadPropertyMultipleBatched",
+   "status": "pass"
+  },
+  {
+   "test": "TestReadPropertyMultipleBatched/bacnet-js",
+   "status": "pass"
+  },
+  {
+   "test": "TestReadPropertyMultipleBatched/bacnet-stack",
+   "status": "pass"
+  },
+  {
+   "test": "TestReadPropertyMultipleBatched/bacnet4j",
+   "status": "pass"
+  },
+  {
+   "test": "TestReadPropertyMultipleBatched/bacpypes3",
+   "status": "pass"
+  },
+  {
+   "test": "TestReadPropertyMultipleBatched/worldiety",
+   "status": "pass"
+  },
+  {
+   "test": "TestReadPropertyUnknownObjectError",
+   "status": "pass"
+  },
+  {
+   "test": "TestReadPropertyUnknownObjectError/bacnet-js",
+   "status": "pass"
+  },
+  {
+   "test": "TestReadPropertyUnknownObjectError/bacnet-stack",
+   "status": "pass"
+  },
+  {
+   "test": "TestReadPropertyUnknownObjectError/bacnet4j",
+   "status": "pass"
+  },
+  {
+   "test": "TestReadPropertyUnknownObjectError/bacpypes3",
+   "status": "pass"
+  },
+  {
+   "test": "TestReadPropertyUnknownObjectError/ulbios",
+   "status": "pass"
+  },
+  {
+   "test": "TestReadPropertyUnknownObjectError/worldiety",
+   "status": "pass"
+  },
+  {
+   "test": "TestReadRangeAllPager",
+   "status": "pass"
+  },
+  {
+   "test": "TestReadRangeAllPager/bacnet-js",
+   "status": "pass"
+  },
+  {
+   "test": "TestReadRangeAllPager/bacnet-stack",
+   "status": "pass"
+  },
+  {
+   "test": "TestReadRangeAllPager/bacnet4j",
+   "status": "pass"
+  },
+  {
+   "test": "TestReadRangeAllPager/worldiety",
+   "status": "pass"
+  },
+  {
+   "test": "TestResolveInteropRootFromEnv",
+   "status": "pass"
+  },
+  {
+   "test": "TestResolveInteropRootFromSibling",
+   "status": "pass"
+  },
+  {
+   "test": "TestResolveInteropRootMissingFixtures",
+   "status": "pass"
+  },
+  {
+   "test": "TestRoutedSubnetPairDistinct",
+   "status": "pass"
+  },
+  {
+   "test": "TestSegmentedAnswerWithReceiveWindow",
+   "status": "pass"
+  },
+  {
+   "test": "TestSegmentedAnswerWithReceiveWindow/bacpypes/window-1",
+   "status": "pass"
+  },
+  {
+   "test": "TestSegmentedAnswerWithReceiveWindow/bacpypes/window-16",
+   "status": "pass"
+  },
+  {
+   "test": "TestSegmentedAnswerWithReceiveWindow/bacpypes/window-2",
+   "status": "pass"
+  },
+  {
+   "test": "TestSegmentedAnswerWithReceiveWindow/bacpypes/window-4",
+   "status": "pass"
+  },
+  {
+   "test": "TestSegmentedAnswerWithReceiveWindow/bacpypes3/window-1",
+   "status": "pass"
+  },
+  {
+   "test": "TestSegmentedAnswerWithReceiveWindow/bacpypes3/window-16",
+   "status": "pass"
+  },
+  {
+   "test": "TestSegmentedAnswerWithReceiveWindow/bacpypes3/window-2",
+   "status": "pass"
+  },
+  {
+   "test": "TestSegmentedAnswerWithReceiveWindow/bacpypes3/window-4",
+   "status": "pass"
+  },
+  {
+   "test": "TestSegmentedAnswerWithReceiveWindow/cbsigma/window-1",
+   "status": "pass"
+  },
+  {
+   "test": "TestSegmentedAnswerWithReceiveWindow/cbsigma/window-16",
+   "status": "pass"
+  },
+  {
+   "test": "TestSegmentedAnswerWithReceiveWindow/cbsigma/window-2",
+   "status": "pass"
+  },
+  {
+   "test": "TestSegmentedAnswerWithReceiveWindow/cbsigma/window-4",
+   "status": "pass"
+  },
+  {
+   "test": "TestServeFixtureDevice",
+   "status": "skip",
+   "reason": "runs inside the server container of TestBACnetStackClientAgainstServer"
+  },
+  {
+   "test": "TestSysIOBACnetAbortSegmentationNotSupported",
+   "status": "pass"
+  },
+  {
+   "test": "TestSysIOBACnetArrayIndexOnScalarProperty",
+   "status": "pass"
+  },
+  {
+   "test": "TestSysIOBACnetAtomicReadFileRecord",
+   "status": "pass"
+  },
+  {
+   "test": "TestSysIOBACnetAtomicReadFileStream",
+   "status": "pass"
+  },
+  {
+   "test": "TestSysIOBACnetAtomicWriteFileRecordReadback",
+   "status": "pass"
+  },
+  {
+   "test": "TestSysIOBACnetAtomicWriteFileStreamReadback",
+   "status": "pass"
+  },
+  {
+   "test": "TestSysIOBACnetBroadcastDiscover",
+   "status": "pass"
+  },
+  {
+   "test": "TestSysIOBACnetBroadcastWhoIsForms",
+   "status": "pass"
+  },
+  {
+   "test": "TestSysIOBACnetCOVConfirmedNotifications",
+   "status": "pass"
+  },
+  {
+   "test": "TestSysIOBACnetCOVRenewKeepsSubscriptionAlive",
+   "status": "pass"
+  },
+  {
+   "test": "TestSysIOBACnetCOVSubscribeNotifyCancel",
+   "status": "pass"
+  },
+  {
+   "test": "TestSysIOBACnetDeviceSnapshot",
+   "status": "pass"
+  },
+  {
+   "test": "TestSysIOBACnetEmptyListDecode",
+   "status": "pass"
+  },
+  {
+   "test": "TestSysIOBACnetEmptyListReadProperty",
+   "status": "pass"
+  },
+  {
+   "test": "TestSysIOBACnetEndpointOnlyTarget",
+   "status": "pass"
+  },
+  {
+   "test": "TestSysIOBACnetEventNotificationOnAlarm",
+   "status": "pass"
+  },
+  {
+   "test": "TestSysIOBACnetEventNotificationReceive",
+   "status": "pass"
+  },
+  {
+   "test": "TestSysIOBACnetFileStreamHelpers",
+   "status": "pass"
+  },
+  {
+   "test": "TestSysIOBACnetGetAlarmSummaryRejected",
+   "status": "pass"
+  },
+  {
+   "test": "TestSysIOBACnetGetEventInformationAndAcknowledgeAlarm",
+   "status": "pass"
+  },
+  {
+   "test": "TestSysIOBACnetMalformedRequests",
+   "status": "pass"
+  },
+  {
+   "test": "TestSysIOBACnetNativeRouter",
+   "status": "pass"
+  },
+  {
+   "test": "TestSysIOBACnetOtherFixtures",
+   "status": "pass"
+  },
+  {
+   "test": "TestSysIOBACnetOtherFixtures/device-baseline-v1",
+   "status": "pass"
+  },
+  {
+   "test": "TestSysIOBACnetOtherFixtures/device-baseline-v3",
+   "status": "pass"
+  },
+  {
+   "test": "TestSysIOBACnetReadAnalogValue",
+   "status": "pass"
+  },
+  {
+   "test": "TestSysIOBACnetReadDeviceByWildcardInstance",
+   "status": "pass"
+  },
+  {
+   "test": "TestSysIOBACnetReadDeviceObjectName",
+   "status": "pass"
+  },
+  {
+   "test": "TestSysIOBACnetReadObjectListByIndex",
+   "status": "pass"
+  },
+  {
+   "test": "TestSysIOBACnetReadPropertyMultiple",
+   "status": "pass"
+  },
+  {
+   "test": "TestSysIOBACnetReadPropertyMultipleAll",
+   "status": "pass"
+  },
+  {
+   "test": "TestSysIOBACnetReadPropertyMultipleBatched",
+   "status": "pass"
+  },
+  {
+   "test": "TestSysIOBACnetReadPropertyMultiplePartialError",
+   "status": "pass"
+  },
+  {
+   "test": "TestSysIOBACnetReadPropertyMultipleUnknownObject",
+   "status": "pass"
+  },
+  {
+   "test": "TestSysIOBACnetReadPropertyUnknownObjectError",
+   "status": "pass"
+  },
+  {
+   "test": "TestSysIOBACnetReadPropertyUnknownPropertyError",
+   "status": "pass"
+  },
+  {
+   "test": "TestSysIOBACnetReadRange",
+   "status": "pass"
+  },
+  {
+   "test": "TestSysIOBACnetReadRangeAllPager",
+   "status": "pass"
+  },
+  {
+   "test": "TestSysIOBACnetReinitializeDeviceWarmstart",
+   "status": "pass"
+  },
+  {
+   "test": "TestSysIOBACnetRejectUnrecognizedService",
+   "status": "pass"
+  },
+  {
+   "test": "TestSysIOBACnetRoutedBipRouter",
+   "status": "pass"
+  },
+  {
+   "test": "TestSysIOBACnetSegmentedManySegments",
+   "status": "pass"
+  },
+  {
+   "test": "TestSysIOBACnetSegmentedReadPropertyMultiple",
+   "status": "pass"
+  },
+  {
+   "test": "TestSysIOBACnetSegmentedReadPropertyToSmallClient",
+   "status": "pass"
+  },
+  {
+   "test": "TestSysIOBACnetSegmentedWritePropertyMultipleSend",
+   "status": "pass"
+  },
+  {
+   "test": "TestSysIOBACnetSubscribeCOVErrors",
+   "status": "pass"
+  },
+  {
+   "test": "TestSysIOBACnetSubscribeCOVProperty",
+   "status": "pass"
+  },
+  {
+   "test": "TestSysIOBACnetTimeSynchronization",
+   "status": "pass"
+  },
+  {
+   "test": "TestSysIOBACnetUnservedServicesRejected",
+   "status": "pass"
+  },
+  {
+   "test": "TestSysIOBACnetWhoHasIHave",
+   "status": "pass"
+  },
+  {
+   "test": "TestSysIOBACnetWhoIsIAm",
+   "status": "pass"
+  },
+  {
+   "test": "TestSysIOBACnetWhoIsOutOfRangeIsSilent",
+   "status": "pass"
+  },
+  {
+   "test": "TestSysIOBACnetWriteAndRelinquishPriority",
+   "status": "pass"
+  },
+  {
+   "test": "TestSysIOBACnetWritePropertyErrors",
+   "status": "pass"
+  },
+  {
+   "test": "TestSysIOBACnetWritePropertyMultipleError",
+   "status": "pass"
+  },
+  {
+   "test": "TestSysIOBACnetWritePropertyMultipleReadbackReset",
+   "status": "pass"
+  },
+  {
+   "test": "TestSysIOBACnetWritePropertyReadbackReset",
+   "status": "pass"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer",
+   "status": "pass"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-baseline-v1",
+   "status": "pass"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-baseline-v1/rp.av1.object-identifier",
+   "status": "skip",
+   "reason": "read-property: known-difference ulbios-object-identifier-type: objects.DecObjectIdentifier decoded device,1 (type 8); the type shifted back by two is analog-value,1; answer octets 810a0017010030010c0c00800001194b3ec4008000013f"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-baseline-v1/rp.av1.object-name",
+   "status": "skip",
+   "reason": "read-property: known-difference ulbios-no-decoder: ulbios has no decoder for character-string (bacnet.Parse produced 4 tokens: it reads a tag length of up to 4 octets only); answer octets 810a0019010030010c0c00800001194d3e75050041562d313f"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-baseline-v1/rp.av1.object-type",
+   "status": "skip",
+   "reason": "read-property: known-difference ulbios-short-complex-ack: ComplexACK.UnmarshalBinary refuses an APDU shorter than 17 octets, the length of its own REAL ReadProperty-ACK; answer octets 810a0014010030010c0c00800001194f3e91023f"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-baseline-v1/rp.bv1.present-value",
+   "status": "skip",
+   "reason": "read-property: known-difference ulbios-short-complex-ack: ComplexACK.UnmarshalBinary refuses an APDU shorter than 17 octets, the length of its own REAL ReadProperty-ACK; answer octets 810a0014010030010c0c0140000119553e91003f"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-baseline-v1/rp.device.object-name",
+   "status": "skip",
+   "reason": "read-property: known-difference ulbios-no-decoder: ulbios has no decoder for character-string (bacnet.Parse produced 5 tokens: it reads a tag length of up to 4 octets only); answer octets 810a0022010030010c0c020004d2194d3e750e00496e7465726f704465766963653f"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-baseline-v1/rp.not-an-array",
+   "status": "skip",
+   "reason": "read-property: unsupported ulbios' ReadProperty has no array index (services.ConfirmedReadPropertyObjects)"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-baseline-v1/rp.unknown-object",
+   "status": "pass"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-baseline-v1/rp.unknown-property",
+   "status": "skip",
+   "reason": "read-property: unsupported property identifier 9999: ulbios encodes a property identifier in one octet (objects.EncPropertyIdentifier takes a uint8)"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-baseline-v1/rpm.av1.name-and-type",
+   "status": "skip",
+   "reason": "read-property-multiple: unsupported ulbios has no read-property-multiple: bacnet.Parse and its encoders know Who-Is, I-Am, ReadProperty, WriteProperty, Simple-ACK, Complex-ACK and Error only"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-baseline-v1/rpm.unknown-object",
+   "status": "skip",
+   "reason": "read-property-multiple: unsupported ulbios has no read-property-multiple: bacnet.Parse and its encoders know Who-Is, I-Am, ReadProperty, WriteProperty, Simple-ACK, Complex-ACK and Error only"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-baseline-v1/who-has.name",
+   "status": "skip",
+   "reason": "who-has: unsupported ulbios has no who-has: bacnet.Parse and its encoders know Who-Is, I-Am, ReadProperty, WriteProperty, Simple-ACK, Complex-ACK and Error only"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-baseline-v1/who-has.object",
+   "status": "skip",
+   "reason": "who-has: unsupported ulbios has no who-has: bacnet.Parse and its encoders know Who-Is, I-Am, ReadProperty, WriteProperty, Simple-ACK, Complex-ACK and Error only"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-baseline-v1/who-has.unknown-name",
+   "status": "skip",
+   "reason": "who-has: unsupported ulbios has no who-has: bacnet.Parse and its encoders know Who-Is, I-Am, ReadProperty, WriteProperty, Simple-ACK, Complex-ACK and Error only"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-baseline-v1/who-is.global",
+   "status": "pass"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-baseline-v1/who-is.outside-range",
+   "status": "skip",
+   "reason": "who-is: unsupported ulbios' Who-Is has no device instance range (services.NewUnconfirmedWhoIs has no limit parameters)"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-baseline-v1/who-is.range",
+   "status": "skip",
+   "reason": "who-is: unsupported ulbios' Who-Is has no device instance range (services.NewUnconfirmedWhoIs has no limit parameters)"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-baseline-v1/wp.av1.pv.priority8",
+   "status": "pass"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-baseline-v1/wp.av1.pv.relinquish8",
+   "status": "pass"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-baseline-v1/wp.av1.pv.wrong-type",
+   "status": "skip",
+   "reason": "write-property: unsupported ulbios has no encoder for character-string"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-baseline-v1/wp.unknown-object",
+   "status": "pass"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-baseline-v1/wpm.av1.pv.priority8",
+   "status": "skip",
+   "reason": "write-property-multiple: unsupported ulbios has no write-property-multiple: bacnet.Parse and its encoders know Who-Is, I-Am, ReadProperty, WriteProperty, Simple-ACK, Complex-ACK and Error only"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-baseline-v1/wpm.unknown-object-second",
+   "status": "skip",
+   "reason": "write-property-multiple: unsupported ulbios has no write-property-multiple: bacnet.Parse and its encoders know Who-Is, I-Am, ReadProperty, WriteProperty, Simple-ACK, Complex-ACK and Error only"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-baseline-v1/wpm.wrong-type",
+   "status": "skip",
+   "reason": "write-property-multiple: unsupported ulbios has no write-property-multiple: bacnet.Parse and its encoders know Who-Is, I-Am, ReadProperty, WriteProperty, Simple-ACK, Complex-ACK and Error only"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-bbmd-v1",
+   "status": "pass"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-bbmd-v1/read-bdt",
+   "status": "skip",
+   "reason": "read-bdt: unsupported ulbios has no read-bdt: bacnet.Parse and its encoders know Who-Is, I-Am, ReadProperty, WriteProperty, Simple-ACK, Complex-ACK and Error only"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-bbmd-v1/read-fdt.contains-client",
+   "status": "skip",
+   "reason": "read-fdt: unsupported ulbios has no read-fdt: bacnet.Parse and its encoders know Who-Is, I-Am, ReadProperty, WriteProperty, Simple-ACK, Complex-ACK and Error only"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-bbmd-v1/rp.device.object-name",
+   "status": "skip",
+   "reason": "read-property: known-difference ulbios-no-decoder: ulbios has no decoder for character-string (bacnet.Parse produced 5 tokens: it reads a tag length of up to 4 octets only); answer octets 810a0022010030010c0c020004d2194d3e750e00496e7465726f704465766963653f"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-bbmd-v1/who-is.via-bbmd",
+   "status": "skip",
+   "reason": "who-is: unsupported ulbios' Who-Is has no device instance range (services.NewUnconfirmedWhoIs has no limit parameters)"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-bbmd-v1/write-bdt.nak",
+   "status": "skip",
+   "reason": "write-bdt: unsupported ulbios has no write-bdt: bacnet.Parse and its encoders know Who-Is, I-Am, ReadProperty, WriteProperty, Simple-ACK, Complex-ACK and Error only"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-extended-v1",
+   "status": "pass"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-extended-v1/arf.file3.after-write",
+   "status": "skip",
+   "reason": "atomic-read-file: unsupported ulbios has no atomic-read-file: bacnet.Parse and its encoders know Who-Is, I-Am, ReadProperty, WriteProperty, Simple-ACK, Complex-ACK and Error only"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-extended-v1/arf.file3.segmented-reply",
+   "status": "skip",
+   "reason": "atomic-read-file: unsupported ulbios has no atomic-read-file: bacnet.Parse and its encoders know Who-Is, I-Am, ReadProperty, WriteProperty, Simple-ACK, Complex-ACK and Error only"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-extended-v1/awf.file3.segmented-request",
+   "status": "skip",
+   "reason": "atomic-write-file: unsupported ulbios has no atomic-write-file: bacnet.Parse and its encoders know Who-Is, I-Am, ReadProperty, WriteProperty, Simple-ACK, Complex-ACK and Error only"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-extended-v1/cpt.vendor999",
+   "status": "skip",
+   "reason": "confirmed-private-transfer: unsupported ulbios has no confirmed-private-transfer: bacnet.Parse and its encoders know Who-Is, I-Am, ReadProperty, WriteProperty, Simple-ACK, Complex-ACK and Error only"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-extended-v1/ctm.normal",
+   "status": "skip",
+   "reason": "confirmed-text-message: unsupported ulbios has no confirmed-text-message: bacnet.Parse and its encoders know Who-Is, I-Am, ReadProperty, WriteProperty, Simple-ACK, Complex-ACK and Error only"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-extended-v1/ctm.urgent",
+   "status": "skip",
+   "reason": "confirmed-text-message: unsupported ulbios has no confirmed-text-message: bacnet.Parse and its encoders know Who-Is, I-Am, ReadProperty, WriteProperty, Simple-ACK, Complex-ACK and Error only"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-extended-v1/gas.av2.after-normal",
+   "status": "skip",
+   "reason": "get-alarm-summary: unsupported ulbios has no get-alarm-summary: bacnet.Parse and its encoders know Who-Is, I-Am, ReadProperty, WriteProperty, Simple-ACK, Complex-ACK and Error only"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-extended-v1/gas.av2.high-limit",
+   "status": "skip",
+   "reason": "get-alarm-summary: unsupported ulbios has no get-alarm-summary: bacnet.Parse and its encoders know Who-Is, I-Am, ReadProperty, WriteProperty, Simple-ACK, Complex-ACK and Error only"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-extended-v1/gas.normal",
+   "status": "skip",
+   "reason": "get-alarm-summary: unsupported ulbios has no get-alarm-summary: bacnet.Parse and its encoders know Who-Is, I-Am, ReadProperty, WriteProperty, Simple-ACK, Complex-ACK and Error only"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-extended-v1/ges.av2.high-limit",
+   "status": "skip",
+   "reason": "get-enrollment-summary: unsupported ulbios has no get-enrollment-summary: bacnet.Parse and its encoders know Who-Is, I-Am, ReadProperty, WriteProperty, Simple-ACK, Complex-ACK and Error only"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-extended-v1/ges.normal",
+   "status": "skip",
+   "reason": "get-enrollment-summary: unsupported ulbios has no get-enrollment-summary: bacnet.Parse and its encoders know Who-Is, I-Am, ReadProperty, WriteProperty, Simple-ACK, Complex-ACK and Error only"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-extended-v1/ges.offnormal-filter.high-limit",
+   "status": "skip",
+   "reason": "get-enrollment-summary: unsupported ulbios has no get-enrollment-summary: bacnet.Parse and its encoders know Who-Is, I-Am, ReadProperty, WriteProperty, Simple-ACK, Complex-ACK and Error only"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-extended-v1/ges.offnormal-filter.normal",
+   "status": "skip",
+   "reason": "get-enrollment-summary: unsupported ulbios has no get-enrollment-summary: bacnet.Parse and its encoders know Who-Is, I-Am, ReadProperty, WriteProperty, Simple-ACK, Complex-ACK and Error only"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-extended-v1/scovp.av1.pv.cancel",
+   "status": "skip",
+   "reason": "subscribe-cov-property: unsupported ulbios has no subscribe-cov-property: bacnet.Parse and its encoders know Who-Is, I-Am, ReadProperty, WriteProperty, Simple-ACK, Complex-ACK and Error only"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-extended-v1/scovp.av1.pv.increment",
+   "status": "skip",
+   "reason": "subscribe-cov-property: unsupported ulbios has no subscribe-cov-property: bacnet.Parse and its encoders know Who-Is, I-Am, ReadProperty, WriteProperty, Simple-ACK, Complex-ACK and Error only"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-extended-v1/scovp.unknown-object",
+   "status": "skip",
+   "reason": "subscribe-cov-property: unsupported ulbios has no subscribe-cov-property: bacnet.Parse and its encoders know Who-Is, I-Am, ReadProperty, WriteProperty, Simple-ACK, Complex-ACK and Error only"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-extended-v1/scovp.unknown-property",
+   "status": "skip",
+   "reason": "subscribe-cov-property: unsupported ulbios has no subscribe-cov-property: bacnet.Parse and its encoders know Who-Is, I-Am, ReadProperty, WriteProperty, Simple-ACK, Complex-ACK and Error only"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-extended-v1/scovpm.av1-av2",
+   "status": "skip",
+   "reason": "subscribe-cov-property-multiple: unsupported ulbios has no subscribe-cov-property-multiple: bacnet.Parse and its encoders know Who-Is, I-Am, ReadProperty, WriteProperty, Simple-ACK, Complex-ACK and Error only"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-extended-v1/scovpm.cancel",
+   "status": "skip",
+   "reason": "subscribe-cov-property-multiple: unsupported ulbios has no subscribe-cov-property-multiple: bacnet.Parse and its encoders know Who-Is, I-Am, ReadProperty, WriteProperty, Simple-ACK, Complex-ACK and Error only"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-extended-v1/scovpm.unknown-object-second",
+   "status": "skip",
+   "reason": "subscribe-cov-property-multiple: unsupported ulbios has no subscribe-cov-property-multiple: bacnet.Parse and its encoders know Who-Is, I-Am, ReadProperty, WriteProperty, Simple-ACK, Complex-ACK and Error only"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-extended-v1/utm.normal",
+   "status": "skip",
+   "reason": "unconfirmed-text-message: unsupported ulbios has no unconfirmed-text-message: bacnet.Parse and its encoders know Who-Is, I-Am, ReadProperty, WriteProperty, Simple-ACK, Complex-ACK and Error only"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-extended-v1/wp.av2.high",
+   "status": "skip",
+   "reason": "write-property: known-difference ulbios-write-real-null: bacnet.NewWriteProperty encodes the value as a REAL followed by a NULL (request octets 810a001b01040005010f0c0080000219553e4442b40000003f4910); the device refused it with map[class:property code:invalid-data-type]; answer octets 810a000d010050010f91029109"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-extended-v1/wp.av2.normal",
+   "status": "skip",
+   "reason": "write-property: known-difference ulbios-write-real-null: bacnet.NewWriteProperty encodes the value as a REAL followed by a NULL (request octets 810a001b01040005010f0c0080000219553e4442480000003f4910); the device refused it with map[class:property code:invalid-data-type]; answer octets 810a000d010050010f91029109"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-services-v1",
+   "status": "pass"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-services-v1/ack.av1.no-alarm",
+   "status": "skip",
+   "reason": "acknowledge-alarm: unsupported ulbios has no acknowledge-alarm: bacnet.Parse and its encoders know Who-Is, I-Am, ReadProperty, WriteProperty, Simple-ACK, Complex-ACK and Error only"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-services-v1/ack.av2",
+   "status": "skip",
+   "reason": "acknowledge-alarm: unsupported ulbios has no acknowledge-alarm: bacnet.Parse and its encoders know Who-Is, I-Am, ReadProperty, WriteProperty, Simple-ACK, Complex-ACK and Error only"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-services-v1/ale.nc1",
+   "status": "skip",
+   "reason": "add-list-element: unsupported ulbios has no add-list-element: bacnet.Parse and its encoders know Who-Is, I-Am, ReadProperty, WriteProperty, Simple-ACK, Complex-ACK and Error only"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-services-v1/ale.unknown-object",
+   "status": "skip",
+   "reason": "add-list-element: unsupported ulbios has no add-list-element: bacnet.Parse and its encoders know Who-Is, I-Am, ReadProperty, WriteProperty, Simple-ACK, Complex-ACK and Error only"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-services-v1/arf.file1",
+   "status": "skip",
+   "reason": "atomic-read-file: unsupported ulbios has no atomic-read-file: bacnet.Parse and its encoders know Who-Is, I-Am, ReadProperty, WriteProperty, Simple-ACK, Complex-ACK and Error only"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-services-v1/arf.file1.after-write",
+   "status": "skip",
+   "reason": "atomic-read-file: unsupported ulbios has no atomic-read-file: bacnet.Parse and its encoders know Who-Is, I-Am, ReadProperty, WriteProperty, Simple-ACK, Complex-ACK and Error only"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-services-v1/arf.record-file2",
+   "status": "skip",
+   "reason": "atomic-read-file: unsupported ulbios has no atomic-read-file: bacnet.Parse and its encoders know Who-Is, I-Am, ReadProperty, WriteProperty, Simple-ACK, Complex-ACK and Error only"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-services-v1/arf.unknown-object",
+   "status": "skip",
+   "reason": "atomic-read-file: unsupported ulbios has no atomic-read-file: bacnet.Parse and its encoders know Who-Is, I-Am, ReadProperty, WriteProperty, Simple-ACK, Complex-ACK and Error only"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-services-v1/awf.file1",
+   "status": "skip",
+   "reason": "atomic-write-file: unsupported ulbios has no atomic-write-file: bacnet.Parse and its encoders know Who-Is, I-Am, ReadProperty, WriteProperty, Simple-ACK, Complex-ACK and Error only"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-services-v1/co.av150",
+   "status": "skip",
+   "reason": "create-object: unsupported ulbios has no create-object: bacnet.Parse and its encoders know Who-Is, I-Am, ReadProperty, WriteProperty, Simple-ACK, Complex-ACK and Error only"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-services-v1/co.not-creatable",
+   "status": "skip",
+   "reason": "create-object: unsupported ulbios has no create-object: bacnet.Parse and its encoders know Who-Is, I-Am, ReadProperty, WriteProperty, Simple-ACK, Complex-ACK and Error only"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-services-v1/cov.av1.cancel",
+   "status": "skip",
+   "reason": "subscribe-cov: unsupported ulbios has no subscribe-cov: bacnet.Parse and its encoders know Who-Is, I-Am, ReadProperty, WriteProperty, Simple-ACK, Complex-ACK and Error only"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-services-v1/cov.av1.subscribe-confirmed",
+   "status": "skip",
+   "reason": "subscribe-cov: unsupported ulbios has no subscribe-cov: bacnet.Parse and its encoders know Who-Is, I-Am, ReadProperty, WriteProperty, Simple-ACK, Complex-ACK and Error only"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-services-v1/cov.av1.subscribe-unconfirmed",
+   "status": "skip",
+   "reason": "subscribe-cov: unsupported ulbios has no subscribe-cov: bacnet.Parse and its encoders know Who-Is, I-Am, ReadProperty, WriteProperty, Simple-ACK, Complex-ACK and Error only"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-services-v1/cov.unknown-object",
+   "status": "skip",
+   "reason": "subscribe-cov: unsupported ulbios has no subscribe-cov: bacnet.Parse and its encoders know Who-Is, I-Am, ReadProperty, WriteProperty, Simple-ACK, Complex-ACK and Error only"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-services-v1/dcc.disable",
+   "status": "skip",
+   "reason": "device-communication-control: unsupported ulbios has no device-communication-control: bacnet.Parse and its encoders know Who-Is, I-Am, ReadProperty, WriteProperty, Simple-ACK, Complex-ACK and Error only"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-services-v1/dcc.disable-initiation",
+   "status": "skip",
+   "reason": "device-communication-control: unsupported ulbios has no device-communication-control: bacnet.Parse and its encoders know Who-Is, I-Am, ReadProperty, WriteProperty, Simple-ACK, Complex-ACK and Error only"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-services-v1/dcc.enable",
+   "status": "skip",
+   "reason": "device-communication-control: unsupported ulbios has no device-communication-control: bacnet.Parse and its encoders know Who-Is, I-Am, ReadProperty, WriteProperty, Simple-ACK, Complex-ACK and Error only"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-services-v1/do.av150",
+   "status": "skip",
+   "reason": "delete-object: unsupported ulbios has no delete-object: bacnet.Parse and its encoders know Who-Is, I-Am, ReadProperty, WriteProperty, Simple-ACK, Complex-ACK and Error only"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-services-v1/do.av150.again",
+   "status": "skip",
+   "reason": "delete-object: unsupported ulbios has no delete-object: bacnet.Parse and its encoders know Who-Is, I-Am, ReadProperty, WriteProperty, Simple-ACK, Complex-ACK and Error only"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-services-v1/do.device",
+   "status": "skip",
+   "reason": "delete-object: unsupported ulbios has no delete-object: bacnet.Parse and its encoders know Who-Is, I-Am, ReadProperty, WriteProperty, Simple-ACK, Complex-ACK and Error only"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-services-v1/ge.av2.high-limit",
+   "status": "skip",
+   "reason": "get-event-information: unsupported ulbios has no get-event-information: bacnet.Parse and its encoders know Who-Is, I-Am, ReadProperty, WriteProperty, Simple-ACK, Complex-ACK and Error only"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-services-v1/reinit.undefined-state",
+   "status": "skip",
+   "reason": "reinitialize-device: unsupported ulbios has no reinitialize-device: bacnet.Parse and its encoders know Who-Is, I-Am, ReadProperty, WriteProperty, Simple-ACK, Complex-ACK and Error only"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-services-v1/reinit.warmstart",
+   "status": "skip",
+   "reason": "reinitialize-device: unsupported ulbios has no reinitialize-device: bacnet.Parse and its encoders know Who-Is, I-Am, ReadProperty, WriteProperty, Simple-ACK, Complex-ACK and Error only"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-services-v1/rle.nc1",
+   "status": "skip",
+   "reason": "remove-list-element: unsupported ulbios has no remove-list-element: bacnet.Parse and its encoders know Who-Is, I-Am, ReadProperty, WriteProperty, Simple-ACK, Complex-ACK and Error only"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-services-v1/rp.nc1.recipient-list",
+   "status": "skip",
+   "reason": "read-property: known-difference ulbios-short-complex-ack: ComplexACK.UnmarshalBinary refuses an APDU shorter than 17 octets, the length of its own REAL ReadProperty-ACK; answer octets 810a0012010030010c0c03c0000119663e3f"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-services-v1/rp.nc1.recipient-list.after-remove",
+   "status": "skip",
+   "reason": "read-property: known-difference ulbios-short-complex-ack: ComplexACK.UnmarshalBinary refuses an APDU shorter than 17 octets, the length of its own REAL ReadProperty-ACK; answer octets 810a0012010030010c0c03c0000119663e3f"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-services-v1/rr.av1.not-a-list",
+   "status": "skip",
+   "reason": "read-range: unsupported ulbios has no read-range: bacnet.Parse and its encoders know Who-Is, I-Am, ReadProperty, WriteProperty, Simple-ACK, Complex-ACK and Error only"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-services-v1/rr.tl1.by-position",
+   "status": "skip",
+   "reason": "read-range: unsupported ulbios has no read-range: bacnet.Parse and its encoders know Who-Is, I-Am, ReadProperty, WriteProperty, Simple-ACK, Complex-ACK and Error only"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-services-v1/rr.tl1.by-position-middle",
+   "status": "skip",
+   "reason": "read-range: unsupported ulbios has no read-range: bacnet.Parse and its encoders know Who-Is, I-Am, ReadProperty, WriteProperty, Simple-ACK, Complex-ACK and Error only"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-services-v1/ts.local",
+   "status": "skip",
+   "reason": "time-synchronization: unsupported ulbios has no time-synchronization: bacnet.Parse and its encoders know Who-Is, I-Am, ReadProperty, WriteProperty, Simple-ACK, Complex-ACK and Error only"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-services-v1/ts.utc",
+   "status": "skip",
+   "reason": "utc-time-synchronization: unsupported ulbios has no utc-time-synchronization: bacnet.Parse and its encoders know Who-Is, I-Am, ReadProperty, WriteProperty, Simple-ACK, Complex-ACK and Error only"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-services-v1/upt.vendor999",
+   "status": "skip",
+   "reason": "unconfirmed-private-transfer: unsupported ulbios has no unconfirmed-private-transfer: bacnet.Parse and its encoders know Who-Is, I-Am, ReadProperty, WriteProperty, Simple-ACK, Complex-ACK and Error only"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-services-v1/wg.group1",
+   "status": "skip",
+   "reason": "write-group: unsupported ulbios has no write-group: bacnet.Parse and its encoders know Who-Is, I-Am, ReadProperty, WriteProperty, Simple-ACK, Complex-ACK and Error only"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-services-v1/wp.av2.high",
+   "status": "skip",
+   "reason": "write-property: known-difference ulbios-write-real-null: bacnet.NewWriteProperty encodes the value as a REAL followed by a NULL (request octets 810a001b01040005010f0c0080000219553e4442b40000003f4910); the device refused it with map[class:property code:invalid-data-type]; answer octets 810a000d010050010f91029109"
+  },
+  {
+   "test": "TestUlbiosClientAgainstServer/server-services-v1/wp.av2.normal",
+   "status": "skip",
+   "reason": "write-property: known-difference ulbios-write-real-null: bacnet.NewWriteProperty encodes the value as a REAL followed by a NULL (request octets 810a001b01040005010f0c0080000219553e4442480000003f4910); the device refused it with map[class:property code:invalid-data-type]; answer octets 810a000d010050010f91029109"
+  },
+  {
+   "test": "TestUlbiosDiscovery",
+   "status": "pass"
+  },
+  {
+   "test": "TestUlbiosObjectListTooLong",
+   "status": "pass"
+  },
+  {
+   "test": "TestUlbiosObjectListTooLong/ulbios",
+   "status": "pass"
+  },
+  {
+   "test": "TestUlbiosReadProperty",
+   "status": "pass"
+  },
+  {
+   "test": "TestUlbiosSegmentedResponseAcceptedBit",
+   "status": "pass"
+  },
+  {
+   "test": "TestUlbiosUnansweredRequests",
+   "status": "pass"
+  },
+  {
+   "test": "TestUlbiosWriteProperty",
+   "status": "pass"
+  },
+  {
+   "test": "TestUnansweredRequestTimeouts",
+   "status": "pass"
+  },
+  {
+   "test": "TestUnansweredRequestTimeouts/bacnet-stack",
+   "status": "pass"
+  },
+  {
+   "test": "TestVTOpenUnrecognizedService",
+   "status": "pass"
+  },
+  {
+   "test": "TestVTOpenUnrecognizedService/bacnet-stack",
+   "status": "pass"
+  },
+  {
+   "test": "TestVTOpenUnrecognizedService/bacnet4j",
+   "status": "pass"
+  },
+  {
+   "test": "TestWorldietyAnalogValueNotCommandable",
+   "status": "pass"
+  },
+  {
+   "test": "TestWorldietyAnalogValueNotCommandable/worldiety",
+   "status": "pass"
+  },
+  {
+   "test": "TestWorldietyBDTUnsupported",
+   "status": "skip",
+   "reason": "Worldiety peer-as-BBMD unavailable; see bacnet-interop/PEER_SUPPORT.md"
+  },
+  {
+   "test": "TestWorldietyLifeSafetyUnsupported",
+   "status": "skip",
+   "reason": "Worldiety LifeSafetyOperation unsupported-upstream; see bacnet-interop/PEER_SUPPORT.md"
+  },
+  {
+   "test": "TestWorldietyMessagingUnsupported",
+   "status": "skip",
+   "reason": "Worldiety messaging family unsupported-upstream; see bacnet-interop/PEER_SUPPORT.md"
+  },
+  {
+   "test": "TestWorldietyReadAnalogValuePresentValue",
+   "status": "pass"
+  },
+  {
+   "test": "TestWorldietyReadBDTUnsupported",
+   "status": "skip",
+   "reason": "Worldiety peer-as-BBMD unavailable; see bacnet-interop/PEER_SUPPORT.md"
+  },
+  {
+   "test": "TestWorldietyReadDeviceObjectName",
+   "status": "pass"
+  },
+  {
+   "test": "TestWorldietyReadPropertyMultiple",
+   "status": "pass"
+  },
+  {
+   "test": "TestWorldietyReadPropertyUnknownPropertyError",
+   "status": "pass"
+  },
+  {
+   "test": "TestWorldietyReadRangeAllBySequenceNumber",
+   "status": "pass"
+  },
+  {
+   "test": "TestWorldietyReadRangeByPosition",
+   "status": "pass"
+  },
+  {
+   "test": "TestWorldietyReadRangeBySequenceNumber",
+   "status": "pass"
+  },
+  {
+   "test": "TestWorldietyReadRangeByTime",
+   "status": "pass"
+  },
+  {
+   "test": "TestWorldietySegmentedReadPropertyMultiple",
+   "status": "skip",
+   "reason": "Worldiety deviation: omits service-choice on ComplexACK segments >0; see bacnet-interop/PEER_SUPPORT.md"
+  },
+  {
+   "test": "TestWorldietySegmentedWritePropertyMultipleSend",
+   "status": "skip",
+   "reason": "Worldiety deviation: omits service-choice on confirmed-request segments >0; see bacnet-interop/PEER_SUPPORT.md"
+  },
+  {
+   "test": "TestWorldietyWhoAmIYouAreUnsupported",
+   "status": "skip",
+   "reason": "Worldiety Who-Am-I/You-Are unsupported-upstream; see bacnet-interop/PEER_SUPPORT.md"
+  },
+  {
+   "test": "TestWorldietyWhoHasIHave",
+   "status": "pass"
+  },
+  {
+   "test": "TestWorldietyWhoIsIAm",
+   "status": "pass"
+  },
+  {
+   "test": "TestWorldietyWritePropertyMultipleFirstFailed",
+   "status": "pass"
+  },
+  {
+   "test": "TestWorldietyWritePropertyMultipleReadbackReset",
+   "status": "pass"
+  },
+  {
+   "test": "TestWorldietyWritePropertyReadbackReset",
+   "status": "pass"
+  },
+  {
+   "test": "TestWriteAndRelinquishPriority",
+   "status": "pass"
+  },
+  {
+   "test": "TestWriteAndRelinquishPriority/bacnet-js",
+   "status": "pass"
+  },
+  {
+   "test": "TestWriteAndRelinquishPriority/bacnet4j",
+   "status": "pass"
+  },
+  {
+   "test": "TestWriteAndRelinquishPriority/bacpypes3",
+   "status": "pass"
+  },
+  {
+   "test": "TestWritePropertyReadOnlyError",
+   "status": "pass"
+  },
+  {
+   "test": "TestWritePropertyReadOnlyError/bacnet-js",
+   "status": "pass"
+  },
+  {
+   "test": "TestWritePropertyReadOnlyError/bacnet-stack",
+   "status": "pass"
+  },
+  {
+   "test": "TestWritePropertyReadOnlyError/bacnet4j",
+   "status": "pass"
+  },
+  {
+   "test": "TestWritePropertyReadOnlyError/ulbios",
+   "status": "pass"
+  },
+  {
+   "test": "TestWritePropertyReadOnlyError/worldiety",
+   "status": "pass"
+  }
+ ]
+}

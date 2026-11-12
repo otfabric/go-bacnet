@@ -8,6 +8,11 @@ Behavioural contracts are in [API.md](../API.md#server) and
 [CLIENT_SUPPORT.md](CLIENT_SUPPORT.md).
 
 **Library version:** v0.8.0  
+**Last pinned run:** 2026-11-12, bacnet-interop v0.14.0: the six client tests
+pass; their scenarios 401 pass, 0 fail, 121 skip (unsupported by or a known
+difference of the client stack, each with its reason in
+[the results](../interop/results/pinned-v0.14.0.json)); the self-interop
+client test is not part of the pinned run.  
 **Independent clients:** six, each an unmodified upstream stack in a
 bacnet-interop client-mode image (bacnet-interop v0.12.0 and later; pin v0.14.0,
 `interop/server_clients_test.go`,

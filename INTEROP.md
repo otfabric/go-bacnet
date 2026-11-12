@@ -62,6 +62,12 @@ all eleven images by digest (`interop/bacnet-interop-pin.json`). Against the
 published images nothing fails; the skips are things a stack does not have
 and scenarios that need a newer adapter release.
 
+Last full run: `make interop-pinned` on 2026-11-12 against bacnet-interop
+v0.14.0 (go-bacnet `67ff46a`, darwin/arm64, Docker 29.9.3, 53 minutes):
+279 tests pass, 0 fail, 14 skip; with subtests 821 pass, 0 fail, 135 skip.
+Each test and the reason of each skip:
+[`interop/results/pinned-v0.14.0.json`](interop/results/pinned-v0.14.0.json).
+
 | Peer | Upstream | Language | Role |
 |---|---|---|---|
 | bacnet-stack | 1.6.1 | C | Device (+ BBMD) |
