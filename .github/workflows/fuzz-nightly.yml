@@ -70,10 +70,15 @@ jobs:
       - name: Checkout go-bacnet
         uses: actions/checkout@v7
 
+      # Go 1.27, not the go.mod minimum (1.26; CI tests both). Up to Go 1.26 the
+      # fuzz coordinator can report "context deadline exceeded" as a failure
+      # when -fuzztime expires, without any failing input: the deadline is set
+      # on the parent context before the child is canceled
+      # (go.dev/issue/75804, fixed in Go 1.27.0 internal/fuzz/fuzz.go).
       - name: Set up Go
         uses: actions/setup-go@v7
         with:
-          go-version-file: go.mod
+          go-version: "1.27"
 
       - name: Fuzz ${{ matrix.target }}
         env:
