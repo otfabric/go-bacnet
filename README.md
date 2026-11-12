@@ -64,7 +64,7 @@ device-management services above, segmentation in both directions, and a
 BBMD. Its matrix is [docs/SERVER_SUPPORT.md](docs/SERVER_SUPPORT.md); a
 runnable example is [server/example_test.go](server/example_test.go).
 
-**Not in scope:** routing, MS/TP, BACnet/IPv6, BACnet/SC, BTL certification. BACnet/IP has no
+**Not in scope:** the BACnet router function (forwarding between networks; reaching remote devices through a router is supported), MS/TP, BACnet/IPv6, BACnet/SC, BTL certification. BACnet/IP has no
 authentication or encryption and this library adds none
 ([SECURITY.md](SECURITY.md)).
 
