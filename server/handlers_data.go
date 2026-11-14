@@ -60,7 +60,7 @@ func (s *Server) readPropertyMultiple(ctx context.Context, req *apdu.ConfirmedRe
 		o, ok := s.dev.Object(spec.Object)
 		if !ok {
 			if err := enc.begin(spec.Object); err != nil {
-				return fail(err)
+				return s.rpmFailure(req, err)
 			}
 			for _, ref := range spec.Properties {
 				if err := enc.add(spec.Object, service.PropertyResult{Property: ref, Err: object.AsError(object.ErrUnknownObject)}); err != nil {
@@ -72,7 +72,7 @@ func (s *Server) readPropertyMultiple(ctx context.Context, req *apdu.ConfirmedRe
 		}
 		id := o.Identifier()
 		if err := enc.begin(id); err != nil {
-			return fail(err)
+			return s.rpmFailure(req, err)
 		}
 		for _, ref := range spec.Properties {
 			if isSpecialProperty(ref.Identifier) {

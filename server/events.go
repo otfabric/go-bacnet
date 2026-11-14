@@ -373,35 +373,18 @@ func (s *Server) getEventInformation(ctx context.Context, req *apdu.ConfirmedReq
 	build := func(n int) ([]byte, error) {
 		return service.EncodeGetEventInformationACK(service.GetEventInformationACK{Summaries: all[:n], MoreEvents: n < len(all)})
 	}
-	payload, err := build(len(all))
-	if err != nil {
+	// The largest prefix that fits, by binary search as readRange does: the
+	// encoded size grows with the number of summaries. n is the first count
+	// whose next summary no longer fits, or all of them.
+	n := sort.Search(len(all), func(k int) bool {
+		p, err := build(k + 1)
+		return err != nil || len(p) > budget
+	})
+	if err := ctx.Err(); err != nil {
 		return fail(err)
 	}
-	if len(payload) <= budget {
-		return complexACK(payload)
-	}
-	// The largest prefix that fits, by binary search as readRange does: the
-	// encoded size grows with the number of summaries.
-	var searchErr error
-	n := sort.Search(len(all)+1, func(k int) bool {
-		if searchErr != nil {
-			return true
-		}
-		if err := ctx.Err(); err != nil {
-			searchErr = err
-			return true
-		}
-		p, err := build(k)
-		if err != nil {
-			searchErr = err
-			return true
-		}
-		return len(p) > budget
-	}) - 1
-	if searchErr != nil {
-		return fail(searchErr)
-	}
-	if payload, err = build(max(n, 0)); err != nil {
+	payload, err := build(n)
+	if err != nil {
 		return fail(err)
 	}
 	return complexACK(payload)
