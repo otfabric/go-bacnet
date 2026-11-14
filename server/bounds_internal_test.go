@@ -353,7 +353,7 @@ func TestGetEventInformationPrefix(t *testing.T) {
 		}
 	}
 	h.s.events.tick()
-	waitUntil(t, func() bool { return len(h.s.eventInfos()) >= 300 })
+	waitUntil(t, func() bool { return inAlarm(h.s) >= 300 })
 	req := &apdu.ConfirmedRequest{MaxAPDU: 5, InvokeID: 1, ServiceChoice: apdu.ServiceGetEventInformation}
 	start := time.Now()
 	res := h.s.getEventInformation(context.Background(), req, peer{})

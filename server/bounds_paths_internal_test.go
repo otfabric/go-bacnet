@@ -54,6 +54,17 @@ func TestReadPropertyMultipleBudgetAtObjectStart(t *testing.T) {
 	}
 }
 
+// inAlarm counts the reporting objects that are not NORMAL.
+func inAlarm(s *Server) int {
+	n := 0
+	for _, info := range s.eventInfos() {
+		if info.EventState != object.EventStateNormal {
+			n++
+		}
+	}
+	return n
+}
+
 // countingCtx reports cancellation from its n-th Err call on.
 type countingCtx struct {
 	context.Context
@@ -84,7 +95,7 @@ func TestGetEventInformationDeadlineDuringSearch(t *testing.T) {
 		}
 	}
 	h.s.events.tick()
-	waitUntil(t, func() bool { return len(h.s.eventInfos()) >= n })
+	waitUntil(t, func() bool { return inAlarm(h.s) >= n })
 	req := &apdu.ConfirmedRequest{MaxAPDU: 5, InvokeID: 1, ServiceChoice: apdu.ServiceGetEventInformation}
 	infos := int64(len(h.s.eventInfos()))
 	ctx := &countingCtx{Context: context.Background(), after: infos}
