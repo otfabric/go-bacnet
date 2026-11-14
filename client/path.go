@@ -8,13 +8,16 @@ import "github.com/otfabric/go-bacnet"
 // should come from target. Used by confirmed-response matching and COV delivery
 // so routed remote-station checks require both the BACnet address and the
 // expected immediate next hop when known.
+//
+// When the target names an immediate endpoint, a source without a valid
+// immediate peer never matches.
 func matchTargetSource(target Target, src packetSource) bool {
 	switch target.Address.Scope() {
 	case bacnet.AddressRemoteStation, bacnet.AddressRemoteBroadcast:
 		if !src.bacnetAddress.Equal(target.Address) {
 			return false
 		}
-		if target.Endpoint.IsValid() && src.immediate.IsValid() && !target.Endpoint.Equal(src.immediate) {
+		if target.Endpoint.IsValid() && !sameImmediate(target, src) {
 			return false
 		}
 		return true
@@ -24,7 +27,7 @@ func matchTargetSource(target Target, src packetSource) bool {
 			if !src.origin.IsValid() || !target.Origin.Equal(src.origin) {
 				return false
 			}
-			if target.Endpoint.IsValid() && src.immediate.IsValid() && !target.Endpoint.Equal(src.immediate) {
+			if target.Endpoint.IsValid() && !sameImmediate(target, src) {
 				return false
 			}
 			return true
@@ -34,11 +37,17 @@ func matchTargetSource(target Target, src packetSource) bool {
 				return false
 			}
 		}
-		if target.Endpoint.IsValid() && src.immediate.IsValid() && !target.Endpoint.Equal(src.immediate) {
+		if target.Endpoint.IsValid() && !sameImmediate(target, src) {
 			return false
 		}
 		return true
 	default:
 		return false
 	}
+}
+
+// sameImmediate reports whether src arrived from target's immediate endpoint.
+// An invalid src.immediate never matches.
+func sameImmediate(target Target, src packetSource) bool {
+	return src.immediate.IsValid() && target.Endpoint.Equal(src.immediate)
 }

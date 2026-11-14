@@ -1678,3 +1678,13 @@ type Write struct {
 ```
 
 Write is one WriteProperty or one element of a WritePropertyMultiple.
+
+### type WriteGuard
+
+```go
+type WriteGuard interface {
+	BeforeWrite(ctx context.Context, obj bacnet.ObjectIdentifier, w Write) error
+}
+```
+
+WriteGuard is an optional part of a Runtime. When the bound Runtime implements it, writes that objects of the Device make to other objects (a Schedule writing its List\_Of\_Object\_Property\_References) are checked with BeforeWrite first; a returned error leaves the property unchanged. The server implements it with its BeforeWrite hook.

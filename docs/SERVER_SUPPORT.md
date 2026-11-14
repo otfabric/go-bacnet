@@ -89,7 +89,7 @@ bacnet-stack agreeing with those codes is partly by construction.
 | Service | Clause | Support | Evidence | Notes |
 |---|---|---|---|---|
 | AtomicReadFile | 14.1 | Implemented | Internal e2e, Independent client (bacnet-stack, BACnet4J, BACpypes3, legacy BACpypes, bacnet-js) (stream) | Stream and record access, in-memory File object or an `object.FileAccessor` |
-| AtomicWriteFile | 14.2 | Implemented | Internal e2e, Independent client (bacnet-stack, BACnet4J, BACpypes3, legacy BACpypes, bacnet-js) | Start −1 appends. Past the end a stream file is extended with zero octets and records are appended after the last one, within the file's maximum size, as bacnet-stack's storage does (ports/posix/bacfile-posix.c) |
+| AtomicWriteFile | 14.2 | Implemented | Internal e2e, Independent client (bacnet-stack, BACnet4J, BACpypes3, legacy BACpypes, bacnet-js) | Start −1 appends. Past the end a stream file is extended with zero octets and records are appended after the last one, within the file's maximum size, as bacnet-stack's storage does (ports/posix/bacfile-posix.c). Passes `Hooks.BeforeWrite` first |
 
 ## Change of value
 
@@ -101,9 +101,13 @@ bacnet-stack agreeing with those codes is partly by construction.
 | COV notifications | 13.6, 13.7, 13.17 | Implemented | Internal e2e, Unit, Independent client (bacnet-stack, BACnet4J, BACpypes3, legacy BACpypes, bacnet-js) (unconfirmed) | Confirmed notifications use the server's own requester with the configured APDU timeout and retries |
 | Active_COV_Subscriptions | 12.11 | Implemented | Internal e2e, Unit | One entry per monitored property |
 
-Subscriptions are bounded (`WithCOVLimits`, default 256). With a lifetime
-limit set, an indefinite subscription and one longer than the limit are
-refused.
+Subscriptions are bounded (`WithCOVLimits`, default 256), and so are the
+monitored references across them (`WithCOVReferenceLimit`, default 4096).
+One SubscribeCOVPropertyMultiple holds at most as many references as fit
+one notification in the server's Max APDU. With a lifetime limit set, an
+indefinite subscription and one longer than the limit are refused.
+Active_COV_Subscriptions stops building once the list exceeds the largest
+reply the server can send.
 
 ## Alarms and events
 
@@ -166,7 +170,7 @@ Limits:
 | Trend Log | Implemented | Internal e2e, Independent client (bacnet-stack, BACnet4J, BACpypes3, legacy BACpypes, bacnet-js) | Polled logging of a local property or `Log` by the application; stop-when-full; Record_Count writable to 0 |
 | File | Implemented | Internal e2e, Independent client (bacnet-stack, BACnet4J, BACpypes3, legacy BACpypes, bacnet-js) | Stream and record files in memory; read-only files |
 | Calendar | Implemented | Internal e2e, Unit | Clause 12.9. Present_Value from Date_List against the server clock's local date, evaluated on every poll and when Date_List changes; Date_List writable and changed by AddListElement / RemoveListElement. Calendar entries: date with the BACnetDate special values (any, odd / even month, last / odd / even day; clause 21), dateRange (fields unspecified in either date are skipped, so a fully unspecified end opens the range, as bacnet-stack datetime.c `datetime_wildcard_compare_date`), weekNDay per the clause 21 week-of-month table (bacnet-stack calendar_entry.c computes weeks 1–9 differently; the standard is followed) |
-| Schedule | Implemented | Internal e2e, Unit | Clause 12.24. Evaluated on every poll against the server clock: outside Effective_Period Schedule_Default; else the non-NULL value of the in-effect special event with the lowest Event_Priority (first in Exception_Schedule on a tie; period by calendar entry or Calendar reference; this is the implementation's reading of clause 12.24 without a peer reference, because bacnet-stack schedule.c does not evaluate Exception_Schedule), else the day's Weekly_Schedule value, else Schedule_Default. A NULL time value relinquishes to the next layer; before a day's first entry the default applies, as bacnet-stack schedule.c `Schedule_Recalculate_PV`. A changed Present_Value is written at Priority_For_Writing to the referenced properties of local objects; references to other devices are kept but not written (the server initiates no WriteProperty). Present_Value writable while Out_Of_Service; Weekly_Schedule, Exception_Schedule, Effective_Period, List_Of_Object_Property_References writable; arrays not resizable through index 0 (write-access-denied, as schedule.c); one datatype per schedule |
+| Schedule | Implemented | Internal e2e, Unit | Clause 12.24. Evaluated on every poll against the server clock: outside Effective_Period Schedule_Default; else the non-NULL value of the in-effect special event with the lowest Event_Priority (first in Exception_Schedule on a tie; period by calendar entry or Calendar reference; this is the implementation's reading of clause 12.24 without a peer reference, because bacnet-stack schedule.c does not evaluate Exception_Schedule), else the day's Weekly_Schedule value, else Schedule_Default. A NULL time value relinquishes to the next layer; before a day's first entry the default applies, as bacnet-stack schedule.c `Schedule_Recalculate_PV`. A changed Present_Value is written at Priority_For_Writing to the referenced properties of local objects, each write passing `Hooks.BeforeWrite` for the referenced object; references to other devices are kept but not written (the server initiates no WriteProperty). Present_Value writable while Out_Of_Service; Weekly_Schedule, Exception_Schedule, Effective_Period, List_Of_Object_Property_References writable; arrays not resizable through index 0 (write-access-denied, as schedule.c); one datatype per schedule |
 | CharacterString / Integer / Positive Integer Value | Implemented | Internal e2e, Unit | Clauses 12.37, 12.43, 12.44. Optionally commandable; COV of Present_Value and Status_Flags on every change (no COV_Increment); integers held in 32 bits as bacnet-stack iv.c / piv.c, beyond is value-out-of-range |
 | Structured View | Implemented | Internal e2e, Unit | Clause 12.29. Node_Type, Node_Subtype, Subordinate_List, Subordinate_Annotations; writable as in bacnet-stack structured_view.c; a whole Subordinate_List write may change its length and the annotations follow; not resizable through index 0 |
 

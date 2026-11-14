@@ -244,7 +244,7 @@ func TestForwarding(t *testing.T) {
 		t.Fatalf("local broadcast: %v", d)
 	}
 	r.fail = errors.New("send failed")
-	if err := b.distribute(ctx, self, whoIs, true, r.send); err == nil {
+	if err := b.distribute(ctx, self, self, whoIs, true, r.send); err == nil {
 		t.Fatal("send errors not joined")
 	}
 }

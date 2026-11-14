@@ -5,6 +5,8 @@ package client
 import (
 	"context"
 	"fmt"
+	"math"
+	"slices"
 
 	"github.com/otfabric/go-bacnet"
 	"github.com/otfabric/go-bacnet/service"
@@ -60,13 +62,24 @@ func (c *Client) ReadRangeAll(ctx context.Context, target Target, req service.Re
 		cur.Count = opts.PageCount
 	}
 	approxBytes := 0
-	items := 0
+	// remaining is the item budget left. It is int64 so that adding
+	// peer-supplied uint32 counts cannot wrap on 32-bit platforms.
+	remaining := int64(opts.MaxItems)
 	for page := 0; page < opts.MaxPages; page++ {
 		ack, err := c.ReadRange(ctx, target, cur)
 		if err != nil {
 			out.Partial = true
 			out.StoppedReason = "request error"
 			return out, err
+		}
+		// A page counts as the larger of the peer's ItemCount and what was
+		// actually decoded: typed log records for a Log_Buffer, otherwise
+		// the ItemData elements.
+		pageItems := readRangePageItems(ack)
+		truncated := pageItems > remaining
+		if truncated {
+			ack = truncateReadRangeACK(ack, remaining)
+			pageItems = remaining
 		}
 		out.Pages = append(out.Pages, ack)
 		out.Items = append(out.Items, ack.ItemData...)
@@ -76,10 +89,8 @@ func (c *Client) ReadRangeAll(ctx context.Context, target Target, req service.Re
 		for _, v := range ack.ItemData {
 			approxBytes += estimateValueBytes(v)
 		}
-		// Count records as the peer reports them: one log record decodes to
-		// several elements of ItemData.
-		items += int(ack.ItemCount)
-		if items >= opts.MaxItems {
+		remaining -= pageItems
+		if truncated || remaining <= 0 {
 			out.Partial = true
 			out.StoppedReason = "MaxItems"
 			return out, nil
@@ -118,6 +129,38 @@ func (c *Client) ReadRangeAll(ctx context.Context, target Target, req service.Re
 	out.Partial = true
 	out.StoppedReason = "MaxPages"
 	return out, nil
+}
+
+// readRangePageItems returns the number of items a page holds: the larger of
+// the peer's ItemCount and the decoded record (or ItemData element) count.
+func readRangePageItems(ack service.ReadRangeACK) int64 {
+	decoded := len(ack.LogRecords) + len(ack.LogMultipleRecords) + len(ack.EventLogRecords)
+	if decoded == 0 {
+		decoded = len(ack.ItemData)
+	}
+	return max(int64(ack.ItemCount), int64(decoded))
+}
+
+// truncateReadRangeACK keeps the first keep items of ack, in fresh slices so
+// the dropped tail is not retained. ItemCount stays as the peer reported it. For a page of typed log records the
+// records are kept and the flat ItemData stream, which cannot be split per
+// record, is dropped.
+func truncateReadRangeACK(ack service.ReadRangeACK, keep64 int64) service.ReadRangeACK {
+	keep := 0
+	if keep64 > 0 && keep64 <= math.MaxInt {
+		keep = int(keep64)
+	}
+	if len(ack.LogRecords)+len(ack.LogMultipleRecords)+len(ack.EventLogRecords) > 0 {
+		ack.LogRecords = slices.Clone(ack.LogRecords[:min(keep, len(ack.LogRecords))])
+		keep -= len(ack.LogRecords)
+		ack.LogMultipleRecords = slices.Clone(ack.LogMultipleRecords[:min(keep, len(ack.LogMultipleRecords))])
+		keep -= len(ack.LogMultipleRecords)
+		ack.EventLogRecords = slices.Clone(ack.EventLogRecords[:min(keep, len(ack.EventLogRecords))])
+		ack.ItemData = nil
+	} else {
+		ack.ItemData = slices.Clone(ack.ItemData[:min(keep, len(ack.ItemData))])
+	}
+	return ack
 }
 
 func estimateValueBytes(v bacnet.ApplicationValue) int {

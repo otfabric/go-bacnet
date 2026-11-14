@@ -51,6 +51,29 @@ type Runtime interface {
 	Now() time.Time
 }
 
+// WriteGuard is an optional part of a Runtime. When the bound Runtime
+// implements it, writes that objects of the Device make to other objects
+// (a Schedule writing its List_Of_Object_Property_References) are checked
+// with BeforeWrite first; a returned error leaves the property unchanged.
+// The server implements it with its BeforeWrite hook.
+type WriteGuard interface {
+	BeforeWrite(ctx context.Context, obj bacnet.ObjectIdentifier, w Write) error
+}
+
+// guardedWrite applies w to o after the bound Runtime's WriteGuard, if
+// any, allowed it.
+func (d *Device) guardedWrite(ctx context.Context, o Object, w Write) error {
+	d.tmu.RLock()
+	rt := d.rt
+	d.tmu.RUnlock()
+	if g, ok := rt.(WriteGuard); ok {
+		if err := g.BeforeWrite(ctx, o.Identifier(), w); err != nil {
+			return err
+		}
+	}
+	return o.WriteProperty(ctx, w)
+}
+
 // DeviceConfig configures a Device object.
 type DeviceConfig struct {
 	Instance                   uint32

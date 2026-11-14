@@ -35,8 +35,10 @@ type config struct {
 	apduTimeout    time.Duration
 	segmentTimeout time.Duration
 	retries        int
+	segLimits      SegmentLimits
 	password       string
 	maxCOV         int
+	maxCOVRefs     int
 	maxLifetime    time.Duration
 	hooks          Hooks
 	bbmd           BBMD
@@ -56,7 +58,9 @@ func defaultConfig() config {
 		apduTimeout:    3 * time.Second,
 		segmentTimeout: 2 * time.Second,
 		retries:        3,
+		segLimits:      defaultSegmentLimits(),
 		maxCOV:         256,
+		maxCOVRefs:     4096,
 		maxLifetime:    0,
 		clock:          clock.Real{},
 	}
@@ -71,9 +75,13 @@ func (c *config) invalid(format string, a ...any) {
 // deadline; a nil hook keeps the default given per field.
 type Hooks struct {
 	// BeforeWrite is called before a WriteProperty, each write of a
-	// WritePropertyMultiple, or an AddListElement or RemoveListElement (the
-	// Write then holds the elements as a constructed value) is applied. A
-	// returned error is sent as the answer (see object.Err). Default: allow.
+	// WritePropertyMultiple, an AddListElement or RemoveListElement (the
+	// Write then holds the elements as a constructed value), or an
+	// AtomicWriteFile is applied. For AtomicWriteFile the Write names
+	// File_Size and holds a constructed value: the start position (Signed)
+	// followed by the data, one Octet String for stream access or one per
+	// record for record access. A returned error is sent as the answer (see
+	// object.Err). Default: allow.
 	BeforeWrite func(ctx context.Context, obj bacnet.ObjectIdentifier, w object.Write) error
 	// BeforeDelete is called before DeleteObject removes a deletable
 	// object. Default: allow.
@@ -199,6 +207,56 @@ func WithSegmentation(maxSegments int, window uint8) Option {
 	}
 }
 
+// SegmentLimits bound the server's segmented transactions as a whole. A
+// zero field keeps its default.
+type SegmentLimits struct {
+	// Reassemblies bounds the segmented requests being reassembled at once
+	// (default 64); ReassembliesPerOrigin bounds those from one B/IP node
+	// (default 16), and ReassemblyOctets the octets they buffer together
+	// (default 4 MiB). The first segment of a request beyond them is
+	// answered with Abort out-of-resources.
+	Reassemblies          int
+	ReassembliesPerOrigin int
+	ReassemblyOctets      int
+	// Replies bounds the segmented replies being transmitted at once
+	// (default 32), RepliesPerOrigin those to one B/IP node (default 8). A
+	// request whose reply would exceed them is answered with Abort
+	// out-of-resources.
+	Replies          int
+	RepliesPerOrigin int
+}
+
+func defaultSegmentLimits() SegmentLimits {
+	return SegmentLimits{
+		Reassemblies: 64, ReassembliesPerOrigin: 16, ReassemblyOctets: 4 << 20,
+		Replies: 32, RepliesPerOrigin: 8,
+	}
+}
+
+// WithSegmentLimits bounds the segmented requests and replies in progress
+// (see SegmentLimits). Negative values are invalid.
+func WithSegmentLimits(l SegmentLimits) Option {
+	return func(c *config) {
+		if l.Reassemblies < 0 || l.ReassembliesPerOrigin < 0 || l.ReassemblyOctets < 0 || l.Replies < 0 || l.RepliesPerOrigin < 0 {
+			c.invalid("segment limits %+v", l)
+		}
+		d := defaultSegmentLimits()
+		pick := func(v, def int) int {
+			if v <= 0 {
+				return def
+			}
+			return v
+		}
+		c.segLimits = SegmentLimits{
+			Reassemblies:          pick(l.Reassemblies, d.Reassemblies),
+			ReassembliesPerOrigin: pick(l.ReassembliesPerOrigin, d.ReassembliesPerOrigin),
+			ReassemblyOctets:      pick(l.ReassemblyOctets, d.ReassemblyOctets),
+			Replies:               pick(l.Replies, d.Replies),
+			RepliesPerOrigin:      pick(l.RepliesPerOrigin, d.RepliesPerOrigin),
+		}
+	}
+}
+
 // WithTransactionOptions sets APDU timeout, retries and segment timeout
 // for the server's own confirmed requests (notifications) and segmented
 // replies; they are also the values of the Device's APDU properties.
@@ -231,6 +289,21 @@ func WithCOVLimits(maxSubscriptions int, maxLifetime time.Duration) Option {
 			c.invalid("COV limits %d / %v", maxSubscriptions, maxLifetime)
 		}
 		c.maxCOV, c.maxLifetime = maxSubscriptions, maxLifetime
+	}
+}
+
+// WithCOVReferenceLimit bounds the monitored references that all COV
+// subscriptions hold together (default 4096): a SubscribeCOV counts two
+// (Present_Value and Status_Flags), a SubscribeCOVProperty one or two, a
+// SubscribeCOVPropertyMultiple one per listed property. A subscription
+// beyond it fails with resources/no-space-to-add-list-element, as one
+// beyond WithCOVLimits does.
+func WithCOVReferenceLimit(n int) Option {
+	return func(c *config) {
+		if n < 1 {
+			c.invalid("COV reference limit %d", n)
+		}
+		c.maxCOVRefs = n
 	}
 }
 

@@ -3,6 +3,7 @@
 package client
 
 import (
+	"container/list"
 	"slices"
 	"sync"
 	"time"
@@ -94,15 +95,32 @@ func keyOf(o DeviceObservation) observationKey {
 	}
 }
 
+// registryEntry is one retained observation and its position in the
+// recency list.
+type registryEntry struct {
+	obs  DeviceObservation
+	elem *list.Element // Value is the observationKey
+}
+
 // Registry stores device observations with duplicate-instance diagnostics
 // and bounded retention.
+//
+// Observations are kept on a recency list ordered by LastSeen (least recently
+// seen first), so TTL expiry and global-cap eviction only look at the front
+// of the list: per-Upsert maintenance is O(1) amortised, independent of the
+// number of retained observations.
 type Registry struct {
 	mu         sync.RWMutex
-	byKey      map[observationKey]DeviceObservation
+	byKey      map[observationKey]*registryEntry
 	byInstance map[uint32][]observationKey
+	recency    *list.List
 	diag       diag.Sink
 	clock      clock.Clock
 	opts       RegistryOptions
+
+	// maintSteps counts entries examined by expiry and eviction; tests use
+	// it to check that maintenance work does not grow with the table size.
+	maintSteps uint64
 }
 
 func newRegistry(d diag.Sink, clk clock.Clock, opts RegistryOptions) *Registry {
@@ -110,8 +128,9 @@ func newRegistry(d diag.Sink, clk clock.Clock, opts RegistryOptions) *Registry {
 		clk = clock.Real{}
 	}
 	return &Registry{
-		byKey:      make(map[observationKey]DeviceObservation),
+		byKey:      make(map[observationKey]*registryEntry),
 		byInstance: make(map[uint32][]observationKey),
+		recency:    list.New(),
 		diag:       d,
 		clock:      clk,
 		opts:       opts.withDefaults(),
@@ -147,16 +166,17 @@ func (r *Registry) Upsert(o DeviceObservation) {
 			},
 		})
 	}
-	if old, ok := r.byKey[k]; ok {
-		caps := old.Capabilities
+	if e, ok := r.byKey[k]; ok {
+		caps := e.obs.Capabilities
 		mergeCapabilities(&caps, o.Capabilities)
 		o.Capabilities = caps
+		e.obs = o
+		r.recency.MoveToBack(e.elem)
 	} else {
 		r.enforceCapacityLocked(o.Instance, &events)
+		r.byKey[k] = &registryEntry{obs: o, elem: r.recency.PushBack(k)}
 	}
-	r.byKey[k] = o
-	found := slices.Contains(r.byInstance[o.Instance], k)
-	if !found {
+	if !slices.Contains(r.byInstance[o.Instance], k) {
 		r.byInstance[o.Instance] = append(r.byInstance[o.Instance], k)
 	}
 	r.mu.Unlock()
@@ -171,27 +191,34 @@ func (r *Registry) expireLocked(now time.Time, events *[]diag.Event) {
 	if ttl <= 0 {
 		return
 	}
-	for k, o := range r.byKey {
-		if now.Sub(o.LastSeen) >= ttl {
-			r.removeKeyLocked(k)
-			*events = append(*events, diag.Event{
-				Kind:    diag.KindRegistryEviction,
-				Message: "observation expired",
-				Fields: map[string]any{
-					"instance": o.Instance,
-					"reason":   "ttl",
-				},
-			})
+	for {
+		front := r.recency.Front()
+		if front == nil {
+			return
 		}
+		r.maintSteps++
+		k := front.Value.(observationKey)
+		e := r.byKey[k]
+		if now.Sub(e.obs.LastSeen) < ttl {
+			return
+		}
+		r.removeKeyLocked(k)
+		*events = append(*events, diag.Event{
+			Kind:    diag.KindRegistryEviction,
+			Message: "observation expired",
+			Fields: map[string]any{
+				"instance": e.obs.Instance,
+				"reason":   "ttl",
+			},
+		})
 	}
 }
 
 func (r *Registry) enforceCapacityLocked(instance uint32, events *[]diag.Event) {
 	maxPaths := r.opts.MaxPathsPerInstance
 	if maxPaths > 0 {
-		keys := r.byInstance[instance]
-		for len(keys) >= maxPaths {
-			victim, ok := r.leastRecentlySeenLocked(keys)
+		for len(r.byInstance[instance]) >= maxPaths {
+			victim, ok := r.leastRecentlySeenOfLocked(r.byInstance[instance])
 			if !ok {
 				break
 			}
@@ -205,24 +232,24 @@ func (r *Registry) enforceCapacityLocked(instance uint32, events *[]diag.Event) 
 					"limit":    maxPaths,
 				},
 			})
-			keys = r.byInstance[instance]
 		}
 	}
 
 	maxObs := r.opts.MaxObservations
 	if maxObs > 0 {
 		for len(r.byKey) >= maxObs {
-			victim, ok := r.leastRecentlySeenLocked(nil)
-			if !ok {
+			front := r.recency.Front()
+			if front == nil {
 				break
 			}
-			inst := victim.instance
+			r.maintSteps++
+			victim := front.Value.(observationKey)
 			r.removeKeyLocked(victim)
 			*events = append(*events, diag.Event{
 				Kind:    diag.KindRegistryEviction,
 				Message: "global observation limit",
 				Fields: map[string]any{
-					"instance": inst,
+					"instance": victim.instance,
 					"reason":   "max_observations",
 					"limit":    maxObs,
 				},
@@ -231,37 +258,34 @@ func (r *Registry) enforceCapacityLocked(instance uint32, events *[]diag.Event) 
 	}
 }
 
-func (r *Registry) leastRecentlySeenLocked(keys []observationKey) (observationKey, bool) {
+// leastRecentlySeenOfLocked picks the least recently seen key among keys (the
+// paths of one instance, bounded by MaxPathsPerInstance).
+func (r *Registry) leastRecentlySeenOfLocked(keys []observationKey) (observationKey, bool) {
 	var (
 		found bool
 		best  observationKey
 		bestT time.Time
 	)
-	consider := func(k observationKey) {
-		o, ok := r.byKey[k]
+	for _, k := range keys {
+		r.maintSteps++
+		e, ok := r.byKey[k]
 		if !ok {
-			return
+			continue
 		}
-		if !found || o.LastSeen.Before(bestT) {
+		if !found || e.obs.LastSeen.Before(bestT) {
 			found = true
 			best = k
-			bestT = o.LastSeen
-		}
-	}
-	if keys == nil {
-		for k := range r.byKey {
-			consider(k)
-		}
-	} else {
-		for _, k := range keys {
-			consider(k)
+			bestT = e.obs.LastSeen
 		}
 	}
 	return best, found
 }
 
 func (r *Registry) removeKeyLocked(k observationKey) {
-	delete(r.byKey, k)
+	if e, ok := r.byKey[k]; ok {
+		r.recency.Remove(e.elem)
+		delete(r.byKey, k)
+	}
 	keys := r.byInstance[k.instance]
 	if len(keys) == 0 {
 		return
@@ -316,7 +340,8 @@ func mergeCap[T any](dst *Capability[T], src Capability[T]) {
 func (r *Registry) ResolveCapabilities(target Target) (DeviceCapabilities, bool) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
-	for _, o := range r.byKey {
+	for _, e := range r.byKey {
+		o := e.obs
 		if target.Address.Scope() == bacnet.AddressRemoteStation || target.Address.Scope() == bacnet.AddressLocalStation {
 			if !o.Address.Equal(target.Address) {
 				continue
@@ -340,8 +365,8 @@ func (r *Registry) Observations() []DeviceObservation {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	out := make([]DeviceObservation, 0, len(r.byKey))
-	for _, o := range r.byKey {
-		out = append(out, o)
+	for _, e := range r.byKey {
+		out = append(out, e.obs)
 	}
 	return out
 }
@@ -351,9 +376,9 @@ func (r *Registry) ObservationsSince(since time.Time) []DeviceObservation {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	out := make([]DeviceObservation, 0, len(r.byKey))
-	for _, o := range r.byKey {
-		if !o.LastSeen.Before(since) {
-			out = append(out, o)
+	for _, e := range r.byKey {
+		if !e.obs.LastSeen.Before(since) {
+			out = append(out, e.obs)
 		}
 	}
 	return out
@@ -366,8 +391,8 @@ func (r *Registry) ByInstance(instance uint32) []DeviceObservation {
 	keys := r.byInstance[instance]
 	out := make([]DeviceObservation, 0, len(keys))
 	for _, k := range keys {
-		if o, ok := r.byKey[k]; ok {
-			out = append(out, o)
+		if e, ok := r.byKey[k]; ok {
+			out = append(out, e.obs)
 		}
 	}
 	return out

@@ -304,7 +304,8 @@ func (tl *TrendLog) ReadRange(_ context.Context, prop bacnet.PropertyReference, 
 			if first < 0 {
 				return res, nil
 			}
-			last = min(n-1, first+int(q.Count)-1)
+			// int64: first+Count must not wrap where int is 32 bits.
+			last = int(min(int64(n-1), int64(first)+int64(q.Count)-1))
 		} else {
 			for i := n - 1; i >= 0; i-- {
 				if tl.records[i].at.Before(ref) {
@@ -315,7 +316,7 @@ func (tl *TrendLog) ReadRange(_ context.Context, prop bacnet.PropertyReference, 
 			if last < 0 {
 				return res, nil
 			}
-			first = max(0, last+int(q.Count)+1)
+			first = int(max(0, int64(last)+int64(q.Count)+1))
 		}
 	default:
 		return RangeResult{}, Err(bacnet.ErrorClassServices, bacnet.ErrorCodeParameterOutOfRange)

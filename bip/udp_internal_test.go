@@ -368,7 +368,8 @@ func TestInterfaceOOBIndexBeyond32Bits(t *testing.T) {
 	if strconv.IntSize < 64 {
 		return
 	}
-	big := int(int64(math.MaxUint32) + 1)
+	wide := int64(math.MaxUint32) + 1
+	big := int(wide)
 	if interfaceOOB(big) != nil {
 		t.Fatal("an interface index beyond 32 bits was encoded")
 	}

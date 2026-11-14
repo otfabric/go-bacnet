@@ -221,6 +221,12 @@ whose next position would leave the signed 32-bit range, and
 `WriteFileStream` returns `ErrLimitExceeded` before sending anything when the
 data would end past octet 2^31-1.
 
+`ReadPropertyMultipleBatched` (and so `ReadObjectList`'s element-by-element
+fallback) returns `ErrProtocolViolation` when a result's properties are not
+the requested references, in order: extra, missing, reordered or other
+properties. A reference to ALL, REQUIRED or OPTIONAL may expand to several
+results.
+
 ## Server errors
 
 The server never returns Go errors to the network. Each request is answered
@@ -277,7 +283,10 @@ AddListElement or RemoveListElement failed; the server sends it as a
 ChangeList-Error. A failed CreateObject initial value is sent as a
 CreateObject-Error naming the element, and a failed
 SubscribeCOVPropertyMultiple as an error naming the first failed
-subscription.
+subscription. A subscription beyond `WithCOVLimits` or
+`WithCOVReferenceLimit` gets resources / no-space-to-add-list-element; one
+SubscribeCOVPropertyMultiple with more references than fit one notification
+gets the error naming the first reference over that cap.
 
 ### Rejects and Aborts
 
@@ -287,10 +296,11 @@ subscription.
 | Enumeration outside the defined values | Reject undefined-enumeration |
 | Service not served (or hook not installed) | Reject unrecognized-service |
 | Worker queue full | Abort out-of-resources |
+| First segment of a request beyond `WithSegmentLimits` (reassemblies in total or per origin, buffered octets), or a segmented reply beyond its reply limits | Abort out-of-resources |
 | Reply needs segmentation the requester does not accept, or segmentation disabled | Abort segmentation-not-supported |
 | Reply or segmented request beyond the segment limits | Abort buffer-overflow |
 | Segment of an unknown transaction | Abort invalid-apdu-in-this-state |
-| No SegmentACK after the retries | Abort tsm-timeout |
+| No SegmentACK after the retries, or a segmented reply past its overall deadline | Abort tsm-timeout |
 
 Remaining failures that are not answers (a malformed frame, a dropped
 request, a failed send or notification) are diagnostics; see

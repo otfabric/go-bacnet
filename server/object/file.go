@@ -214,16 +214,18 @@ func (f *File) WriteStream(start int32, data []byte) (int32, error) {
 			err = ErrInvalidFileStartPosition
 			return nil
 		}
-		at := int(start)
+		at64 := int64(start)
 		if start == -1 {
-			at = len(f.data)
+			at64 = int64(len(f.data))
 		}
 		// Past the end: the gap reads as zero octets (fseek and fwrite in
-		// bacnet-stack ports/posix/bacfile-posix.c).
-		if at+len(data) > f.cfg.MaxSize {
+		// bacnet-stack ports/posix/bacfile-posix.c). The bound is checked in
+		// int64 so that start plus length cannot wrap where int is 32 bits.
+		if at64+int64(len(data)) > int64(f.cfg.MaxSize) {
 			err = ErrFileFull
 			return nil
 		}
+		at := int(at64)
 		if at+len(data) > len(f.data) {
 			f.data = append(f.data, make([]byte, at+len(data)-len(f.data))...)
 		}

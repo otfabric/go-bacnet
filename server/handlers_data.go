@@ -4,6 +4,7 @@ package server
 
 import (
 	"context"
+	"errors"
 
 	"github.com/otfabric/go-bacnet"
 	"github.com/otfabric/go-bacnet/apdu"
@@ -43,51 +44,122 @@ func (s *Server) readProperty(ctx context.Context, req *apdu.ConfirmedRequest, _
 // readPropertyMultiple serves ReadPropertyMultiple (clause 15.7). Every
 // property gets a value or an access error; ALL, REQUIRED and OPTIONAL
 // expand to the object's properties.
+//
+// The reply is encoded while the results are produced, so that a request
+// whose answer cannot fit the requester's buffer stops as soon as the
+// encoded size passes the reply budget: it is answered with Abort
+// segmentation-not-supported when the reply cannot be segmented, else
+// buffer-overflow, as finish answers a reply that is too large.
 func (s *Server) readPropertyMultiple(ctx context.Context, req *apdu.ConfirmedRequest, _ peer) result {
 	specs, err := service.DecodeReadPropertyMultiple(req.Payload, s.limits)
 	if err != nil {
 		return rejectFor(err)
 	}
-	results := make([]service.ReadAccessResult, 0, len(specs))
+	enc := rpmEncoder{budget: s.responseBudget(req)}
 	for _, spec := range specs {
 		o, ok := s.dev.Object(spec.Object)
 		if !ok {
-			res := service.ReadAccessResult{Object: spec.Object}
-			for _, ref := range spec.Properties {
-				res.Properties = append(res.Properties, service.PropertyResult{Property: ref, Err: object.AsError(object.ErrUnknownObject)})
+			if err := enc.begin(spec.Object); err != nil {
+				return fail(err)
 			}
-			results = append(results, res)
+			for _, ref := range spec.Properties {
+				if err := enc.add(spec.Object, service.PropertyResult{Property: ref, Err: object.AsError(object.ErrUnknownObject)}); err != nil {
+					return s.rpmFailure(req, err)
+				}
+			}
+			enc.end()
 			continue
 		}
-		res := service.ReadAccessResult{Object: o.Identifier()}
+		id := o.Identifier()
+		if err := enc.begin(id); err != nil {
+			return fail(err)
+		}
 		for _, ref := range spec.Properties {
 			if isSpecialProperty(ref.Identifier) {
 				all, required := o.Properties()
-				for _, id := range all {
+				for _, pid := range all {
 					switch ref.Identifier {
 					case bacnet.PropertyRequired:
-						if !required[id] {
+						if !required[pid] {
 							continue
 						}
 					case bacnet.PropertyOptional:
-						if required[id] {
+						if required[pid] {
 							continue
 						}
 					default: // ALL
 					}
-					res.Properties = append(res.Properties, readOne(ctx, o, bacnet.PropertyReference{Identifier: id}))
+					if err := enc.add(id, readOne(ctx, o, bacnet.PropertyReference{Identifier: pid})); err != nil {
+						return s.rpmFailure(req, err)
+					}
 				}
 				continue
 			}
-			res.Properties = append(res.Properties, readOne(ctx, o, ref))
+			if err := enc.add(id, readOne(ctx, o, ref)); err != nil {
+				return s.rpmFailure(req, err)
+			}
 		}
-		results = append(results, res)
+		enc.end()
 	}
-	payload, err := service.EncodeReadPropertyMultipleACK(results)
-	if err != nil {
+	if len(enc.payload) > enc.budget {
+		return s.rpmFailure(req, errReplyTooLarge)
+	}
+	return complexACK(enc.payload)
+}
+
+var errReplyTooLarge = errors.New("server: reply exceeds the requester's buffer")
+
+// rpmFailure answers a ReadPropertyMultiple that could not be encoded.
+func (s *Server) rpmFailure(req *apdu.ConfirmedRequest, err error) result {
+	if !errors.Is(err, errReplyTooLarge) {
 		return fail(err)
 	}
-	return complexACK(payload)
+	if !req.SegmentedResponseAccepted || !s.cfg.segmentation {
+		return fail(&abortError{bacnet.AbortReasonSegmentationNotSupported})
+	}
+	return fail(&abortError{bacnet.AbortReasonBufferOverflow})
+}
+
+// rpmEncoder builds a ReadPropertyMultiple-ACK one property result at a
+// time and stops at the reply budget.
+type rpmEncoder struct {
+	budget  int
+	payload []byte
+	head    int // length of the open ReadAccessResult header
+}
+
+// begin opens the ReadAccessResult of obj: its identifier and the opening
+// tag of listOfResults.
+func (e *rpmEncoder) begin(obj bacnet.ObjectIdentifier) error {
+	b, err := service.EncodeReadPropertyMultipleACK([]service.ReadAccessResult{{Object: obj}})
+	if err != nil {
+		return err
+	}
+	e.head = len(b) - 1 // without the closing tag
+	e.payload = append(e.payload, b[:e.head]...)
+	return e.check(1)
+}
+
+// add appends one property result to the open ReadAccessResult.
+func (e *rpmEncoder) add(obj bacnet.ObjectIdentifier, pr service.PropertyResult) error {
+	b, err := service.EncodeReadPropertyMultipleACK([]service.ReadAccessResult{{Object: obj, Properties: []service.PropertyResult{pr}}})
+	if err != nil {
+		return err
+	}
+	e.payload = append(e.payload, b[e.head:len(b)-1]...)
+	return e.check(1)
+}
+
+// end closes the open ReadAccessResult.
+func (e *rpmEncoder) end() { e.payload = append(e.payload, 0x1F) }
+
+// check reports errReplyTooLarge once the payload, with pending more
+// octets still to come, passes the budget.
+func (e *rpmEncoder) check(pending int) error {
+	if len(e.payload)+pending > e.budget {
+		return errReplyTooLarge
+	}
+	return nil
 }
 
 func readOne(ctx context.Context, o object.Object, ref bacnet.PropertyReference) service.PropertyResult {

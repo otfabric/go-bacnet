@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"math"
+	"strconv"
 	"testing"
 
 	"github.com/otfabric/go-bacnet"
@@ -148,7 +149,14 @@ func TestFileReadOnlyAndConfig(t *testing.T) {
 	if _, err := rr.WriteRecords(0, nil); !errors.Is(err, ErrFileAccessDenied) {
 		t.Fatal(err)
 	}
-	for _, cfg := range []FileConfig{{}, {Name: "x", Instance: bacnet.MaxObjectInstance}, {Name: "x", MaxSize: 1, Data: []byte("ab")}, {Name: "x", Record: true, MaxSize: 1, Records: [][]byte{{1}, {2}}}, {Name: "x", MaxSize: math.MaxInt32 + 1}} {
+	cfgs := []FileConfig{{}, {Name: "x", Instance: bacnet.MaxObjectInstance}, {Name: "x", MaxSize: 1, Data: []byte("ab")}, {Name: "x", Record: true, MaxSize: 1, Records: [][]byte{{1}, {2}}}}
+	if strconv.IntSize == 64 {
+		// A size beyond the 32-bit file positions; not representable in a
+		// 32-bit int.
+		beyond := int64(math.MaxInt32) + 1
+		cfgs = append(cfgs, FileConfig{Name: "x", MaxSize: int(beyond)})
+	}
+	for _, cfg := range cfgs {
 		if _, err := NewFile(cfg); err == nil {
 			t.Errorf("accepted %+v", cfg)
 		}

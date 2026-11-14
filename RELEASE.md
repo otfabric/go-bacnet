@@ -1,5 +1,46 @@
 # go-bacnet Releases
 
+## v0.9.0
+
+**Date:** 2026-11-14
+**Previous release:** v0.8.0
+
+Requires **Go 1.26+**. Interop pin unchanged: [`bacnet-interop` v0.14.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.14.0). This release tightens the server's and the client's bounds on what a peer can make them build, keep or send, extends `Hooks.BeforeWrite` to two more write paths, and changes how the BBMD passes on Forwarded-NPDUs. The new server options are additive; the client changes are visible where noted.
+
+### Added
+
+- `server.WithCOVReferenceLimit(n)` (default 4096) bounds the monitored references across all COV subscriptions; beyond it a subscription is refused with resources / no-space-to-add-list-element, as one beyond `WithCOVLimits` is.
+- `server.WithSegmentLimits(server.SegmentLimits{…})` bounds segmented requests being reassembled (64 in total, 16 per origin, 4 MiB buffered) and segmented replies being sent (32 in total, 8 per origin); beyond them the request is answered with Abort out-of-resources ([ERRORS.md](ERRORS.md#rejects-and-aborts)).
+- `object.WriteGuard`: an optional interface of the `Runtime` bound to a Device; the server's implements it with `Hooks.BeforeWrite`.
+
+### Changed
+
+- Server: a datagram whose immediate peer is not a valid IPv4 endpoint is discarded before BVLC handling, with a `bvlc` diagnostic, with or without a BBMD. Before, a Forwarded-NPDU from such a peer was served and the BVLC NAK paths answered it.
+- Server: `Hooks.BeforeWrite` is now called for AtomicWriteFile (a write of the File's File_Size whose value carries the start position and the data) and for every write a Schedule makes to the objects in its List_Of_Object_Property_References, for the referenced object. An application whose hook refuses a property now also refuses it when a Schedule writes it.
+- Server: one SubscribeCOVPropertyMultiple holds at most as many references as fit one notification in the server's Max APDU (58 at 1476); beyond it the request gets the error naming the first reference over the cap. A COV notification larger than one APDU is not sent and is reported as a `cov` diagnostic.
+- Server: ReadPropertyMultiple and Active_COV_Subscriptions are built against the requester's reply budget and stop with the same Abort as before as soon as it is exceeded; GetEventInformation finds the largest list that fits by binary search and honours the request deadline.
+- Server: a segmented reply is sent from its own goroutine, so it no longer holds a request worker, and has an overall deadline after which the requester gets Abort tsm-timeout. `Close` waits for it.
+- Server: a confirmed COV notification still pending when its subscription is replaced, cancelled or expires is cancelled, so its invoke ID is released.
+- BBMD: a Forwarded-NPDU is passed on (to the local network and the FDT) only when it comes from a BDT peer; from any other node it is delivered locally only. The FDT distribution skips the sender and BDT peers. Register-Foreign-Device from a BDT peer or from the BBMD itself is answered with a NAK. A Forwarded-NPDU carrying a confirmed request is discarded, as an Original-Broadcast-NPDU already was.
+- Client: a packet whose immediate peer is not a valid IPv4 endpoint is dropped right after BVLC parsing, with a `bvlc` diagnostic, and the source-path match of a pending request fails closed for it.
+- Client: `ReadRangeAll`'s `MaxItems` counts the items kept, not the records the device claims: a page counts as the larger of its ItemCount and the items decoded, and a page beyond the budget is cut (`Partial`, `StoppedReason "MaxItems"`). When a page of typed log records is cut, its flat `ItemData` is nil.
+- Client: `ReadPropertyMultipleBatched` returns `ErrProtocolViolation` when a result's properties are not the requested references, in order; a reference to ALL, REQUIRED or OPTIONAL may expand to several. `ReadObjectList` never returns more than `maxItems` entries, and `device.ReadSnapshot` keeps only the requested properties of the requested objects.
+- Client: the device and object registries keep a recency list, so expiry and eviction no longer scan every entry on each observation.
+
+### Fixed
+
+- Server: AtomicWriteFile with a stream start position near the 32-bit limit, and a byTime ReadRange of a Trend Log with a very large count, computed their bounds in `int` and could go wrong on 32-bit platforms; both use 64-bit arithmetic.
+- Server: the stored segmented-request header no longer keeps the request payload.
+
+### Tests
+
+- `server`: `bounds_internal_test.go` (COV reference bounds and notification size, Active_COV_Subscriptions, ReadPropertyMultiple budget, AtomicWriteFile and Schedule hooks, GetEventInformation, reassembly and reply limits, segmented reply off the worker), `bbmd_peer_test.go` (non-IPv4 peers, two server BBMDs forward once).
+- `bbmd`: `peer_test.go` (non-IPv4 peers, Forwarded-NPDU from a non-peer, BDT peers as foreign devices, no loop between peers).
+- `server/object`: `bounds32_test.go` (File and Trend Log bounds at the 32-bit limits).
+- `client`: `peer_bounds_test.go` (registry maintenance independent of size, non-IPv4 immediate peers, ReadRangeAll budget, RPM result matching, ReadObjectList cap); `TestReadRangeAllPagesUntilLastItem` now counts items. `device`: `snapshot_bounds_test.go`.
+
+---
+
 ## v0.8.0
 
 **Date:** 2026-11-08

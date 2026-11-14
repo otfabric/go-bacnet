@@ -13,7 +13,10 @@
 // (J.4.4.2 for Protocol_Revision 17 and later), a registration lives for
 // its Time-to-Live plus a 30 second grace period, and a Forwarded-NPDU
 // from a peer whose BDT mask is all ones (one-hop distribution) is
-// rebroadcast on the local subnet.
+// rebroadcast on the local subnet. A Forwarded-NPDU from a node that is
+// not a BDT peer is delivered to the local device only, a BDT peer cannot
+// register as a foreign device, and packets from a node that is not an
+// IPv4 endpoint are ignored.
 //
 // A BBMD is used through server.WithBBMD; it holds no goroutines and
 // needs no Close.
@@ -148,14 +151,19 @@ func oneHop(e bvlc.BDTEntry) bool { return e.Mask == bvlc.IPv4Mask{0xFF, 0xFF, 0
 type sendFunc = func(context.Context, bip.OutboundPacket) error
 
 func forwarded(origin bip.Endpoint, npdu []byte) ([]byte, error) {
+	if !origin.IsValid() {
+		return nil, fmt.Errorf("bbmd: origin %q is not an IPv4 endpoint", origin.String())
+	}
 	return bvlc.Append(nil, bvlc.Message{
 		Function: bvlc.FunctionForwardedNPDU, OriginIP: origin.Addr.Addr().As4(), OriginPort: origin.Addr.Port(), Payload: npdu,
 	})
 }
 
 // distribute sends a Forwarded-NPDU to the BDT peers (except this BBMD
-// and the origin) and to the foreign devices (except the origin).
-func (b *BBMD) distribute(ctx context.Context, origin bip.Endpoint, npdu []byte, peers bool, send sendFunc) error {
+// and the origin) and to the foreign devices (except the origin, the
+// immediate sender and any BDT peer, which receive the broadcast through
+// the BDT or already have it).
+func (b *BBMD) distribute(ctx context.Context, origin, from bip.Endpoint, npdu []byte, peers bool, send sendFunc) error {
 	frame, err := forwarded(origin, npdu)
 	if err != nil {
 		return err
@@ -172,9 +180,10 @@ func (b *BBMD) distribute(ctx context.Context, origin bip.Endpoint, npdu []byte,
 		}
 	}
 	for _, f := range b.fdtLocked(b.now()) {
-		if !f.Address.Equal(origin) && !f.Address.Equal(b.self) {
-			dests = append(dests, f.Address)
+		if f.Address.Equal(origin) || f.Address.Equal(b.self) || f.Address.Equal(from) || b.isPeerLocked(f.Address) {
+			continue
 		}
+		dests = append(dests, f.Address)
 	}
 	b.mu.Unlock()
 	var errs []error
@@ -191,6 +200,24 @@ func result(ctx context.Context, to bip.Endpoint, code uint16, send sendFunc) {
 	if err == nil {
 		_ = send(ctx, bip.OutboundPacket{Data: frame, Destination: to})
 	}
+}
+
+// isPeerLocked reports whether ep is the address of a BDT entry other
+// than this BBMD. The caller holds b.mu.
+func (b *BBMD) isPeerLocked(ep bip.Endpoint) bool {
+	for _, e := range b.bdt {
+		if e.Endpoint.Equal(ep) && !e.Endpoint.Equal(b.self) {
+			return true
+		}
+	}
+	return false
+}
+
+// isPeer reports whether from is a BDT peer other than this BBMD.
+func (b *BBMD) isPeer(from bip.Endpoint) bool {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.isPeerLocked(from)
 }
 
 // isPeerOneHop reports whether from is a BDT peer whose entry uses an
@@ -246,6 +273,11 @@ func confirmedRequest(npdu []byte) bool {
 
 // HandleBVLC implements server.BBMD.
 func (b *BBMD) HandleBVLC(ctx context.Context, msg bvlc.Message, from bip.Endpoint, send sendFunc) (bool, bip.Endpoint) {
+	if !from.IsValid() {
+		// Only an IPv4 B/IP node can be answered, registered or named as
+		// the origin of a Forwarded-NPDU.
+		return false, bip.Endpoint{}
+	}
 	if from.Equal(b.self) {
 		return false, bip.Endpoint{} // our own broadcast looped back
 	}
@@ -254,13 +286,20 @@ func (b *BBMD) HandleBVLC(ctx context.Context, msg bvlc.Message, from bip.Endpoi
 		if confirmedRequest(msg.Payload) {
 			return false, bip.Endpoint{}
 		}
-		_ = b.distribute(ctx, from, msg.Payload, true, send)
+		_ = b.distribute(ctx, from, from, msg.Payload, true, send)
 		return true, from
 	case bvlc.FunctionForwardedNPDU:
 		origin, _ := msg.OriginAddrPort()
 		oep := bip.NewEndpoint(origin)
-		if oep.Equal(b.self) {
+		if !oep.IsValid() || oep.Equal(b.self) || confirmedRequest(msg.Payload) {
 			return false, bip.Endpoint{}
+		}
+		// Annex J.4.5: only a Forwarded-NPDU from a peer BBMD is
+		// redistributed (rebroadcast for a one-hop peer, and sent to the
+		// foreign devices). From any other node it is delivered to the
+		// local device only, so that forwarded traffic never circulates.
+		if !b.isPeer(from) {
+			return true, oep
 		}
 		if b.isPeerOneHop(from) {
 			frame, err := forwarded(oep, msg.Payload)
@@ -268,7 +307,7 @@ func (b *BBMD) HandleBVLC(ctx context.Context, msg bvlc.Message, from bip.Endpoi
 				_ = send(ctx, bip.OutboundPacket{Data: frame, Broadcast: true})
 			}
 		}
-		_ = b.distribute(ctx, oep, msg.Payload, false, send)
+		_ = b.distribute(ctx, oep, from, msg.Payload, false, send)
 		return true, oep
 	case bvlc.FunctionDistributeBroadcastToNetwork:
 		// Annex J.4.5: from a foreign device; an unregistered sender gets a
@@ -283,7 +322,7 @@ func (b *BBMD) HandleBVLC(ctx context.Context, msg bvlc.Message, from bip.Endpoi
 			return false, bip.Endpoint{}
 		}
 		_ = send(ctx, bip.OutboundPacket{Data: frame, Broadcast: true})
-		_ = b.distribute(ctx, from, msg.Payload, true, send)
+		_ = b.distribute(ctx, from, from, msg.Payload, true, send)
 		return true, from
 	case bvlc.FunctionRegisterForeignDevice:
 		result(ctx, from, b.register(from, msg.TTL), send)
@@ -333,6 +372,12 @@ func (b *BBMD) register(ep bip.Endpoint, ttl uint16) uint16 {
 	}
 	b.mu.Lock()
 	defer b.mu.Unlock()
+	// A peer BBMD (or this BBMD) receives broadcasts through the BDT; as a
+	// foreign device too it would receive them twice and could send them
+	// back.
+	if ep.Equal(b.self) || b.isPeerLocked(ep) {
+		return bvlc.ResultRegisterForeignDeviceNAK
+	}
 	now := b.now()
 	b.fdtLocked(now) // drop expired entries first
 	if _, known := b.fdt[ep]; !known && len(b.fdt) >= b.max {
@@ -355,5 +400,5 @@ func (b *BBMD) delete(ep bip.Endpoint) bool {
 // LocalBroadcast implements server.BBMD: a broadcast of the local device
 // also goes to the peers and the foreign devices (Annex J.4.5).
 func (b *BBMD) LocalBroadcast(ctx context.Context, npdu []byte, send sendFunc) {
-	_ = b.distribute(ctx, b.self, npdu, true, send)
+	_ = b.distribute(ctx, b.self, b.self, npdu, true, send)
 }

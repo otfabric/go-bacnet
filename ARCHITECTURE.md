@@ -237,8 +237,11 @@ released.
 |---|---|
 | Worker queue | `WithWorkers` queue length |
 | Responder transactions | one per (requester, invoke ID); reassembly ends after twice the segment timeout without a segment |
-| Reassembly | `WithSegmentation` segments and `DecodeLimits.MaxReassembledAPDU` |
+| Reassembly | `WithSegmentation` segments and `DecodeLimits.MaxReassembledAPDU`; `WithSegmentLimits` reassemblies (64, 16 per origin) and buffered octets (4 MiB) |
+| Segmented replies | `WithSegmentLimits` replies (32, 8 per origin); each on its own goroutine with an overall deadline, so it never holds a worker |
+| Reply construction | The requester's reply budget; ReadPropertyMultiple, Active_COV_Subscriptions and GetEventInformation stop once it is exceeded |
 | COV subscriptions | `WithCOVLimits`, default 256 |
+| COV monitored references | `WithCOVReferenceLimit`, default 4096 in total; one SubscribeCOVPropertyMultiple at most what fits one notification |
 | Device bindings for event recipients (from I-Am) | 256 |
 | Objects | `DeviceConfig.MaxObjects`, default 65535 |
 | BBMD foreign devices | `bbmd.Config.MaxForeignDevices`, default 128 |

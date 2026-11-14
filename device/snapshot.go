@@ -70,8 +70,17 @@ func ReadSnapshot(ctx context.Context, r PropertyReader, target client.Target, d
 		return snap, err
 	}
 	var objectList bacnet.ApplicationValue
+	metaSeen := map[bacnet.PropertyIdentifier]bool{}
 	for _, res := range results {
+		if !dev.Matches(res.Object) {
+			continue // results for an object that was not requested
+		}
 		for _, pr := range res.Properties {
+			// Keep only the requested metadata properties, each once.
+			if !requested(metaSpecs[0].Properties, pr.Property.Identifier) || metaSeen[pr.Property.Identifier] {
+				continue
+			}
+			metaSeen[pr.Property.Identifier] = true
 			if pr.Err != nil {
 				snap.PartialErrors = append(snap.PartialErrors, pr.Err)
 				continue
@@ -139,7 +148,21 @@ func ReadSnapshot(ctx context.Context, r PropertyReader, target client.Target, d
 			continue
 		}
 		for _, res := range ores {
+			if !id.Matches(res.Object) {
+				continue // results for an object that was not requested
+			}
 			for _, pr := range res.Properties {
+				// Store only requested properties: at most len(props),
+				// which is at most MaxProperties.
+				if !requested(props, pr.Property.Identifier) {
+					continue
+				}
+				if _, dup := os.Properties[pr.Property.Identifier]; dup {
+					continue
+				}
+				if _, dup := os.Errors[pr.Property.Identifier]; dup {
+					continue
+				}
 				if pr.Err != nil {
 					os.Errors[pr.Property.Identifier] = pr.Err
 					continue
@@ -150,4 +173,13 @@ func ReadSnapshot(ctx context.Context, r PropertyReader, target client.Target, d
 		snap.Objects = append(snap.Objects, os)
 	}
 	return snap, nil
+}
+
+func requested(refs []bacnet.PropertyReference, id bacnet.PropertyIdentifier) bool {
+	for _, r := range refs {
+		if r.Identifier == id {
+			return true
+		}
+	}
+	return false
 }

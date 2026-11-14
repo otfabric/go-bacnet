@@ -27,6 +27,16 @@ func (s *Server) responseBudget(req *apdu.ConfirmedRequest) int {
 	return (limit - 5) * min(segs, 256)
 }
 
+// maxReply is the largest ComplexACK service payload the server sends to
+// any requester: one APDU, or its maximum number of segments.
+func (s *Server) maxReply() int {
+	limit := int(s.cfg.maxAPDU)
+	if !s.cfg.segmentation {
+		return limit - 3
+	}
+	return (limit - 5) * min(s.cfg.maxSegments, 256)
+}
+
 // readRange serves ReadRange (clause 15.8). The object selects the items;
 // the reply carries as many as fit the requester's buffer and sets
 // MORE_ITEMS when some were left out, as bacnet-stack does.

@@ -682,6 +682,8 @@ func (s *Schedule) Poll(ctx context.Context, now time.Time, dev *Device) {
 		}
 		// A refused write leaves the property as it was; the schedule
 		// writes again when Present_Value next changes.
-		_ = o.WriteProperty(ctx, Write{Property: bacnet.PropertyReference{Identifier: r.Property, ArrayIndex: r.ArrayIndex}, Value: pv, Priority: prio})
+		// The write passes the server's BeforeWrite hook (WriteGuard) as a
+		// remote WriteProperty does.
+		_ = dev.guardedWrite(ctx, o, Write{Property: bacnet.PropertyReference{Identifier: r.Property, ArrayIndex: r.ArrayIndex}, Value: pv, Priority: prio})
 	}
 }

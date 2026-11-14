@@ -32,7 +32,11 @@ these:
   RemoveListElement) and can refuse it with a BACnet error; `BeforeDelete`
   does the same for DeleteObject. CreateObject works only for object types
   the application enables with `Device.RegisterFactory`; its initial values
-  are written without `BeforeWrite`.
+  are written without `BeforeWrite`. AtomicWriteFile also passes
+  `BeforeWrite` (a write of the File's File_Size whose value carries the
+  start position and the data), and so does every write a Schedule makes to
+  the objects in its List_Of_Object_Property_References: the hook is asked
+  for the referenced object, not only for the Schedule.
 - `WithPassword` makes DeviceCommunicationControl and ReinitializeDevice
   require a password (sent in clear text). Without it none is checked.
 - A broadcast Who-Is gets a broadcast I-Am, so the server can be used to
@@ -40,15 +44,28 @@ these:
   (`WithInterface`, `WithLocalAddr`) on networks where that matters.
 - The `bbmd` package configures its BDT locally only:
   Write-Broadcast-Distribution-Table is refused. Foreign-device registration
-  is accepted from any peer unless `RejectRegistrations` is set; a
-  registered foreign device can have its broadcasts distributed.
+  is accepted from any peer unless `RejectRegistrations` is set, except
+  from a BDT peer or the BBMD itself; a registered foreign device can have
+  its broadcasts distributed. A Forwarded-NPDU is passed on (to the local
+  network and the FDT) only when it comes from a BDT peer; from any other
+  node it is delivered locally only. It is never sent back to its sender or
+  to a BDT peer through the FDT.
 
 Server resource bounds: request workers and their queue (`WithWorkers`,
 default 4 and 64; a confirmed request that finds the queue full gets Abort
 out-of-resources, an unconfirmed one is dropped), COV subscriptions and
-their lifetime (`WithCOVLimits`, default 256), the FDT
-(`bbmd.Config.MaxForeignDevices`, default 128), segments per message
-(`WithSegmentation`) and the decode limits below (`WithDecodeLimits`).
+their lifetime (`WithCOVLimits`, default 256), the monitored references
+across all COV subscriptions (`WithCOVReferenceLimit`, default 4096; one
+SubscribeCOVPropertyMultiple holds at most as many references as fit one
+notification), the FDT (`bbmd.Config.MaxForeignDevices`, default 128),
+segments per message (`WithSegmentation`), segmented requests being
+reassembled and segmented replies being sent, in total and per origin
+(`WithSegmentLimits`), and the decode limits below (`WithDecodeLimits`).
+A reply is built against the requester's reply budget and stops once it
+exceeds it (ReadPropertyMultiple, Active_COV_Subscriptions,
+GetEventInformation). A segmented reply runs off the request workers and
+has an overall deadline. A COV notification larger than one APDU is not
+sent and is reported as a diagnostic.
 
 DeviceCommunicationControl and ReinitializeDevice passwords are sent in clear
 text, as the protocol defines. The library never logs them
@@ -71,7 +88,9 @@ I-Am floods must not grow process memory without bound; eviction is reported
 via diagnostics.
 
 BACnet/IP endpoints are IPv4-only. Custom transports that inject IPv6
-`ImmediatePeer` values are diagnosed and discarded; they must not panic.
+`ImmediatePeer` values are diagnosed and discarded before BVLC handling,
+in the client, the server and the BBMD; they must not panic. The client's
+source-path match fails closed for such a peer.
 
 ## Supported versions
 
