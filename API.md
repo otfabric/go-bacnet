@@ -255,10 +255,14 @@ transparently retried on another route.
   the device's Max APDU requires (by property, also inside one object) and
   returns one result per input specification, in input order. When the device
   aborts because the *reply* did not fit, the batch is halved and retried.
-  On error the results gathered so far are returned with it.
+  On error the results gathered so far are returned with it. Each result
+  must carry the requested references, in order (a reference to ALL,
+  REQUIRED or OPTIONAL may expand to several); extra, missing or other
+  properties are an `ErrProtocolViolation`.
 - `ReadObjectList` reads the whole Object_List and, when the device cannot
   return it in one reply, falls back to reading it element by element
-  (ReadPropertyMultiple, or ReadProperty where that is unsupported).
+  (ReadPropertyMultiple, or ReadProperty where that is unsupported). It never
+  returns more than `maxItems` entries.
 - `WritePropertyMultipleBatched` sends explicit batches and reports each as
   Completed, Failed or Unknown; it stops at the first batch that did not
   complete and never repeats one.
@@ -269,10 +273,14 @@ transparently retried on another route.
   start position (end of file) each `WriteFileStream` chunk after the first
   goes to the position the device's ACK reported plus the chunk length.
 - `ReadRangeAll` pages byPosition or bySequenceNumber until the device
-  reports LAST_ITEM or a limit (`MaxItems` in records, `MaxBytes`,
-  `MaxPages`) is reached; `Partial` and `StoppedReason` say which.
+  reports LAST_ITEM or a limit (`MaxItems` in items kept, `MaxBytes`,
+  `MaxPages`) is reached; `Partial` and `StoppedReason` say which. A page
+  counts as the larger of the device's ItemCount and the items decoded, and
+  a page beyond `MaxItems` is cut to it.
 - `device.ReadSnapshot` reads a device's identity and objects through a
-  `PropertyReader` (the client does not import `device`).
+  `PropertyReader` (the client does not import `device`). It keeps only the
+  requested properties of the requested objects, at most `MaxProperties`
+  per object.
 
 `ReadProperty` accepts the Device wildcard `bacnet.AnyDevice()` (instance
 4194303): a device answers it with its own identifier, which is how to
@@ -487,6 +495,8 @@ _ = av.SetPresentValue(bacnet.RealValue(22)) // COV subscribers are notified
 | `WithTransactionOptions(apduTimeout, retries, segmentTimeout)` | 3 s, 3, 2 s | The server's own confirmed notifications and segmented replies; also the Device's APDU properties |
 | `WithPassword` | none | Required by DeviceCommunicationControl and ReinitializeDevice when set |
 | `WithCOVLimits(max, maxLifetime)` | 256, none | With a lifetime limit, indefinite subscriptions are refused |
+| `WithCOVReferenceLimit(n)` | 4096 | Monitored references across all COV subscriptions; beyond it a subscription is refused like one beyond `WithCOVLimits` |
+| `WithSegmentLimits(SegmentLimits{…})` | 64 / 16 / 4 MiB, 32 / 8 | Segmented requests being reassembled (total, per origin, octets) and segmented replies being sent (total, per origin); beyond them Abort out-of-resources. Zero fields keep the default |
 | `WithBBMD` | none | A `bbmd.BBMD` sharing the endpoint |
 | `WithHooks` | none | Application part of device-level services |
 | `WithDecodeLimits`, `WithLogger`, `WithDiagnosticFunc` | | As for the client |

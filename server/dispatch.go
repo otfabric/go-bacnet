@@ -275,3 +275,13 @@ func (r runtimeInfo) APDURetries() int                  { return r.s.cfg.retries
 func (r runtimeInfo) Now() time.Time                    { return r.s.clock.Now() }
 
 func (r runtimeInfo) ActiveCOVSubscriptions() []bacnet.Element { return r.s.cov.activeSubscriptions() }
+
+// BeforeWrite implements object.WriteGuard with the BeforeWrite hook, so
+// that writes the Device's own objects make (a Schedule's references) are
+// checked like a remote WriteProperty.
+func (r runtimeInfo) BeforeWrite(ctx context.Context, obj bacnet.ObjectIdentifier, w object.Write) error {
+	if h := r.s.cfg.hooks.BeforeWrite; h != nil {
+		return h(ctx, obj, w)
+	}
+	return nil
+}

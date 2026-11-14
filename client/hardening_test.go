@@ -631,7 +631,7 @@ func TestResolveTargetNoRoute(t *testing.T) {
 
 // The pager must keep going while pages are full: a peer that returned the
 // one record it was asked for clears MORE_ITEMS although records remain.
-// MaxItems counts records, not the elements a record decodes into.
+// MaxItems counts the items retained: here two ItemData elements per page.
 func TestReadRangeAllPagesUntilLastItem(t *testing.T) {
 	env := newVirtualPair(t)
 	ctx := t.Context()
@@ -667,12 +667,12 @@ func TestReadRangeAllPagesUntilLastItem(t *testing.T) {
 		t.Fatalf("%d pages (partial=%v %q), want %d and a complete result", len(all.Pages), all.Partial, all.StoppedReason, total)
 	}
 
-	capped, err := env.Client.ReadRangeAll(ctx, env.Target, req, ReadRangePageOptions{PageCount: 1, MaxItems: 3})
+	capped, err := env.Client.ReadRangeAll(ctx, env.Target, req, ReadRangePageOptions{PageCount: 1, MaxItems: 6})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(capped.Pages) != 3 || !capped.Partial || capped.StoppedReason != "MaxItems" {
-		t.Fatalf("MaxItems=3: %d pages (partial=%v %q)", len(capped.Pages), capped.Partial, capped.StoppedReason)
+	if len(capped.Pages) != 3 || len(capped.Items) != 6 || !capped.Partial || capped.StoppedReason != "MaxItems" {
+		t.Fatalf("MaxItems=6: %d pages, %d items (partial=%v %q)", len(capped.Pages), len(capped.Items), capped.Partial, capped.StoppedReason)
 	}
 }
 

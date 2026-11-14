@@ -60,8 +60,9 @@ func (s *Server) atomicReadFile(_ context.Context, req *apdu.ConfirmedRequest, _
 }
 
 // atomicWriteFile serves AtomicWriteFile (clause 14.2); the ACK carries
-// the position the data was written at (the end of the file for -1).
-func (s *Server) atomicWriteFile(_ context.Context, req *apdu.ConfirmedRequest, _ peer) result {
+// the position the data was written at (the end of the file for -1). The
+// application's BeforeWrite hook is asked first (see fileWrite).
+func (s *Server) atomicWriteFile(ctx context.Context, req *apdu.ConfirmedRequest, _ peer) result {
 	r, err := service.DecodeAtomicWriteFile(req.Payload, s.limits)
 	if err != nil {
 		return rejectFor(err)
@@ -69,6 +70,11 @@ func (s *Server) atomicWriteFile(_ context.Context, req *apdu.ConfirmedRequest, 
 	f, err := s.fileFor(r.File, r.Access)
 	if err != nil {
 		return fail(err)
+	}
+	if h := s.cfg.hooks.BeforeWrite; h != nil {
+		if err := h(ctx, r.File, fileWrite(r)); err != nil {
+			return fail(err)
+		}
 	}
 	var at int32
 	if r.Access == service.FileAccessStream {
@@ -84,4 +90,23 @@ func (s *Server) atomicWriteFile(_ context.Context, req *apdu.ConfirmedRequest, 
 		return fail(err)
 	}
 	return complexACK(payload)
+}
+
+// fileWrite describes an AtomicWriteFile to the BeforeWrite hook: a write
+// of File_Size whose value is a constructed value holding the start
+// position (Signed) followed by the data (one Octet String for stream
+// access, one per record for record access).
+func fileWrite(r service.AtomicWriteFileRequest) object.Write {
+	els := []bacnet.Element{{Value: bacnet.SignedValue(int64(r.StartPosition))}}
+	if r.Access == service.FileAccessStream {
+		els = append(els, bacnet.Element{Value: bacnet.ApplicationValue{Kind: bacnet.ValueOctetString, OctetString: r.Data}})
+	} else {
+		for _, rec := range r.Records {
+			els = append(els, bacnet.Element{Value: bacnet.ApplicationValue{Kind: bacnet.ValueOctetString, OctetString: rec}})
+		}
+	}
+	return object.Write{
+		Property: bacnet.PropertyReference{Identifier: bacnet.PropertyFileSize},
+		Value:    bacnet.ApplicationValue{Kind: bacnet.ValueConstructed, Elements: els},
+	}
 }

@@ -3,6 +3,7 @@
 package client
 
 import (
+	"container/list"
 	"sync"
 	"time"
 
@@ -43,14 +44,24 @@ func objectKeyOf(o ObjectObservation) objectKey {
 	}
 }
 
+type objectEntry struct {
+	obs  ObjectObservation
+	elem *list.Element // Value is the objectKey
+}
+
 // objectRegistry stores I-Have observations with the same retention policy
-// shape as the device Registry (TTL, global cap).
+// shape as the device Registry (TTL, global cap). Entries sit on a recency
+// list ordered by LastSeen, so expiry and eviction only look at its front.
 type objectRegistry struct {
-	mu    sync.RWMutex
-	byKey map[objectKey]ObjectObservation
-	diag  diag.Sink
-	clock clock.Clock
-	opts  RegistryOptions
+	mu      sync.RWMutex
+	byKey   map[objectKey]*objectEntry
+	recency *list.List
+	diag    diag.Sink
+	clock   clock.Clock
+	opts    RegistryOptions
+
+	// maintSteps counts entries examined by expiry and eviction (tests).
+	maintSteps uint64
 }
 
 func newObjectRegistry(d diag.Sink, clk clock.Clock, opts RegistryOptions) *objectRegistry {
@@ -58,10 +69,11 @@ func newObjectRegistry(d diag.Sink, clk clock.Clock, opts RegistryOptions) *obje
 		clk = clock.Real{}
 	}
 	return &objectRegistry{
-		byKey: make(map[objectKey]ObjectObservation),
-		diag:  d,
-		clock: clk,
-		opts:  opts.withDefaults(),
+		byKey:   make(map[objectKey]*objectEntry),
+		recency: list.New(),
+		diag:    d,
+		clock:   clk,
+		opts:    opts.withDefaults(),
 	}
 }
 
@@ -72,11 +84,23 @@ func (r *objectRegistry) Upsert(o ObjectObservation) {
 	o.LastSeen = now
 	r.expireLocked(now, &events)
 	k := objectKeyOf(o)
-	r.byKey[k] = o
+	if e, ok := r.byKey[k]; ok {
+		e.obs = o
+		r.recency.MoveToBack(e.elem)
+	} else {
+		r.byKey[k] = &objectEntry{obs: o, elem: r.recency.PushBack(k)}
+	}
 	r.enforceCapacityLocked(&events)
 	r.mu.Unlock()
 	for _, e := range events {
 		r.diag.Report(e)
+	}
+}
+
+func (r *objectRegistry) removeLocked(k objectKey) {
+	if e, ok := r.byKey[k]; ok {
+		r.recency.Remove(e.elem)
+		delete(r.byKey, k)
 	}
 }
 
@@ -85,20 +109,28 @@ func (r *objectRegistry) expireLocked(now time.Time, events *[]diag.Event) {
 		return
 	}
 	cutoff := now.Add(-r.opts.ObservationTTL)
-	for k, o := range r.byKey {
-		if o.LastSeen.Before(cutoff) {
-			delete(r.byKey, k)
-			*events = append(*events, diag.Event{
-				Kind:    diag.KindRegistryEviction,
-				Message: "object observation expired",
-				Fields: map[string]any{
-					"device":   o.DeviceInstance,
-					"object":   o.Object.String(),
-					"name":     o.Name.Value,
-					"lastSeen": o.LastSeen,
-				},
-			})
+	for {
+		front := r.recency.Front()
+		if front == nil {
+			return
 		}
+		r.maintSteps++
+		k := front.Value.(objectKey)
+		o := r.byKey[k].obs
+		if !o.LastSeen.Before(cutoff) {
+			return
+		}
+		r.removeLocked(k)
+		*events = append(*events, diag.Event{
+			Kind:    diag.KindRegistryEviction,
+			Message: "object observation expired",
+			Fields: map[string]any{
+				"device":   o.DeviceInstance,
+				"object":   o.Object.String(),
+				"name":     o.Name.Value,
+				"lastSeen": o.LastSeen,
+			},
+		})
 	}
 }
 
@@ -107,18 +139,14 @@ func (r *objectRegistry) enforceCapacityLocked(events *[]diag.Event) {
 		return
 	}
 	for len(r.byKey) > r.opts.MaxObservations {
-		var oldestKey objectKey
-		var oldestTime time.Time
-		first := true
-		for k, o := range r.byKey {
-			if first || o.LastSeen.Before(oldestTime) {
-				oldestKey = k
-				oldestTime = o.LastSeen
-				first = false
-			}
+		front := r.recency.Front()
+		if front == nil {
+			return
 		}
-		o := r.byKey[oldestKey]
-		delete(r.byKey, oldestKey)
+		r.maintSteps++
+		k := front.Value.(objectKey)
+		o := r.byKey[k].obs
+		r.removeLocked(k)
 		*events = append(*events, diag.Event{
 			Kind:    diag.KindRegistryEviction,
 			Message: "object observation capacity eviction",
@@ -135,8 +163,8 @@ func (r *objectRegistry) Observations() []ObjectObservation {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	out := make([]ObjectObservation, 0, len(r.byKey))
-	for _, o := range r.byKey {
-		out = append(out, o)
+	for _, e := range r.byKey {
+		out = append(out, e.obs)
 	}
 	return out
 }
@@ -145,9 +173,9 @@ func (r *objectRegistry) ObservationsSince(since time.Time) []ObjectObservation 
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	out := make([]ObjectObservation, 0, len(r.byKey))
-	for _, o := range r.byKey {
-		if !o.LastSeen.Before(since) {
-			out = append(out, o)
+	for _, e := range r.byKey {
+		if !e.obs.LastSeen.Before(since) {
+			out = append(out, e.obs)
 		}
 	}
 	return out

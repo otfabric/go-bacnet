@@ -1459,11 +1459,16 @@ ReadRangePageResult aggregates paged ReadRange ACKs.
 
 ```go
 type Registry struct {
-	// contains filtered or unexported fields
+
+	// maintSteps counts entries examined by expiry and eviction; tests use
+	// it to check that maintenance work does not grow with the table size.
+
 }
 ```
 
 Registry stores device observations with duplicate-instance diagnostics and bounded retention.
+
+Observations are kept on a recency list ordered by LastSeen (least recently seen first), so TTL expiry and global-cap eviction only look at the front of the list: per-Upsert maintenance is O(1) amortised, independent of the number of retained observations.
 
 #### func (Registry) ByInstance
 

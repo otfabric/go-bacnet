@@ -116,8 +116,9 @@ diagnostics report what no answer shows.
 | `transport` | Warn | The socket failed to receive (the server retries with backoff, 10 ms doubling to 1 s) or a send failed |
 | `queue_drop` | Warn | A confirmed request was answered with Abort out-of-resources, or an unconfirmed one dropped, because every worker was busy and the queue full |
 | `malformed` | Debug | A datagram failed BVLC, NPDU or APDU decoding and was dropped |
+| `bvlc` | Debug | A datagram from a non-IPv4 node was discarded |
 | `transaction` | Debug | A repeated request was dropped while executing; a segmented reply ended without completing (timeout, requester Abort, send failure) |
-| `cov` | Debug | A COV notification could not be encoded, or a confirmed one failed |
+| `cov` | Debug | A COV notification could not be encoded, was larger than the maximum APDU and not sent, or a confirmed one failed |
 | `event` | Debug | An event was not reported (no Notification Class; recipient not bound and Who-Is sent; no router known for a remote-station recipient of a confirmed notification and Who-Is-Router-To-Network sent; confirmed notification to a broadcast recipient) or a confirmed notification failed |
 
 Diagnostics run on the receive loop, a worker or the COV and event engines;

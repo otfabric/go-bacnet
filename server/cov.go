@@ -26,10 +26,15 @@ import (
 // replaces it, and a cancellation without a match succeeds (clause 13.14,
 // as bacnet-stack implements it). After every successful subscription an
 // initial notification is sent.
+//
+// The subscriptions are bounded in number (WithCOVLimits) and in the
+// monitored references they hold together (WithCOVReferenceLimit), which
+// also bounds the work of every change and of Active_COV_Subscriptions.
 type covEngine struct {
 	s    *Server
 	mu   sync.Mutex
 	subs map[string]*covSub
+	refs int // monitored references of all subscriptions
 }
 
 type subKind int
@@ -66,6 +71,13 @@ type covSub struct {
 	expires   time.Time // zero: indefinite
 	targets   []*covTarget
 
+	// ctx bounds the notifications of this subscription; stop cancels it
+	// when the subscription is replaced, cancelled, expires or the server
+	// closes, so that a confirmed notification waiting for an answer gives
+	// its invoke ID back.
+	ctx  context.Context
+	stop context.CancelFunc
+
 	mu      sync.Mutex
 	dirty   bool
 	initial bool
@@ -77,14 +89,34 @@ func newCOVEngine(s *Server) *covEngine {
 	return &covEngine{s: s, subs: make(map[string]*covSub)}
 }
 
+// end marks sub closed and cancels its in-flight notification. The
+// caller holds e.mu or owns sub.
+func (sub *covSub) end() {
+	sub.mu.Lock()
+	sub.closed = true
+	sub.mu.Unlock()
+	if sub.stop != nil {
+		sub.stop()
+	}
+}
+
+// refCount is the number of monitored references of sub. The caller
+// holds sub.mu or owns sub.
+func (sub *covSub) refCount() int {
+	n := 0
+	for _, t := range sub.targets {
+		n += len(t.refs)
+	}
+	return n
+}
+
 func (e *covEngine) close() {
 	e.mu.Lock()
 	for _, sub := range e.subs {
-		sub.mu.Lock()
-		sub.closed = true
-		sub.mu.Unlock()
+		sub.end()
 	}
 	e.subs = make(map[string]*covSub)
+	e.refs = 0
 	e.mu.Unlock()
 }
 
@@ -115,15 +147,26 @@ func (e *covEngine) upsert(sub *covSub) (*covSub, error) {
 	if sub.lifetime > 0 {
 		sub.expires = s.clock.Now().Add(time.Duration(sub.lifetime) * time.Second)
 	}
+	refs := sub.refCount()
 	e.mu.Lock()
 	defer e.mu.Unlock()
-	if old, ok := e.subs[sub.key]; ok {
+	old, replacing := e.subs[sub.key]
+	held := 0
+	if replacing {
 		old.mu.Lock()
-		old.closed = true
+		held = old.refCount()
 		old.mu.Unlock()
 	} else if len(e.subs) >= s.cfg.maxCOV {
 		return nil, errCOVNoSpace
 	}
+	if e.refs-held+refs > s.cfg.maxCOVRefs {
+		return nil, errCOVNoSpace
+	}
+	if replacing {
+		old.end()
+	}
+	e.refs += refs - held
+	sub.ctx, sub.stop = context.WithCancel(s.ctx)
 	e.subs[sub.key] = sub
 	return sub, nil
 }
@@ -131,10 +174,8 @@ func (e *covEngine) upsert(sub *covSub) (*covSub, error) {
 func (e *covEngine) cancel(key string) {
 	e.mu.Lock()
 	if sub, ok := e.subs[key]; ok {
-		sub.mu.Lock()
-		sub.closed = true
-		sub.mu.Unlock()
-		delete(e.subs, key)
+		sub.end()
+		e.dropLocked(key, sub)
 	}
 	e.mu.Unlock()
 }
@@ -144,10 +185,8 @@ func (e *covEngine) expire(now time.Time) {
 	defer e.mu.Unlock()
 	for k, sub := range e.subs {
 		if !sub.expires.IsZero() && !now.Before(sub.expires) {
-			sub.mu.Lock()
-			sub.closed = true
-			sub.mu.Unlock()
-			delete(e.subs, k)
+			sub.end()
+			e.dropLocked(k, sub)
 		}
 	}
 }
@@ -163,15 +202,29 @@ func (e *covEngine) objectRemoved(id bacnet.ObjectIdentifier) {
 		for _, t := range sub.targets {
 			if t.obj != id {
 				kept = append(kept, t)
+			} else {
+				e.refs -= len(t.refs)
 			}
 		}
 		sub.targets = kept
-		if len(kept) == 0 {
+		empty := len(kept) == 0
+		if empty {
 			sub.closed = true
 			delete(e.subs, k)
 		}
 		sub.mu.Unlock()
+		if empty && sub.stop != nil {
+			sub.stop()
+		}
 	}
+}
+
+// dropLocked removes sub and its references. The caller holds e.mu.
+func (e *covEngine) dropLocked(key string, sub *covSub) {
+	sub.mu.Lock()
+	e.refs -= sub.refCount()
+	sub.mu.Unlock()
+	delete(e.subs, key)
 }
 
 func (e *covEngine) count() int {
@@ -237,7 +290,10 @@ func (e *covEngine) run(sub *covSub) {
 
 func (e *covEngine) evaluate(sub *covSub, initial bool) {
 	s := e.s
-	ctx := s.ctx
+	ctx := sub.ctx
+	if ctx == nil {
+		ctx = s.ctx
+	}
 	now := s.clock.Now()
 	type objValues struct {
 		obj    bacnet.ObjectIdentifier
@@ -323,6 +379,16 @@ func (e *covEngine) evaluate(sub *covSub, initial bool) {
 		s.report(diag.KindCOV, "COV notification not encodable", map[string]any{"error": err.Error()})
 		return
 	}
+	// Notifications are never segmented: one that does not fit one APDU
+	// (4 header octets confirmed, 2 unconfirmed) is not sent.
+	header := 2
+	if sub.confirmed {
+		header = 4
+	}
+	if header+len(payload) > int(s.cfg.maxAPDU) {
+		s.report(diag.KindCOV, "COV notification larger than the maximum APDU not sent", map[string]any{"octets": header + len(payload), "max_apdu": int(s.cfg.maxAPDU), "to": sub.to.String()})
+		return
+	}
 	if sub.confirmed {
 		if err := s.req.invoke(ctx, sub.to, sub.dest, confirmedSvc, payload); err != nil && ctx.Err() == nil {
 			s.report(diag.KindCOV, "confirmed COV notification failed", map[string]any{"error": err.Error(), "to": sub.to.String()})
@@ -380,8 +446,15 @@ func (e *covEngine) activeSubscriptions() []bacnet.Element {
 	e.mu.Unlock()
 	sort.Slice(subs, func(i, j int) bool { return subs[i].key < subs[j].key })
 	now := e.s.clock.Now()
+	// Encoding stops once the list passes the largest reply the server can
+	// send: such a list is never sent, and the reply to it is an Abort.
+	budget, size := e.s.maxReply(), 0
+	var scratch []byte
 	var out []bacnet.Element
 	for _, sub := range subs {
+		if size > budget {
+			break
+		}
 		remaining := uint64(0)
 		if !sub.expires.IsZero() {
 			if d := sub.expires.Sub(now); d > 0 {
@@ -411,14 +484,22 @@ func (e *covEngine) activeSubscriptions() []bacnet.Element {
 				if ref.prop.ArrayIndex != nil {
 					mpr = append(mpr, ctxUnsigned(2, uint64(*ref.prop.ArrayIndex)))
 				}
-				out = append(out,
+				group := []bacnet.Element{
 					ctxConstructed(0, recipient...),
 					ctxConstructed(1, mpr...),
 					ctxBool(2, sub.confirmed),
 					ctxUnsigned(3, remaining),
-				)
+				}
 				if ref.increment != nil {
-					out = append(out, ctxReal(4, *ref.increment))
+					group = append(group, ctxReal(4, *ref.increment))
+				}
+				out = append(out, group...)
+				for _, el := range group {
+					scratch, _ = bacnet.AppendTag(scratch[:0], el)
+					size += len(scratch)
+				}
+				if size > budget {
+					return out
 				}
 			}
 		}
@@ -552,6 +633,7 @@ func (s *Server) subscribeCOVPropertyMultiple(ctx context.Context, req *apdu.Con
 	if r.LifetimeRemaining != nil {
 		sub.lifetime = *r.LifetimeRemaining
 	}
+	perSub, refs := s.covRefsPerSubscription(), 0
 	for _, spec := range r.Subscriptions {
 		o, ok := s.dev.Object(spec.Object)
 		if !ok {
@@ -559,6 +641,10 @@ func (s *Server) subscribeCOVPropertyMultiple(ctx context.Context, req *apdu.Con
 		}
 		t := &covTarget{obj: o.Identifier()}
 		for _, ref := range spec.Properties {
+			if refs++; refs > perSub {
+				// The notification of every reference must fit one APDU.
+				return fail(&covMultipleError{err: object.AsError(errCOVNoSpace), obj: spec.Object, prop: ref.Property})
+			}
 			if _, err := o.ReadProperty(ctx, ref.Property); err != nil {
 				return fail(&covMultipleError{err: object.AsError(err), obj: spec.Object, prop: ref.Property})
 			}
@@ -567,6 +653,16 @@ func (s *Server) subscribeCOVPropertyMultiple(ctx context.Context, req *apdu.Con
 		sub.targets = append(sub.targets, t)
 	}
 	return s.startSubscription(sub)
+}
+
+// covRefsPerSubscription bounds the references of one
+// SubscribeCOVPropertyMultiple so that a notification of numeric values
+// fits one APDU: at most 24 octets per timestamped REAL value on its own
+// object, after a 40-octet header (58 references at Max APDU 1476).
+// Larger values (strings) can still exceed it; such a notification is not
+// sent (see evaluate).
+func (s *Server) covRefsPerSubscription() int {
+	return max(1, (int(s.cfg.maxAPDU)-40)/24)
 }
 
 func firstProp(spec service.COVMultipleSubscription) bacnet.PropertyReference {

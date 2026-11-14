@@ -60,6 +60,12 @@ func (s *Server) handlePacket(pkt bip.InboundPacket) {
 		s.report(diag.KindMalformed, err.Error(), map[string]any{"from": pkt.ImmediatePeer.String()})
 		return
 	}
+	if !pkt.ImmediatePeer.IsValid() {
+		// B/IP is IPv4: a datagram from any other kind of address cannot be
+		// answered, forwarded or registered.
+		s.report(diag.KindBVLC, "discarded packet from a non-IPv4 node", map[string]any{"from": pkt.ImmediatePeer.Addr.String(), "function": int(msg.Function)})
+		return
+	}
 	p := peer{immediate: pkt.ImmediatePeer, origin: pkt.ImmediatePeer}
 	switch msg.Function {
 	case bvlc.FunctionOriginalUnicastNPDU:

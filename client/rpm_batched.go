@@ -133,12 +133,70 @@ func (c *Client) ReadPropertyMultipleBatched(ctx context.Context, target Target,
 				return out, fmt.Errorf("%w: RPM ACK result %d is for %v, requested %v",
 					bacnet.ErrProtocolViolation, j, res.Object, req[j].Object)
 			}
+			if err := checkRPMResultProperties(req[j].Properties, res.Properties); err != nil {
+				return out, fmt.Errorf("%w: RPM ACK result %d for %v: %v",
+					bacnet.ErrProtocolViolation, j, res.Object, err)
+			}
 			out[owner[j]].Object = res.Object
 			out[owner[j]].Properties = append(out[owner[j]].Properties, res.Properties...)
 		}
 		i = end
 	}
 	return out, nil
+}
+
+// rpmPropertiesPerSpecialReference bounds how many property results one ALL,
+// REQUIRED or OPTIONAL reference may expand to. It is well above the number
+// of properties any standard object type defines.
+const rpmPropertiesPerSpecialReference = 512
+
+func isSpecialPropertyReference(id bacnet.PropertyIdentifier) bool {
+	return id == bacnet.PropertyAll || id == bacnet.PropertyRequired || id == bacnet.PropertyOptional
+}
+
+// checkRPMResultProperties reports whether got answers the property
+// references in want. Explicit references must be answered one for one, in
+// order, with the same identifier and array index. A request holding ALL,
+// REQUIRED or OPTIONAL expands on the peer, so only its result count is
+// bounded.
+func checkRPMResultProperties(want []bacnet.PropertyReference, got []service.PropertyResult) error {
+	special := 0
+	for _, ref := range want {
+		if isSpecialPropertyReference(ref.Identifier) {
+			special++
+		}
+	}
+	if special > 0 {
+		limit := len(want) - special + special*rpmPropertiesPerSpecialReference
+		if len(got) > limit {
+			return fmt.Errorf("%d property results for %d references (limit %d)", len(got), len(want), limit)
+		}
+		return nil
+	}
+	if len(got) != len(want) {
+		return fmt.Errorf("%d property results for %d references", len(got), len(want))
+	}
+	for i, ref := range want {
+		g := got[i].Property
+		if g.Identifier != ref.Identifier || !sameArrayIndex(g.ArrayIndex, ref.ArrayIndex) {
+			return fmt.Errorf("property result %d is %s, requested %s", i, propertyRefString(g), propertyRefString(ref))
+		}
+	}
+	return nil
+}
+
+func propertyRefString(r bacnet.PropertyReference) string {
+	if r.ArrayIndex == nil {
+		return r.Identifier.String()
+	}
+	return fmt.Sprintf("%s[%d]", r.Identifier, *r.ArrayIndex)
+}
+
+func sameArrayIndex(a, b *uint32) bool {
+	if a == nil || b == nil {
+		return a == nil && b == nil
+	}
+	return *a == *b
 }
 
 // responseTooLarge reports Abort reasons that mean the reply did not fit and a

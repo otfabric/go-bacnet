@@ -241,6 +241,14 @@ func (c *Client) handlePacket(pkt InboundPacket) {
 		c.diag.Report(diag.Event{Kind: diag.KindMalformed, Message: err.Error()})
 		return
 	}
+	if !pkt.ImmediatePeer.IsValid() {
+		c.diag.Report(diag.Event{
+			Kind:    diag.KindBVLC,
+			Message: "inbound packet discarded: non-IPv4 or invalid immediate peer",
+			Fields:  map[string]any{"immediate": pkt.ImmediatePeer.String()},
+		})
+		return
+	}
 	origin := pkt.ImmediatePeer
 	payload := msg.Payload
 	switch msg.Function {

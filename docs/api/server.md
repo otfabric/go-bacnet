@@ -57,9 +57,13 @@ Diagnostic is a non-fatal event of the server (a malformed frame, a dropped requ
 ```go
 type Hooks struct {
 	// BeforeWrite is called before a WriteProperty, each write of a
-	// WritePropertyMultiple, or an AddListElement or RemoveListElement (the
-	// Write then holds the elements as a constructed value) is applied. A
-	// returned error is sent as the answer (see object.Err). Default: allow.
+	// WritePropertyMultiple, an AddListElement or RemoveListElement (the
+	// Write then holds the elements as a constructed value), or an
+	// AtomicWriteFile is applied. For AtomicWriteFile the Write names
+	// File_Size and holds a constructed value: the start position (Signed)
+	// followed by the data, one Octet String for stream access or one per
+	// record for record access. A returned error is sent as the answer (see
+	// object.Err). Default: allow.
 	BeforeWrite func(ctx context.Context, obj bacnet.ObjectIdentifier, w object.Write) error
 	// BeforeDelete is called before DeleteObject removes a deletable
 	// object. Default: allow.
@@ -112,6 +116,14 @@ func WithCOVLimits(maxSubscriptions int, maxLifetime time.Duration) Option
 ```
 
 WithCOVLimits bounds COV subscriptions (default 256) and their lifetime (0: no limit, which also admits indefinite subscriptions).
+
+#### func WithCOVReferenceLimit
+
+```go
+func WithCOVReferenceLimit(n int) Option
+```
+
+WithCOVReferenceLimit bounds the monitored references that all COV subscriptions hold together (default 4096): a SubscribeCOV counts two (Present\_Value and Status\_Flags), a SubscribeCOVProperty one or two, a SubscribeCOVPropertyMultiple one per listed property. A subscription beyond it fails with resources/no-space-to-add-list-element, as one beyond WithCOVLimits does.
 
 #### func WithDecodeLimits
 
@@ -185,6 +197,14 @@ func WithPort(port int) Option
 
 WithPort sets the UDP port (default 47808).
 
+#### func WithSegmentLimits
+
+```go
+func WithSegmentLimits(l SegmentLimits) Option
+```
+
+WithSegmentLimits bounds the segmented requests and replies in progress (see SegmentLimits). Negative values are invalid.
+
 #### func WithSegmentation
 
 ```go
@@ -216,6 +236,29 @@ func WithWorkers(workers, queue int) Option
 ```
 
 WithWorkers sets the number of request workers (default 4) and the number of requests that may wait for one (default 64). A confirmed request that finds the queue full is answered with Abort (out-of-resources); an unconfirmed one is dropped.
+
+### type SegmentLimits
+
+```go
+type SegmentLimits struct {
+	// Reassemblies bounds the segmented requests being reassembled at once
+	// (default 64); ReassembliesPerOrigin bounds those from one B/IP node
+	// (default 16), and ReassemblyOctets the octets they buffer together
+	// (default 4 MiB). The first segment of a request beyond them is
+	// answered with Abort out-of-resources.
+	Reassemblies          int
+	ReassembliesPerOrigin int
+	ReassemblyOctets      int
+	// Replies bounds the segmented replies being transmitted at once
+	// (default 32), RepliesPerOrigin those to one B/IP node (default 8). A
+	// request whose reply would exceed them is answered with Abort
+	// out-of-resources.
+	Replies          int
+	RepliesPerOrigin int
+}
+```
+
+SegmentLimits bound the server's segmented transactions as a whole. A zero field keeps its default.
 
 ### type Server
 

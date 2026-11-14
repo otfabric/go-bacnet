@@ -10,6 +10,7 @@ import (
 
 	"github.com/otfabric/go-bacnet"
 	"github.com/otfabric/go-bacnet/apdu"
+	"github.com/otfabric/go-bacnet/internal/clock"
 	"github.com/otfabric/go-bacnet/internal/diag"
 	"github.com/otfabric/go-bacnet/internal/segment"
 )
@@ -26,10 +27,24 @@ import (
 // Requesters that start every run with the same invoke ID from the same
 // address (the bacnet-stack command-line tools) depend on that; bacnet-stack
 // keeps no cache of completed replies either.
+//
+// Segmented requests being reassembled and segmented replies being sent
+// are bounded in number, per origin and (for reassembly) in buffered
+// octets (SegmentLimits). A segmented reply is sent by its own goroutine,
+// so a requester that acknowledges slowly or never does not hold a worker,
+// and it ends at an overall deadline that acknowledgements do not extend.
 type responder struct {
 	s  *Server
 	mu sync.Mutex
 	tx map[string]*rtx
+
+	// Reassembly accounting.
+	open     int
+	octets   int
+	openFrom map[string]int
+	// Segmented replies in progress.
+	replies     int
+	repliesFrom map[string]int
 }
 
 type rtx struct {
@@ -48,16 +63,89 @@ type rtx struct {
 	acks      chan *apdu.SegmentACK
 	aborted   chan struct{}
 	abortOnce sync.Once
+	// counted: the reassembly holds a share of the reassembly limits, with
+	// buffered octets; replying: a segmented reply holds a share of the
+	// reply limits.
+	counted  bool
+	buffered int
+	replying bool
 }
 
 func newResponder(s *Server) *responder {
-	return &responder{s: s, tx: make(map[string]*rtx)}
+	return &responder{s: s, tx: make(map[string]*rtx), openFrom: make(map[string]int), repliesFrom: make(map[string]int)}
 }
 
 func (r *responder) close() {
 	r.mu.Lock()
 	r.tx = make(map[string]*rtx)
+	r.open, r.octets, r.openFrom = 0, 0, make(map[string]int)
+	r.replies, r.repliesFrom = 0, make(map[string]int)
 	r.mu.Unlock()
+}
+
+func originKey(p peer) string { return p.origin.String() }
+
+// admitLocked takes a reassembly share for a request from p; it reports
+// false when the limits are reached. The caller holds r.mu.
+func (r *responder) admitLocked(p peer) bool {
+	l := r.s.cfg.segLimits
+	o := originKey(p)
+	if r.open >= l.Reassemblies || r.openFrom[o] >= l.ReassembliesPerOrigin || r.octets >= l.ReassemblyOctets {
+		return false
+	}
+	r.open++
+	r.openFrom[o]++
+	return true
+}
+
+// releaseLocked gives back the reassembly share of t. The caller holds
+// r.mu.
+func (r *responder) releaseLocked(t *rtx) {
+	if !t.counted {
+		return
+	}
+	t.counted = false
+	r.open--
+	r.octets -= t.buffered
+	t.buffered = 0
+	o := originKey(t.peer)
+	if r.openFrom[o]--; r.openFrom[o] <= 0 {
+		delete(r.openFrom, o)
+	}
+}
+
+// admitReply takes a segmented-reply share for t; it reports false when
+// the limits are reached.
+func (r *responder) admitReply(t *rtx) bool {
+	l := r.s.cfg.segLimits
+	o := originKey(t.peer)
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.replies >= l.Replies || r.repliesFrom[o] >= l.RepliesPerOrigin {
+		return false
+	}
+	r.replies++
+	r.repliesFrom[o]++
+	t.replying = true
+	return true
+}
+
+// done ends transaction t: it gives back its shares and releases its key.
+func (r *responder) done(t *rtx) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.releaseLocked(t)
+	if t.replying {
+		t.replying = false
+		r.replies--
+		o := originKey(t.peer)
+		if r.repliesFrom[o]--; r.repliesFrom[o] <= 0 {
+			delete(r.repliesFrom, o)
+		}
+	}
+	if r.tx[t.key] == t {
+		delete(r.tx, t.key)
+	}
 }
 
 // expire drops stale reassemblies.
@@ -68,6 +156,7 @@ func (r *responder) expire(now time.Time) {
 		if t.segmented && now.After(t.deadline) {
 			// clause 5.4.5: the segment timer expired while waiting for a
 			// segment; the transaction ends without an answer.
+			r.releaseLocked(t)
 			delete(r.tx, k)
 		}
 	}
@@ -94,6 +183,7 @@ func (r *responder) confirmed(req *apdu.ConfirmedRequest, p peer) {
 		return
 	}
 	t := &rtx{key: key, peer: p, invokeID: req.InvokeID, service: req.ServiceChoice, content: content, header: *req}
+	t.header.Payload = nil // execute is given the payload; the datagram is not kept
 	r.tx[key] = t
 	r.mu.Unlock()
 	r.execute(t, req.Payload)
@@ -117,8 +207,15 @@ func (r *responder) segment(req *apdu.ConfirmedRequest, p peer, key string) {
 			s.sendAbort(p, req.InvokeID, bacnet.AbortReasonInvalidAPDUInThisState)
 			return
 		}
+		if !r.admitLocked(p) {
+			r.mu.Unlock()
+			s.report(diag.KindTransaction, "segmented request refused: reassembly limits reached", map[string]any{"invoke_id": req.InvokeID, "from": p.origin.String()})
+			s.sendAbort(p, req.InvokeID, bacnet.AbortReasonOutOfResources)
+			return
+		}
 		asm := segment.NewReassembly(segment.Window(s.cfg.window, req.ProposedWindowSize), s.cfg.maxSegments, s.limits.MaxReassembledAPDU)
-		t = &rtx{key: key, peer: p, invokeID: req.InvokeID, service: req.ServiceChoice, segmented: true, asm: asm, header: *req}
+		t = &rtx{key: key, peer: p, invokeID: req.InvokeID, service: req.ServiceChoice, segmented: true, asm: asm, header: *req, counted: true}
+		t.header.Payload = nil // the reassembly holds the segments; the datagram is not kept
 		r.tx[key] = t
 	}
 	if !t.segmented || t.acks != nil {
@@ -137,11 +234,24 @@ func (r *responder) segment(req *apdu.ConfirmedRequest, p peer, key string) {
 		r.segmentACK(p, req.InvokeID, last, window, nak)
 		return
 	case segment.TooManySegments, segment.TooLong:
+		r.releaseLocked(t)
 		delete(r.tx, key)
 		r.mu.Unlock()
 		s.sendAbort(p, req.InvokeID, bacnet.AbortReasonBufferOverflow)
 		return
 	case segment.Stored, segment.StoredAck, segment.Complete:
+	}
+	if n := len(t.asm.Payload()); t.counted {
+		r.octets += n - t.buffered
+		t.buffered = n
+		if r.octets > s.cfg.segLimits.ReassemblyOctets {
+			r.releaseLocked(t)
+			delete(r.tx, key)
+			r.mu.Unlock()
+			s.report(diag.KindTransaction, "segmented request refused: reassembly octet limit reached", map[string]any{"invoke_id": req.InvokeID, "from": p.origin.String()})
+			s.sendAbort(p, req.InvokeID, bacnet.AbortReasonOutOfResources)
+			return
+		}
 	}
 	t.deadline = now.Add(2 * s.cfg.segmentTimeout)
 	ack := outcome != segment.Stored
@@ -150,6 +260,7 @@ func (r *responder) segment(req *apdu.ConfirmedRequest, p peer, key string) {
 	window := t.asm.Window()
 	if last {
 		t.segmented = false
+		r.releaseLocked(t) // the payload now belongs to the request being executed
 		t.content = string(append([]byte{t.service}, payload...))
 		t.header.MaxSegments = req.MaxSegments
 		t.header.MaxAPDU = req.MaxAPDU
@@ -180,22 +291,22 @@ func (r *responder) execute(t *rtx, payload []byte) {
 		r.finish(ctx, t, &req, res)
 	})
 	if !ok {
-		r.mu.Lock()
-		delete(r.tx, t.key)
-		r.mu.Unlock()
+		r.done(t)
 		s.report(diag.KindQueueDrop, "confirmed request refused: workers busy", map[string]any{"service": req.ServiceChoice, "from": t.peer.origin.String()})
 		s.sendAbort(t.peer, req.InvokeID, bacnet.AbortReasonOutOfResources)
 	}
 }
 
 // finish sends the reply of a completed request, segmenting a ComplexACK
-// that does not fit the requester's Max APDU.
+// that does not fit the requester's Max APDU. A segmented reply is handed
+// to its own goroutine, which then ends the transaction.
 func (r *responder) finish(ctx context.Context, t *rtx, req *apdu.ConfirmedRequest, res result) {
 	s := r.s
+	handedOff := false
 	defer func() {
-		r.mu.Lock()
-		delete(r.tx, t.key)
-		r.mu.Unlock()
+		if !handedOff {
+			r.done(t)
+		}
 	}()
 	if res.silent {
 		return
@@ -221,14 +332,39 @@ func (r *responder) finish(ctx context.Context, t *rtx, req *apdu.ConfirmedReque
 		s.sendAbort(t.peer, req.InvokeID, bacnet.AbortReasonBufferOverflow)
 		return
 	}
+	if ctx.Err() != nil {
+		return
+	}
+	if !r.admitReply(t) {
+		s.report(diag.KindTransaction, "segmented reply refused: reply limits reached", map[string]any{"invoke_id": req.InvokeID, "from": t.peer.origin.String()})
+		s.sendAbort(t.peer, req.InvokeID, bacnet.AbortReasonOutOfResources)
+		return
+	}
 	acks := make(chan *apdu.SegmentACK, 16)
 	r.mu.Lock()
 	t.acks = acks
 	t.aborted = make(chan struct{})
 	r.mu.Unlock()
-	if err := r.sendSegments(ctx, t, req, payload, segSize, count, acks); err != nil {
-		s.report(diag.KindTransaction, "segmented reply ended", map[string]any{"invoke_id": req.InvokeID, "error": err.Error()})
-	}
+	// The worker is free again; the server's WaitGroup still counts this
+	// worker, so the Add cannot race with Close's Wait.
+	handedOff = true
+	hdr := *req
+	s.wg.Add(1)
+	go func() {
+		defer s.wg.Done()
+		defer r.done(t)
+		// Every window waits at most one segment timeout, plus the retries:
+		// progress does not extend this deadline.
+		limit := time.Duration(count+s.cfg.retries+1) * s.cfg.segmentTimeout
+		sctx, cancel := clock.ContextWithTimeout(ctx, s.clock, limit)
+		defer cancel()
+		if err := r.sendSegments(sctx, t, &hdr, payload, segSize, count, acks); err != nil {
+			if ctx.Err() == nil && sctx.Err() != nil {
+				s.sendAbort(t.peer, hdr.InvokeID, bacnet.AbortReasonTSMTimeout)
+			}
+			s.report(diag.KindTransaction, "segmented reply ended", map[string]any{"invoke_id": hdr.InvokeID, "error": err.Error()})
+		}
+	}()
 }
 
 func decodeMaxSegments(code uint8) int {
@@ -362,6 +498,7 @@ func (r *responder) abortFromClient(invokeID uint8, p peer) {
 		if aborted == nil && t.segmented {
 			// Reassembly in progress: drop it. A request already being
 			// executed finishes; its reply then goes unacknowledged.
+			r.releaseLocked(t)
 			delete(r.tx, t.key)
 		}
 	}

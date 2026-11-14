@@ -64,7 +64,13 @@ func (c *Client) readObjectListByIndex(ctx context.Context, target Target, objec
 	var reject *bacnet.RejectError
 	switch {
 	case err == nil:
+		// Never return more than the n entries requested.
+		var got uint32
 		for _, pr := range results[0].Properties {
+			if got >= n {
+				break
+			}
+			got++
 			if pr.Err != nil {
 				return out, fmt.Errorf("object-list element %d: %w", len(out)+1, pr.Err)
 			}

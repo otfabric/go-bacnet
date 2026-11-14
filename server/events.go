@@ -4,6 +4,7 @@ package server
 
 import (
 	"context"
+	"sort"
 	"sync"
 
 	"github.com/otfabric/go-bacnet"
@@ -326,7 +327,7 @@ func (s *Server) priorities(class uint32) [3]uint8 {
 // in an event state other than NORMAL or with an unacknowledged
 // transition, after Last Received Object Identifier, as many as fit the
 // reply, with More Events set when some were left out (h_getevent.c).
-func (s *Server) getEventInformation(_ context.Context, req *apdu.ConfirmedRequest, _ peer) result {
+func (s *Server) getEventInformation(ctx context.Context, req *apdu.ConfirmedRequest, _ peer) result {
 	r, err := service.DecodeGetEventInformation(req.Payload, s.limits)
 	if err != nil {
 		return rejectFor(err)
@@ -334,6 +335,9 @@ func (s *Server) getEventInformation(_ context.Context, req *apdu.ConfirmedReque
 	var all []service.EventSummary
 	skipping := r.LastReceived != nil
 	for _, info := range s.eventInfos() {
+		if err := ctx.Err(); err != nil {
+			return fail(err)
+		}
 		if skipping {
 			if info.Object == *r.LastReceived {
 				skipping = false
@@ -366,15 +370,24 @@ func (s *Server) getEventInformation(_ context.Context, req *apdu.ConfirmedReque
 		})
 	}
 	budget := s.responseBudget(req)
-	for n := len(all); ; n-- {
-		payload, err := service.EncodeGetEventInformationACK(service.GetEventInformationACK{Summaries: all[:n], MoreEvents: n < len(all)})
-		if err != nil {
-			return fail(err)
-		}
-		if len(payload) <= budget || n == 0 {
-			return complexACK(payload)
-		}
+	build := func(n int) ([]byte, error) {
+		return service.EncodeGetEventInformationACK(service.GetEventInformationACK{Summaries: all[:n], MoreEvents: n < len(all)})
 	}
+	// The largest prefix that fits, by binary search as readRange does: the
+	// encoded size grows with the number of summaries. n is the first count
+	// whose next summary no longer fits, or all of them.
+	n := sort.Search(len(all), func(k int) bool {
+		p, err := build(k + 1)
+		return err != nil || len(p) > budget
+	})
+	if err := ctx.Err(); err != nil {
+		return fail(err)
+	}
+	payload, err := build(n)
+	if err != nil {
+		return fail(err)
+	}
+	return complexACK(payload)
 }
 
 // getEnrollmentSummary serves GetEnrollmentSummary (clause 13.11) with

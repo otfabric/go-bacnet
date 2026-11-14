@@ -8,7 +8,7 @@ import "github.com/otfabric/go-bacnet/bbmd"
 
 Package bbmd is a BACnet/IP Broadcast Management Device (ASHRAE 135 Annex J.4, J.5) for a server that shares its UDP endpoint with it. It keeps the Broadcast Distribution Table and the Foreign Device Table, answers the BVLL table and registration messages, and forwards broadcasts between the local subnet, its peer BBMDs and the registered foreign devices.
 
-Where the annex leaves room the behaviour follows bacnet-stack (src/bacnet/basic/bbmd/h\_bbmd.c at the interop pin): the BDT is configured locally and Write-Broadcast-Distribution-Table is refused (J.4.4.2 for Protocol\_Revision 17 and later), a registration lives for its Time-to-Live plus a 30 second grace period, and a Forwarded-NPDU from a peer whose BDT mask is all ones (one-hop distribution) is rebroadcast on the local subnet.
+Where the annex leaves room the behaviour follows bacnet-stack (src/bacnet/basic/bbmd/h\_bbmd.c at the interop pin): the BDT is configured locally and Write-Broadcast-Distribution-Table is refused (J.4.4.2 for Protocol\_Revision 17 and later), a registration lives for its Time-to-Live plus a 30 second grace period, and a Forwarded-NPDU from a peer whose BDT mask is all ones (one-hop distribution) is rebroadcast on the local subnet. A Forwarded-NPDU from a node that is not a BDT peer is delivered to the local device only, a BDT peer cannot register as a foreign device, and packets from a node that is not an IPv4 endpoint are ignored.
 
 A BBMD is used through server.WithBBMD; it holds no goroutines and needs no Close.
 
