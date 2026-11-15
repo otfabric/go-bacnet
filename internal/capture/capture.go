@@ -136,11 +136,11 @@ func pcapPackets(b []byte, bo binary.ByteOrder, nano bool) ([]packet, error) {
 			return nil, ErrFormat
 		}
 		sec, frac := int64(bo.Uint32(b[off:])), int64(bo.Uint32(b[off+4:]))
-		n := int(bo.Uint32(b[off+8 : off+12]))
-		off += 16
-		if n > len(b)-off {
+		n, ok := length(bo.Uint32(b[off+8:off+12]), len(b)-off-16)
+		if !ok {
 			return nil, ErrFormat
 		}
+		off += 16
 		if !nano {
 			frac *= 1000
 		}
@@ -148,6 +148,16 @@ func pcapPackets(b []byte, bo binary.ByteOrder, nano bool) ([]packet, error) {
 		off += n
 	}
 	return out, nil
+}
+
+// length converts a 32-bit length or index read from a file to an int and
+// reports whether it is at most limit. The comparison is made in 64 bits
+// before the conversion, so the result is the same where int has 32 bits.
+func length(v uint32, limit int) (int, bool) {
+	if limit < 0 || uint64(v) > uint64(limit) {
+		return 0, false
+	}
+	return int(v), true
 }
 
 type ngInterface struct {
@@ -177,8 +187,8 @@ func pcapngPackets(b []byte) ([]packet, error) {
 			}
 			ifs = ifs[:0]
 		}
-		n := int(bo.Uint32(b[off+4:]))
-		if n < 12 || n%4 != 0 || n > len(b)-off {
+		n, ok := length(bo.Uint32(b[off+4:]), len(b)-off)
+		if !ok || n < 12 || n%4 != 0 {
 			return nil, ErrFormat
 		}
 		body := b[off+8 : off+n-4]
@@ -192,9 +202,9 @@ func pcapngPackets(b []byte) ([]packet, error) {
 			if len(body) < 20 {
 				return nil, ErrFormat
 			}
-			ifc := int(bo.Uint32(body))
-			capLen := int(bo.Uint32(body[12:]))
-			if ifc >= len(ifs) || capLen > len(body)-20 {
+			ifc, known := length(bo.Uint32(body), len(ifs)-1)
+			capLen, fits := length(bo.Uint32(body[12:]), len(body)-20)
+			if !known || !fits {
 				return nil, ErrFormat
 			}
 			ts := int64(bo.Uint32(body[4:]))<<32 | int64(bo.Uint32(body[8:]))
@@ -204,7 +214,12 @@ func pcapngPackets(b []byte) ([]packet, error) {
 			if len(body) < 4 || len(ifs) == 0 {
 				return nil, ErrFormat
 			}
-			capLen := min(int(bo.Uint32(body)), len(body)-4)
+			// The block states the original length, which can be above what
+			// it carries: the packet is the smaller of the two.
+			capLen := len(body) - 4
+			if orig, shorter := length(bo.Uint32(body), capLen); shorter {
+				capLen = orig
+			}
 			out = append(out, packet{link: ifs[0].link, data: body[4 : 4+capLen]})
 		}
 		off += n

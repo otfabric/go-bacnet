@@ -26,6 +26,10 @@ func dcc(t *testing.T, mode service.EnableDisable, minutes *uint16, password str
 }
 
 func TestDeviceCommunicationControl(t *testing.T) {
+	inBubble(t, testDeviceCommunicationControl)
+}
+
+func testDeviceCommunicationControl(t *testing.T) {
 	h := newHarness(t, WithPassword("secret"))
 	// Wrong and missing passwords.
 	h.confirmed(1, apdu.ServiceDeviceCommunicationControl, dcc(t, service.EnableDisableDisableInitiation, nil, "wrong"))
@@ -65,6 +69,10 @@ func TestDeviceCommunicationControl(t *testing.T) {
 }
 
 func TestDCCDisableAndDuration(t *testing.T) {
+	inBubble(t, testDCCDisableAndDuration)
+}
+
+func testDCCDisableAndDuration(t *testing.T) {
 	// While communication is disabled only DCC and ReinitializeDevice are
 	// answered (clause 16.1).
 	h := newHarness(t)
@@ -92,6 +100,10 @@ func TestDCCDisableAndDuration(t *testing.T) {
 }
 
 func TestReinitializeDevice(t *testing.T) {
+	inBubble(t, testReinitializeDevice)
+}
+
+func testReinitializeDevice(t *testing.T) {
 	var got atomic.Int32
 	h := newHarness(t, WithPassword("pw"), WithHooks(Hooks{Reinitialize: func(_ context.Context, st service.ReinitializedStateOfDevice) error {
 		got.Store(int32(st) + 1)
@@ -122,6 +134,10 @@ func TestReinitializeDevice(t *testing.T) {
 // (testdata/captures, siemens-plugfest-2011 frame 216), and acknowledges
 // the other states.
 func TestReinitializeDeviceWithoutHook(t *testing.T) {
+	inBubble(t, testReinitializeDeviceWithoutHook)
+}
+
+func testReinitializeDeviceWithoutHook(t *testing.T) {
 	h := newHarness(t)
 	for i, st := range []service.ReinitializedStateOfDevice{
 		service.ReinitializedColdstart, service.ReinitializedWarmstart, service.ReinitializedStartBackup,
@@ -138,6 +154,10 @@ func TestReinitializeDeviceWithoutHook(t *testing.T) {
 }
 
 func TestMessagingHooks(t *testing.T) {
+	inBubble(t, testMessagingHooks)
+}
+
+func testMessagingHooks(t *testing.T) {
 	var syncs, groups, texts, transfers atomic.Int32
 	h := newHarness(t, WithHooks(Hooks{
 		TimeSync: func(_ service.TimeSynchronization, utc bool) {
@@ -209,6 +229,10 @@ func TestMessagingHooks(t *testing.T) {
 }
 
 func TestHookServicesNotAdvertised(t *testing.T) {
+	inBubble(t, testHookServicesNotAdvertised)
+}
+
+func testHookServicesNotAdvertised(t *testing.T) {
 	h := newHarness(t)
 	bits := h.s.servicesSupported()
 	for _, bit := range []int{18, 19, 30, 31, 32, 36, 40} {
@@ -238,10 +262,20 @@ func containsInt(xs []int, x int) bool {
 	return false
 }
 
+// waitUntil waits for cond. In a synctest bubble the condition is looked at
+// whenever the server is idle, and time passes only on the bubble's clock
+// when it has to (a timer the condition depends on). Outside a bubble it
+// polls.
 func waitUntil(t *testing.T, cond func() bool) {
 	t.Helper()
-	deadline := time.Now().Add(3 * time.Second)
-	for !cond() {
+	deadline := time.Now().Add(10 * time.Second)
+	for {
+		if bubbled(t) {
+			idle()
+		}
+		if cond() {
+			return
+		}
 		if time.Now().After(deadline) {
 			t.Fatal("condition not reached")
 		}
@@ -250,6 +284,10 @@ func waitUntil(t *testing.T, cond func() bool) {
 }
 
 func TestBVLCWithoutBBMD(t *testing.T) {
+	inBubble(t, testBVLCWithoutBBMD)
+}
+
+func testBVLCWithoutBBMD(t *testing.T) {
 	h := newHarness(t)
 	for fn, code := range map[bvlc.Function]uint16{
 		bvlc.FunctionRegisterForeignDevice:           bvlc.ResultRegisterForeignDeviceNAK,

@@ -75,6 +75,10 @@ func (h *harness) collect(n int) (unicast, broadcast, confirmed []sent, whoIs in
 }
 
 func TestEventRecipients(t *testing.T) {
+	inBubble(t, testEventRecipients)
+}
+
+func testEventRecipients(t *testing.T) {
 	h, ai := alarmHarness(t)
 	if err := ai.SetPresentValue(bacnet.RealValue(95)); err != nil {
 		t.Fatal(err)
@@ -135,6 +139,10 @@ func TestEventRecipients(t *testing.T) {
 }
 
 func TestEventWithoutNotificationClass(t *testing.T) {
+	inBubble(t, testEventWithoutNotificationClass)
+}
+
+func testEventWithoutNotificationClass(t *testing.T) {
 	h := newHarness(t)
 	ai, err := object.NewAnalogInput(object.PointConfig{Instance: 3, Name: "AI-3", Value: 50, Events: &object.EventConfig{
 		NotificationClass: 99, EventEnable: 7, HighLimit: 80, LimitEnable: object.LimitEnableHigh,
@@ -156,6 +164,10 @@ func TestEventWithoutNotificationClass(t *testing.T) {
 }
 
 func TestGetEnrollmentSummaryFilters(t *testing.T) {
+	inBubble(t, testGetEnrollmentSummaryFilters)
+}
+
+func testGetEnrollmentSummaryFilters(t *testing.T) {
 	h, ai := alarmHarness(t)
 	h.s.dcc.set(service.EnableDisableDisableInitiation, time.Time{})
 	if err := ai.SetPresentValue(bacnet.RealValue(95)); err != nil {
@@ -213,6 +225,10 @@ func TestGetEnrollmentSummaryFilters(t *testing.T) {
 // An object whose Notification Class does not exist has no recipients, so
 // the enrollment filter leaves it out (clause 13.11.1.2).
 func TestGetEnrollmentSummaryEnrollmentFilterWithoutClass(t *testing.T) {
+	inBubble(t, testGetEnrollmentSummaryEnrollmentFilterWithoutClass)
+}
+
+func testGetEnrollmentSummaryEnrollmentFilterWithoutClass(t *testing.T) {
 	h := newHarness(t)
 	ai, err := object.NewAnalogInput(object.PointConfig{Instance: 3, Name: "AI-3", Value: 90, Events: &object.EventConfig{
 		NotificationClass: 99, EventEnable: 7, HighLimit: 80, LimitEnable: object.LimitEnableHigh,
@@ -273,6 +289,10 @@ func remoteHarness(t *testing.T) (*harness, *object.Point, []byte) {
 }
 
 func TestEventRemoteStationRecipients(t *testing.T) {
+	inBubble(t, testEventRemoteStationRecipients)
+}
+
+func testEventRemoteStationRecipients(t *testing.T) {
 	h, ai, station := remoteHarness(t)
 	if p := nilPriorities(t, h); p != [3]uint8{255, 255, 255} {
 		t.Fatalf("default priorities %v", p)
@@ -280,11 +300,12 @@ func TestEventRemoteStationRecipients(t *testing.T) {
 	if err := ai.SetPresentValue(bacnet.RealValue(95)); err != nil {
 		t.Fatal(err)
 	}
-	// No router to network 5 is known: Who-Is-Router-To-Network for each
-	// remote recipient, the confirmed one is skipped, the unconfirmed one
-	// goes out as a local broadcast with DNET 5.
+	// No router to network 5 is known: one Who-Is-Router-To-Network for the
+	// network, whichever recipient needs it first; the confirmed
+	// notification is skipped, the unconfirmed one goes out as a local
+	// broadcast with DNET 5.
 	var whoIsRouter, broadcast int
-	for range 3 {
+	for range 2 {
 		got := h.next()
 		switch {
 		case got.npdu.NetworkMessage:
@@ -302,10 +323,10 @@ func TestEventRemoteStationRecipients(t *testing.T) {
 			t.Fatalf("unexpected %+v", got)
 		}
 	}
-	if whoIsRouter != 2 || broadcast != 1 {
+	if whoIsRouter != 1 || broadcast != 1 {
 		t.Fatalf("who-is-router %d, broadcast %d", whoIsRouter, broadcast)
 	}
-	h.quiet(30 * time.Millisecond)
+	h.silent(30 * time.Millisecond)
 	if !h.diagnosed("event") {
 		t.Fatal("skipped recipients not diagnosed")
 	}
@@ -316,9 +337,11 @@ func TestEventRemoteStationRecipients(t *testing.T) {
 	h.injectFrom(router, bvlc.FunctionOriginalBroadcastNPDU, npdu.NPDU{Version: npdu.Version1, NetworkMessage: true,
 		NetMsgType: npdu.NetMsgIAmRouterToNetwork, NetMsgData: []byte{0, 4, 0, 5}})
 	h.injectRaw(mustEncode(t)(bvlc.Append(nil, bvlc.Message{Function: bvlc.FunctionOriginalBroadcastNPDU, Payload: []byte{0x01, 0x80, 0x01, 0x00}})))
-	waitUntil(t, func() bool { _, ok := h.s.routes.lookup(5); return ok })
-	if _, ok := h.s.routes.lookup(4); !ok {
-		t.Fatal("network 4 not learnt")
+	idle()
+	for _, n := range []uint16{4, 5} {
+		if ep, ok := h.s.routes.lookup(n); !ok || ep != router {
+			t.Fatalf("network %d via %v (%v)", n, ep, ok)
+		}
 	}
 
 	if err := ai.SetPresentValue(bacnet.RealValue(50)); err != nil {
@@ -346,7 +369,8 @@ func TestEventRemoteStationRecipients(t *testing.T) {
 	h.injectFrom(router, bvlc.FunctionOriginalUnicastNPDU, npdu.NPDU{Version: npdu.Version1,
 		Source: bacnet.RemoteStation(5, bacnet.MustMAC(station)),
 		APDU:   apdu.AppendSimpleACK(nil, apdu.SimpleACK{InvokeID: req.InvokeID, ServiceChoice: req.ServiceChoice})})
-	h.quiet(50 * time.Millisecond)
+	// Answered: the notification is not sent again.
+	h.silent(time.Second)
 }
 
 func nilPriorities(t *testing.T, h *harness) [3]uint8 {
@@ -361,6 +385,10 @@ func nilPriorities(t *testing.T, h *harness) [3]uint8 {
 // A source network in an NPDU teaches the route through the B/IP node that
 // sent it: the sender, or the Forwarded-NPDU origin.
 func TestRouteLearning(t *testing.T) {
+	inBubble(t, testRouteLearning)
+}
+
+func testRouteLearning(t *testing.T) {
 	h := newHarness(t)
 	router := bip.NewEndpoint(netip.MustParseAddrPort("10.0.0.9:47808"))
 	who := apdu.AppendUnconfirmedRequest(nil, apdu.UnconfirmedRequest{ServiceChoice: apdu.ServiceWhoIs})
@@ -374,27 +402,19 @@ func TestRouteLearning(t *testing.T) {
 	waitUntil(t, func() bool { ep, ok := h.s.routes.lookup(7); return ok && ep == bip.NewEndpoint(origin) })
 }
 
-func TestRouteTableBounds(t *testing.T) {
+func TestRouteTableInvalidRoutes(t *testing.T) {
+	inBubble(t, testRouteTableInvalidRoutes)
+}
+
+func testRouteTableInvalidRoutes(t *testing.T) {
 	rt := newRouteTable()
 	router := bip.NewEndpoint(netip.MustParseAddrPort("10.0.0.9:47808"))
-	other := bip.NewEndpoint(netip.MustParseAddrPort("10.0.0.10:47808"))
-	rt.learn(0, router)
-	rt.learn(0xFFFF, router)
-	rt.learn(3, bip.Endpoint{})
+	now := time.Date(2026, 3, 4, 10, 0, 0, 0, time.UTC)
+	rt.learn(0, router, now, false, time.Second)
+	rt.learn(0xFFFF, router, now, false, time.Second)
+	rt.learn(3, bip.Endpoint{}, now, false, time.Second)
 	if len(rt.routes) != 0 {
 		t.Fatalf("invalid routes learnt: %v", rt.routes)
-	}
-	for n := range uint16(maxRoutes) {
-		rt.learn(n+1, router)
-	}
-	rt.learn(maxRoutes+1, router)
-	if _, ok := rt.lookup(maxRoutes + 1); ok || len(rt.routes) != maxRoutes {
-		t.Fatalf("table not bounded: %d", len(rt.routes))
-	}
-	// A known network is updated when the table is full.
-	rt.learn(1, other)
-	if ep, _ := rt.lookup(1); ep != other {
-		t.Fatalf("route 1 via %v", ep)
 	}
 	// A malformed network list teaches nothing.
 	h := newHarness(t)
@@ -407,6 +427,10 @@ func TestRouteTableBounds(t *testing.T) {
 // A Multi-state Value reports CHANGE_OF_STATE on Alarm_Values with the new
 // state as BACnetPropertyStates unsigned-value [11].
 func TestMultiStateEventNotification(t *testing.T) {
+	inBubble(t, testMultiStateEventNotification)
+}
+
+func testMultiStateEventNotification(t *testing.T) {
 	h := newHarness(t)
 	nc, err := object.NewNotificationClass(object.NotificationClassConfig{
 		Instance: 2, Name: "NC-2", Priority: &[3]uint8{0, 0, 0},

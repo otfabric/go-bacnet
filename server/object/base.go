@@ -34,6 +34,10 @@ type Property struct {
 // Base implements Object over a table of properties. Built-in objects embed
 // it; applications may too. Object_Identifier, Object_Name, Object_Type and
 // Property_List are always present.
+//
+// Lock order with the Device that holds the object: while mu is held the
+// Device's table may be read (a Get that calls Device.Object, for example),
+// and the Device never waits for mu while it holds its table lock.
 type Base struct {
 	mu        sync.RWMutex
 	id        bacnet.ObjectIdentifier
@@ -173,14 +177,21 @@ func arrayItem(v bacnet.ApplicationValue, idx uint32) (bacnet.ApplicationValue, 
 
 // WriteProperty implements Object.
 func (b *Base) WriteProperty(_ context.Context, w Write) error {
-	b.mu.Lock()
-	changed, err := b.writeLocked(w)
-	notify := b.notify
-	b.mu.Unlock()
+	changed, notify, err := b.write(w)
 	if err == nil && len(changed) > 0 && notify != nil {
 		notify(Change{Object: b.id, Properties: changed})
 	}
 	return err
+}
+
+// write applies w with the lock held. The lock is released by a deferred
+// call, so that a Set function of the application that does not return
+// normally leaves the object usable.
+func (b *Base) write(w Write) ([]bacnet.PropertyIdentifier, Notifier, error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	changed, err := b.writeLocked(w)
+	return changed, b.notify, err
 }
 
 func (b *Base) writeLocked(w Write) ([]bacnet.PropertyIdentifier, error) {
@@ -194,6 +205,13 @@ func (b *Base) writeLocked(w Write) ([]bacnet.PropertyIdentifier, error) {
 	if p.Set != nil {
 		return p.Set(w)
 	}
+	return p.store(w)
+}
+
+// store is the default write of a property without a Set function: it
+// stores a value of one of Kinds, or one item of an array. The caller holds
+// the object's lock.
+func (p *Property) store(w Write) ([]bacnet.PropertyIdentifier, error) {
 	if w.Property.ArrayIndex != nil {
 		if !p.Array {
 			return nil, ErrNotAnArray
@@ -239,15 +257,19 @@ func kindAllowed(kinds []bacnet.ValueKind, k bacnet.ValueKind) bool {
 
 // Update runs fn with the object's lock held and then reports the changed
 // properties to the Device. Built-in objects use it for application-side
-// updates (a new sensor reading, for example).
+// updates (a new sensor reading, for example). The lock is released also
+// when fn does not return normally.
 func (b *Base) Update(fn func() []bacnet.PropertyIdentifier) {
-	b.mu.Lock()
-	changed := fn()
-	notify := b.notify
-	b.mu.Unlock()
+	changed, notify := b.update(fn)
 	if len(changed) > 0 && notify != nil {
 		notify(Change{Object: b.id, Properties: changed})
 	}
+}
+
+func (b *Base) update(fn func() []bacnet.PropertyIdentifier) ([]bacnet.PropertyIdentifier, Notifier) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return fn(), b.notify
 }
 
 // View runs fn with the object's lock held for reading.

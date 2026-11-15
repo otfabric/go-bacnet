@@ -214,6 +214,10 @@ func EncodeCOVNotificationMultiple(note COVNotificationMultiple) ([]byte, error)
 }
 
 // DecodeCOVNotificationMultiple decodes a COVNotificationMultiple payload.
+// Every field comes at most once, the timestamp is a Date and a Time, and
+// in a value an array index stands between the property identifier and the
+// value. A notification without its list of notifications is accepted and
+// has no objects. The result owns its memory.
 func DecodeCOVNotificationMultiple(payload []byte, limits bacnet.DecodeLimits) (COVNotificationMultiple, error) {
 	els, n, err := bacnet.ParseSequence(payload, limits, -1)
 	if err != nil {
@@ -224,7 +228,11 @@ func DecodeCOVNotificationMultiple(payload []byte, limits bacnet.DecodeLimits) (
 	}
 	var note COVNotificationMultiple
 	var havePID, haveDev, haveTime bool
+	var seen fieldSet
 	for _, el := range els {
+		if err := seen.add(el.TagNumber, "COVNotificationMultiple"); err != nil {
+			return COVNotificationMultiple{}, err
+		}
 		switch {
 		case el.TagNumber == 0 && !bacnet.IsContextConstructed(el):
 			u, err := bacnet.ContextUnsigned32(el)
@@ -248,17 +256,12 @@ func DecodeCOVNotificationMultiple(payload []byte, limits bacnet.DecodeLimits) (
 			note.TimeRemaining = u
 			haveTime = true
 		case el.TagNumber == 3 && bacnet.IsContextConstructed(el):
-			// timestamp optional BACnetDateTime
-			if len(el.Value.Elements) >= 2 {
-				ts := DateTime{}
-				if el.Value.Elements[0].Value.Kind == bacnet.ValueDate {
-					ts.Date = el.Value.Elements[0].Value.Date
-				}
-				if el.Value.Elements[1].Value.Kind == bacnet.ValueTime {
-					ts.Time = el.Value.Elements[1].Value.Time
-				}
-				note.Timestamp = &ts
+			// timestamp [3] BACnetDateTime OPTIONAL.
+			ts, err := dateTimePair(el.Value.Elements, "COVNotificationMultiple timestamp")
+			if err != nil {
+				return COVNotificationMultiple{}, err
 			}
+			note.Timestamp = &ts
 		case el.TagNumber == 4 && bacnet.IsContextConstructed(el):
 			objs, err := decodeCOVMultipleObjects(el.Value.Elements, limits)
 			if err != nil {
@@ -278,6 +281,7 @@ func DecodeCOVNotificationMultiple(payload []byte, limits bacnet.DecodeLimits) (
 func decodeCOVMultipleObjects(els []bacnet.Element, limits bacnet.DecodeLimits) ([]COVNotificationMultipleObject, error) {
 	var out []COVNotificationMultipleObject
 	var cur *COVNotificationMultipleObject
+	var haveList bool
 	for _, el := range els {
 		switch {
 		case el.TagNumber == 0 && !bacnet.IsContextConstructed(el):
@@ -287,15 +291,20 @@ func decodeCOVMultipleObjects(els []bacnet.Element, limits bacnet.DecodeLimits) 
 			}
 			out = append(out, COVNotificationMultipleObject{Object: id})
 			cur = &out[len(out)-1]
+			haveList = false
 		case el.TagNumber == 1 && bacnet.IsContextConstructed(el):
 			if cur == nil {
 				return nil, fmt.Errorf("%w: listOfValues without object", bacnet.ErrMalformed)
+			}
+			if haveList {
+				return nil, fmt.Errorf("%w: duplicate listOfValues", bacnet.ErrMalformed)
 			}
 			vals, err := decodeCOVMultipleValues(el.Value.Elements, limits)
 			if err != nil {
 				return nil, err
 			}
 			cur.Values = vals
+			haveList = true
 		default:
 			return nil, fmt.Errorf("%w: unexpected object list tag %d", bacnet.ErrMalformed, el.TagNumber)
 		}
@@ -306,7 +315,7 @@ func decodeCOVMultipleObjects(els []bacnet.Element, limits bacnet.DecodeLimits) 
 func decodeCOVMultipleValues(els []bacnet.Element, _ bacnet.DecodeLimits) ([]COVNotificationMultipleValue, error) {
 	var out []COVNotificationMultipleValue
 	var cur COVNotificationMultipleValue
-	var haveProp, haveValue bool
+	var haveProp, haveIndex, haveValue, haveChange bool
 	flush := func() error {
 		if !haveProp {
 			return nil
@@ -316,7 +325,7 @@ func decodeCOVMultipleValues(els []bacnet.Element, _ bacnet.DecodeLimits) ([]COV
 		}
 		out = append(out, cur)
 		cur = COVNotificationMultipleValue{}
-		haveProp, haveValue = false, false
+		haveProp, haveIndex, haveValue, haveChange = false, false, false, false
 		return nil
 	}
 	for _, el := range els {
@@ -335,11 +344,17 @@ func decodeCOVMultipleValues(els []bacnet.Element, _ bacnet.DecodeLimits) ([]COV
 			if !haveProp {
 				return nil, fmt.Errorf("%w: arrayIndex without property", bacnet.ErrMalformed)
 			}
+			// The index belongs between the property identifier and the
+			// value, once.
+			if haveIndex || haveValue {
+				return nil, fmt.Errorf("%w: misplaced arrayIndex", bacnet.ErrMalformed)
+			}
 			idx, err := bacnet.ContextUnsigned32(el)
 			if err != nil {
 				return nil, err
 			}
 			cur.Property.ArrayIndex = &idx
+			haveIndex = true
 		case el.TagNumber == 2 && bacnet.IsContextConstructed(el):
 			if !haveProp || haveValue {
 				return nil, fmt.Errorf("%w: misplaced property value", bacnet.ErrMalformed)
@@ -356,28 +371,31 @@ func decodeCOVMultipleValues(els []bacnet.Element, _ bacnet.DecodeLimits) ([]COV
 			if !haveProp {
 				return nil, fmt.Errorf("%w: time-of-change without property", bacnet.ErrMalformed)
 			}
+			if haveChange {
+				return nil, fmt.Errorf("%w: duplicate time-of-change", bacnet.ErrMalformed)
+			}
 			tm, err := bacnet.ContextTime(el)
 			if err != nil {
 				return nil, err
 			}
 			cur.TimeOfChange = &tm
+			haveChange = true
 		case el.TagNumber == 3 && bacnet.IsContextConstructed(el):
 			// Non-standard date+time form emitted by this library up to v0.3.0.
 			if !haveProp {
 				return nil, fmt.Errorf("%w: time-of-change without property", bacnet.ErrMalformed)
 			}
-			if len(el.Value.Elements) >= 2 {
-				ts := DateTime{}
-				if el.Value.Elements[0].Value.Kind == bacnet.ValueDate {
-					ts.Date = el.Value.Elements[0].Value.Date
-				}
-				if el.Value.Elements[1].Value.Kind == bacnet.ValueTime {
-					ts.Time = el.Value.Elements[1].Value.Time
-				}
-				cur.TimeStamp = &ts
-				tm := ts.Time
-				cur.TimeOfChange = &tm
+			if haveChange {
+				return nil, fmt.Errorf("%w: duplicate time-of-change", bacnet.ErrMalformed)
 			}
+			ts, err := dateTimePair(el.Value.Elements, "COVNotificationMultiple time-of-change")
+			if err != nil {
+				return nil, err
+			}
+			cur.TimeStamp = &ts
+			tm := ts.Time
+			cur.TimeOfChange = &tm
+			haveChange = true
 		default:
 			return nil, fmt.Errorf("%w: unexpected value tag %d", bacnet.ErrMalformed, el.TagNumber)
 		}

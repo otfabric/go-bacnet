@@ -97,10 +97,15 @@ func (b *syncBuffer) String() string {
 }
 
 func TestLogger(t *testing.T) {
-	var buf syncBuffer
-	h := newHarness(t, WithLogger(slog.New(slog.NewTextHandler(&buf, &slog.HandlerOptions{Level: slog.LevelDebug}))))
-	h.injectRaw([]byte{0x81, 0x0A, 0x00})
-	waitUntil(t, func() bool { return strings.Contains(buf.String(), "kind=malformed") })
+	inBubble(t, func(t *testing.T) {
+		var buf syncBuffer
+		h := newHarness(t, WithLogger(slog.New(slog.NewTextHandler(&buf, &slog.HandlerOptions{Level: slog.LevelDebug}))))
+		h.injectRaw([]byte{0x81, 0x0A, 0x00})
+		idle()
+		if !strings.Contains(buf.String(), "kind=malformed") {
+			t.Fatalf("malformed frame not logged: %q", buf.String())
+		}
+	})
 
 	// Below the logger's level nothing is formatted.
 	var quiet syncBuffer
@@ -111,34 +116,57 @@ func TestLogger(t *testing.T) {
 	}
 }
 
+// The housekeeping tick expires a COV subscription and a
+// DeviceCommunicationControl duration when their time has come on the
+// server's clock, which the test moves: nothing is waited for but the tick
+// itself (idle).
 func TestHousekeeping(t *testing.T) {
-	clk := clock.NewManual(time.Date(2026, 3, 4, 10, 0, 0, 0, time.Local))
-	h := newHarness(t, withClock(clk))
-	minutes := uint16(1)
-	h.confirmed(1, apdu.ServiceDeviceCommunicationControl, dcc(t, service.EnableDisableDisableInitiation, &minutes, ""))
-	h.expectType(apdu.TypeSimpleACK)
-	h.confirmed(2, apdu.ServiceSubscribeCOV, mustEncode(t)(service.EncodeSubscribeCOV(service.SubscribeCOVRequest{ProcessIdentifier: 1, MonitoredObject: av1, Lifetime: 30})))
-	h.expectType(apdu.TypeSimpleACK)
-	// The initial notification is not initiated while DCC disables it.
-	h.quiet(20 * time.Millisecond)
-	waitUntil(t, func() bool {
+	inBubble(t, func(t *testing.T) {
+		clk := clock.NewManual(time.Date(2026, 3, 4, 10, 0, 0, 0, time.Local))
+		h := newHarness(t, withClock(clk))
+		minutes := uint16(1)
+		h.confirmed(1, apdu.ServiceDeviceCommunicationControl, dcc(t, service.EnableDisableDisableInitiation, &minutes, ""))
+		h.expectType(apdu.TypeSimpleACK)
+		h.confirmed(2, apdu.ServiceSubscribeCOV, mustEncode(t)(service.EncodeSubscribeCOV(service.SubscribeCOVRequest{ProcessIdentifier: 1, MonitoredObject: av1, Lifetime: 30})))
+		h.expectType(apdu.TypeSimpleACK)
+		// The initial notification is not initiated while DCC disables it.
+		h.silent(20 * time.Millisecond)
+		// Before their time both hold; after it both are gone.
+		clk.Advance(29 * time.Second)
+		idle()
+		if h.s.cov.count() != 1 || h.s.dcc.mayInitiate(clk.Now()) {
+			t.Fatalf("after 29 s: %d subscriptions, initiation %v", h.s.cov.count(), h.s.dcc.mayInitiate(clk.Now()))
+		}
 		clk.Advance(time.Second)
-		return h.s.cov.count() == 0 && h.s.dcc.mayInitiate(clk.Now())
+		idle()
+		if h.s.cov.count() != 0 {
+			t.Fatalf("subscription with a lifetime of 30 s still there after 30 s")
+		}
+		clk.Advance(30 * time.Second)
+		idle()
+		if !h.s.dcc.mayInitiate(clk.Now()) {
+			t.Fatal("initiation still disabled after the minute")
+		}
+		h.nothingSent()
+		if err := h.s.IAm(); err != nil {
+			t.Fatal(err)
+		}
+		h.next()
 	})
-	if err := h.s.IAm(); err != nil {
-		t.Fatal(err)
-	}
-	h.next()
 }
 
 func TestRequesterAnswers(t *testing.T) {
+	inBubble(t, testRequesterAnswers)
+}
+
+func testRequesterAnswers(t *testing.T) {
 	h := newHarness(t)
 	other := bip.NewEndpoint(netip.MustParseAddrPort("10.0.0.9:47808"))
 	answer := func(reply func(id uint8) []byte, from bip.Endpoint) error {
 		t.Helper()
 		done := make(chan error, 1)
 		go func() {
-			done <- h.s.req.invoke(context.Background(), clientEP, bacnet.Address{}, apdu.ServiceConfirmedEventNotification, []byte{0x09, 0x01})
+			done <- h.s.req.invoke(context.Background(), clientEP, bacnet.Address{}, apdu.ServiceConfirmedEventNotification, []byte{0x09, 0x01}, false)
 		}()
 		got := h.expectType(apdu.TypeConfirmedRequest)
 		if reply != nil {
@@ -175,7 +203,7 @@ func TestRequesterAnswers(t *testing.T) {
 	// No answer: the request is sent again (one retry), then times out.
 	done := make(chan error, 1)
 	go func() {
-		done <- h.s.req.invoke(context.Background(), clientEP, bacnet.Address{}, apdu.ServiceConfirmedEventNotification, []byte{0x09, 0x01})
+		done <- h.s.req.invoke(context.Background(), clientEP, bacnet.Address{}, apdu.ServiceConfirmedEventNotification, []byte{0x09, 0x01}, false)
 	}()
 	h.expectType(apdu.TypeConfirmedRequest)
 	h.expectType(apdu.TypeConfirmedRequest)
@@ -184,5 +212,5 @@ func TestRequesterAnswers(t *testing.T) {
 	}
 	// An answer for no pending request is ignored.
 	h.inject(apdu.AppendSimpleACK(nil, apdu.SimpleACK{InvokeID: 200, ServiceChoice: 2}))
-	h.quiet(20 * time.Millisecond)
+	h.silent(20 * time.Millisecond)
 }

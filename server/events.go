@@ -6,6 +6,8 @@ import (
 	"context"
 	"sort"
 	"sync"
+	"sync/atomic"
+	"time"
 
 	"github.com/otfabric/go-bacnet"
 	"github.com/otfabric/go-bacnet/apdu"
@@ -15,35 +17,168 @@ import (
 	"github.com/otfabric/go-bacnet/service"
 )
 
-// maxBindings bounds the device address cache filled from I-Am.
+// maxBindings bounds the device address cache filled from I-Am, and the
+// Who-Is requests for unbound recipients that are outstanding at once.
 const maxBindings = 256
 
 // eventEngine runs intrinsic reporting: event detection on objects that
 // changed and once a second for time delays, and the delivery of event
 // notifications to the recipients of the Notification Class (clause 13.2,
 // 13.8, 13.9).
+//
+// Device recipients are found through the address cache (bindings). An
+// I-Am is recorded when the device is an event recipient: a Recipient_List
+// names it, or a Who-Is was sent for it. The address of a device nobody
+// reports to is not kept. A recorded device is refreshed by its later
+// I-Ams, and when the cache is full the entry heard from longest ago makes
+// room for the new one (reported as a diagnostic).
 type eventEngine struct {
 	s     *Server
 	mu    sync.Mutex
 	dirty map[bacnet.ObjectIdentifier]struct{}
 	kick  chan struct{}
-	// Device addresses learnt from I-Am, for device recipients.
+	// Device addresses learnt from I-Am, for device recipients, and the
+	// time a Who-Is was last sent for a recipient that is not bound.
 	bmu      sync.Mutex
 	bindings map[uint32]binding
+	asked    map[uint32]time.Time
+	// named holds the device instances that the Recipient_Lists name. It is
+	// built on demand and again after namedGen moved: every change of a
+	// Notification Class or of the object table moves it.
+	nmu      sync.Mutex
+	named    map[uint32]struct{}
+	namedAt  uint64
+	namedGen atomic.Uint64
 }
 
 type binding struct {
 	to   bip.Endpoint
 	addr bacnet.Address
+	seen time.Time // the last I-Am of the device
 }
 
 func newEventEngine(s *Server) *eventEngine {
-	return &eventEngine{s: s, dirty: make(map[bacnet.ObjectIdentifier]struct{}), kick: make(chan struct{}, 1), bindings: make(map[uint32]binding)}
+	return &eventEngine{
+		s: s, dirty: make(map[bacnet.ObjectIdentifier]struct{}), kick: make(chan struct{}, 1),
+		bindings: make(map[uint32]binding), asked: make(map[uint32]time.Time),
+	}
 }
 
 // changed is a Device observer; it never blocks.
 func (e *eventEngine) changed(c object.Change) {
+	if c.Object.Type == bacnet.ObjectTypeNotificationClass || c.Object.Type == bacnet.ObjectTypeDevice {
+		e.namedGen.Add(1)
+	}
 	e.mark(c.Object)
+}
+
+// answerWindow is how long an answer to a request the server broadcast
+// (Who-Is, Who-Is-Router-To-Network) is waited for before the request is
+// sent again: as long as a confirmed request waits with its retries.
+func (s *Server) answerWindow() time.Duration {
+	return time.Duration(s.cfg.retries+1) * s.cfg.apduTimeout
+}
+
+// isNamed reports whether a Recipient_List of a Notification Class names
+// the device.
+func (e *eventEngine) isNamed(instance uint32) bool {
+	e.nmu.Lock()
+	defer e.nmu.Unlock()
+	if gen := e.namedGen.Load(); e.named == nil || e.namedAt != gen {
+		e.named, e.namedAt = e.recipientDevices(), gen
+	}
+	_, ok := e.named[instance]
+	return ok
+}
+
+// recipientDevices collects the device recipients of every Notification
+// Class.
+func (e *eventEngine) recipientDevices() map[uint32]struct{} {
+	out := make(map[uint32]struct{})
+	for _, id := range e.s.dev.ObjectIdentifiers() {
+		if id.Type != bacnet.ObjectTypeNotificationClass {
+			continue
+		}
+		nc, ok := e.notificationClass(id.Instance)
+		if !ok {
+			continue
+		}
+		v, err := nc.ReadProperty(e.s.ctx, bacnet.PropertyReference{Identifier: bacnet.PropertyRecipientList})
+		if err != nil {
+			continue
+		}
+		dests, _, err := object.ParseDestinations(v.Elements)
+		if err != nil {
+			continue
+		}
+		for _, d := range dests {
+			if d.Device != nil {
+				out[d.Device.Instance] = struct{}{}
+			}
+		}
+	}
+	return out
+}
+
+// askLocked reports whether a Who-Is for the unbound recipient is due, and
+// records it: one is sent per recipient and answer window, and at most
+// maxBindings recipients are waited for at once. The caller holds e.bmu.
+func (e *eventEngine) askLocked(instance uint32, now time.Time) bool {
+	window := e.s.answerWindow()
+	at, pending := e.asked[instance]
+	if pending && now.Sub(at) < window {
+		return false
+	}
+	if !pending && len(e.asked) >= maxBindings {
+		for k, at := range e.asked {
+			if now.Sub(at) >= window {
+				delete(e.asked, k)
+			}
+		}
+		if len(e.asked) >= maxBindings {
+			return false
+		}
+	}
+	e.asked[instance] = now
+	return true
+}
+
+// learn records the address a device announced with I-Am, when the device
+// is an event recipient (see eventEngine).
+func (e *eventEngine) learn(instance uint32, p peer) {
+	e.bmu.Lock()
+	_, known := e.bindings[instance]
+	_, asked := e.asked[instance]
+	e.bmu.Unlock()
+	if !known && !asked && !e.isNamed(instance) {
+		return
+	}
+	evicted, full := uint32(0), false
+	e.bmu.Lock()
+	if _, known := e.bindings[instance]; !known && len(e.bindings) >= maxBindings {
+		evicted, full = e.evictLocked(), true
+	}
+	e.bindings[instance] = binding{to: p.immediate, addr: p.source, seen: e.s.clock.Now()}
+	delete(e.asked, instance)
+	e.bmu.Unlock()
+	if full {
+		e.s.report(diag.KindRegistryEviction, "event recipient address dropped for a newer one: cache full", map[string]any{"device": evicted, "limit": maxBindings})
+	}
+}
+
+// evictLocked removes the binding heard from longest ago and returns its
+// device instance. The caller holds e.bmu; the cache is not empty.
+func (e *eventEngine) evictLocked() uint32 {
+	var oldest uint32
+	var at time.Time
+	first := true
+	for inst, b := range e.bindings {
+		if first || b.seen.Before(at) || (b.seen.Equal(at) && inst < oldest) {
+			oldest, at, first = inst, b.seen, false
+		}
+	}
+	delete(e.bindings, oldest)
+	return oldest
 }
 
 func (e *eventEngine) mark(id bacnet.ObjectIdentifier) {
@@ -68,7 +203,6 @@ func (e *eventEngine) tick() {
 }
 
 func (e *eventEngine) run() {
-	defer e.s.wg.Done()
 	for {
 		select {
 		case <-e.s.ctx.Done():
@@ -83,7 +217,12 @@ func (e *eventEngine) run() {
 		clear(e.dirty)
 		e.mu.Unlock()
 		for _, id := range ids {
-			e.evaluate(id)
+			if e.s.ctx.Err() != nil {
+				return
+			}
+			// EvaluateEvents is the object's code: one object that does
+			// not return normally does not stop detection for the others.
+			e.s.guard("event evaluation", map[string]any{"object": id.String()}, func() { e.evaluate(id) })
 		}
 	}
 }
@@ -163,7 +302,7 @@ func (e *eventEngine) report(tr object.EventTransition) {
 		}
 		if d.Confirmed {
 			s.req.async(func() {
-				if err := s.req.invoke(s.ctx, to, dest, apdu.ServiceConfirmedEventNotification, payload); err != nil {
+				if err := s.req.invoke(s.ctx, to, dest, apdu.ServiceConfirmedEventNotification, payload, false); err != nil {
 					s.report(diag.KindEvent, "confirmed event notification failed", map[string]any{"to": to.String(), "error": err.Error()})
 				}
 			})
@@ -176,17 +315,23 @@ func (e *eventEngine) report(tr object.EventTransition) {
 
 // resolve finds where a destination is. A device recipient whose address
 // is not known yet gets a Who-Is and this notification is skipped, as
-// bacnet-stack does (nc.c).
+// bacnet-stack does (nc.c). One Who-Is is sent per recipient and answer
+// window, however many notifications are skipped meanwhile.
 func (e *eventEngine) resolve(d object.Destination) (to bip.Endpoint, dest bacnet.Address, broadcast, ok bool) {
 	s := e.s
 	if d.Device != nil {
+		inst := d.Device.Instance
 		e.bmu.Lock()
-		b, known := e.bindings[d.Device.Instance]
+		b, known := e.bindings[inst]
+		ask := !known && e.askLocked(inst, s.clock.Now())
 		e.bmu.Unlock()
 		if known {
 			return b.to, b.addr, false, true
 		}
-		inst := d.Device.Instance
+		if !ask {
+			s.report(diag.KindEvent, "event recipient not bound", map[string]any{"device": inst})
+			return bip.Endpoint{}, bacnet.Address{}, false, false
+		}
 		payload, err := service.EncodeWhoIs(service.WhoIs{LowLimit: &inst, HighLimit: &inst})
 		if err == nil {
 			frame := apdu.AppendUnconfirmedRequest(nil, apdu.UnconfirmedRequest{ServiceChoice: apdu.ServiceWhoIs, Payload: payload})
@@ -216,9 +361,13 @@ func (e *eventEngine) resolve(d object.Destination) (to bip.Endpoint, dest bacne
 		if router, known := s.routes.lookup(addr.Network()); known {
 			return router, addr, false, true
 		}
-		s.whoIsRouter(addr.Network())
+		msg := "event recipient network has no known router"
+		if s.routes.ask(addr.Network(), s.clock.Now(), s.answerWindow()) {
+			s.whoIsRouter(addr.Network())
+			msg += "; Who-Is-Router-To-Network sent"
+		}
 		if d.Confirmed {
-			s.report(diag.KindEvent, "event recipient network has no known router; Who-Is-Router-To-Network sent", map[string]any{"to": addr.String()})
+			s.report(diag.KindEvent, msg, map[string]any{"to": addr.String()})
 			return bip.Endpoint{}, bacnet.Address{}, false, false
 		}
 		return bip.Endpoint{}, addr, true, true
@@ -227,23 +376,20 @@ func (e *eventEngine) resolve(d object.Destination) (to bip.Endpoint, dest bacne
 	return ep, addr, false, ok
 }
 
-// iAm records the address of a device for event recipients.
+// iAm records the address of a device that is an event recipient.
 func (s *Server) iAm(_ context.Context, req *apdu.UnconfirmedRequest, p peer) {
 	r, err := service.DecodeIAm(req.Payload, s.limits)
 	if err != nil || r.Device.Type != bacnet.ObjectTypeDevice || r.Device == s.dev.Identifier() {
 		return
 	}
-	e := s.events
-	e.bmu.Lock()
-	defer e.bmu.Unlock()
-	if _, known := e.bindings[r.Device.Instance]; !known && len(e.bindings) >= maxBindings {
-		return
-	}
-	e.bindings[r.Device.Instance] = binding{to: p.immediate, addr: p.source}
+	s.events.learn(r.Device.Instance, p)
 }
 
 // acknowledgeAlarm serves AcknowledgeAlarm (clause 13.5). The
-// acknowledgment notification goes to the recipients after the SimpleACK.
+// acknowledgment notification goes to the recipients after the SimpleACK,
+// when the request acknowledged a transition that was not acknowledged
+// before. A request that names an acknowledged transition is answered the
+// same way and changes nothing, so there is nothing to report.
 func (s *Server) acknowledgeAlarm(_ context.Context, req *apdu.ConfirmedRequest, _ peer) result {
 	r, err := service.DecodeAcknowledgeAlarm(req.Payload, s.limits)
 	if err != nil {
@@ -257,7 +403,8 @@ func (s *Server) acknowledgeAlarm(_ context.Context, req *apdu.ConfirmedRequest,
 	if !ok {
 		return fail(object.ErrNoAlarmConfigured)
 	}
-	if _, ok := er.EventInfo(); !ok {
+	before, ok := er.EventInfo()
+	if !ok {
 		return fail(object.ErrNoAlarmConfigured)
 	}
 	tr, err := er.AcknowledgeAlarm(r.EventStateAcked, r.TimeStamp)
@@ -265,7 +412,9 @@ func (s *Server) acknowledgeAlarm(_ context.Context, req *apdu.ConfirmedRequest,
 		return fail(err)
 	}
 	res := ack()
-	res.after = func() { s.events.report(tr) }
+	if before.Acked&(1<<transitionOf(r.EventStateAcked)) == 0 {
+		res.after = func() { s.events.report(tr) }
+	}
 	return res
 }
 

@@ -27,7 +27,11 @@ func DecodeGetEnrollmentSummary(payload []byte, limits bacnet.DecodeLimits) (Get
 	}
 	var req GetEnrollmentSummaryRequest
 	var haveAck bool
+	var seen fieldSet
 	for _, el := range els {
+		if err := seen.add(el.TagNumber, "GetEnrollmentSummary"); err != nil {
+			return GetEnrollmentSummaryRequest{}, err
+		}
 		switch {
 		case el.TagNumber == 0 && !bacnet.IsContextConstructed(el):
 			u, e := bacnet.ContextUnsigned(el)
@@ -78,6 +82,9 @@ func DecodeGetEnrollmentSummary(payload []byte, limits bacnet.DecodeLimits) (Get
 				v := u
 				req.NotificationClassFilter = &v
 			}
+		default:
+			// A filter the decoder does not know cannot be applied.
+			return GetEnrollmentSummaryRequest{}, fmt.Errorf("%w: GetEnrollmentSummary tag %d", bacnet.ErrMalformed, el.TagNumber)
 		}
 		if err != nil {
 			return GetEnrollmentSummaryRequest{}, err
@@ -287,7 +294,7 @@ func DecodeCreateObject(payload []byte, limits bacnet.DecodeLimits) (CreateObjec
 		return CreateObjectRequest{}, fmt.Errorf("%w: CreateObject trailing", bacnet.ErrTrailingData)
 	}
 	var req CreateObjectRequest
-	var haveSpec bool
+	var haveSpec, haveValues bool
 	for _, el := range els {
 		switch {
 		case el.TagNumber == 0 && bacnet.IsContextConstructed(el):
@@ -325,7 +332,11 @@ func DecodeCreateObject(payload []byte, limits bacnet.DecodeLimits) (CreateObjec
 				return CreateObjectRequest{}, fmt.Errorf("%w: CreateObject objectSpecifier CHOICE tag %d", bacnet.ErrMalformed, choice.TagNumber)
 			}
 		case el.TagNumber == 1 && bacnet.IsContextConstructed(el):
+			if haveValues {
+				return CreateObjectRequest{}, fmt.Errorf("%w: CreateObject duplicate listOfInitialValues", bacnet.ErrMalformed)
+			}
 			req.InitialValues, err = decodeCOVValues(el.Value.Elements)
+			haveValues = true
 		default:
 			return CreateObjectRequest{}, fmt.Errorf("%w: CreateObject tag %d", bacnet.ErrMalformed, el.TagNumber)
 		}
@@ -352,7 +363,11 @@ func DecodeSubscribeCOVPropertyMultiple(payload []byte, limits bacnet.DecodeLimi
 	}
 	var req SubscribeCOVPropertyMultipleRequest
 	var havePID, haveSubs, haveConfirmed bool
+	var seen fieldSet
 	for _, el := range els {
+		if err := seen.add(el.TagNumber, "SubscribeCOVPropertyMultiple"); err != nil {
+			return SubscribeCOVPropertyMultipleRequest{}, err
+		}
 		switch {
 		case el.TagNumber == 0 && !bacnet.IsContextConstructed(el):
 			req.SubscriberProcessIdentifier, err = bacnet.ContextUnsigned32(el)

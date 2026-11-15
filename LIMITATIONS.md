@@ -25,6 +25,52 @@ and evidence: [docs/CLIENT_SUPPORT.md](docs/CLIENT_SUPPORT.md) and
   codes are refused, where a Lithonia SYSC MLX answers; a password failure
   is answered with class security, where older devices use services.
 
+## Decoders: what is refused and what is still accepted
+
+The decoders of package `service` refuse a message that has no single
+reading (`ErrMalformed`): a field that comes twice (AcknowledgeAlarm,
+GetEnrollmentSummary, CreateObject, SubscribeCOVProperty,
+SubscribeCOVPropertyMultiple, Add/RemoveListElement,
+COVNotificationMultiple, the typed notification parameters `extended` and
+`buffer-ready`), a field at another place than its own (an array index
+after the value in a ReadPropertyMultiple-ACK or a COVNotificationMultiple;
+positional notification parameters with another context tag), a second
+list of results for one object, an AtomicReadFile-ACK with no access
+alternative or with two, a COVNotificationMultiple timestamp that is not a
+Date and a Time, and a GetEnrollmentSummary filter the decoder does not
+know.
+
+Still accepted, because devices send it or nothing is misread; a later
+minor release may refuse these, after a check against field traffic:
+
+- a ReadPropertyMultiple-ACK with an object that has no list of results, an
+  empty list, or no object at all;
+- an AtomicReadFile-ACK whose returnedRecordCount differs from the number
+  of records it carries (both are returned as sent);
+- a COVNotificationMultiple without its list of notifications;
+- typed notification parameters `extended` and `buffer-ready` with fields
+  left out (they read as zero) or with tags the decoder does not know (the
+  raw elements keep them);
+- a GetEnrollmentSummary acknowledgment filter above not-acked (2), which
+  the server serves as "all".
+
+The text fields of TextMessage, life-safety and audit messages are returned
+as the octets sent, whatever their character set
+(`bacnet.CharacterString.Text` converts when the set is known to the
+caller).
+
+`service.DecodeAuthRequest` returns the elements of the payload as they
+are, while `EncodeAuthRequest` wraps its parameters in context tag 0; a
+decoded request therefore does not encode to the octets it came from.
+
+## Server bounds that are fixed
+
+- A record-access File holds at most 1 MiB of record data (or its initial
+  content, when larger). The bound is not configurable in this release.
+- One destination has at most eight of the server's confirmed requests
+  waiting for an answer; the device address cache holds 256 event
+  recipients and the router table 64 networks.
+
 ## Not implemented
 
 - A BACnet router (no routing between networks, for client or server).

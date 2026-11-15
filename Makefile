@@ -9,7 +9,7 @@ PKGS     := ./...
 DOCSYNC_VERSION := v0.3.1
 FUZZTIME ?= 5s
 
-.PHONY: help test test-race chaos vet lint lint-ci fmt tidy vuln coverage coverage-check coverage-pkg-check e2e check fuzz bench cross imports interop interop-required interop-pinned dissector clean docs-check captures-fetch captures-extended captures-generate captures-report
+.PHONY: help test test-race chaos vet lint lint-ci fmt tidy vuln coverage coverage-check coverage-pkg-check e2e check fuzz fuzz-list bench cross imports interop interop-required interop-pinned dissector clean docs-check captures-fetch captures-extended captures-generate captures-report
 
 help: ## Show available targets
 	@awk 'BEGIN {FS = ":.*## "}; /^[a-zA-Z0-9_.-]+:.*## / {printf "%-14s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -102,6 +102,14 @@ fuzz: ## Run short fuzz targets (override FUZZTIME; nightly uses 5m)
 	    echo "==> $$pkg $$t"; \
 	    go test -run='^$$' -fuzz="^$${t}$$" -fuzztime=$(FUZZTIME) "$$pkg"; \
 	  done; \
+	done
+
+# One line "<package> <target>" per fuzz target, from the same discovery as
+# `fuzz`. fuzz-nightly.yml builds its job matrix from this output.
+fuzz-list: ## List the fuzz targets, one "<package> <target>" per line
+	@set -euo pipefail; \
+	for pkg in $(FUZZ_PKGS); do \
+	  go test -list '^Fuzz' "$$pkg" | awk -v pkg="$$pkg" '/^Fuzz/ { print pkg, $$1 }'; \
 	done
 
 bench: ## Run the codec benchmarks

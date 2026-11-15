@@ -243,6 +243,9 @@ func DecodeSubscribeCOVProperty(payload []byte, limits bacnet.DecodeLimits) (Sub
 			req.Property = prop
 			haveProp = true
 		case el.TagNumber == 5 && !bacnet.IsContextConstructed(el):
+			if req.COVIncrement != nil {
+				return SubscribeCOVPropertyRequest{}, fmt.Errorf("%w: duplicate covIncrement", bacnet.ErrMalformed)
+			}
 			if len(el.Value.OctetString) != 4 {
 				return SubscribeCOVPropertyRequest{}, fmt.Errorf("%w: COVIncrement length", bacnet.ErrMalformed)
 			}

@@ -287,7 +287,15 @@ func (r *responder) execute(t *rtx, payload []byte) {
 	req := t.header
 	req.Payload = payload
 	ok := s.submit(func(ctx context.Context) {
-		res := s.handleConfirmed(ctx, &req, t.peer)
+		var res result
+		// The handler calls the application's hooks and objects. When one
+		// does not return normally the request is answered with Abort
+		// (other), which every service can carry, and the worker goes on.
+		if !s.guard("confirmed request handler", map[string]any{"service": req.ServiceChoice, "from": t.peer.origin.String()}, func() {
+			res = s.handleConfirmed(ctx, &req, t.peer)
+		}) {
+			res = fail(&abortError{bacnet.AbortReasonOther})
+		}
 		r.finish(ctx, t, &req, res)
 	})
 	if !ok {
@@ -345,13 +353,10 @@ func (r *responder) finish(ctx context.Context, t *rtx, req *apdu.ConfirmedReque
 	t.acks = acks
 	t.aborted = make(chan struct{})
 	r.mu.Unlock()
-	// The worker is free again; the server's WaitGroup still counts this
-	// worker, so the Add cannot race with Close's Wait.
-	handedOff = true
+	// The worker is free again. Nothing is started once Close has begun:
+	// the transaction then ends here.
 	hdr := *req
-	s.wg.Add(1)
-	go func() {
-		defer s.wg.Done()
+	handedOff = s.spawn(func() {
 		defer r.done(t)
 		// Every window waits at most one segment timeout, plus the retries:
 		// progress does not extend this deadline.
@@ -364,7 +369,7 @@ func (r *responder) finish(ctx context.Context, t *rtx, req *apdu.ConfirmedReque
 			}
 			s.report(diag.KindTransaction, "segmented reply ended", map[string]any{"invoke_id": hdr.InvokeID, "error": err.Error()})
 		}
-	}()
+	})
 }
 
 func decodeMaxSegments(code uint8) int {
@@ -396,6 +401,12 @@ var (
 // acknowledged by a SegmentACK; a negative ACK or a timeout resends from
 // the segment after the last acknowledged one. The first segment goes out
 // alone, because the requester's window is known from its first SegmentACK.
+//
+// A negative SegmentACK that names the last acknowledged segment says that
+// the requester missed the start of the window just sent: the window is
+// sent again at once. These resends do not count as retries (the requester
+// answered), but at one position no more of them are made than there are
+// retries; after that the segment timer decides, as for no answer.
 func (r *responder) sendSegments(ctx context.Context, t *rtx, req *apdu.ConfirmedRequest, payload []byte, segSize, count int, acks <-chan *apdu.SegmentACK) error {
 	s := r.s
 	encode := func(i int) []byte {
@@ -409,6 +420,7 @@ func (r *responder) sendSegments(ctx context.Context, t *rtx, req *apdu.Confirme
 	window := 1
 	acked := -1 // highest segment acknowledged
 	retries := 0
+	resent := 0 // windows sent again for a negative ACK since acked last moved
 	for acked < count-1 {
 		end := min(acked+1+window, count)
 		for i := acked + 1; i < end; i++ {
@@ -444,19 +456,22 @@ func (r *responder) sendSegments(ctx context.Context, t *rtx, req *apdu.Confirme
 				off := (seq - base%256 + 256) % 256
 				n := base + off
 				if n >= end {
-					// Not inside the window just sent: a duplicate of an
-					// earlier acknowledgement.
+					// Not inside the window just sent. A negative ACK for the
+					// last acknowledged segment (255 before the first one)
+					// asks for the window again; anything else is a duplicate
+					// of an earlier acknowledgement.
+					if ack.NegativeACK && ack.SequenceNumber == uint8(acked) && resent < s.cfg.retries {
+						resent++
+						timer.Stop()
+						progressed = true
+					}
 					continue
 				}
 				// A positive ACK acknowledges every segment up to n; a
 				// negative one says n is the last received in order, so the
 				// window restarts after it.
-				if n > acked {
-					acked = n
-					retries = 0
-				} else if !ack.NegativeACK {
-					continue
-				}
+				acked = n
+				retries, resent = 0, 0
 				timer.Stop()
 				progressed = true
 			}

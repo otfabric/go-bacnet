@@ -48,6 +48,8 @@ type FileConfig struct {
 	ReadOnly bool
 	// MaxSize bounds the file in octets (stream) or records (record);
 	// zero means 1 MiB or 65536 records. Above math.MaxInt32 NewFile fails.
+	// A record file is bounded in octets too: its records hold at most
+	// 1 MiB together, or as much as Records holds when that is more.
 	MaxSize int
 	Data    []byte
 	Records [][]byte
@@ -63,13 +65,23 @@ type FileConfig struct {
 // data with End_Of_File set.
 type File struct {
 	*Base
-	cfg      FileConfig
-	data     []byte
-	records  [][]byte
-	modified time.Time
-	archive  bool
-	now      func() time.Time
+	cfg     FileConfig
+	data    []byte
+	records [][]byte
+	// recordOctets is the sum of the record lengths, maxRecordOctets its
+	// bound (see recordFileOctets).
+	recordOctets    int
+	maxRecordOctets int
+	modified        time.Time
+	archive         bool
+	now             func() time.Time
 }
+
+// recordFileOctets bounds the octets the records of a record file hold
+// together, as a stream file is bounded to 1 MiB by default: MaxSize counts
+// records, and one record is as long as the request that carries it. A file
+// that starts with more (FileConfig.Records) keeps that size as its bound.
+const recordFileOctets = 1 << 20
 
 // NewFile returns a File object.
 func NewFile(cfg FileConfig) (*File, error) {
@@ -94,7 +106,9 @@ func NewFile(cfg FileConfig) (*File, error) {
 	f.data = append([]byte(nil), cfg.Data...)
 	for _, r := range cfg.Records {
 		f.records = append(f.records, append([]byte(nil), r...))
+		f.recordOctets += len(r)
 	}
+	f.maxRecordOctets = max(recordFileOctets, f.recordOctets)
 	if (cfg.Record && len(f.records) > cfg.MaxSize) || (!cfg.Record && len(f.data) > cfg.MaxSize) {
 		return nil, errorf("initial content exceeds the maximum size")
 	}
@@ -238,7 +252,9 @@ func (f *File) WriteStream(start int32, data []byte) (int32, error) {
 }
 
 // WriteRecords implements FileAccessor: the records replace those from
-// the start position on, and the file grows when they run past its end.
+// the start position on, and the file grows when they run past its end. A
+// write that would take the file past its bound in records (MaxSize) or in
+// octets is refused with ErrFileFull before anything is stored.
 func (f *File) WriteRecords(start int32, records [][]byte) (int32, error) {
 	if !f.cfg.Record {
 		return 0, ErrInvalidFileAccessMethod
@@ -264,6 +280,20 @@ func (f *File) WriteRecords(start int32, records [][]byte) (int32, error) {
 			err = ErrFileFull
 			return nil
 		}
+		// The octets the file holds after the write: the records that are
+		// replaced leave, the new ones come. Counted in int64, so that the
+		// sum cannot wrap where int is 32 bits.
+		octets := int64(f.recordOctets)
+		for i, r := range records {
+			if at+i < len(f.records) {
+				octets -= int64(len(f.records[at+i]))
+			}
+			octets += int64(len(r))
+		}
+		if octets > int64(f.maxRecordOctets) {
+			err = ErrFileFull
+			return nil
+		}
 		for i, r := range records {
 			cp := append([]byte(nil), r...)
 			if at+i < len(f.records) {
@@ -272,6 +302,7 @@ func (f *File) WriteRecords(start int32, records [][]byte) (int32, error) {
 				f.records = append(f.records, cp)
 			}
 		}
+		f.recordOctets = int(octets)
 		actual = int32(at)
 		f.modified = f.now()
 		return []bacnet.PropertyIdentifier{bacnet.PropertyFileSize, bacnet.PropertyRecordCount, bacnet.PropertyModificationDate}

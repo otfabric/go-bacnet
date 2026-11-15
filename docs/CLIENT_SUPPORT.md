@@ -7,7 +7,7 @@ Server capabilities are in [SERVER_SUPPORT.md](SERVER_SUPPORT.md). The UDP
 transport the client uses lives in package `bip` from v0.6.0
 (`client.Transport` is an alias); the client's behaviour is unchanged.
 
-**Library version:** v0.8.0 (previous release [v0.7.0](https://github.com/otfabric/go-bacnet/releases/tag/v0.7.0))  
+**Library version:** v0.9.1 (previous release [v0.9.0](https://github.com/otfabric/go-bacnet/releases/tag/v0.9.0))  
 **Interop pin:** bacnet-interop v0.14.0 (nine peer stacks; see [INTEROP.md](../INTEROP.md))  
 **Last pinned run:** 2026-11-12, bacnet-interop v0.14.0: 279 tests pass, 0 fail, 14 skip (with subtests 821 / 0 / 135; [results](../interop/results/pinned-v0.14.0.json))
 

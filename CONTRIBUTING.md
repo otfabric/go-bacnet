@@ -4,7 +4,7 @@ Thanks for contributing to `go-bacnet`.
 
 ## Requirements
 
-- Go **1.23** or newer
+- Go **1.26** or newer (the `go` directive of `go.mod`)
 - Always run toolchain commands with module isolation when a parent `go.work`
   may be present:
 
@@ -21,14 +21,26 @@ make check
 ```
 
 `check` runs format, tidy, vet, staticcheck, **golangci-lint** (same gate as
-CI, including `errcheck`), vulncheck, unit tests, race tests, coverage, and
-the import-boundary test. Install the CI tools once:
+CI, including `errcheck`), vulncheck, unit tests, race tests, coverage (total
+and per package), the import-boundary test and the document check (docsync).
+Install the CI tools once, at the versions CI runs:
 
 ```bash
-go install honnef.co/go/tools/cmd/staticcheck@latest
-go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
-go install golang.org/x/vuln/cmd/govulncheck@latest
+go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.1.6
+go install golang.org/x/vuln/cmd/govulncheck@v1.9.0
 ```
+
+These are the `golangci-lint-version` and `govulncheck-version` defaults of
+the shared workflow that `.github/workflows/ci.yml` calls
+(`otfabric/.github` `go-ci.yml@v3.8.0`); `ci.yml` does not override them.
+When `ci.yml` moves to another release of that workflow, take the versions
+from there.
+
+`make lint` also needs the standalone `staticcheck`
+(`honnef.co/go/tools/cmd/staticcheck`) on the `PATH`. CI has no version of
+it to copy: there staticcheck runs as a linter of golangci-lint, at the
+version that golangci-lint release carries. Install a staticcheck release
+that supports the Go version you build with.
 
 Useful individual targets: `make test`, `make test-race`, `make vet`,
 `make lint`, `make lint-ci`, `make fmt`, `make tidy`, `make vuln`,

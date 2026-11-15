@@ -34,6 +34,10 @@ func readDeviceProp(t *testing.T, h *harness, inv uint8, prop bacnet.PropertyIde
 }
 
 func TestSubscribeCOVProperty(t *testing.T) {
+	inBubble(t, testSubscribeCOVProperty)
+}
+
+func testSubscribeCOVProperty(t *testing.T) {
 	h := newHarness(t)
 	inc := float32(2)
 	sub := func(inv uint8, pid uint32, obj bacnet.ObjectIdentifier, prop bacnet.PropertyIdentifier, inc *float32, cancel bool) {
@@ -98,6 +102,10 @@ func TestSubscribeCOVProperty(t *testing.T) {
 }
 
 func TestSubscribeCOVPropertyMultiple(t *testing.T) {
+	inBubble(t, testSubscribeCOVPropertyMultiple)
+}
+
+func testSubscribeCOVPropertyMultiple(t *testing.T) {
 	h := newHarness(t)
 	life := uint32(120)
 	req := func(inv uint8, specs []service.COVMultipleSubscription, cancel bool) {
@@ -154,6 +162,10 @@ func TestSubscribeCOVPropertyMultiple(t *testing.T) {
 }
 
 func TestCOVLimits(t *testing.T) {
+	inBubble(t, testCOVLimits)
+}
+
+func testCOVLimits(t *testing.T) {
 	h := newHarness(t, WithCOVLimits(1, time.Minute))
 	sub := func(inv uint8, pid uint32, life uint32) {
 		h.confirmed(inv, apdu.ServiceSubscribeCOV, mustEncode(t)(service.EncodeSubscribeCOV(service.SubscribeCOVRequest{ProcessIdentifier: pid, MonitoredObject: av1, Lifetime: life})))

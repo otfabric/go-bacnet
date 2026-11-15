@@ -1,5 +1,48 @@
 # go-bacnet Releases
 
+## v0.9.1
+
+**Date:** 2026-11-15
+**Previous release:** v0.9.0
+
+Requires **Go 1.26+**. Interop pin unchanged: [`bacnet-interop` v0.14.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.14.0). A patch release from the policy 1.6 review of the library: no exported identifier is added, removed or changed. It settles what the server does with the application's code it calls and with `Close`, bounds what the server keeps and sends on its own account, and makes several decoders refuse messages that have no single reading. The items under Changed can be seen by an application or a peer; read them before upgrading a server.
+
+### Changed
+
+- Server: the application's code that the server calls (`Hooks`, the methods of application objects, a `BBMD`, the function of `WithDiagnosticFunc`, the logger's handler) has a written contract: which goroutine calls it, what a call that waits holds up, what it may call back, and `Close` ([API.md](API.md#hooks)). Code that does not return normally is stopped at the server: a confirmed request it was serving is answered with Abort (other), anything else is dropped, a diagnostic of the new kind `callback` (logged at Error level) carries the name of the call, what the code ended with and its stack, and the server goes on. `object.Base` releases the object's lock in that case. An application that relied on such code ending the process ends it itself.
+- Server: `Close` may be called from that code. It waits for every goroutine of the server except the one it was called on and returns; that goroutine finishes its request without an answer on the network and starts nothing new. `Close` from several goroutines at once returns for each of them.
+- Server: after `Close`, `IAm` returns an error that matches `bacnet.ErrClosed`. It still matches `context.Canceled`, which is what it returned until v0.9.0.
+- Server: an AcknowledgeAlarm for a transition that is already acknowledged is answered as before and no longer reported to the recipients again; the acknowledgment notification is sent when the request acknowledges a transition.
+- Server: a device recipient that is not bound gets one Who-Is, and a network without a known router one Who-Is-Router-To-Network, per answer window (APDU timeout times attempts) instead of one per skipped notification.
+- Server: one destination has at most eight of the server's confirmed requests waiting for an answer. Further confirmed COV notifications for it wait their turn; further confirmed event notifications are dropped and reported as an `event` diagnostic.
+- Server: the device address cache records an I-Am only for a device that is an event recipient (a Recipient_List names it, or a Who-Is was sent for it). When the cache (256) or the router table (64) is full, the entry heard from longest ago makes room for the new one, reported as a `registry_eviction` diagnostic; until v0.9.0 a full table learnt nothing new. The router that answers the server's own Who-Is-Router-To-Network keeps its route against routes that are only observed; another node showing up for that network makes the server ask again, at most once in five minutes.
+- Server: an ACK or Error that names another service than the pending notification of that invoke ID does not complete it (`wrong_service` diagnostic), as in the client.
+- Server: during a segmented reply, a negative SegmentACK that names the last acknowledged segment makes the server send the window again at once (at most as often as there are retries per position) instead of at the next segment timeout.
+- Server: SubscribeCOVPropertyMultiple answers a COV increment that is negative or not a number with property/value-out-of-range, as SubscribeCOVProperty does.
+- Server objects: a record-access `File` is bounded in octets as well as in records: its records hold at most 1 MiB together (or what `FileConfig.Records` holds, when that is more), and a write beyond it is answered with object/file-full. AtomicReadFile asks the file for at most one octet, or one record, more than the reply can carry; the answer to the requester is unchanged. The bound becomes configurable in v0.10.0.
+- Server objects: a write of the whole State_Text array of a multi-state point keeps its length: another number of texts than Number_Of_States is property/value-out-of-range. Single texts are written by array index as before.
+- Server objects: `Device.Remove` and `Device.Rename` no longer wait for the object while they hold the object table, so they complete while that object is being read or evaluated for events. During a `Rename` a reader can, for a moment, find the object under its new name while Object_Name still returns the old one.
+- Server objects: `NotificationClass`, `Schedule` and `TrendLog.Log` keep copies of what they are given (recipients, references, status flags), and `NotificationClass.Routing` and `Schedule.References` return copies; a Schedule passes an array index of its own to `BeforeWrite` and to the object it writes ([API.md](API.md#byte-ownership)).
+- `service`: the log-data list of a Trend Log Multiple record numbers its alternatives boolean-value [0] to failure [7] and any-value [8]. `DecodeLogMultipleRecords` returns an item tagged [8] as `LogDatumAnyValue` with its value, whatever its type, and `EncodeLogMultipleRecord` writes `LogDatumAnyValue` as [8]. A caller that received `LogDatumTimeChange` from such a list (which has no time-change) receives `LogDatumAnyValue`.
+- `service`: decoders refuse, with `ErrMalformed`, a message that has no single reading: a field that comes twice (AcknowledgeAlarm, GetEnrollmentSummary, CreateObject, SubscribeCOVProperty, SubscribeCOVPropertyMultiple, Add/RemoveListElement, COVNotificationMultiple, the `extended` and `buffer-ready` notification parameters), an array index after the value or twice (ReadPropertyMultiple-ACK, COVNotificationMultiple), a second list of results for one object, positional notification parameters with another context tag than their place has, an AtomicReadFile-ACK with no access alternative or with two, a COVNotificationMultiple timestamp that is not a Date and a Time, and a GetEnrollmentSummary tag the decoder does not know. The server answers such a request with Reject; a client call returns the error. What stays accepted is listed in [LIMITATIONS.md](LIMITATIONS.md#decoders-what-is-refused-and-what-is-still-accepted). The recorded captures in `testdata` and the interop fixture corpus decode as before.
+
+### Documentation
+
+- API.md: the hook contract, `Close`, and an ownership table for decoders, encoders and server objects. SECURITY.md: the File bounds, the per-destination and per-recipient bounds and the address tables. OBSERVABILITY.md: the diagnostics `callback`, `registry_eviction` and `wrong_service` of the server. ERRORS.md: what `ErrTimeout` and `context.DeadlineExceeded` each match, and `ErrClosed` from the server. LIMITATIONS.md: what the decoders still accept, and the bounds that are fixed.
+- TESTING.md: the lifecycle contract table (rows L1 to L16 per long-lived type), how tests wait, and what is left to convert. CONTRIBUTING.md names Go 1.26 and the tool versions CI runs; PLAN.md and the support documents name v0.9.1; docs/SERVER_PLAN.md states how the worker pool default was chosen.
+
+### Tests and CI
+
+- `server`: `contract_internal_test.go` (Close from two goroutines, while a hook waits, from application code on each of the server's goroutines; a hook calling the server; code that does not return normally; a slow hook), `recipients_internal_test.go` (acknowledgments, Who-Is and Who-Is-Router-To-Network per window, the address cache and the router table when full, confirmed requests per destination, answers for another service, the segmented reply on a negative SegmentACK, the COV increment), `file_bounds_internal_test.go`. The tests on the virtual transport run in a `testing/synctest` bubble and wait for events (`inBubble`, `idle`, `silent`); `harness.next` waits for the transport to record a packet. `TestChaosServer` also creates, writes and deletes event-reporting objects.
+- `server/object`: `lockorder_test.go` (Remove and Rename during event evaluation and during a read of the Device), `file_bounds_test.go`, `state_text_test.go`, `ownership_test.go`. `client`: `TestCloseFromTwoGoroutines`.
+- `service`: `field_order_test.go` and `log_multiple_choice_test.go` (one table per decoder); `codec_fuzz_test.go` with `FuzzDecodeAcknowledgements` and `FuzzDecodeRequests`, which run every decoder of a whole message through ownership and round-trip checks, `TestCodecTables` (every exported payload decoder has a line) and `TestDecodersAtElementLimit` (each decoder at and one past the element limit, with an allocation budget).
+- The nightly fuzz matrix is discovered with `make fuzz-list` from the packages `make fuzz` uses, so every fuzz target (34 today) runs for 5 minutes each night and a new target needs no workflow change. A nightly job runs the test suite as a 32-bit binary (`GOARCH=386 go test -count=1 ./...`).
+- The capture reader used by the tests compares pcap and pcapng lengths in 64 bits before converting them to `int`; a length that does not fit is `ErrFormat` on every platform (`TestLengthFieldBounds`).
+- The codec benchmarks keep their results and scale by size (`BenchmarkParseSequence`, `BenchmarkDecodeReadPropertyMultipleACK`).
+- The release workflow builds, vets and tests bacnetctl and bacnet-interop `own/go-bacnet` against the release candidate before the tag is created.
+
+---
+
 ## v0.9.0
 
 **Date:** 2026-11-14

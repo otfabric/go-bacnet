@@ -11,61 +11,61 @@ permissions:
   contents: read
 
 jobs:
+  # The fuzz matrix is discovered, not listed here: `make fuzz-list` prints
+  # one "<package> <target>" line per Fuzz function in the packages of
+  # FUZZ_PKGS, the same discovery `make fuzz` uses, and the fuzz job gets one
+  # matrix entry per line.
+  discover:
+    name: Discover fuzz targets
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      matrix: ${{ steps.list.outputs.matrix }}
+    steps:
+      - name: Checkout go-bacnet
+        uses: actions/checkout@v7
+
+      # The same Go as the fuzz job, which compiles the same test binaries.
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version: "1.27"
+
+      - name: List fuzz targets
+        id: list
+        env:
+          GOWORK: "off"
+        run: |
+          set -euo pipefail
+          list="$(make -s fuzz-list)"
+          printf '%s\n' "$list"
+          if [ -z "$list" ]; then
+            echo "make fuzz-list found no fuzz target" >&2
+            exit 1
+          fi
+          # Every line is "<package> <FuzzName>".
+          if grep -Evq '^[^ ]+ Fuzz[A-Za-z0-9_]*$' <<<"$list"; then
+            echo "make fuzz-list printed a line that is not '<package> <FuzzName>'" >&2
+            exit 1
+          fi
+          # Job and artifact names carry the target name only.
+          dup="$(awk '{ print $2 }' <<<"$list" | sort | uniq -d)"
+          if [ -n "$dup" ]; then
+            echo "fuzz target names used in more than one package: $dup" >&2
+            exit 1
+          fi
+          matrix="$(jq -Rnc '[inputs | split(" ") | {target: .[1], pkg: .[0]}]' <<<"$list")"
+          echo "matrix=${matrix}" >> "$GITHUB_OUTPUT"
+          echo "Fuzz targets discovered: $(jq length <<<"$matrix")" >> "$GITHUB_STEP_SUMMARY"
+
   fuzz-nightly:
     name: Nightly fuzz (${{ matrix.target }})
+    needs: discover
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - target: FuzzParseTag
-            pkg: .
-          - target: FuzzParseBVLC
-            pkg: ./bvlc
-          - target: FuzzParseAPDU
-            pkg: ./apdu
-          - target: FuzzParseNPDU
-            pkg: ./npdu
-          - target: FuzzClientReceive
-            pkg: ./client
-          - target: FuzzDecodeWhoIs
-            pkg: ./service
-          - target: FuzzDecodeIAm
-            pkg: ./service
-          - target: FuzzDecodeReadProperty
-            pkg: ./service
-          - target: FuzzDecodeWritePropertyMultiple
-            pkg: ./service
-          - target: FuzzDecodeWritePropertyMultipleError
-            pkg: ./service
-          - target: FuzzDecodeReadRange
-            pkg: ./service
-          - target: FuzzDecodeReadRangeACK
-            pkg: ./service
-          - target: FuzzDecodeLogRecords
-            pkg: ./service
-          - target: FuzzDecodeWhoHas
-            pkg: ./service
-          - target: FuzzDecodeIHave
-            pkg: ./service
-          - target: FuzzDecodeEventNotification
-            pkg: ./service
-          - target: FuzzDecodeNotificationParameters
-            pkg: ./service
-          - target: FuzzDecodeGetEventInformationACK
-            pkg: ./service
-          - target: FuzzDecodeAcknowledgeAlarm
-            pkg: ./service
-          - target: FuzzDecodeDeviceCommunicationControl
-            pkg: ./service
-          - target: FuzzDecodeReinitializeDevice
-            pkg: ./service
-          - target: FuzzDecodeReadPropertyMultiple
-            pkg: ./service
-          - target: FuzzServerReceive
-            pkg: ./server
-          - target: FuzzHandleBVLC
-            pkg: ./bbmd
+        include: ${{ fromJSON(needs.discover.outputs.matrix) }}
     steps:
       - name: Checkout go-bacnet
         uses: actions/checkout@v7
@@ -84,9 +84,11 @@ jobs:
         env:
           GOWORK: "off"
           FUZZTIME: 5m
+          FUZZ_TARGET: ${{ matrix.target }}
+          FUZZ_PKG: ${{ matrix.pkg }}
         run: |
           set -euo pipefail
-          go test -run='^$' -fuzz='^${{ matrix.target }}$' -fuzztime="${FUZZTIME}" ${{ matrix.pkg }}
+          go test -run='^$' -fuzz="^${FUZZ_TARGET}\$" -fuzztime="${FUZZTIME}" "${FUZZ_PKG}"
 
       - name: Upload fuzz corpus / crashers
         if: always()
@@ -97,3 +99,25 @@ jobs:
             **/testdata/fuzz/**
           retention-days: 30
           if-no-files-found: ignore
+
+  # Platform width (otfabric/engineering standards/testing.md#platform-width):
+  # the codecs and the capture reader convert wire integers to int, so the
+  # tests also run where int has 32 bits. ubuntu runners execute 386 binaries;
+  # the race detector does not exist for 386.
+  test-386:
+    name: Tests (GOARCH=386)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout go-bacnet
+        uses: actions/checkout@v7
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      - name: Tests on a 32-bit architecture
+        env:
+          GOWORK: "off"
+        run: GOARCH=386 go test -count=1 ./...

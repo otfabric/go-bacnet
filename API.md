@@ -426,6 +426,12 @@ Client `Close` closes all subscriptions.
 | `MAC.Bytes()` | Returns a **copy** |
 | Outbound encode `Append*` | Appends owned bytes to caller `dst` |
 | Transaction encoded APDU | Client copies before store |
+| Results of the `service.Decode…` functions that take a payload | **Owned**: nothing in the result shares memory with the payload, which may be reused at once (`FuzzDecodeAcknowledgements`, `FuzzDecodeRequests`) |
+| `service.EncodeNotificationParameters`, `EncodeLogRecord`, `EncodeLogMultipleRecord`, `EncodeEventLogRecord` | The returned elements may **share** slices of the value passed in: encode them (`bacnet.AppendTag`) before changing that value |
+| What a server object is configured with (`NotificationClassConfig.Recipients`, `ScheduleConfig.References`, `FileConfig.Data` and `Records`) and what `TrendLog.Log` is given | **Copied**: the caller keeps what it passed and may change it afterwards |
+| What a server object returns (`NotificationClass.Routing`, `Schedule.References`, `File.Data` and `Records`, `ReadProperty`) | **Copies**: the caller owns them |
+| The `object.Write` a hook or an object receives | Owned by the receiver for the duration of the call; a Schedule passes an array index of its own |
+| `object.RangeResult` of a `TrendLog` | The records **share** the log's stored values until they are encoded: do not change them |
 
 Do not retain aliased slices after the datagram buffer is reused.
 
@@ -479,10 +485,15 @@ _ = av.SetPresentValue(bacnet.RealValue(22)) // COV subscribers are notified
 - `Close` stops receiving, cancels the context of running handlers and
   hooks, ends in-flight transactions, COV subscriptions and pending
   notifications, closes the transport and returns when every server
-  goroutine has exited. It is idempotent. It sends nothing: subscribers see
-  their subscriptions lapse.
+  goroutine has exited. It is idempotent and may be called from several
+  goroutines; each call returns once the server is closed. It sends
+  nothing: subscribers see their subscriptions lapse.
+- `Close` may be called from the application's code that the server runs
+  (a hook, an object, the diagnostic function): see
+  [Hooks](#hooks) for what it then waits for.
 - `IAm` broadcasts an I-Am; it is not sent while DeviceCommunicationControl
-  disables initiation.
+  disables initiation. After `Close` it returns an error that matches
+  `bacnet.ErrClosed` (and `context.Canceled`, which it was before v0.9.1).
 
 ### Options
 
@@ -559,6 +570,20 @@ states START_BACKUP to ABORT_RESTORE get services/service-request-denied);
 service is not advertised and a confirmed request gets Reject
 unrecognized-service.
 
+The contract of the application's code that the server calls: `Hooks`, the
+methods of an application `object.Object` (and of `Poller`, `FileAccessor`,
+`EventReporter`, `ListModifier`, `RangeReader`), observers registered with
+`Device.Observe`, a `BBMD` given with `WithBBMD`, the function of
+`WithDiagnosticFunc` and the handler of the `WithLogger` logger.
+
+| Question | Answer |
+|---|---|
+| Which goroutine | A request worker for a request (hooks, object reads and writes). `BeforeWrite` also runs on the housekeeping goroutine, once a second, for the writes a Schedule makes, as `Poller.Poll` does. `EventReporter.EvaluateEvents` runs on the event goroutine, the objects read for a COV notification on that notification's goroutine, the diagnostic function and the logger wherever the condition was noticed, the receive loop included. Several of them run at the same time: the code must be safe for concurrent use. |
+| Blocking | A hook or object that waits holds its goroutine and nothing else. On a worker that is one of `WithWorkers` workers: with all of them held, requests wait in the queue and then get Abort out-of-resources. On the housekeeping goroutine it delays COV and DeviceCommunicationControl expiry, reassembly expiry, polling and time delays of events; on the receive loop (diagnostic function, logger, BBMD) it delays every frame. The request's context ends at the APDU timeout and at `Close`: return when it is done. |
+| Calling back | The code may call `Server.IAm`, `Device` and `Local`, and any method of the Device and its objects, with one exception: a `Property.Get` or `Set` function runs with its object's lock held and must not call that object, nor `Device.Remove` or `Rename` for it. |
+| `Close` | Allowed. `Close` then waits for every goroutine of the server but the one it was called on, and returns. That goroutine finishes what it was doing when the code returns (the request is completed without an answer on the network, the transport being closed) and starts nothing new. Not from a `Property.Get` or `Set` function: the object's lock is held there, and the goroutines `Close` waits for may need it. |
+| Not returning normally | Code that ends another way than by returning (an index out of range, a nil map, `runtime.Goexit`) is stopped at the server. A confirmed request it was serving is answered with Abort (other); an unconfirmed one, a poll, an event evaluation or a COV notification is dropped. A diagnostic of kind `callback`, logged at Error level, carries the name of the call, what the code ended with and its stack ([OBSERVABILITY.md](OBSERVABILITY.md#server)). The server goes on with the next request; `object.Base` has released the object's lock. To end the process instead, do so in the code itself. |
+
 ### Requests and answers
 
 - Every confirmed request runs on a worker; the reply is segmented when it
@@ -571,7 +596,11 @@ unrecognized-service.
 - Confirmed requests sent to a broadcast address and requests for another
   network are ignored: the server is not a router. It learns the router of
   a remote network from received SNET and I-Am-Router-To-Network (at most
-  64 networks) to send event notifications to remote stations.
+  64 networks; when the table is full the route heard from longest ago
+  makes room) to send event notifications to remote stations. The router
+  that answers the server's own Who-Is-Router-To-Network keeps the route
+  against routes that are merely observed
+  ([docs/SERVER_SUPPORT.md](docs/SERVER_SUPPORT.md)).
 
 ### BBMD
 

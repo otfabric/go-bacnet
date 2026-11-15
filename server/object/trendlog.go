@@ -151,11 +151,15 @@ func (tl *TrendLog) ReadProperty(ctx context.Context, ref bacnet.PropertyReferen
 
 // Log appends a record with the given time stamp when the log is enabled.
 // The datum choice follows the value kind (REAL, BOOLEAN, ENUMERATED,
-// Unsigned, INTEGER, BIT STRING, NULL).
+// Unsigned, INTEGER, BIT STRING, NULL). The record holds copies of v and
+// flags: the caller keeps what it passed.
 func (tl *TrendLog) Log(at time.Time, v bacnet.ApplicationValue, flags *bacnet.BitString) error {
 	choice, ok := datumChoice(v.Kind)
 	if !ok {
 		return errorf("value kind %d cannot be logged", v.Kind)
+	}
+	if flags != nil {
+		flags = &bacnet.BitString{UnusedBits: flags.UnusedBits, Bytes: append([]byte(nil), flags.Bytes...)}
 	}
 	tl.Update(func() []bacnet.PropertyIdentifier {
 		if !tl.enable {

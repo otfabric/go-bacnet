@@ -7,7 +7,7 @@ Behavioural contracts are in [API.md](../API.md#server) and
 [SERVER_PLAN.md](SERVER_PLAN.md). Client capabilities are in
 [CLIENT_SUPPORT.md](CLIENT_SUPPORT.md).
 
-**Library version:** v0.8.0  
+**Library version:** v0.9.1  
 **Last pinned run:** 2026-11-12, bacnet-interop v0.14.0: the six client tests
 pass; their scenarios 401 pass, 0 fail, 121 skip (unsupported by or a known
 difference of the client stack, each with its reason in
@@ -89,7 +89,7 @@ bacnet-stack agreeing with those codes is partly by construction.
 | Service | Clause | Support | Evidence | Notes |
 |---|---|---|---|---|
 | AtomicReadFile | 14.1 | Implemented | Internal e2e, Independent client (bacnet-stack, BACnet4J, BACpypes3, legacy BACpypes, bacnet-js) (stream) | Stream and record access, in-memory File object or an `object.FileAccessor` |
-| AtomicWriteFile | 14.2 | Implemented | Internal e2e, Independent client (bacnet-stack, BACnet4J, BACpypes3, legacy BACpypes, bacnet-js) | Start −1 appends. Past the end a stream file is extended with zero octets and records are appended after the last one, within the file's maximum size, as bacnet-stack's storage does (ports/posix/bacfile-posix.c). Passes `Hooks.BeforeWrite` first |
+| AtomicWriteFile | 14.2 | Implemented | Internal e2e, Independent client (bacnet-stack, BACnet4J, BACpypes3, legacy BACpypes, bacnet-js) | Start −1 appends. Past the end a stream file is extended with zero octets and records are appended after the last one, within the file's maximum size, as bacnet-stack's storage does (ports/posix/bacfile-posix.c). A record file is also bounded to 1 MiB of record data (or its initial content, when larger); beyond a bound the answer is object/file-full. Passes `Hooks.BeforeWrite` first |
 
 ## Change of value
 
@@ -97,7 +97,7 @@ bacnet-stack agreeing with those codes is partly by construction.
 |---|---|---|---|---|
 | SubscribeCOV | 13.14 | Implemented | Internal e2e, Independent client (bacnet-stack, BACnet4J, BACpypes3, legacy BACpypes, bacnet-js) | Lifetime, cancellation, confirmed and unconfirmed notifications |
 | SubscribeCOVProperty | 13.15 | Implemented | Internal e2e, Unit, Independent client (BACnet4J, BACpypes3, legacy BACpypes, bacnet-js) | COV increment; Status_Flags carried when the object has it |
-| SubscribeCOVPropertyMultiple | 13.16 | Implemented | Internal e2e, Unit, Independent client (BACnet4J) | One subscription per subscriber and process identifier; the error names the first failed subscription |
+| SubscribeCOVPropertyMultiple | 13.16 | Implemented | Internal e2e, Unit, Independent client (BACnet4J) | One subscription per subscriber and process identifier; the error names the first failed subscription. A COV increment that is negative or not a number is property/value-out-of-range, as for SubscribeCOVProperty |
 | COV notifications | 13.6, 13.7, 13.17 | Implemented | Internal e2e, Unit, Independent client (bacnet-stack, BACnet4J, BACpypes3, legacy BACpypes, bacnet-js) (unconfirmed) | Confirmed notifications use the server's own requester with the configured APDU timeout and retries |
 | Active_COV_Subscriptions | 12.11 | Implemented | Internal e2e, Unit | One entry per monitored property |
 
@@ -114,8 +114,8 @@ reply the server can send.
 | Service | Clause | Support | Evidence | Notes |
 |---|---|---|---|---|
 | Intrinsic reporting | 13.3 | Partial | Internal e2e, Unit, Independent client (bacnet-stack, BACnet4J, BACpypes3, legacy BACpypes, bacnet-js) (analog high limit) | Analog points: out-of-range (high and low limit, deadband, Limit_Enable). Binary points: change-of-state on Alarm_Value. Multi-state Input and Value: change-of-state on Alarm_Values (13.3.2), Fault_Values set Reliability to multi-state-fault (13.4.5). Any point: change-of-reliability to FAULT. Time_Delay holds. Transition rules follow bacnet-stack (ai.c, bi.c) |
-| Event notifications | 13.8, 13.9 | Implemented | Internal e2e | Routed by the Notification Class Recipient_List (valid days, times, transitions). A device recipient is resolved from received I-Am; while it is unknown the server sends a Who-Is and skips that notification (bacnet-stack, nc.c). A remote-station recipient is sent through the router learnt from received SNET and I-Am-Router-To-Network (6.4.2); while none is known the server sends Who-Is-Router-To-Network (6.4.1), skips a confirmed notification and sends an unconfirmed one as a local broadcast with DNET |
-| AcknowledgeAlarm | 13.5 | Implemented | Internal e2e, Independent client (bacnet-stack, BACnet4J, BACpypes3, legacy BACpypes, bacnet-js) | Time-stamp and event-state checks as bacnet-stack (ai.c); the ack notification follows the SimpleACK |
+| Event notifications | 13.8, 13.9 | Implemented | Internal e2e | Routed by the Notification Class Recipient_List (valid days, times, transitions). A device recipient is resolved from received I-Am; while it is unknown the server sends a Who-Is (one per recipient and answer window) and skips that notification (bacnet-stack, nc.c). A remote-station recipient is sent through the router learnt from received SNET and I-Am-Router-To-Network (6.4.2); while none is known the server sends Who-Is-Router-To-Network (6.4.1, one per network and answer window), skips a confirmed notification and sends an unconfirmed one as a local broadcast with DNET. One destination has at most eight confirmed notifications waiting for an answer |
+| AcknowledgeAlarm | 13.5 | Implemented | Internal e2e, Independent client (bacnet-stack, BACnet4J, BACpypes3, legacy BACpypes, bacnet-js) | Time-stamp and event-state checks as bacnet-stack (ai.c); the ack notification follows the SimpleACK when the request acknowledged a transition (a request for an acknowledged transition is answered and not reported again) |
 | GetAlarmSummary | 13.10 | Implemented | Internal e2e, Independent client (BACnet4J, BACpypes3, legacy BACpypes, bacnet-js) | Objects in an off-normal state with notify type alarm |
 | GetEventInformation | 13.12 | Implemented | Internal e2e, Independent client (bacnet-stack, BACnet4J, BACpypes3, legacy BACpypes, bacnet-js) | Paging by last received object; MoreEvents when truncated to the reply budget. bacnet-stack `bacge` cannot decode an empty list of event summaries (it fails the same way against a bacnet-stack device), so only a non-empty reply is checked with it |
 | GetEnrollmentSummary | 13.11 | Implemented | Internal e2e, Unit, Independent client (BACnet4J, BACpypes3, legacy BACpypes, bacnet-js: unfiltered) | All filters. The enrollment filter keeps objects whose Notification Class Recipient_List holds that recipient (same device, or same network and MAC) and process identifier |
@@ -125,9 +125,15 @@ Limits:
 - A confirmed notification to a broadcast recipient is not sent: a
   confirmed request is a transaction with one peer (clause 5.4).
   bacnet-stack sends it anyway. A diagnostic reports it.
-- The router table holds at most 64 networks; a network not yet known is not
-  learnt once it is full. The server does not age routes or act on
-  Router-Busy or Reject-Message-To-Network.
+- The router table holds at most 64 networks; when it is full the route
+  heard from longest ago makes room for a network that shows up. The router
+  that answered the server's own Who-Is-Router-To-Network keeps its route
+  against routes observed later (another node then makes the server ask
+  again, at most once in five minutes per network). The device address
+  cache holds 256 event recipients and makes room the same way; an I-Am of
+  a device that no Recipient_List names and no Who-Is asked for is not
+  recorded. The server does not act on Router-Busy or
+  Reject-Message-To-Network.
 - Multi-state points: the optional re-alarm on a different alarm or fault
   value without leaving OFFNORMAL or FAULT is not done, Time_Delay_Normal
   is not implemented, and AddListElement and RemoveListElement do not

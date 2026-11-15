@@ -33,6 +33,12 @@ func (s *Server) fileFor(id bacnet.ObjectIdentifier, access service.FileAccessMe
 
 // atomicReadFile serves AtomicReadFile (clause 14.1). A reply larger than
 // the requester accepts is segmented or aborted by the responder.
+//
+// The file is asked for at most one octet (stream access) or one record
+// (record access, each record takes at least one octet of the reply) more
+// than the reply to this requester can carry. A reply with more is not
+// sent, so the answer is the one the requested count would get, and the
+// file copies nothing that cannot be sent.
 func (s *Server) atomicReadFile(_ context.Context, req *apdu.ConfirmedRequest, _ peer) result {
 	r, err := service.DecodeAtomicReadFile(req.Payload, s.limits)
 	if err != nil {
@@ -43,10 +49,11 @@ func (s *Server) atomicReadFile(_ context.Context, req *apdu.ConfirmedRequest, _
 		return fail(err)
 	}
 	ack := service.AtomicReadFileACK{Access: r.Access, StartPosition: r.StartPosition}
+	count := min(r.Count, uint32(max(s.responseBudget(req), 0))+1)
 	if r.Access == service.FileAccessStream {
-		ack.Data, ack.EndOfFile, err = f.ReadStream(r.StartPosition, r.Count)
+		ack.Data, ack.EndOfFile, err = f.ReadStream(r.StartPosition, count)
 	} else {
-		ack.Records, ack.EndOfFile, err = f.ReadRecords(r.StartPosition, r.Count)
+		ack.Records, ack.EndOfFile, err = f.ReadRecords(r.StartPosition, count)
 		ack.RecordCount = uint32(len(ack.Records))
 	}
 	if err != nil {

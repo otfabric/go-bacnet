@@ -48,11 +48,42 @@ type LogMultipleRecord struct {
 }
 
 // LogMultipleValue is one value of a LogMultipleRecord's log-data. Choice
-// uses the LogRecord alternatives (LogDatumBoolean … LogDatumAnyValue);
-// on the wire its context tag is one less (boolean-value is [0]).
+// names the alternative with the LogRecord constants (LogDatumBoolean …
+// LogDatumFailure, LogDatumAnyValue); on the wire the list has its own
+// context tags, boolean-value [0] to failure [7] and any-value [8]
+// (logDataListChoices). Value owns its memory: it shares nothing with the
+// decoded input.
 type LogMultipleValue struct {
 	Choice LogDatumChoice
 	Value  bacnet.ApplicationValue
+}
+
+// logDataListChoices maps the context tag of an item of the BACnetLogData
+// log-data list to the LogDatumChoice that names the same alternative. The
+// list has no log-status and no time-change, so the two numberings are not a
+// fixed distance apart: failure is [7] here and [8] in a BACnetLogRecord,
+// any-value [8] here and [10] there.
+var logDataListChoices = [...]LogDatumChoice{
+	LogDatumBoolean,    // boolean-value [0]
+	LogDatumReal,       // real-value [1]
+	LogDatumEnumerated, // enumerated-value [2]
+	LogDatumUnsigned,   // unsigned-value [3]
+	LogDatumSigned,     // integer-value [4]
+	LogDatumBitString,  // bitstring-value [5]
+	LogDatumNull,       // null-value [6]
+	LogDatumFailure,    // failure [7]
+	LogDatumAnyValue,   // any-value [8]
+}
+
+// logDataListTag returns the context tag of choice in the log-data list;
+// ok is false for a choice the list does not have.
+func logDataListTag(choice LogDatumChoice) (tag uint8, ok bool) {
+	for i, c := range logDataListChoices {
+		if c == choice {
+			return uint8(i), true
+		}
+	}
+	return 0, false
 }
 
 // EventLogRecord is a BACnetEventLogRecord: an item of the Log_Buffer of an
@@ -113,10 +144,10 @@ func decodeLogMultipleValues(el bacnet.Element) ([]LogMultipleValue, error) {
 	}
 	out := make([]LogMultipleValue, 0, len(el.Value.Elements))
 	for _, v := range el.Value.Elements {
-		if !v.Context || v.TagNumber > 8 {
+		if !v.Context || int(v.TagNumber) >= len(logDataListChoices) {
 			return nil, fmt.Errorf("%w: BACnetLogData log-data choice tag", bacnet.ErrMalformed)
 		}
-		choice := LogDatumChoice(v.TagNumber + 1)
+		choice := logDataListChoices[v.TagNumber]
 		val, err := decodeLogDatumValue(choice, v)
 		if err != nil {
 			return nil, err
@@ -206,16 +237,17 @@ func EncodeLogMultipleRecord(rec LogMultipleRecord) ([]bacnet.Element, error) {
 	case LogDataValues:
 		var body []bacnet.Element
 		for _, v := range rec.Values {
-			if v.Choice < LogDatumBoolean || v.Choice > LogDatumAnyValue || v.Choice == LogDatumTimeChange {
+			tag, ok := logDataListTag(v.Choice)
+			if !ok {
 				return nil, fmt.Errorf("%w: BACnetLogData log-data choice %d", bacnet.ErrMalformed, v.Choice)
 			}
 			els, encErr := encodeLogDatum(v.Choice, v.Value)
 			if encErr != nil {
 				return nil, encErr
 			}
-			// encodeLogDatum tags the BACnetLogRecord alternative; the
-			// BACnetLogData list numbers them from zero (boolean-value [0]).
-			els[0].TagNumber--
+			// encodeLogDatum tags the BACnetLogRecord alternative; the item
+			// carries the tag of the BACnetLogData list.
+			els[0].TagNumber = tag
 			body = append(body, els...)
 		}
 		datum, err = bacnet.AppendContextTagged(nil, 1, body)

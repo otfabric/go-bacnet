@@ -102,7 +102,11 @@ type ReadAccessResult struct {
 }
 
 // DecodeReadPropertyMultipleACK decodes an RPM complex ACK payload.
-// Property-level errors are returned inside PropertyResult.Err.
+// Property-level errors are returned inside PropertyResult.Err. Each object
+// has at most one list of results, and an array index stands between its
+// property identifier and the value or error. An object without a list, an
+// empty list and an empty acknowledgement are accepted (LIMITATIONS.md). The
+// results own their memory.
 func DecodeReadPropertyMultipleACK(payload []byte, limits bacnet.DecodeLimits) ([]ReadAccessResult, error) {
 	elements, n, err := bacnet.ParseSequence(payload, limits, -1)
 	if err != nil {
@@ -113,6 +117,7 @@ func DecodeReadPropertyMultipleACK(payload []byte, limits bacnet.DecodeLimits) (
 	}
 	var results []ReadAccessResult
 	var cur *ReadAccessResult
+	var haveList bool
 	for _, el := range elements {
 		switch {
 		case el.TagNumber == 0 && !bacnet.IsContextConstructed(el):
@@ -122,15 +127,20 @@ func DecodeReadPropertyMultipleACK(payload []byte, limits bacnet.DecodeLimits) (
 			}
 			results = append(results, ReadAccessResult{Object: id})
 			cur = &results[len(results)-1]
+			haveList = false
 		case el.TagNumber == 1 && bacnet.IsContextConstructed(el):
 			if cur == nil {
 				return nil, fmt.Errorf("%w: RPM results without object", bacnet.ErrMalformed)
+			}
+			if haveList {
+				return nil, fmt.Errorf("%w: duplicate listOfResults", bacnet.ErrMalformed)
 			}
 			props, err := decodeRPMPropertyResults(el.Value.Elements, limits)
 			if err != nil {
 				return nil, err
 			}
 			cur.Properties = props
+			haveList = true
 		default:
 			return nil, fmt.Errorf("%w: unexpected RPM ACK tag %d", bacnet.ErrMalformed, el.TagNumber)
 		}
@@ -143,6 +153,7 @@ func decodeRPMPropertyResults(elements []bacnet.Element, limits bacnet.DecodeLim
 	var out []PropertyResult
 	var cur PropertyResult
 	haveProp := false
+	haveIndex := false
 	haveOutcome := false
 	flush := func() error {
 		if !haveProp {
@@ -154,6 +165,7 @@ func decodeRPMPropertyResults(elements []bacnet.Element, limits bacnet.DecodeLim
 		out = append(out, cur)
 		cur = PropertyResult{}
 		haveProp = false
+		haveIndex = false
 		haveOutcome = false
 		return nil
 	}
@@ -173,11 +185,20 @@ func decodeRPMPropertyResults(elements []bacnet.Element, limits bacnet.DecodeLim
 			if !haveProp {
 				return nil, fmt.Errorf("%w: arrayIndex without property", bacnet.ErrMalformed)
 			}
+			// The index belongs between the property identifier and its
+			// outcome, once.
+			if haveIndex {
+				return nil, fmt.Errorf("%w: duplicate arrayIndex", bacnet.ErrMalformed)
+			}
+			if haveOutcome {
+				return nil, fmt.Errorf("%w: arrayIndex after the property outcome", bacnet.ErrMalformed)
+			}
 			idx, err := bacnet.ContextUnsigned32(el)
 			if err != nil {
 				return nil, err
 			}
 			cur.Property.ArrayIndex = &idx
+			haveIndex = true
 		case el.TagNumber == 4 && bacnet.IsContextConstructed(el):
 			if !haveProp {
 				return nil, fmt.Errorf("%w: propertyValue without property", bacnet.ErrMalformed)

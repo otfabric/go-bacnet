@@ -44,6 +44,10 @@ func TestDecodeMaxSegments(t *testing.T) {
 }
 
 func TestAcknowledgeAlarmWithoutEvents(t *testing.T) {
+	inBubble(t, testAcknowledgeAlarmWithoutEvents)
+}
+
+func testAcknowledgeAlarmWithoutEvents(t *testing.T) {
 	h := newHarness(t)
 	if err := h.dev.Add(newListObject(0)); err != nil {
 		t.Fatal(err)
@@ -66,6 +70,10 @@ func TestAcknowledgeAlarmWithoutEvents(t *testing.T) {
 // TestGetEnrollmentSummaryFault checks that an object in FAULT is listed
 // with the to-fault priority of its Notification Class.
 func TestGetEnrollmentSummaryFault(t *testing.T) {
+	inBubble(t, testGetEnrollmentSummaryFault)
+}
+
+func testGetEnrollmentSummaryFault(t *testing.T) {
 	h, ai := alarmHarness(t)
 	h.s.dcc.set(service.EnableDisableDisableInitiation, time.Time{})
 	const openLoop = 4 // BACnetReliability open-loop

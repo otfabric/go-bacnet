@@ -12,6 +12,8 @@ One receive loop parses every frame. Confirmed and unconfirmed requests are exec
 
 The server is silent unless WithLogger or WithDiagnosticFunc is given, keeps no package-level state, and Close waits for every goroutine it started.
 
+The application's code (Hooks, objects, the diagnostic function) runs on the server's goroutines. Code that does not return normally is stopped there, reported as a diagnostic with its stack, and the server goes on (see Hooks). Close may be called from such code.
+
 ## Variables
 
 ```go
@@ -59,11 +61,13 @@ type Hooks struct {
 	// BeforeWrite is called before a WriteProperty, each write of a
 	// WritePropertyMultiple, an AddListElement or RemoveListElement (the
 	// Write then holds the elements as a constructed value), or an
-	// AtomicWriteFile is applied. For AtomicWriteFile the Write names
-	// File_Size and holds a constructed value: the start position (Signed)
-	// followed by the data, one Octet String for stream access or one per
-	// record for record access. A returned error is sent as the answer (see
-	// object.Err). Default: allow.
+	// AtomicWriteFile is applied, and before each write a Schedule makes to
+	// the objects it references (that call comes from the housekeeping
+	// goroutine, not from a worker, with the server's context). For
+	// AtomicWriteFile the Write names File_Size and holds a constructed
+	// value: the start position (Signed) followed by the data, one Octet
+	// String for stream access or one per record for record access. A
+	// returned error is sent as the answer (see object.Err). Default: allow.
 	BeforeWrite func(ctx context.Context, obj bacnet.ObjectIdentifier, w object.Write) error
 	// BeforeDelete is called before DeleteObject removes a deletable
 	// object. Default: allow.
@@ -92,6 +96,14 @@ type Hooks struct {
 ```
 
 Hooks are the application's part in services that act on the device rather than on an object. Each runs on a worker with the request's deadline; a nil hook keeps the default given per field.
+
+The contract of a hook, and of every other piece of the application's code that the server calls (API.md, "Hooks"):
+
+  - Goroutine: a request worker, so several hooks run at the same time. BeforeWrite also runs on the housekeeping goroutine, for the writes a Schedule makes.
+  - Blocking: a hook that waits holds its worker; with every worker held, requests wait in the queue and then get Abort out-of-resources. On the housekeeping goroutine it delays expiry, polling and event time delays. The context ends at the APDU timeout and at Close.
+  - Calling back: a hook may call the Server, the Device and its objects.
+  - Close: a hook may call Server.Close; Close then does not wait for the goroutine the hook runs on.
+  - A hook that does not return normally is stopped at the server: a confirmed request is answered with Abort (other), a diagnostic of kind "callback" carries what the hook ended with and its stack, and the server goes on.
 
 ### type Option
 
@@ -139,7 +151,7 @@ WithDecodeLimits sets the decode limits for inbound frames. The default is bacne
 func WithDiagnosticFunc(fn func(Diagnostic)) Option
 ```
 
-WithDiagnosticFunc receives every diagnostic. It runs on the receive loop or a worker and must not block.
+WithDiagnosticFunc receives every diagnostic. It runs on whichever goroutine of the server noticed the condition (the receive loop, a worker, housekeeping, a notification) and must not block. It may call Server.Close. A function that does not return normally is stopped by the server and reported to the logger of WithLogger, if there is one.
 
 #### func WithHooks
 
@@ -264,7 +276,11 @@ SegmentLimits bound the server's segmented transactions as a whole. A zero field
 
 ```go
 type Server struct {
-	// contains filtered or unexported fields
+
+	// gr counts the server's goroutines for Close. gmu guards closing,
+	// which stops new goroutines once Close has begun, so that none is
+	// added while Close waits.
+
 }
 ```
 
@@ -284,7 +300,9 @@ New starts a server for dev. It opens a UDP socket unless WithTransport is given
 func (s *Server) Close() error
 ```
 
-Close stops the server: it stops receiving, ends in-flight transactions and subscriptions, waits for every goroutine and closes the transport. Close is idempotent.
+Close stops the server: it stops receiving, ends in-flight transactions and subscriptions, waits for every goroutine and closes the transport. Close is idempotent and safe to call from several goroutines; every call returns once the server is closed. After Close, IAm returns an error that matches bacnet.ErrClosed.
+
+Close may be called from the application's code that the server runs: a hook, a method of an object, the diagnostic function, an observer. It then waits for every goroutine of the server but the one it was called on, and returns. That goroutine ends by itself when the code that called Close returns: the request it was serving is completed without an answer on the network (the transport is closed), and no further request, poll or event evaluation is started on it. Do not call Close from a Property Get or Set function: those run with the object's lock held, which the goroutines Close waits for may need.
 
 #### func (Server) Device
 
@@ -300,7 +318,7 @@ Device returns the served Device.
 func (s *Server) IAm() error
 ```
 
-IAm broadcasts an I-Am for the device (at start-up, for example). It is not sent while DeviceCommunicationControl disables initiation.
+IAm broadcasts an I-Am for the device (at start-up, for example). It is not sent while DeviceCommunicationControl disables initiation. After Close it returns an error that matches bacnet.ErrClosed (and context.Canceled, which it returned before v0.9.1).
 
 #### func (Server) Local
 

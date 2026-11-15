@@ -48,7 +48,11 @@ func DecodeListElementRequest(payload []byte, limits bacnet.DecodeLimits) (ListE
 	}
 	var req ListElementRequest
 	var haveObj, haveProp, haveList bool
+	var seen fieldSet
 	for _, el := range els {
+		if err := seen.add(el.TagNumber, "ListElement"); err != nil {
+			return ListElementRequest{}, err
+		}
 		switch {
 		case el.TagNumber == 0 && !bacnet.IsContextConstructed(el):
 			req.Object, err = bacnet.ContextObjectID(el)

@@ -6,6 +6,7 @@ import (
 	"net/netip"
 	"sync"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"github.com/otfabric/go-bacnet"
@@ -28,14 +29,16 @@ var (
 // harness runs a server on a virtual transport; tests inject frames from
 // clientEP and read the server's answers from the outbox.
 type harness struct {
-	t    *testing.T
-	s    *Server
-	tr   *virtual.Transport
-	dev  *object.Device
-	av   *object.Point
-	mu   sync.Mutex
-	seen int
-	diag []Diagnostic
+	t *testing.T
+	// synced: the harness was made in a synctest bubble (inBubble).
+	synced bool
+	s      *Server
+	tr     *virtual.Transport
+	dev    *object.Device
+	av     *object.Point
+	mu     sync.Mutex
+	seen   int
+	diag   []Diagnostic
 }
 
 func newHarness(t *testing.T, opts ...Option) *harness {
@@ -51,7 +54,7 @@ func newHarness(t *testing.T, opts ...Option) *harness {
 	if err := dev.Add(av); err != nil {
 		t.Fatal(err)
 	}
-	h := &harness{t: t, dev: dev, av: av, tr: virtual.New(serverEP, nil, 512)}
+	h := &harness{t: t, synced: bubbled(t), dev: dev, av: av, tr: virtual.New(serverEP, nil, 512)}
 	all := append([]Option{
 		WithTransport(h.tr),
 		WithTransactionOptions(200*time.Millisecond, 1, 200*time.Millisecond),
@@ -110,11 +113,14 @@ type sent struct {
 	pdu  apdu.PDU
 }
 
-// next waits for the next packet the server sends.
+// next waits for the next packet the server sends. It waits for the
+// transport to record one, not for an amount of time; the timeout only ends
+// a test in which none comes.
 func (h *harness) next() sent {
 	h.t.Helper()
-	deadline := time.Now().Add(3 * time.Second)
-	for time.Now().Before(deadline) {
+	timeout := time.After(nextTimeout)
+	for {
+		recorded := h.tr.Sent() // before the outbox is read
 		out := h.tr.Outbox()
 		h.mu.Lock()
 		if h.seen < len(out) {
@@ -124,22 +130,93 @@ func (h *harness) next() sent {
 			return decodeSent(h.t, p)
 		}
 		h.mu.Unlock()
-		time.Sleep(time.Millisecond)
+		select {
+		case <-recorded:
+		case <-timeout:
+			h.t.Fatal("no packet sent")
+			return sent{}
+		}
 	}
-	h.t.Fatal("no packet sent")
-	return sent{}
 }
 
-// quiet asserts that nothing is sent for d.
+// nextTimeout bounds the wait for a packet that never comes.
+const nextTimeout = 10 * time.Second
+
+// quiet asserts that nothing is sent for d. In a synctest bubble (inBubble)
+// that is silent: the server is idle and d passes on the bubble's clock.
+// Outside one it is a sleep, which proves less: only the tests that cannot
+// run in a bubble are left with it (TESTING.md).
 func (h *harness) quiet(d time.Duration) {
 	h.t.Helper()
+	if h.synced {
+		h.silent(d)
+		return
+	}
 	time.Sleep(d)
+	h.nothingSent()
+}
+
+func (h *harness) nothingSent() {
+	h.t.Helper()
 	out := h.tr.Outbox()
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	if h.seen < len(out) {
 		h.t.Fatalf("unexpected packet: %+v", decodeSent(h.t, out[h.seen]))
 	}
+}
+
+// inBubble runs a test in a testing/synctest bubble: the server, its
+// timers and the test share a virtual clock, and "the server has done all
+// it will do" is an event (idle), not a guess about how long it takes.
+// Only for tests on the virtual transport: a goroutine in a socket call
+// never counts as blocked.
+func inBubble(t *testing.T, fn func(t *testing.T)) {
+	t.Helper()
+	synctest.Test(t, func(t *testing.T) {
+		inBubbles.Store(t, struct{}{})
+		defer inBubbles.Delete(t)
+		fn(t)
+	})
+}
+
+// inBubbles holds the tests that run in a bubble, so that the helpers
+// shared with the other tests (quiet, waitUntil) know which way to wait.
+var inBubbles sync.Map
+
+func bubbled(t *testing.T) bool {
+	_, ok := inBubbles.Load(t)
+	return ok
+}
+
+// idle returns when every goroutine of the bubble is blocked: every frame
+// injected so far is handled, and whatever follows needs time to pass.
+func idle() { synctest.Wait() }
+
+// silent asserts, in a bubble, that the server sends nothing more: not for
+// what it has received (idle), and not during the next d of virtual time.
+func (h *harness) silent(d time.Duration) {
+	h.t.Helper()
+	idle()
+	h.nothingSent()
+	if d > 0 {
+		time.Sleep(d) // virtual: the bubble's clock
+		idle()
+		h.nothingSent()
+	}
+}
+
+// diagnostics returns the diagnostics of a kind reported so far.
+func (h *harness) diagnostics(kind string) []Diagnostic {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	var out []Diagnostic
+	for _, d := range h.diag {
+		if d.Kind == kind {
+			out = append(out, d)
+		}
+	}
+	return out
 }
 
 func decodeSent(t *testing.T, p bip.OutboundPacket) sent {

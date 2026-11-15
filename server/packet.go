@@ -168,11 +168,18 @@ func (s *Server) bvlcResult(to bip.Endpoint, code uint16) {
 	_ = s.sendPacket(ctx, bip.OutboundPacket{Data: frame, Destination: to})
 }
 
+// sendPacket hands one datagram to the transport. Once the server is
+// closed the transport's own failure says nothing a caller can act on: it
+// is reported as errClosed, which matches bacnet.ErrClosed.
 func (s *Server) sendPacket(ctx context.Context, pkt bip.OutboundPacket) error {
 	err := s.tr.Send(ctx, pkt)
-	if err != nil && !s.closed.Load() {
-		s.report(diag.KindTransport, "send failed", map[string]any{"error": err.Error(), "to": pkt.Destination.String()})
+	if err == nil {
+		return nil
 	}
+	if s.closed.Load() {
+		return errClosed
+	}
+	s.report(diag.KindTransport, "send failed", map[string]any{"error": err.Error(), "to": pkt.Destination.String()})
 	return err
 }
 

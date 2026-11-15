@@ -4,6 +4,7 @@ package client
 
 import (
 	"context"
+	"errors"
 	"net/netip"
 	"testing"
 	"time"
@@ -152,6 +153,35 @@ func TestCloseIdempotent(t *testing.T) {
 	}
 	if err := c.Close(); err != nil {
 		t.Fatal(err)
+	}
+}
+
+// Row L2 of the lifecycle table (TESTING.md): Close from two goroutines at
+// once. Both calls return nil, and the package's leak check sees no
+// goroutine of the client afterwards.
+func TestCloseFromTwoGoroutines(t *testing.T) {
+	clk := clock.NewManual(time.Now())
+	tr := virtual.New(bip.NewEndpoint(netip.MustParseAddrPort("127.0.0.1:47808")), clk, 8)
+	c, err := New(WithTransport(AdaptVirtual(tr)), withClock(clk))
+	if err != nil {
+		t.Fatal(err)
+	}
+	start := make(chan struct{})
+	errs := make(chan error, 2)
+	for range 2 {
+		go func() {
+			<-start
+			errs <- c.Close()
+		}()
+	}
+	close(start)
+	for range 2 {
+		if err := <-errs; err != nil {
+			t.Fatalf("Close: %v", err)
+		}
+	}
+	if err := c.WhoIsRouterToNetwork(context.Background(), nil); !errors.Is(err, bacnet.ErrClosed) {
+		t.Fatalf("WhoIsRouterToNetwork after Close: %v, want ErrClosed", err)
 	}
 }
 

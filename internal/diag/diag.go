@@ -28,6 +28,9 @@ const (
 	KindBVLC              Kind = "bvlc"
 	KindTransaction       Kind = "transaction"
 	KindTransport         Kind = "transport"
+	// KindCallback: application code called by the library did not return
+	// normally.
+	KindCallback Kind = "callback"
 )
 
 // Event is a diagnostic report.

@@ -226,7 +226,10 @@ in the same PR.
 3. **Handler execution**: every confirmed-request handler runs on the bounded
    worker pool, read-only services included; the receive loop only parses,
    classifies and answers what needs no handler (Reject, Abort, duplicates).
-   The pool size default is set in phase 1 from benchmark evidence.
+   The pool default is 4 workers and a queue of 64 requests
+   (`server.WithWorkers`). The plan was to set it from a benchmark in
+   phase 1; the repository has no benchmark of the pool, so the default is a
+   fixed small value and not a measured one.
 4. **Releases**: phase 0 (refactor and missing codecs) and the server
    phases ship together as v0.6.0. (Agreed as v0.5.0 and v0.6.x; v0.5.0 was
    released with other work before phase 0 landed, and a released version

@@ -52,6 +52,10 @@ func isConfirmed(svc uint8) func(sent) bool {
 // notification of the subscription it replaces, so invoke IDs stay free
 // for other confirmed notifications.
 func TestCOVRenewalReleasesPendingNotification(t *testing.T) {
+	inBubble(t, testCOVRenewalReleasesPendingNotification)
+}
+
+func testCOVRenewalReleasesPendingNotification(t *testing.T) {
 	h := newHarness(t, WithCOVLimits(1, time.Minute), WithTransactionOptions(10*time.Second, 0, 200*time.Millisecond))
 	nc, err := object.NewNotificationClass(object.NotificationClassConfig{
 		Instance: 7, Name: "NC-7",
@@ -98,6 +102,10 @@ func TestCOVRenewalReleasesPendingNotification(t *testing.T) {
 // SubscribeCOVPropertyMultiple is bounded so that its notification fits one
 // APDU, and a notification that still does not fit is not sent.
 func TestCOVReferenceBounds(t *testing.T) {
+	inBubble(t, testCOVReferenceBounds)
+}
+
+func testCOVReferenceBounds(t *testing.T) {
 	h := newHarness(t, WithCOVReferenceLimit(5))
 	sub := func(inv uint8, pid uint32) {
 		h.confirmed(inv, apdu.ServiceSubscribeCOV, mustEncode(t)(service.EncodeSubscribeCOV(service.SubscribeCOVRequest{ProcessIdentifier: pid, MonitoredObject: av1, Lifetime: 60})))
@@ -179,6 +187,10 @@ func TestCOVReferenceBounds(t *testing.T) {
 
 // Active_COV_Subscriptions stops growing once it passes the largest reply.
 func TestActiveCOVSubscriptionsBounded(t *testing.T) {
+	inBubble(t, testActiveCOVSubscriptionsBounded)
+}
+
+func testActiveCOVSubscriptionsBounded(t *testing.T) {
 	h := newHarness(t, WithMaxAPDU(128), WithSegmentation(2, 1), WithCOVLimits(1000, 0))
 	for pid := uint32(1); pid <= 50; pid++ {
 		sub := &covSub{kind: subObject, key: strconv.Itoa(int(pid)), to: clientEP, pid: pid,
@@ -215,6 +227,10 @@ func rpmObjectLists(t *testing.T, refs int) []byte {
 // A ReadPropertyMultiple whose reply cannot fit stops at the reply budget
 // instead of encoding the whole answer first.
 func TestReadPropertyMultipleStopsAtBudget(t *testing.T) {
+	inBubble(t, testReadPropertyMultipleStopsAtBudget)
+}
+
+func testReadPropertyMultipleStopsAtBudget(t *testing.T) {
 	h := newHarness(t)
 	for i := 2; i < 500; i++ {
 		av, err := object.NewAnalogValue(object.PointConfig{Instance: uint32(i), Name: "AV-" + strconv.Itoa(i)})
@@ -257,6 +273,10 @@ func TestReadPropertyMultipleStopsAtBudget(t *testing.T) {
 // --- AtomicWriteFile and the BeforeWrite hook -----------------------------
 
 func TestAtomicWriteFileBeforeWrite(t *testing.T) {
+	inBubble(t, testAtomicWriteFileBeforeWrite)
+}
+
+func testAtomicWriteFileBeforeWrite(t *testing.T) {
 	var mu sync.Mutex
 	var seen []object.Write
 	var refuse bool
@@ -309,6 +329,10 @@ func TestAtomicWriteFileBeforeWrite(t *testing.T) {
 
 // A Schedule's writes to its references pass the BeforeWrite hook.
 func TestScheduleWritesPassBeforeWrite(t *testing.T) {
+	inBubble(t, testScheduleWritesPassBeforeWrite)
+}
+
+func testScheduleWritesPassBeforeWrite(t *testing.T) {
 	for _, refuse := range []bool{true, false} {
 		h := newHarness(t, WithHooks(Hooks{BeforeWrite: func(_ context.Context, id bacnet.ObjectIdentifier, _ object.Write) error {
 			if refuse && id == av1 {
@@ -340,6 +364,10 @@ func TestScheduleWritesPassBeforeWrite(t *testing.T) {
 // A large event list against a small budget is answered quickly with the
 // largest prefix that fits.
 func TestGetEventInformationPrefix(t *testing.T) {
+	inBubble(t, testGetEventInformationPrefix)
+}
+
+func testGetEventInformationPrefix(t *testing.T) {
 	h := newHarness(t, WithMaxAPDU(128), WithSegmentation(0, 0))
 	for i := 0; i < 300; i++ {
 		ai, err := object.NewAnalogInput(object.PointConfig{Instance: uint32(10 + i), Name: "AI-" + strconv.Itoa(i), Value: 95, Events: &object.EventConfig{
@@ -408,6 +436,10 @@ func (h *harness) reassembly() (open, octets, tx int) {
 // Open reassemblies are bounded per origin, in total and in buffered
 // octets, and their shares are given back.
 func TestReassemblyLimits(t *testing.T) {
+	inBubble(t, testReassemblyLimits)
+}
+
+func testReassemblyLimits(t *testing.T) {
 	const per = 4
 	h := newHarness(t, WithSegmentLimits(SegmentLimits{ReassembliesPerOrigin: per, Reassemblies: 6, ReassemblyOctets: 3000}))
 	data := make([]byte, 400)
@@ -452,6 +484,10 @@ func TestReassemblyLimits(t *testing.T) {
 
 // A completed segmented request gives its share back and is executed.
 func TestReassemblyShareReleasedOnCompletion(t *testing.T) {
+	inBubble(t, testReassemblyShareReleasedOnCompletion)
+}
+
+func testReassemblyShareReleasedOnCompletion(t *testing.T) {
 	h := newHarness(t)
 	payload := mustEncode(t)(service.EncodeWriteProperty(service.WritePropertyRequest{Object: av1, Property: pvRef, Value: bacnet.RealValue(7)}))
 	half := len(payload) / 2
@@ -471,6 +507,10 @@ func TestReassemblyShareReleasedOnCompletion(t *testing.T) {
 // worker; replies in progress are bounded per origin, and the transaction
 // is released when the reply ends.
 func TestSegmentedReplyDoesNotHoldWorker(t *testing.T) {
+	inBubble(t, testSegmentedReplyDoesNotHoldWorker)
+}
+
+func testSegmentedReplyDoesNotHoldWorker(t *testing.T) {
 	h := newHarness(t, WithWorkers(1, 4), WithTransactionOptions(500*time.Millisecond, 1, 300*time.Millisecond),
 		WithSegmentLimits(SegmentLimits{RepliesPerOrigin: 1}))
 	big := apdu.ConfirmedRequest{SegmentedResponseAccepted: true, MaxAPDU: 0, InvokeID: 10, ServiceChoice: apdu.ServiceReadPropertyMultiple, Payload: readAll(t)}

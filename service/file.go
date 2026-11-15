@@ -73,7 +73,10 @@ func EncodeAtomicReadFile(req AtomicReadFileRequest) ([]byte, error) {
 	})
 }
 
-// DecodeAtomicReadFileACK decodes an AtomicReadFile ComplexACK.
+// DecodeAtomicReadFileACK decodes an AtomicReadFile ComplexACK: endOfFile
+// and exactly one access alternative, stream [0] or record [1]. The result
+// owns its memory. RecordCount is the returnedRecordCount as sent; it is not
+// compared with the number of Records.
 func DecodeAtomicReadFileACK(payload []byte, limits bacnet.DecodeLimits) (AtomicReadFileACK, error) {
 	els, n, err := bacnet.ParseSequence(payload, limits, -1)
 	if err != nil {
@@ -83,20 +86,28 @@ func DecodeAtomicReadFileACK(payload []byte, limits bacnet.DecodeLimits) (Atomic
 		return AtomicReadFileACK{}, fmt.Errorf("%w: AtomicReadFileACK trailing", bacnet.ErrTrailingData)
 	}
 	var ack AtomicReadFileACK
-	var haveEOF bool
+	var haveEOF, haveAccess bool
 	for _, el := range els {
 		switch {
 		case !el.Context && el.Value.Kind == bacnet.ValueBoolean:
+			if haveEOF {
+				return AtomicReadFileACK{}, fmt.Errorf("%w: AtomicReadFileACK endOfFile repeated", bacnet.ErrMalformed)
+			}
 			ack.EndOfFile = el.Value.Boolean
 			haveEOF = true
-		case el.TagNumber == 0 && bacnet.IsContextConstructed(el):
-			ack.Access = FileAccessStream
-			if err := decodeFileStreamResult(el.Value.Elements, &ack); err != nil {
-				return AtomicReadFileACK{}, err
+		case el.TagNumber <= 1 && bacnet.IsContextConstructed(el):
+			// accessMethod is a CHOICE: stream access [0] or record access
+			// [1], once.
+			if haveAccess {
+				return AtomicReadFileACK{}, fmt.Errorf("%w: AtomicReadFileACK with more than one access alternative", bacnet.ErrMalformed)
 			}
-		case el.TagNumber == 1 && bacnet.IsContextConstructed(el):
-			ack.Access = FileAccessRecord
-			if err := decodeFileRecordResult(el.Value.Elements, &ack); err != nil {
+			haveAccess = true
+			decode := decodeFileStreamResult
+			ack.Access = FileAccessStream
+			if el.TagNumber == 1 {
+				decode, ack.Access = decodeFileRecordResult, FileAccessRecord
+			}
+			if err := decode(el.Value.Elements, &ack); err != nil {
 				return AtomicReadFileACK{}, err
 			}
 		default:
@@ -105,6 +116,9 @@ func DecodeAtomicReadFileACK(payload []byte, limits bacnet.DecodeLimits) (Atomic
 	}
 	if !haveEOF {
 		return AtomicReadFileACK{}, fmt.Errorf("%w: AtomicReadFileACK missing endOfFile", bacnet.ErrMalformed)
+	}
+	if !haveAccess {
+		return AtomicReadFileACK{}, fmt.Errorf("%w: AtomicReadFileACK without an access alternative", bacnet.ErrMalformed)
 	}
 	return ack, nil
 }

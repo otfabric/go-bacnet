@@ -11,19 +11,36 @@ import (
 	"github.com/otfabric/go-bacnet/apdu"
 	"github.com/otfabric/go-bacnet/bip"
 	"github.com/otfabric/go-bacnet/internal/clock"
+	"github.com/otfabric/go-bacnet/internal/diag"
 )
 
 // requester sends the server's own confirmed requests (Confirmed COV and
 // Event notifications) and matches their answers (clause 5.4.4). Requests
 // are never segmented; a notification that does not fit is not sent.
+//
+// The 256 invoke IDs are one pool for all destinations. One destination
+// holds at most maxPendingPerDestination of them at a time, so that a
+// destination that does not answer leaves the rest of the pool to the
+// others; what happens to a request beyond that is the caller's choice
+// (invoke).
 type requester struct {
 	s       *Server
 	mu      sync.Mutex
 	next    uint8
 	pending map[uint8]*pendingReq
-	wg      sync.WaitGroup
-	gmu     sync.Mutex
-	closing bool
+	dests   map[string]*destination
+}
+
+// maxPendingPerDestination bounds the confirmed requests of the server
+// that wait for an answer from one destination.
+const maxPendingPerDestination = 8
+
+// destination is the share of one destination in the requester: sem holds
+// one token per request in flight, users counts the invocations that hold
+// or wait for a token (the entry is removed with the last one).
+type destination struct {
+	sem   chan struct{}
+	users int
 }
 
 type pendingReq struct {
@@ -32,24 +49,71 @@ type pendingReq struct {
 	ch  chan apdu.PDU
 }
 
-var errNoInvokeID = errors.New("server: no free invoke ID")
+var (
+	errNoInvokeID      = errors.New("server: no free invoke ID")
+	errDestinationBusy = errors.New("server: too many requests pending for the destination")
+)
 
 func newRequester(s *Server) *requester {
-	return &requester{s: s, pending: make(map[uint8]*pendingReq)}
+	return &requester{s: s, pending: make(map[uint8]*pendingReq), dests: make(map[string]*destination)}
 }
 
-func (r *requester) close() {
-	r.gmu.Lock()
-	r.closing = true
-	r.gmu.Unlock()
-	r.wg.Wait()
+// acquire takes one of the destination's places. With wait it blocks until
+// one is free or ctx ends; without, a destination with no free place is
+// errDestinationBusy. The returned function gives the place back.
+func (r *requester) acquire(ctx context.Context, to bip.Endpoint, dest bacnet.Address, wait bool) (release func(), err error) {
+	key := to.String() + "|" + dest.String()
+	r.mu.Lock()
+	d := r.dests[key]
+	if d == nil {
+		d = &destination{sem: make(chan struct{}, maxPendingPerDestination)}
+		r.dests[key] = d
+	}
+	d.users++
+	r.mu.Unlock()
+	leave := func() {
+		r.mu.Lock()
+		if d.users--; d.users == 0 {
+			delete(r.dests, key)
+		}
+		r.mu.Unlock()
+	}
+	select {
+	case d.sem <- struct{}{}:
+	default:
+		if !wait {
+			leave()
+			return nil, errDestinationBusy
+		}
+		select {
+		case d.sem <- struct{}{}:
+		case <-ctx.Done():
+			leave()
+			return nil, ctx.Err()
+		}
+	}
+	return func() {
+		<-d.sem
+		leave()
+	}, nil
 }
 
 // invoke sends a confirmed request and waits for its answer, retrying on
 // timeout. A SimpleACK returns nil; Error, Reject and Abort are returned
 // as the client package's error types.
-func (r *requester) invoke(ctx context.Context, to bip.Endpoint, dest bacnet.Address, svc uint8, payload []byte) error {
+//
+// When the destination already has maxPendingPerDestination requests
+// waiting for an answer, invoke waits for one of them to end (wait true:
+// the caller is one of a bounded number, a COV subscription) or returns
+// errDestinationBusy at once (wait false: event notifications, whose
+// number the peers drive).
+func (r *requester) invoke(ctx context.Context, to bip.Endpoint, dest bacnet.Address, svc uint8, payload []byte, wait bool) error {
 	s := r.s
+	release, err := r.acquire(ctx, to, dest, wait)
+	if err != nil {
+		return err
+	}
+	defer release()
 	r.mu.Lock()
 	var id uint8
 	found := false
@@ -115,20 +179,24 @@ func responseError(pdu apdu.PDU, id uint8) error {
 	}
 }
 
-// response delivers an answer to a pending request (receive loop).
+// response delivers an answer to a pending request (receive loop). An
+// answer completes the request it belongs to: same invoke ID, from the
+// node the request went to and, for the PDUs that name a service (ACKs
+// and Error), for the service that was requested. Any other is dropped.
 func (r *requester) response(pdu apdu.PDU, p peer) {
-	var id uint8
+	var id, svc uint8
+	named := true
 	switch pdu.Type {
 	case apdu.TypeSimpleACK:
-		id = pdu.SimpleACK.InvokeID
+		id, svc = pdu.SimpleACK.InvokeID, pdu.SimpleACK.ServiceChoice
 	case apdu.TypeComplexACK:
-		id = pdu.ComplexACK.InvokeID
+		id, svc = pdu.ComplexACK.InvokeID, pdu.ComplexACK.ServiceChoice
 	case apdu.TypeError:
-		id = pdu.Error.InvokeID
+		id, svc = pdu.Error.InvokeID, pdu.Error.ServiceChoice
 	case apdu.TypeReject:
-		id = pdu.Reject.InvokeID
+		id, named = pdu.Reject.InvokeID, false
 	case apdu.TypeAbort:
-		id = pdu.Abort.InvokeID
+		id, named = pdu.Abort.InvokeID, false
 	default:
 		return
 	}
@@ -138,22 +206,18 @@ func (r *requester) response(pdu apdu.PDU, p peer) {
 	if !ok || !pr.to.Equal(p.immediate) {
 		return
 	}
+	if named && svc != pr.svc {
+		r.s.report(diag.KindWrongService, "answer for another service than the pending request dropped", map[string]any{"invoke_id": id, "service": svc, "from": p.immediate.String()})
+		return
+	}
 	select {
 	case pr.ch <- pdu:
 	default:
 	}
 }
 
-// async runs fn on its own goroutine, tracked so that Close waits for it.
+// async runs fn on its own goroutine, which Close waits for. Nothing is
+// started once Close has begun.
 func (r *requester) async(fn func()) {
-	r.gmu.Lock()
-	defer r.gmu.Unlock()
-	if r.closing || r.s.closed.Load() {
-		return
-	}
-	r.wg.Add(1)
-	go func() {
-		defer r.wg.Done()
-		fn()
-	}()
+	r.s.spawn(fn)
 }

@@ -20,7 +20,8 @@ go-bacnet/
 ├── bbmd/                optional BBMD (BDT, FDT, forwarding) for a server
 ├── e2e/                 client ↔ server and client ↔ device end-to-end tests
 ├── internal/            clock, diag, virtual and fault-injecting transports,
-│                        fixture corpus loader, import-boundary test
+│                        fixture corpus loader, import-boundary test, goid
+│                        (goroutine identity, for Server.Close)
 │   ├── segment/         segmentation arithmetic shared by client and server
 │   └── link/            B/IP ↔ NPDU steps shared by client and server
 ├── interop/             //go:build interop peer assertions

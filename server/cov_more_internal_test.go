@@ -12,6 +12,10 @@ import (
 )
 
 func TestSubscribeCOVObjectErrors(t *testing.T) {
+	inBubble(t, testSubscribeCOVObjectErrors)
+}
+
+func testSubscribeCOVObjectErrors(t *testing.T) {
 	h := newHarness(t)
 	if err := h.dev.Add(newListObject(0)); err != nil {
 		t.Fatal(err)
@@ -33,6 +37,10 @@ func TestSubscribeCOVObjectErrors(t *testing.T) {
 // Priority_Array; Active_COV_Subscriptions names the slot in the
 // monitoredPropertyReference (BACnetObjectPropertyReference, clause 21).
 func TestSubscribeCOVPropertyArrayIndex(t *testing.T) {
+	inBubble(t, testSubscribeCOVPropertyArrayIndex)
+}
+
+func testSubscribeCOVPropertyArrayIndex(t *testing.T) {
 	h := newHarness(t)
 	enc := mustEncode(t)
 	slot := uint32(8)
@@ -86,6 +94,10 @@ func TestSubscribeCOVPropertyArrayIndex(t *testing.T) {
 // TestCOVMultipleObjectRemoved deletes one of two monitored objects: the
 // subscription goes on for the other.
 func TestCOVMultipleObjectRemoved(t *testing.T) {
+	inBubble(t, testCOVMultipleObjectRemoved)
+}
+
+func testCOVMultipleObjectRemoved(t *testing.T) {
 	h := newHarness(t)
 	av2, err := object.NewAnalogValue(object.PointConfig{Instance: 2, Name: "AV-2"})
 	if err != nil {

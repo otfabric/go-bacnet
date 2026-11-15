@@ -19,6 +19,30 @@ type DeviceObjectPropertyReference struct {
 	Device     *bacnet.ObjectIdentifier
 }
 
+// clone returns r with its own ArrayIndex and Device.
+func (r DeviceObjectPropertyReference) clone() DeviceObjectPropertyReference {
+	if r.ArrayIndex != nil {
+		i := *r.ArrayIndex
+		r.ArrayIndex = &i
+	}
+	if r.Device != nil {
+		d := *r.Device
+		r.Device = &d
+	}
+	return r
+}
+
+func cloneReferences(refs []DeviceObjectPropertyReference) []DeviceObjectPropertyReference {
+	if refs == nil {
+		return nil
+	}
+	out := make([]DeviceObjectPropertyReference, len(refs))
+	for i, r := range refs {
+		out[i] = r.clone()
+	}
+	return out
+}
+
 // ScheduleConfig configures a Schedule object.
 type ScheduleConfig struct {
 	Instance    uint32
@@ -120,7 +144,9 @@ func NewSchedule(cfg ScheduleConfig) (*Schedule, error) {
 		}
 		s.exceptions = append(s.exceptions, cloneEvent(e))
 	}
-	s.refs = append(s.refs, cfg.References...)
+	// The schedule keeps its own copies of the references: their ArrayIndex
+	// and Device pointers stay the caller's.
+	s.refs = cloneReferences(cfg.References)
 	s.pv = s.def
 	if cfg.Description != "" {
 		s.Define(bacnet.PropertyDescription, &Property{Value: charString(cfg.Description), Writable: true, Kinds: []bacnet.ValueKind{bacnet.ValueCharacterString}})
@@ -546,10 +572,11 @@ func (s *Schedule) PresentValue() bacnet.ApplicationValue {
 	return v
 }
 
-// References returns List_Of_Object_Property_References.
+// References returns List_Of_Object_Property_References. The result is a
+// copy: the caller owns it.
 func (s *Schedule) References() []DeviceObjectPropertyReference {
 	var out []DeviceObjectPropertyReference
-	s.View(func() { out = append(out, s.refs...) })
+	s.View(func() { out = cloneReferences(s.refs) })
 	return out
 }
 
@@ -665,7 +692,9 @@ func (s *Schedule) Poll(ctx context.Context, now time.Time, dev *Device) {
 	}
 	s.mu.Lock()
 	pending, pv, prio := s.pending, s.pv.Clone(), s.priority
-	refs := append([]DeviceObjectPropertyReference(nil), s.refs...)
+	// Copies: the BeforeWrite hook and the object written to get an
+	// ArrayIndex of their own, not the schedule's.
+	refs := cloneReferences(s.refs)
 	s.pending = false
 	s.mu.Unlock()
 	if !pending {

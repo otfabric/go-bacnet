@@ -88,6 +88,10 @@ func (h *harness) complexACK() []byte {
 }
 
 func TestReadPropertyErrors(t *testing.T) {
+	inBubble(t, testReadPropertyErrors)
+}
+
+func testReadPropertyErrors(t *testing.T) {
 	h := newHarness(t)
 	if err := h.dev.Add(newListObject(1)); err != nil {
 		t.Fatal(err)
@@ -121,6 +125,10 @@ func TestReadPropertyErrors(t *testing.T) {
 // TestReadPropertyMultipleSelectors checks REQUIRED and OPTIONAL against
 // the object's own split of its properties, and per-property errors.
 func TestReadPropertyMultipleSelectors(t *testing.T) {
+	inBubble(t, testReadPropertyMultipleSelectors)
+}
+
+func testReadPropertyMultipleSelectors(t *testing.T) {
 	h := newHarness(t)
 	enc := mustEncode(t)
 	all, required := h.av.Properties()
@@ -174,6 +182,10 @@ func TestReadPropertyMultipleSelectors(t *testing.T) {
 }
 
 func TestWritePropertyHandlers(t *testing.T) {
+	inBubble(t, testWritePropertyHandlers)
+}
+
+func testWritePropertyHandlers(t *testing.T) {
 	var hooked []object.Write
 	denied := object.Err(bacnet.ErrorClassProperty, bacnet.ErrorCodeWriteAccessDenied)
 	h := newHarness(t, WithHooks(Hooks{BeforeWrite: func(_ context.Context, obj bacnet.ObjectIdentifier, w object.Write) error {
@@ -227,6 +239,10 @@ func TestWritePropertyHandlers(t *testing.T) {
 }
 
 func TestWhoIsWhoHas(t *testing.T) {
+	inBubble(t, testWhoIsWhoHas)
+}
+
+func testWhoIsWhoHas(t *testing.T) {
 	h := newHarness(t)
 	enc := mustEncode(t)
 	u := func(v uint32) *uint32 { return &v }
@@ -269,6 +285,10 @@ func TestWhoIsWhoHas(t *testing.T) {
 }
 
 func TestReadRangeHandler(t *testing.T) {
+	inBubble(t, testReadRangeHandler)
+}
+
+func testReadRangeHandler(t *testing.T) {
 	h := newHarness(t)
 	lo := newListObject(40)
 	if err := h.dev.Add(lo); err != nil {
@@ -338,6 +358,10 @@ func TestReadRangeHandler(t *testing.T) {
 }
 
 func TestListElementHandlers(t *testing.T) {
+	inBubble(t, testListElementHandlers)
+}
+
+func testListElementHandlers(t *testing.T) {
 	refuse := object.Err(bacnet.ErrorClassProperty, bacnet.ErrorCodeWriteAccessDenied)
 	var hooked int
 	h := newHarness(t, WithHooks(Hooks{BeforeWrite: func(_ context.Context, obj bacnet.ObjectIdentifier, w object.Write) error {
@@ -382,6 +406,10 @@ func TestListElementHandlers(t *testing.T) {
 }
 
 func TestCreateObjectHandler(t *testing.T) {
+	inBubble(t, testCreateObjectHandler)
+}
+
+func testCreateObjectHandler(t *testing.T) {
 	h := newHarness(t)
 	avType := bacnet.ObjectTypeAnalogValue
 	h.dev.RegisterFactory(avType, func(instance uint32, name string) (object.Object, error) {
@@ -451,6 +479,10 @@ func TestCreateObjectHandler(t *testing.T) {
 }
 
 func TestDeleteObjectHandler(t *testing.T) {
+	inBubble(t, testDeleteObjectHandler)
+}
+
+func testDeleteObjectHandler(t *testing.T) {
 	refuse := object.Err(bacnet.ErrorClassObject, bacnet.ErrorCodeObjectDeletionNotPermitted)
 	allow := false
 	h := newHarness(t, WithHooks(Hooks{BeforeDelete: func(context.Context, bacnet.ObjectIdentifier) error {

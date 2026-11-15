@@ -20,6 +20,10 @@ import (
 // known or unknown, is answered with the same Abort as one that runs out
 // inside an object.
 func TestReadPropertyMultipleBudgetAtObjectStart(t *testing.T) {
+	inBubble(t, testReadPropertyMultipleBudgetAtObjectStart)
+}
+
+func testReadPropertyMultipleBudgetAtObjectStart(t *testing.T) {
 	h := newHarness(t)
 	unknown := bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeAnalogInput, Instance: 9}
 	dev := bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeDevice, Instance: 100}
@@ -81,6 +85,10 @@ func (c *countingCtx) Err() error {
 // A GetEventInformation whose deadline passes while the reply is being sized
 // is answered with the context error, not a reply.
 func TestGetEventInformationDeadlineDuringSearch(t *testing.T) {
+	inBubble(t, testGetEventInformationDeadlineDuringSearch)
+}
+
+func testGetEventInformationDeadlineDuringSearch(t *testing.T) {
 	h := newHarness(t, WithMaxAPDU(128), WithSegmentation(0, 0))
 	const n = 20
 	for i := 0; i < n; i++ {
@@ -129,6 +137,10 @@ func TestBoundOptionsValidated(t *testing.T) {
 
 // Without segmentation the largest reply is one APDU.
 func TestMaxReplyWithoutSegmentation(t *testing.T) {
+	inBubble(t, testMaxReplyWithoutSegmentation)
+}
+
+func testMaxReplyWithoutSegmentation(t *testing.T) {
 	h := newHarness(t, WithMaxAPDU(480), WithSegmentation(0, 0))
 	if got := h.s.maxReply(); got != 477 {
 		t.Fatalf("maxReply %d", got)
@@ -138,6 +150,10 @@ func TestMaxReplyWithoutSegmentation(t *testing.T) {
 // AtomicWriteFile with record access gives BeforeWrite one octet string per
 // record after the start position.
 func TestAtomicWriteFileRecordsBeforeWrite(t *testing.T) {
+	inBubble(t, testAtomicWriteFileRecordsBeforeWrite)
+}
+
+func testAtomicWriteFileRecordsBeforeWrite(t *testing.T) {
 	var mu sync.Mutex
 	var seen []object.Write
 	h := newHarness(t, WithHooks(Hooks{BeforeWrite: func(_ context.Context, id bacnet.ObjectIdentifier, w object.Write) error {
@@ -173,6 +189,10 @@ func TestAtomicWriteFileRecordsBeforeWrite(t *testing.T) {
 
 // Without a BeforeWrite hook the Runtime's WriteGuard allows every write.
 func TestRuntimeWriteGuardWithoutHook(t *testing.T) {
+	inBubble(t, testRuntimeWriteGuardWithoutHook)
+}
+
+func testRuntimeWriteGuardWithoutHook(t *testing.T) {
 	h := newHarness(t)
 	g := runtimeInfo{s: h.s}
 	if err := g.BeforeWrite(context.Background(), bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeAnalogValue, Instance: 1}, object.Write{}); err != nil {

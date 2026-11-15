@@ -67,6 +67,39 @@ GetEventInformation). A segmented reply runs off the request workers and
 has an overall deadline. A COV notification larger than one APDU is not
 sent and is reported as a diagnostic.
 
+The in-memory File object is bounded in octets for both access methods: a
+stream file by `FileConfig.MaxSize` (default 1 MiB), a record file by
+`MaxSize` records (default 65536) and by 1 MiB for its records together
+(or the size of the records it was created with, when that is more); a
+write beyond either is answered with object/file-full before anything is
+stored. AtomicReadFile asks the file for at most one octet, or one record,
+more than the reply to that requester can carry.
+
+What the server sends on its own account: one destination holds at most
+eight of the 256 invoke IDs of the server's confirmed requests, so that a
+destination that does not answer leaves the others to their notifications
+(further COV notifications for it wait their turn, further event
+notifications are dropped and diagnosed). An AcknowledgeAlarm is reported
+to the recipients only when it acknowledges a transition. A device
+recipient that is not bound gets one Who-Is, and a network without a known
+router one Who-Is-Router-To-Network, per answer window (APDU timeout times
+attempts), however many notifications need them.
+
+The address tables filled from received traffic: the device address cache
+(256 entries) records an I-Am only for a device that is an event recipient
+(a Recipient_List names it, or a Who-Is was sent for it); the router table
+(64 networks) records what it observes, and keeps the router that answered
+the server's own Who-Is-Router-To-Network against later observations,
+asking again at most once in five minutes per network. When either table is
+full the entry heard from longest ago makes room, which is reported as a
+`registry_eviction` diagnostic. BACnet/IP being unauthenticated, an I-Am or
+an I-Am-Router-To-Network can still be sent by any node that hears the
+question.
+
+Application code that the server calls and that does not return normally
+is stopped at the server, reported as a `callback` diagnostic and does not
+end the process ([API.md](API.md#hooks)).
+
 DeviceCommunicationControl and ReinitializeDevice passwords are sent in clear
 text, as the protocol defines. The library never logs them
 ([OBSERVABILITY.md](OBSERVABILITY.md)).

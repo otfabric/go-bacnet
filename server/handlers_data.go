@@ -240,8 +240,13 @@ func (s *Server) whoIs(_ context.Context, req *apdu.UnconfirmedRequest, p peer) 
 }
 
 // IAm broadcasts an I-Am for the device (at start-up, for example). It is
-// not sent while DeviceCommunicationControl disables initiation.
+// not sent while DeviceCommunicationControl disables initiation. After
+// Close it returns an error that matches bacnet.ErrClosed (and
+// context.Canceled, which it returned before v0.9.1).
 func (s *Server) IAm() error {
+	if s.closed.Load() {
+		return errClosed
+	}
 	if !s.dcc.mayInitiate(s.clock.Now()) {
 		return nil
 	}

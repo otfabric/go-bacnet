@@ -284,7 +284,10 @@ func (e *covEngine) run(sub *covSub) {
 		initial := sub.initial
 		sub.initial = false
 		sub.mu.Unlock()
-		e.evaluate(sub, initial)
+		// evaluate reads the monitored objects, which may be the
+		// application's: one that does not return normally costs this
+		// notification, and the subscription goes on with the next change.
+		e.s.guard("COV notification", map[string]any{"to": sub.to.String()}, func() { e.evaluate(sub, initial) })
 	}
 }
 
@@ -390,7 +393,7 @@ func (e *covEngine) evaluate(sub *covSub, initial bool) {
 		return
 	}
 	if sub.confirmed {
-		if err := s.req.invoke(ctx, sub.to, sub.dest, confirmedSvc, payload); err != nil && ctx.Err() == nil {
+		if err := s.req.invoke(ctx, sub.to, sub.dest, confirmedSvc, payload, true); err != nil && ctx.Err() == nil {
 			s.report(diag.KindCOV, "confirmed COV notification failed", map[string]any{"error": err.Error(), "to": sub.to.String()})
 		}
 		return
@@ -647,6 +650,11 @@ func (s *Server) subscribeCOVPropertyMultiple(ctx context.Context, req *apdu.Con
 			}
 			if _, err := o.ReadProperty(ctx, ref.Property); err != nil {
 				return fail(&covMultipleError{err: object.AsError(err), obj: spec.Object, prop: ref.Property})
+			}
+			// As SubscribeCOVProperty: an increment is a distance, not
+			// negative and a number.
+			if inc := ref.COVIncrement; inc != nil && (*inc < 0 || math.IsNaN(float64(*inc))) {
+				return fail(&covMultipleError{err: object.AsError(object.ErrValueOutOfRange), obj: spec.Object, prop: ref.Property})
 			}
 			t.refs = append(t.refs, &covRef{prop: ref.Property, increment: ref.COVIncrement, timestamped: ref.Timestamped})
 		}

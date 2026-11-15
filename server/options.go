@@ -73,15 +73,35 @@ func (c *config) invalid(format string, a ...any) {
 // Hooks are the application's part in services that act on the device
 // rather than on an object. Each runs on a worker with the request's
 // deadline; a nil hook keeps the default given per field.
+//
+// The contract of a hook, and of every other piece of the application's
+// code that the server calls (API.md, "Hooks"):
+//
+//   - Goroutine: a request worker, so several hooks run at the same time.
+//     BeforeWrite also runs on the housekeeping goroutine, for the writes a
+//     Schedule makes.
+//   - Blocking: a hook that waits holds its worker; with every worker held,
+//     requests wait in the queue and then get Abort out-of-resources. On the
+//     housekeeping goroutine it delays expiry, polling and event time
+//     delays. The context ends at the APDU timeout and at Close.
+//   - Calling back: a hook may call the Server, the Device and its objects.
+//   - Close: a hook may call Server.Close; Close then does not wait for the
+//     goroutine the hook runs on.
+//   - A hook that does not return normally is stopped at the server: a
+//     confirmed request is answered with Abort (other), a diagnostic of kind
+//     "callback" carries what the hook ended with and its stack, and the
+//     server goes on.
 type Hooks struct {
 	// BeforeWrite is called before a WriteProperty, each write of a
 	// WritePropertyMultiple, an AddListElement or RemoveListElement (the
 	// Write then holds the elements as a constructed value), or an
-	// AtomicWriteFile is applied. For AtomicWriteFile the Write names
-	// File_Size and holds a constructed value: the start position (Signed)
-	// followed by the data, one Octet String for stream access or one per
-	// record for record access. A returned error is sent as the answer (see
-	// object.Err). Default: allow.
+	// AtomicWriteFile is applied, and before each write a Schedule makes to
+	// the objects it references (that call comes from the housekeeping
+	// goroutine, not from a worker, with the server's context). For
+	// AtomicWriteFile the Write names File_Size and holds a constructed
+	// value: the start position (Signed) followed by the data, one Octet
+	// String for stream access or one per record for record access. A
+	// returned error is sent as the answer (see object.Err). Default: allow.
 	BeforeWrite func(ctx context.Context, obj bacnet.ObjectIdentifier, w object.Write) error
 	// BeforeDelete is called before DeleteObject removes a deletable
 	// object. Default: allow.
@@ -165,8 +185,11 @@ func WithDecodeLimits(l bacnet.DecodeLimits) Option {
 // WithLogger logs diagnostics. The server is silent without it.
 func WithLogger(l *slog.Logger) Option { return func(c *config) { c.logger = l } }
 
-// WithDiagnosticFunc receives every diagnostic. It runs on the receive
-// loop or a worker and must not block.
+// WithDiagnosticFunc receives every diagnostic. It runs on whichever
+// goroutine of the server noticed the condition (the receive loop, a
+// worker, housekeeping, a notification) and must not block. It may call
+// Server.Close. A function that does not return normally is stopped by the
+// server and reported to the logger of WithLogger, if there is one.
 func WithDiagnosticFunc(fn func(Diagnostic)) Option { return func(c *config) { c.diagFn = fn } }
 
 // WithWorkers sets the number of request workers (default 4) and the

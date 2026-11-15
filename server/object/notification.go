@@ -56,6 +56,16 @@ type Destination struct {
 	Transitions uint8 // bit TransitionTo…
 }
 
+// clone returns d with its own Device and MAC.
+func (d Destination) clone() Destination {
+	if d.Device != nil {
+		id := *d.Device
+		d.Device = &id
+	}
+	d.MAC = append([]byte(nil), d.MAC...)
+	return d
+}
+
 // Address returns the network address of an address recipient.
 func (d Destination) Address() (bacnet.Address, error) {
 	if len(d.MAC) == 0 {
@@ -249,7 +259,11 @@ func NewNotificationClass(cfg NotificationClassConfig) (*NotificationClass, erro
 	if cfg.Priority != nil {
 		nc.priority = *cfg.Priority
 	}
-	nc.recipients = append(nc.recipients, cfg.Recipients...)
+	// The class keeps its own copies: the caller's Recipients, their Device
+	// pointers and MAC slices stay the caller's.
+	for _, d := range cfg.Recipients {
+		nc.recipients = append(nc.recipients, d.clone())
+	}
 	if cfg.Description != "" {
 		nc.Define(bacnet.PropertyDescription, &Property{Value: charString(cfg.Description), Writable: true, Kinds: []bacnet.ValueKind{bacnet.ValueCharacterString}})
 	}
@@ -346,14 +360,15 @@ var ErrNoSpaceToWriteProperty = Err(bacnet.ErrorClassResources, bacnet.ErrorCode
 func (nc *NotificationClass) Class() uint32 { return nc.cfg.Instance }
 
 // Routing returns the notification priority of a transition, whether it
-// needs an acknowledgment, and the destinations that receive it at t.
+// needs an acknowledgment, and the destinations that receive it at t. The
+// destinations are copies: the caller owns them.
 func (nc *NotificationClass) Routing(t time.Time, transition int) (priority uint8, ackRequired bool, to []Destination) {
 	nc.View(func() {
 		priority = nc.priority[transition]
 		ackRequired = nc.ackReq&(1<<transition) != 0
 		for _, d := range nc.recipients {
 			if d.Active(t, transition) {
-				to = append(to, d)
+				to = append(to, d.clone())
 			}
 		}
 	})

@@ -247,6 +247,8 @@ func TestDecodeLogRecordsMalformed(t *testing.T) {
 func FuzzDecodeLogMultipleRecords(f *testing.F) {
 	f.Add(recordedTLM)
 	f.Add(recordedEventLog)
+	// A Trend Log Multiple record whose log-data list holds any-value [8].
+	f.Add(fromHex("0c06c00001" + "1983" + "3a05c0" + "4901" + "5e" + "0ea46f091b02b40e1d11120f" + "1e1e" + "8e4441ac00008f" + "1f1f" + "5f"))
 	f.Fuzz(func(t *testing.T, data []byte) {
 		limits := bacnet.DefaultDecodeLimits()
 		els, _, err := bacnet.ParseSequence(data, limits, -1)

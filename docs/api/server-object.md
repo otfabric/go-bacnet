@@ -242,6 +242,8 @@ type Base struct {
 
 Base implements Object over a table of properties. Built-in objects embed it; applications may too. Object\_Identifier, Object\_Name, Object\_Type and Property\_List are always present.
 
+Lock order with the Device that holds the object: while mu is held the Device's table may be read (a Get that calls Device.Object, for example), and the Device never waits for mu while it holds its table lock.
+
 #### func NewBase
 
 ```go
@@ -320,7 +322,7 @@ SetNotifier installs the change callback (done by Device.Add).
 func (b *Base) Update(fn func() []bacnet.PropertyIdentifier)
 ```
 
-Update runs fn with the object's lock held and then reports the changed properties to the Device. Built-in objects use it for application-side updates (a new sensor reading, for example).
+Update runs fn with the object's lock held and then reports the changed properties to the Device. Built-in objects use it for application-side updates (a new sensor reading, for example). The lock is released also when fn does not return normally.
 
 #### func (Base) View
 
@@ -527,11 +529,18 @@ Elements encodes the destination as the seven elements of its SEQUENCE.
 ```go
 type Device struct {
 	*Base
-	// contains filtered or unexported fields
+
+	// rmu serialises Rename. It is taken before tmu and before an object's
+	// lock, and nothing is called with it held but those two.
+
+	// the name each object is registered under
+
 }
 ```
 
 Device is the Device object and the table of every object of the device.
+
+Lock order. tmu guards the table and is never held across a call into an object (Name, SetNotifier, a Base's lock): a goroutine that holds an object's lock may read the table (a property Get of the Device, event evaluation looking up a Notification Class), so whoever holds tmu must not wait for an object. The table therefore keeps the registered name of every object itself (nameOf), and Rename changes the object's own name after it has released tmu; rmu makes two Renames take turns, so that the table and the object end with the same name.
 
 #### func NewDevice
 
@@ -635,7 +644,7 @@ Remove removes an object. The Device itself cannot be removed.
 func (d *Device) Rename(id bacnet.ObjectIdentifier, name string) error
 ```
 
-Rename changes the Object\_Name of an object, keeping names unique.
+Rename changes the Object\_Name of an object, keeping names unique. The table takes the new name first and the object right after it; a read in between finds the object under its new name while Object\_Name still returns the old one.
 
 #### func (Device) SetSystemStatus
 
@@ -791,7 +800,10 @@ Factory creates an object for CreateObject. instance is the requested or chosen 
 ```go
 type File struct {
 	*Base
-	// contains filtered or unexported fields
+
+	// recordOctets is the sum of the record lengths, maxRecordOctets its
+	// bound (see recordFileOctets).
+
 }
 ```
 
@@ -851,7 +863,7 @@ StreamAccess implements FileAccessor.
 func (f *File) WriteRecords(start int32, records [][]byte) (int32, error)
 ```
 
-WriteRecords implements FileAccessor: the records replace those from the start position on, and the file grows when they run past its end.
+WriteRecords implements FileAccessor: the records replace those from the start position on, and the file grows when they run past its end. A write that would take the file past its bound in records (MaxSize) or in octets is refused with ErrFileFull before anything is stored.
 
 #### func (File) WriteStream
 
@@ -888,6 +900,8 @@ type FileConfig struct {
 	ReadOnly bool
 	// MaxSize bounds the file in octets (stream) or records (record);
 	// zero means 1 MiB or 65536 records. Above math.MaxInt32 NewFile fails.
+	// A record file is bounded in octets too: its records hold at most
+	// 1 MiB together, or as much as Records holds when that is more.
 	MaxSize int
 	Data    []byte
 	Records [][]byte
@@ -1003,7 +1017,7 @@ RemoveListElements implements ListModifier for Recipient\_List; a destination th
 func (nc *NotificationClass) Routing(t time.Time, transition int) (priority uint8, ackRequired bool, to []Destination)
 ```
 
-Routing returns the notification priority of a transition, whether it needs an acknowledgment, and the destinations that receive it at t.
+Routing returns the notification priority of a transition, whether it needs an acknowledgment, and the destinations that receive it at t. The destinations are copies: the caller owns them.
 
 ### type NotificationClassConfig
 
@@ -1407,7 +1421,7 @@ PresentValue returns Present\_Value.
 func (s *Schedule) References() []DeviceObjectPropertyReference
 ```
 
-References returns List\_Of\_Object\_Property\_References.
+References returns List\_Of\_Object\_Property\_References. The result is a copy: the caller owns it.
 
 ### type ScheduleConfig
 
@@ -1528,7 +1542,7 @@ NewTrendLog returns a Trend Log object.
 func (tl *TrendLog) Log(at time.Time, v bacnet.ApplicationValue, flags *bacnet.BitString) error
 ```
 
-Log appends a record with the given time stamp when the log is enabled. The datum choice follows the value kind (REAL, BOOLEAN, ENUMERATED, Unsigned, INTEGER, BIT STRING, NULL).
+Log appends a record with the given time stamp when the log is enabled. The datum choice follows the value kind (REAL, BOOLEAN, ENUMERATED, Unsigned, INTEGER, BIT STRING, NULL). The record holds copies of v and flags: the caller keeps what it passed.
 
 #### func (TrendLog) Poll
 

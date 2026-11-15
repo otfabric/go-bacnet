@@ -58,7 +58,11 @@ func DecodeAcknowledgeAlarm(payload []byte, limits bacnet.DecodeLimits) (Acknowl
 	}
 	var req AcknowledgeAlarmRequest
 	var havePID, haveObj, haveState, haveTS, haveSrc, haveAckTS bool
+	var seen fieldSet
 	for _, el := range elements {
+		if err := seen.add(el.TagNumber, "AcknowledgeAlarm"); err != nil {
+			return AcknowledgeAlarmRequest{}, err
+		}
 		switch {
 		case el.TagNumber == 0 && !bacnet.IsContextConstructed(el):
 			u, err := bacnet.ContextUnsigned32(el)

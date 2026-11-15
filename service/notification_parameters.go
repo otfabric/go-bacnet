@@ -492,6 +492,9 @@ func decodeChangeOfLifeSafety(els []bacnet.Element) (ChangeOfLifeSafetyParams, e
 	if len(els) != 4 {
 		return ChangeOfLifeSafetyParams{}, fmt.Errorf("%w: change-of-life-safety fields", bacnet.ErrMalformed)
 	}
+	if err := fieldTags(els, "change-of-life-safety"); err != nil {
+		return ChangeOfLifeSafetyParams{}, err
+	}
 	st, err := bacnet.ContextUnsigned32(els[0])
 	if err != nil {
 		return ChangeOfLifeSafetyParams{}, err
@@ -515,7 +518,13 @@ func decodeChangeOfLifeSafety(els []bacnet.Element) (ChangeOfLifeSafetyParams, e
 
 func decodeExtended(els []bacnet.Element) (ExtendedParams, error) {
 	var ext ExtendedParams
+	var seen fieldSet
 	for _, el := range els {
+		if el.TagNumber <= 2 {
+			if err := seen.add(el.TagNumber, "extended"); err != nil {
+				return ExtendedParams{}, err
+			}
+		}
 		switch {
 		case el.TagNumber == 0 && !bacnet.IsContextConstructed(el):
 			u, err := bacnet.ContextUnsigned(el)
@@ -541,6 +550,9 @@ func decodeExtended(els []bacnet.Element) (ExtendedParams, error) {
 func decodeCommandFailure(els []bacnet.Element) (CommandFailureParams, error) {
 	if len(els) != 3 {
 		return CommandFailureParams{}, fmt.Errorf("%w: command-failure fields", bacnet.ErrMalformed)
+	}
+	if err := fieldTags(els, "command-failure"); err != nil {
+		return CommandFailureParams{}, err
 	}
 	flags, err := bacnet.ContextBitString(els[1])
 	if err != nil {
@@ -575,7 +587,15 @@ func decodeFloatingLimit(els []bacnet.Element) (FloatingLimitParams, error) {
 
 func decodeBufferReady(els []bacnet.Element) (BufferReadyParams, error) {
 	var br BufferReadyParams
+	var seen fieldSet
 	for _, el := range els {
+		// buffer-property [0] is kept element by element; the two counts
+		// come once each.
+		if el.TagNumber == 1 || el.TagNumber == 2 {
+			if err := seen.add(el.TagNumber, "buffer-ready"); err != nil {
+				return BufferReadyParams{}, err
+			}
+		}
 		switch {
 		case el.TagNumber == 0:
 			owned := el
@@ -601,6 +621,9 @@ func decodeBufferReady(els []bacnet.Element) (BufferReadyParams, error) {
 func decodeUnsignedRange(els []bacnet.Element) (UnsignedRangeParams, error) {
 	if len(els) != 3 {
 		return UnsignedRangeParams{}, fmt.Errorf("%w: unsigned-range fields", bacnet.ErrMalformed)
+	}
+	if err := fieldTags(els, "unsigned-range"); err != nil {
+		return UnsignedRangeParams{}, err
 	}
 	u0, err := bacnet.ContextUnsigned32(els[0])
 	if err != nil {

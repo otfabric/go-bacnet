@@ -99,13 +99,27 @@ type DeviceConfig struct {
 type Factory func(instance uint32, name string) (Object, error)
 
 // Device is the Device object and the table of every object of the device.
+//
+// Lock order. tmu guards the table and is never held across a call into an
+// object (Name, SetNotifier, a Base's lock): a goroutine that holds an
+// object's lock may read the table (a property Get of the Device, event
+// evaluation looking up a Notification Class), so whoever holds tmu must
+// not wait for an object. The table therefore keeps the registered name of
+// every object itself (nameOf), and Rename changes the object's own name
+// after it has released tmu; rmu makes two Renames take turns, so that the
+// table and the object end with the same name.
 type Device struct {
 	*Base
 	cfg DeviceConfig
 
+	// rmu serialises Rename. It is taken before tmu and before an object's
+	// lock, and nothing is called with it held but those two.
+	rmu sync.Mutex
+
 	tmu       sync.RWMutex
 	objects   map[bacnet.ObjectIdentifier]Object
 	names     map[string]bacnet.ObjectIdentifier
+	nameOf    map[bacnet.ObjectIdentifier]string // the name each object is registered under
 	revision  uint32
 	factories map[bacnet.ObjectType]Factory
 	status    uint32
@@ -137,11 +151,13 @@ func NewDevice(cfg DeviceConfig) (*Device, error) {
 		cfg:       cfg,
 		objects:   make(map[bacnet.ObjectIdentifier]Object),
 		names:     make(map[string]bacnet.ObjectIdentifier),
+		nameOf:    make(map[bacnet.ObjectIdentifier]string),
 		factories: make(map[bacnet.ObjectType]Factory),
 		observers: make(map[int]Notifier),
 	}
 	d.objects[id] = d
 	d.names[cfg.Name] = id
+	d.nameOf[id] = cfg.Name
 	d.defineProperties()
 	return d, nil
 }
@@ -331,6 +347,7 @@ func (d *Device) Add(o Object) error {
 	}
 	d.objects[id] = o
 	d.names[name] = id
+	d.nameOf[id] = name
 	d.revision++
 	d.tmu.Unlock()
 	if n, ok := o.(Notifying); ok {
@@ -351,8 +368,11 @@ func (d *Device) Remove(id bacnet.ObjectIdentifier) error {
 		d.tmu.Unlock()
 		return ErrUnknownObject
 	}
+	// The name comes from the table, not from the object: its lock may be
+	// held by a goroutine that is waiting to read the table.
 	delete(d.objects, id)
-	delete(d.names, o.Name())
+	delete(d.names, d.nameOf[id])
+	delete(d.nameOf, id)
 	d.revision++
 	d.tmu.Unlock()
 	if n, ok := o.(Notifying); ok {
@@ -362,11 +382,16 @@ func (d *Device) Remove(id bacnet.ObjectIdentifier) error {
 	return nil
 }
 
-// Rename changes the Object_Name of an object, keeping names unique.
+// Rename changes the Object_Name of an object, keeping names unique. The
+// table takes the new name first and the object right after it; a read in
+// between finds the object under its new name while Object_Name still
+// returns the old one.
 func (d *Device) Rename(id bacnet.ObjectIdentifier, name string) error {
 	if name == "" {
 		return ErrValueOutOfRange
 	}
+	d.rmu.Lock()
+	defer d.rmu.Unlock()
 	d.tmu.Lock()
 	o, ok := d.objects[id]
 	if !ok {
@@ -385,11 +410,14 @@ func (d *Device) Rename(id bacnet.ObjectIdentifier, name string) error {
 		d.tmu.Unlock()
 		return ErrWriteAccessDenied
 	}
-	delete(d.names, o.Name())
-	b.setName(name)
+	delete(d.names, d.nameOf[id])
 	d.names[name] = id
+	d.nameOf[id] = name
 	d.revision++
 	d.tmu.Unlock()
+	// The object's lock is taken only now that the table is free (see the
+	// lock order on Device).
+	b.setName(name)
 	d.dispatch(Change{Object: id, Properties: []bacnet.PropertyIdentifier{bacnet.PropertyObjectName}})
 	return nil
 }

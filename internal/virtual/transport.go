@@ -25,6 +25,7 @@ type Transport struct {
 	local  bip.Endpoint
 	inbox  chan InboundPacket
 	outbox []OutboundPacket
+	sent   chan struct{} // closed, and replaced, when a packet is recorded
 	clock  clock.Clock
 	peers  map[string]*Transport // optional mesh by endpoint string
 }
@@ -40,6 +41,7 @@ func New(local bip.Endpoint, clk clock.Clock, inboxSize int) *Transport {
 	return &Transport{
 		local: local,
 		inbox: make(chan InboundPacket, inboxSize),
+		sent:  make(chan struct{}),
 		clock: clk,
 		peers: make(map[string]*Transport),
 	}
@@ -104,6 +106,8 @@ func (t *Transport) Send(ctx context.Context, pkt OutboundPacket) error {
 		Destination: pkt.Destination,
 		Broadcast:   pkt.Broadcast,
 	})
+	close(t.sent)
+	t.sent = make(chan struct{})
 	t.mu.Unlock()
 
 	for _, d := range deliveries {
@@ -145,6 +149,16 @@ func (t *Transport) Recv(ctx context.Context) (InboundPacket, error) {
 		}
 		return pkt, nil
 	}
+}
+
+// Sent returns a channel that is closed when the next packet is recorded
+// in the outbox. A test that waits for a packet takes the channel first,
+// then reads the outbox, and waits on the channel when the packet is not
+// there yet: it then waits for the event, not for an amount of time.
+func (t *Transport) Sent() <-chan struct{} {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	return t.sent
 }
 
 // Outbox returns a copy of recorded outbound packets.

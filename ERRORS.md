@@ -10,7 +10,7 @@ Defined in package `bacnet`:
 
 | Sentinel | Meaning |
 |----------|---------|
-| `ErrClosed` | Client closed; pending work aborted |
+| `ErrClosed` | Client closed; pending work aborted. Also what `server.Server.IAm` returns after `Close` (that error matches `context.Canceled` too, which it was before v0.9.1) |
 | `ErrTimeout` | Confirmed-request APDU timeout (no definitive remote PDU) |
 | `ErrMalformed` | Encoding structurally invalid |
 | `ErrUnsupported` | Valid but not supported by this implementation |
@@ -187,6 +187,29 @@ if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) 
     // still works when wrapped by OutcomeUnknownError
 }
 ```
+
+### `ErrTimeout` and `context.DeadlineExceeded`
+
+The APDU timeout and the context deadline are two outcomes with two errors.
+When the library's own timer ends the wait (APDU timeout × attempts, or a
+BVLC management exchange without an answer),
+`errors.Is(err, bacnet.ErrTimeout)` is true and
+`errors.Is(err, context.DeadlineExceeded)` is false. When the deadline of
+the caller's context ends it first, it is the other way round. Both hold
+inside an `*OutcomeUnknownError` too. A caller for whom both mean "no answer
+in time" tests both:
+
+```go
+if errors.Is(err, bacnet.ErrTimeout) || errors.Is(err, context.DeadlineExceeded) {
+    // no answer in time
+}
+```
+
+This differs from the organisation's lifecycle convention, in which a
+library's timeout error also matches `context.DeadlineExceeded`
+(otfabric/engineering `standards/lifecycle.md`, "Timeouts and
+cancellation"). What `ErrTimeout` matches is part of the behaviour callers
+rely on, so it does not change in a patch release.
 
 ## RPM partial results
 

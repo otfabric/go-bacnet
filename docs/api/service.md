@@ -686,7 +686,7 @@ AtomicReadFileACK is an AtomicReadFile ComplexACK.
 func DecodeAtomicReadFileACK(payload []byte, limits bacnet.DecodeLimits) (AtomicReadFileACK, error)
 ```
 
-DecodeAtomicReadFileACK decodes an AtomicReadFile ComplexACK.
+DecodeAtomicReadFileACK decodes an AtomicReadFile ComplexACK: endOfFile and exactly one access alternative, stream \[0] or record \[1]. The result owns its memory. RecordCount is the returnedRecordCount as sent; it is not compared with the number of Records.
 
 ### type AtomicReadFileRequest
 
@@ -1081,7 +1081,7 @@ COVNotificationMultiple is a Confirmed/Unconfirmed COVNotificationMultiple paylo
 func DecodeCOVNotificationMultiple(payload []byte, limits bacnet.DecodeLimits) (COVNotificationMultiple, error)
 ```
 
-DecodeCOVNotificationMultiple decodes a COVNotificationMultiple payload.
+DecodeCOVNotificationMultiple decodes a COVNotificationMultiple payload. Every field comes at most once, the timestamp is a Date and a Time, and in a value an array index stands between the property identifier and the value. A notification without its list of notifications is accepted and has no objects. The result owns its memory.
 
 ### type COVNotificationMultipleObject
 
@@ -1768,7 +1768,7 @@ type LogMultipleValue struct {
 }
 ```
 
-LogMultipleValue is one value of a LogMultipleRecord's log-data. Choice uses the LogRecord alternatives (LogDatumBoolean … LogDatumAnyValue); on the wire its context tag is one less (boolean-value is \[0]).
+LogMultipleValue is one value of a LogMultipleRecord's log-data. Choice names the alternative with the LogRecord constants (LogDatumBoolean … LogDatumFailure, LogDatumAnyValue); on the wire the list has its own context tags, boolean-value \[0] to failure \[7] and any-value \[8] (logDataListChoices). Value owns its memory: it shares nothing with the decoded input.
 
 ### type LogRecord
 
@@ -1949,7 +1949,7 @@ ReadAccessResult is per-object RPM results.
 func DecodeReadPropertyMultipleACK(payload []byte, limits bacnet.DecodeLimits) ([]ReadAccessResult, error)
 ```
 
-DecodeReadPropertyMultipleACK decodes an RPM complex ACK payload. Property-level errors are returned inside PropertyResult.Err.
+DecodeReadPropertyMultipleACK decodes an RPM complex ACK payload. Property-level errors are returned inside PropertyResult.Err. Each object has at most one list of results, and an array index stands between its property identifier and the value or error. An object without a list, an empty list and an empty acknowledgement are accepted (LIMITATIONS.md). The results own their memory.
 
 ### type ReadAccessSpecification
 

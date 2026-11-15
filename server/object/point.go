@@ -231,8 +231,18 @@ func newPoint(t bacnet.ObjectType, kind pointKind, input, commandable bool, cfg 
 			for i, s := range cfg.StateText {
 				els[i] = bacnet.Element{Value: charString(s)}
 			}
-			p.Define(bacnet.PropertyStateText, &Property{Array: true, Writable: true, Kinds: []bacnet.ValueKind{bacnet.ValueCharacterString},
-				Value: bacnet.ApplicationValue{Kind: bacnet.ValueConstructed, Elements: els}})
+			stateText := &Property{Array: true, Writable: true, Kinds: []bacnet.ValueKind{bacnet.ValueCharacterString},
+				Value: bacnet.ApplicationValue{Kind: bacnet.ValueConstructed, Elements: els}}
+			// State_Text has one text per state and Number_Of_States is not
+			// writable: a write of the whole array keeps its length. One
+			// text is written by array index as for any array.
+			stateText.Set = func(w Write) ([]bacnet.PropertyIdentifier, error) {
+				if w.Property.ArrayIndex == nil && w.Value.Kind == bacnet.ValueConstructed && uint64(len(w.Value.Elements)) != uint64(p.states) {
+					return nil, ErrValueOutOfRange
+				}
+				return stateText.store(w)
+			}
+			p.Define(bacnet.PropertyStateText, stateText)
 		}
 	}
 	if cfg.Events != nil {

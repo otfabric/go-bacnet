@@ -41,6 +41,10 @@ func (h *harness) segment() *apdu.ComplexACK {
 }
 
 func TestSegmentedResponse(t *testing.T) {
+	inBubble(t, testSegmentedResponse)
+}
+
+func testSegmentedResponse(t *testing.T) {
 	h := newHarness(t)
 	h.request(apdu.ConfirmedRequest{SegmentedResponseAccepted: true, MaxSegments: 0, MaxAPDU: 0, InvokeID: 1, ServiceChoice: apdu.ServiceReadPropertyMultiple, Payload: readAll(t)})
 	var payload []byte
@@ -83,6 +87,10 @@ func TestSegmentedResponse(t *testing.T) {
 }
 
 func TestSegmentedResponseTimeoutAndAbort(t *testing.T) {
+	inBubble(t, testSegmentedResponseTimeoutAndAbort)
+}
+
+func testSegmentedResponseTimeoutAndAbort(t *testing.T) {
 	h := newHarness(t)
 	big := apdu.ConfirmedRequest{SegmentedResponseAccepted: true, MaxAPDU: 0, InvokeID: 2, ServiceChoice: apdu.ServiceReadPropertyMultiple, Payload: readAll(t)}
 	h.request(big)
@@ -115,6 +123,10 @@ func TestSegmentedResponseTimeoutAndAbort(t *testing.T) {
 }
 
 func TestSegmentationDisabled(t *testing.T) {
+	inBubble(t, testSegmentationDisabled)
+}
+
+func testSegmentationDisabled(t *testing.T) {
 	h := newHarness(t, WithSegmentation(0, 0))
 	h.request(apdu.ConfirmedRequest{SegmentedResponseAccepted: true, MaxAPDU: 0, InvokeID: 1, ServiceChoice: apdu.ServiceReadPropertyMultiple, Payload: readAll(t)})
 	h.expectAbort(bacnet.AbortReasonSegmentationNotSupported)
@@ -123,6 +135,10 @@ func TestSegmentationDisabled(t *testing.T) {
 }
 
 func TestSegmentedRequest(t *testing.T) {
+	inBubble(t, testSegmentedRequest)
+}
+
+func testSegmentedRequest(t *testing.T) {
 	h := newHarness(t)
 	p := readPV(t)
 	seg := func(inv, seq uint8, part []byte, more bool) {
@@ -169,6 +185,10 @@ func TestSegmentedRequest(t *testing.T) {
 }
 
 func TestSegmentedRequestOverflow(t *testing.T) {
+	inBubble(t, testSegmentedRequestOverflow)
+}
+
+func testSegmentedRequestOverflow(t *testing.T) {
 	h := newHarness(t, WithSegmentation(2, 1))
 	for seq := uint8(0); seq < 3; seq++ {
 		h.request(apdu.ConfirmedRequest{SegmentedMessage: true, MoreFollows: true, MaxAPDU: 5, InvokeID: 9, SequenceNumber: seq, ProposedWindowSize: 4, ServiceChoice: apdu.ServiceReadProperty, Payload: []byte{0x0C}})
@@ -186,6 +206,10 @@ func TestSegmentedRequestOverflow(t *testing.T) {
 // same requester and invoke ID with the same content is a new request and is
 // executed again, as when a bacnet-stack command-line tool is run twice.
 func TestRepeatAfterCompletionIsNewRequest(t *testing.T) {
+	inBubble(t, testRepeatAfterCompletionIsNewRequest)
+}
+
+func testRepeatAfterCompletionIsNewRequest(t *testing.T) {
 	var writes atomic.Int32
 	h := newHarness(t, WithHooks(Hooks{BeforeWrite: func(context.Context, bacnet.ObjectIdentifier, object.Write) error {
 		writes.Add(1)
@@ -224,6 +248,10 @@ func TestRepeatAfterCompletionIsNewRequest(t *testing.T) {
 // A repeat while the request is executing is within the open transaction
 // and is dropped.
 func TestRepeatWhileExecutingDropped(t *testing.T) {
+	inBubble(t, testRepeatWhileExecutingDropped)
+}
+
+func testRepeatWhileExecutingDropped(t *testing.T) {
 	release := make(chan struct{})
 	var writes atomic.Int32
 	h := newHarness(t, WithWorkers(1, 0), WithHooks(Hooks{BeforeWrite: func(ctx context.Context, _ bacnet.ObjectIdentifier, _ object.Write) error {
@@ -269,6 +297,10 @@ func TestRepeatWhileExecutingDropped(t *testing.T) {
 // after the 6-octet header: 1482 octets to a 1476-octet device. The default
 // limits serve them; a configured MaxAPDUSize drops them.
 func TestSegmentLongerThanMaxAPDU(t *testing.T) {
+	inBubble(t, testSegmentLongerThanMaxAPDU)
+}
+
+func testSegmentLongerThanMaxAPDU(t *testing.T) {
 	seg0 := append([]byte{0x0e, 0x44, 0x01, 0x00, 0x02, apdu.ServiceAtomicWriteFile}, make([]byte, 1476)...)
 	h := newHarness(t)
 	h.inject(seg0)

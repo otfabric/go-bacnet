@@ -20,12 +20,13 @@ import (
 	"github.com/otfabric/go-bacnet/bvlc"
 	"github.com/otfabric/go-bacnet/internal/virtual"
 	"github.com/otfabric/go-bacnet/npdu"
+	"github.com/otfabric/go-bacnet/server/object"
 	"github.com/otfabric/go-bacnet/service"
 )
 
 // The server chaos test: several requesters at once send valid requests,
-// repeats of them and junk while objects change and COV subscriptions
-// notify. Every valid request must get exactly one terminal answer for its
+// repeats of them and junk while objects change, COV subscriptions notify
+// and event-reporting objects are created, written and deleted. Every valid request must get exactly one terminal answer for its
 // invoke ID (an ACK, Error, Reject or Abort out-of-resources), every frame
 // the server sends must parse, and Close must end every goroutine
 // (TestMain). A panic or a data race fails the run by itself (make chaos
@@ -129,6 +130,13 @@ func TestChaosServer(t *testing.T) {
 		perPeer := 60 * chaosScale()
 		tr := virtual.New(serverEP, nil, 8192)
 		dev := fuzzDevice(t)
+		// Binary Values with intrinsic reporting that requesters create, write
+		// and delete: event evaluation and the object table change together.
+		dev.RegisterFactory(bacnet.ObjectTypeBinaryValue, func(instance uint32, name string) (object.Object, error) {
+			return object.NewBinaryValue(object.PointConfig{Instance: instance, Name: name, Events: &object.EventConfig{
+				NotificationClass: 7, EventEnable: 7, AlarmValue: 1,
+			}})
+		})
 		s, err := New(dev, WithTransport(tr), WithWorkers(2, 4), WithTransactionOptions(50*time.Millisecond, 0, 50*time.Millisecond))
 		if err != nil {
 			t.Fatal(err)
@@ -197,6 +205,12 @@ func TestChaosServer(t *testing.T) {
 	})
 }
 
+// chaosEventObject picks one of the few Binary Values the requesters create
+// and delete, so that their requests meet on the same objects.
+func chaosEventObject(rng *rand.Rand) bacnet.ObjectIdentifier {
+	return bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeBinaryValue, Instance: uint32(50 + rng.Intn(3))}
+}
+
 func chaosPeer(t *testing.T, tr *virtual.Transport, from bip.Endpoint, inbox <-chan apdu.PDU, seed int64, n int, answered, refused *atomic.Int64) error {
 	rng := rand.New(rand.NewSource(seed))
 	send := func(a []byte) {
@@ -226,6 +240,19 @@ func chaosPeer(t *testing.T, tr *virtual.Transport, from bip.Endpoint, inbox <-c
 			junk := make([]byte, rng.Intn(12))
 			rng.Read(junk)
 			return uint8(rng.Intn(40)), junk
+		},
+		// An event-reporting object shared by the requesters: created,
+		// driven in and out of its alarm value, deleted. Each request is
+		// answered whether or not the object exists at that moment.
+		func() (uint8, []byte) {
+			id := chaosEventObject(rng)
+			return apdu.ServiceCreateObject, enc(service.EncodeCreateObject(service.CreateObjectRequest{ObjectIdentifier: &id}))
+		},
+		func() (uint8, []byte) {
+			return apdu.ServiceWriteProperty, enc(service.EncodeWriteProperty(service.WritePropertyRequest{Object: chaosEventObject(rng), Property: pvRef, Value: bacnet.EnumValue(uint32(rng.Intn(2)))}))
+		},
+		func() (uint8, []byte) {
+			return apdu.ServiceDeleteObject, enc(service.EncodeDeleteObject(service.DeleteObjectRequest{Object: chaosEventObject(rng)}))
 		},
 	}
 	for i := range n {

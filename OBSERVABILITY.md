@@ -119,9 +119,18 @@ diagnostics report what no answer shows.
 | `bvlc` | Debug | A datagram from a non-IPv4 node was discarded |
 | `transaction` | Debug | A repeated request was dropped while executing; a segmented reply ended without completing (timeout, requester Abort, send failure) |
 | `cov` | Debug | A COV notification could not be encoded, was larger than the maximum APDU and not sent, or a confirmed one failed |
-| `event` | Debug | An event was not reported (no Notification Class; recipient not bound and Who-Is sent; no router known for a remote-station recipient of a confirmed notification and Who-Is-Router-To-Network sent; confirmed notification to a broadcast recipient) or a confirmed notification failed |
+| `event` | Debug | An event was not reported (no Notification Class; recipient not bound, with or without a new Who-Is; no router known for a remote-station recipient of a confirmed notification; confirmed notification to a broadcast recipient) or a confirmed notification failed, which includes one dropped because its destination already has eight confirmed requests of the server waiting for an answer |
+| `wrong_service` | Debug | An ACK or Error for another service than the pending request of that invoke ID was dropped |
+| `registry_eviction` | Warn | The address of an event recipient, or the route to a network, was dropped for a newer one because the table was full |
+| `callback` | Error | Application code that the server called (a hook, an object, a BBMD, the diagnostic function) did not return normally. Fields: `callback` (which call), `value` (what the code ended with), `stack` (the stack it ended on), and where known `service`, `from`, `object` or `to` |
 
-Diagnostics run on the receive loop, a worker or the COV and event engines;
-the callback rules above apply, with the `Server` in place of the `Client`.
-Fields carry addresses, invoke IDs, service choices, object identifiers and
-error texts, never property values, file data or passwords.
+Diagnostics run on the receive loop, a worker, the housekeeping goroutine
+or the COV and event engines. The callback rules above apply, with the
+`Server` in place of the `Client` and two differences: the function may call
+`Server.Close` ([API.md](API.md#hooks)), and a function or a logger handler
+that does not return normally is stopped by the server, which goes on; the
+function's failure is logged as a `callback` diagnostic, the handler's is
+dropped. Fields carry addresses, invoke IDs, service choices, object
+identifiers and error texts, never property values, file data or passwords.
+The `value` and `stack` of a `callback` diagnostic come from the
+application's own code and hold what that code put in them.
