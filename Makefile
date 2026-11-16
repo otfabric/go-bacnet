@@ -6,7 +6,7 @@ export GOWORK := off
 PKGS     := ./...
 
 # docsync release of docs-check (DOC-008).
-DOCSYNC_VERSION := v0.3.1
+DOCSYNC_VERSION := v0.4.0
 FUZZTIME ?= 5s
 
 .PHONY: help test test-race chaos vet lint lint-ci fmt tidy vuln coverage coverage-check coverage-pkg-check e2e check fuzz fuzz-list bench cross imports interop interop-required interop-pinned dissector clean docs-check captures-fetch captures-extended captures-generate captures-report
