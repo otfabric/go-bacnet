@@ -37,8 +37,9 @@ after the value in a ReadPropertyMultiple-ACK or a COVNotificationMultiple;
 positional notification parameters with another context tag), a second
 list of results for one object, an AtomicReadFile-ACK with no access
 alternative or with two, a COVNotificationMultiple timestamp that is not a
-Date and a Time, and a GetEnrollmentSummary filter the decoder does not
-know.
+Date and a Time, a GetEnrollmentSummary filter the decoder does not
+know, and an AuthRequest whose parameters are not one constructed context
+tag [0].
 
 Still accepted, because devices send it or nothing is misread; a later
 minor release may refuse these, after a check against field traffic:
@@ -52,24 +53,21 @@ minor release may refuse these, after a check against field traffic:
   left out (they read as zero) or with tags the decoder does not know (the
   raw elements keep them);
 - a GetEnrollmentSummary acknowledgment filter above not-acked (2), which
-  the server serves as "all".
+  the server serves as "all";
+- a COV notification without values, and an AddListElement or
+  RemoveListElement with an empty list of elements, although clauses
+  13.6.1.1.5, 15.1.1.1.4 and 15.2.1.1.4 ask for one or more and the
+  encoders do not write them. The server passes such a request to
+  `Hooks.BeforeWrite` and the object with no elements.
 
-The text fields of TextMessage, life-safety and audit messages are returned
-as the octets sent, whatever their character set
-(`bacnet.CharacterString.Text` converts when the set is known to the
-caller).
-
-`service.DecodeAuthRequest` returns the elements of the payload as they
-are, while `EncodeAuthRequest` wraps its parameters in context tag 0; a
-decoded request therefore does not encode to the octets it came from.
-
-## Server bounds that are fixed
-
-- A record-access File holds at most 1 MiB of record data (or its initial
-  content, when larger). The bound is not configurable in this release.
-- One destination has at most eight of the server's confirmed requests
-  waiting for an answer; the device address cache holds 256 event
-  recipients and the router table 64 networks.
+The text fields of TextMessage, LifeSafetyOperation, audit notifications,
+Who-Am-I and You-Are are returned as the octets sent, with their character
+set in a field of their own (`MessageEncoding`, `RequestingSourceEncoding`,
+`SourceCommentEncoding`, `TargetCommentEncoding`, `ModelNameEncoding`,
+`SerialNumberEncoding`); `bacnet.CharacterString.Text` converts UTF-8,
+UCS-2, UCS-4 and ISO 8859-1 and returns `ErrUnsupported` for DBCS and JIS
+X 0208. A TextMessage's message class is returned in its `numeric`
+alternative only; the `character` alternative is skipped.
 
 ## Not implemented
 
@@ -87,7 +85,8 @@ decoded request therefore does not encode to the octets it came from.
 
 ## Partial
 
-- **AuthRequest**: an opaque payload, codec and unit evidence only; no stable
+- **AuthRequest**: opaque parameters inside context tag [0], codec and unit
+  evidence only; no stable
   stack implements the service.
 - **VT-Open, VT-Close, VT-Data**: codec evidence only, no session anywhere;
   inbound VT-Data is not handled.

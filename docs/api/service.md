@@ -866,6 +866,12 @@ type AuditNotification struct {
 	TargetValue  *bacnet.ApplicationValue
 	CurrentValue *bacnet.ApplicationValue
 	Result       *AuditResult
+	// SourceCommentEncoding and TargetCommentEncoding are the character
+	// sets of SourceComment and TargetComment, which hold the octets as
+	// sent (clause 20.2.9; zero is UTF-8); bacnet.CharacterString.Text
+	// converts them.
+	SourceCommentEncoding uint8
+	TargetCommentEncoding uint8
 }
 ```
 
@@ -1008,13 +1014,15 @@ type AuthRequest struct {
 
 AuthRequest is a confirmed AuthRequest (opaque parameters preserved).
 
+The service request is one constructed context tag \[0]; Parameters are the elements inside it. This is the outline of AuthRequest-Request (clause 21) that Wireshark 4.6 dissects: it reads the \[0] and calls a request without it malformed. No peer stack implements the service.
+
 #### func DecodeAuthRequest
 
 ```go
 func DecodeAuthRequest(payload []byte, limits bacnet.DecodeLimits) (AuthRequest, error)
 ```
 
-DecodeAuthRequest decodes AuthRequest.
+DecodeAuthRequest decodes AuthRequest: the elements inside the constructed context tag \[0] that EncodeAuthRequest writes become Parameters. A payload that is not one \[0] is malformed; an empty payload decodes to no parameters.
 
 ### type BufferReadyParams
 
@@ -1059,7 +1067,7 @@ COVNotification is a confirmed or unconfirmed COV notification payload.
 func DecodeCOVNotification(payload []byte, limits bacnet.DecodeLimits) (COVNotification, error)
 ```
 
-DecodeCOVNotification decodes a COV notification payload.
+DecodeCOVNotification decodes a COV notification payload. Clauses 13.6.1.1.5 and 13.7 ask for one or more property values, and EncodeCOVNotification refuses to write none; the decoder accepts an empty list on purpose (Values is then empty), pending a decision on refusing it.
 
 ### type COVNotificationMultiple
 
@@ -1645,10 +1653,14 @@ type LifeSafetyOperationRequest struct {
 	RequestingSource            string
 	Request                     uint32 // BACnetLifeSafetyOperation enum
 	Object                      *bacnet.ObjectIdentifier
+	// RequestingSourceEncoding is the character set of RequestingSource.
+	RequestingSourceEncoding uint8
 }
 ```
 
 LifeSafetyOperationRequest is LifeSafetyOperation.
+
+RequestingSource holds the octets as sent, in the character set RequestingSourceEncoding names (clause 20.2.9; zero is UTF-8); bacnet.CharacterString.Text converts them.
 
 #### func DecodeLifeSafetyOperation
 
@@ -1676,7 +1688,7 @@ ListElementRequest is AddListElement / RemoveListElement.
 func DecodeListElementRequest(payload []byte, limits bacnet.DecodeLimits) (ListElementRequest, error)
 ```
 
-DecodeListElementRequest decodes Add/RemoveListElement.
+DecodeListElementRequest decodes Add/RemoveListElement. Clauses 15.1.1.1.4 and 15.2.1.1.4 ask for one or more elements, and EncodeListElementRequest refuses to write none; the decoder accepts an empty list on purpose (Elements is then empty), pending a decision on refusing it.
 
 ### type LogDataChoice
 
@@ -2030,7 +2042,7 @@ type ReadRangeACK struct {
 
 ReadRangeACK is a ReadRange ComplexACK payload.
 
-ItemData holds the flat application/context tag stream from itemData. When Property is Log\_Buffer and the stream is well-formed BACnetLogRecord SEQUENCEs, LogRecords is also populated (len matches ItemCount). Prefer LogRecords for typed Trend Log access; ItemData remains for generic ranges. FirstSequence is set when present on the wire.
+ItemData holds the elements of itemData in order, one value per element: an application-tagged element is its value; a context-tagged one, primitive or constructed, is a ValueConstructed value whose one element is that element with its tag number (and, constructed, its content in Value.Elements). EncodeReadRangeACK writes every value as an element again, so an ACK re-encodes to the itemData it was decoded from (clause 15.8: itemData is a SEQUENCE OF the property's own datatype, whose context tags belong to the items). When Property is Log\_Buffer and the stream is well-formed BACnetLogRecord SEQUENCEs, LogRecords is also populated (len matches ItemCount). Prefer LogRecords for typed Trend Log access; ItemData remains for generic ranges. FirstSequence is set when present on the wire.
 
 #### func DecodeReadRangeACK
 
@@ -2255,10 +2267,14 @@ type TextMessage struct {
 	MessageClass            *uint32 // optional numeric class
 	MessagePriority         uint8   // 0=normal, 1=urgent
 	Message                 string
+	// MessageEncoding is the character set of Message.
+	MessageEncoding uint8
 }
 ```
 
 TextMessage is Confirmed/UnconfirmedTextMessage.
+
+Message holds the octets of the message text as sent, in the character set MessageEncoding names (clause 20.2.9; bacnet.CharacterEncodingUTF8, the zero value, and the others). bacnet.CharacterString{Encoding: m.MessageEncoding, Value: m.Message}.Text() converts it to a Go string.
 
 #### func DecodeTextMessage
 
@@ -2434,12 +2450,16 @@ type WhoAmI struct {
 	VendorID     uint16
 	ModelName    string
 	SerialNumber string
+	// ModelNameEncoding and SerialNumberEncoding are the character sets of
+	// ModelName and SerialNumber.
+	ModelNameEncoding    uint8
+	SerialNumberEncoding uint8
 }
 ```
 
 WhoAmI is an Unconfirmed Who-Am-I request.
 
-Wire form matches ASHRAE 135 Who-Am-I-Request SEQUENCE without context tags (application Unsigned16 + CharacterString + CharacterString), same as I-Am.
+Wire form matches ASHRAE 135 Who-Am-I-Request SEQUENCE without context tags (application Unsigned16 + CharacterString + CharacterString), same as I-Am. ModelName and SerialNumber hold the octets as sent, in the character sets ModelNameEncoding and SerialNumberEncoding name (clause 20.2.9; zero is UTF-8); bacnet.CharacterString.Text converts them.
 
 #### func DecodeWhoAmI
 
@@ -2610,6 +2630,10 @@ type YouAre struct {
 	VendorID     uint16
 	ModelName    string
 	SerialNumber string
+	// ModelNameEncoding and SerialNumberEncoding are the character sets of
+	// ModelName and SerialNumber.
+	ModelNameEncoding    uint8
+	SerialNumberEncoding uint8
 	// Device is the optional device-identifier. The zero value means absent:
 	// a device identifier always has object type Device, so the zero value
 	// (analog-input, 0) is never a valid one.
@@ -2621,7 +2645,7 @@ type YouAre struct {
 
 YouAre is an Unconfirmed You-Are request.
 
-Wire form matches ASHRAE 135 You-Are-Request SEQUENCE without context tags: application Unsigned16 + CharacterString + CharacterString, then the optional device-identifier ObjectIdentifier and the optional device-mac-address OctetString.
+Wire form matches ASHRAE 135 You-Are-Request SEQUENCE without context tags: application Unsigned16 + CharacterString + CharacterString, then the optional device-identifier ObjectIdentifier and the optional device-mac-address OctetString. ModelName and SerialNumber hold the octets as sent, in the character sets ModelNameEncoding and SerialNumberEncoding name (clause 20.2.9; zero is UTF-8); bacnet.CharacterString.Text converts them.
 
 #### func DecodeYouAre
 

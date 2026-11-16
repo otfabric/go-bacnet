@@ -19,7 +19,8 @@ import (
 // are never segmented; a notification that does not fit is not sent.
 //
 // The 256 invoke IDs are one pool for all destinations. One destination
-// holds at most maxPendingPerDestination of them at a time, so that a
+// holds at most RecipientLimits.PendingPerDestination of them at a time
+// (WithRecipientLimits), so that a
 // destination that does not answer leaves the rest of the pool to the
 // others; what happens to a request beyond that is the caller's choice
 // (invoke).
@@ -31,8 +32,9 @@ type requester struct {
 	dests   map[string]*destination
 }
 
-// maxPendingPerDestination bounds the confirmed requests of the server
-// that wait for an answer from one destination.
+// maxPendingPerDestination is the default of
+// RecipientLimits.PendingPerDestination: the confirmed requests of the
+// server that wait for an answer from one destination.
 const maxPendingPerDestination = 8
 
 // destination is the share of one destination in the requester: sem holds
@@ -66,7 +68,7 @@ func (r *requester) acquire(ctx context.Context, to bip.Endpoint, dest bacnet.Ad
 	r.mu.Lock()
 	d := r.dests[key]
 	if d == nil {
-		d = &destination{sem: make(chan struct{}, maxPendingPerDestination)}
+		d = &destination{sem: make(chan struct{}, r.s.cfg.recipLimits.PendingPerDestination)}
 		r.dests[key] = d
 	}
 	d.users++
@@ -102,8 +104,8 @@ func (r *requester) acquire(ctx context.Context, to bip.Endpoint, dest bacnet.Ad
 // timeout. A SimpleACK returns nil; Error, Reject and Abort are returned
 // as the client package's error types.
 //
-// When the destination already has maxPendingPerDestination requests
-// waiting for an answer, invoke waits for one of them to end (wait true:
+// When the destination already has RecipientLimits.PendingPerDestination
+// requests waiting for an answer, invoke waits for one of them to end (wait true:
 // the caller is one of a bounded number, a COV subscription) or returns
 // errDestinationBusy at once (wait false: event notifications, whose
 // number the peers drive).

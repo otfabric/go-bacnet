@@ -36,6 +36,7 @@ type config struct {
 	segmentTimeout time.Duration
 	retries        int
 	segLimits      SegmentLimits
+	recipLimits    RecipientLimits
 	password       string
 	maxCOV         int
 	maxCOVRefs     int
@@ -59,6 +60,7 @@ func defaultConfig() config {
 		segmentTimeout: 2 * time.Second,
 		retries:        3,
 		segLimits:      defaultSegmentLimits(),
+		recipLimits:    defaultRecipientLimits(),
 		maxCOV:         256,
 		maxCOVRefs:     4096,
 		maxLifetime:    0,
@@ -277,6 +279,65 @@ func WithSegmentLimits(l SegmentLimits) Option {
 			Replies:               pick(l.Replies, d.Replies),
 			RepliesPerOrigin:      pick(l.RepliesPerOrigin, d.RepliesPerOrigin),
 		}
+	}
+}
+
+// RecipientLimits bound what the server keeps and holds for the recipients
+// of its notifications. A zero field keeps its default.
+type RecipientLimits struct {
+	// PendingPerDestination bounds the server's confirmed requests that
+	// wait for an answer from one destination (default 8). Beyond it a
+	// confirmed COV notification waits its turn and a confirmed event
+	// notification is dropped with an "event" diagnostic.
+	PendingPerDestination int
+	// Addresses bounds the device address cache (default 256): the event
+	// recipients whose I-Am the server keeps, and the Who-Is requests for
+	// unbound recipients that are outstanding at once. A full cache makes
+	// room by dropping the entry heard from longest ago.
+	Addresses int
+	// Routes bounds the router table (default 64), and the networks a
+	// router is being asked for at once. A full table makes room by
+	// dropping the route used or heard from longest ago.
+	Routes int
+	// RouteRecheck is the shortest time between two
+	// Who-Is-Router-To-Network the server sends for one network because
+	// another node than the router that answered shows up for it (default
+	// 5 minutes).
+	RouteRecheck time.Duration
+}
+
+func defaultRecipientLimits() RecipientLimits {
+	return RecipientLimits{
+		PendingPerDestination: maxPendingPerDestination,
+		Addresses:             maxBindings,
+		Routes:                maxRoutes,
+		RouteRecheck:          routeRecheck,
+	}
+}
+
+// WithRecipientLimits bounds the confirmed requests pending per
+// destination, the device address cache, the router table and how often a
+// route is asked for again (see RecipientLimits). Negative values are
+// invalid.
+func WithRecipientLimits(l RecipientLimits) Option {
+	return func(c *config) {
+		if l.PendingPerDestination < 0 || l.Addresses < 0 || l.Routes < 0 || l.RouteRecheck < 0 {
+			c.invalid("recipient limits %+v", l)
+		}
+		d := defaultRecipientLimits()
+		if l.PendingPerDestination <= 0 {
+			l.PendingPerDestination = d.PendingPerDestination
+		}
+		if l.Addresses <= 0 {
+			l.Addresses = d.Addresses
+		}
+		if l.Routes <= 0 {
+			l.Routes = d.Routes
+		}
+		if l.RouteRecheck <= 0 {
+			l.RouteRecheck = d.RouteRecheck
+		}
+		c.recipLimits = l
 	}
 }
 

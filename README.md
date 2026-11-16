@@ -194,6 +194,8 @@ logging, a complete server) are compiled as part of the test suite: see
   [docs/SERVER_SUPPORT.md](docs/SERVER_SUPPORT.md)).
 - **Character strings.** `CharacterString.Value` holds the octets as received.
   Use `Text()` to get a Go string from devices that send UCS-2 or ISO 8859-1.
+  The text fields of service messages carry their character set beside them
+  (for example `TextMessage.MessageEncoding`).
 
 ## Documentation
 

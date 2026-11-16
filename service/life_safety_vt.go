@@ -9,11 +9,17 @@ import (
 )
 
 // LifeSafetyOperationRequest is LifeSafetyOperation.
+//
+// RequestingSource holds the octets as sent, in the character set
+// RequestingSourceEncoding names (clause 20.2.9; zero is UTF-8);
+// bacnet.CharacterString.Text converts them.
 type LifeSafetyOperationRequest struct {
 	RequestingProcessIdentifier uint32
 	RequestingSource            string
 	Request                     uint32 // BACnetLifeSafetyOperation enum
 	Object                      *bacnet.ObjectIdentifier
+	// RequestingSourceEncoding is the character set of RequestingSource.
+	RequestingSourceEncoding uint8
 }
 
 // EncodeLifeSafetyOperation encodes LifeSafetyOperation.
@@ -25,7 +31,7 @@ func EncodeLifeSafetyOperation(req LifeSafetyOperationRequest) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	dst, err = bacnet.AppendContextCharacterString(dst, 1, bacnet.CharacterString{Value: req.RequestingSource})
+	dst, err = bacnet.AppendContextCharacterString(dst, 1, bacnet.CharacterString{Encoding: req.RequestingSourceEncoding, Value: req.RequestingSource})
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +69,7 @@ func DecodeLifeSafetyOperation(payload []byte, limits bacnet.DecodeLimits) (Life
 			cs, e := bacnet.ContextCharacterString(el)
 			err = e
 			if err == nil {
-				req.RequestingSource = cs.Value
+				req.RequestingSource, req.RequestingSourceEncoding = cs.Value, cs.Encoding
 				haveSrc = true
 			}
 		case el.TagNumber == 2 && !bacnet.IsContextConstructed(el):

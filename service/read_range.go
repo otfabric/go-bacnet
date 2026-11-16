@@ -50,7 +50,14 @@ type ReadRangeRequest struct {
 
 // ReadRangeACK is a ReadRange ComplexACK payload.
 //
-// ItemData holds the flat application/context tag stream from itemData.
+// ItemData holds the elements of itemData in order, one value per element:
+// an application-tagged element is its value; a context-tagged one,
+// primitive or constructed, is a ValueConstructed value whose one element
+// is that element with its tag number (and, constructed, its content in
+// Value.Elements). EncodeReadRangeACK writes every value as an element
+// again, so an ACK re-encodes to the itemData it was decoded from (clause
+// 15.8: itemData is a SEQUENCE OF the property's own datatype, whose
+// context tags belong to the items).
 // When Property is Log_Buffer and the stream is well-formed BACnetLogRecord
 // SEQUENCEs, LogRecords is also populated (len matches ItemCount). Prefer
 // LogRecords for typed Trend Log access; ItemData remains for generic ranges.
@@ -442,16 +449,11 @@ func DecodeReadRangeACK(payload []byte, limits bacnet.DecodeLimits) (ReadRangeAC
 				if item.Opening || item.Closing {
 					return ReadRangeACK{}, fmt.Errorf("%w: unexpected open/close in itemData", bacnet.ErrMalformed)
 				}
-				if item.Context && !bacnet.IsContextConstructed(item) {
-					// Context primitive item: surface as constructed/context value.
+				if item.Context {
+					// A context-tagged item keeps its tag: the value holds
+					// the element, which the encoder writes as it is.
 					ack.ItemData = append(ack.ItemData, bacnet.ApplicationValue{
-						Kind: bacnet.ValueContext, Elements: []bacnet.Element{item},
-					}.Clone())
-					continue
-				}
-				if bacnet.IsContextConstructed(item) {
-					ack.ItemData = append(ack.ItemData, bacnet.ApplicationValue{
-						Kind: bacnet.ValueConstructed, Elements: item.Value.Elements,
+						Kind: bacnet.ValueConstructed, Elements: []bacnet.Element{item},
 					}.Clone())
 					continue
 				}

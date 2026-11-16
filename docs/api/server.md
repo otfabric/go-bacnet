@@ -209,6 +209,14 @@ func WithPort(port int) Option
 
 WithPort sets the UDP port (default 47808).
 
+#### func WithRecipientLimits
+
+```go
+func WithRecipientLimits(l RecipientLimits) Option
+```
+
+WithRecipientLimits bounds the confirmed requests pending per destination, the device address cache, the router table and how often a route is asked for again (see RecipientLimits). Negative values are invalid.
+
 #### func WithSegmentLimits
 
 ```go
@@ -248,6 +256,34 @@ func WithWorkers(workers, queue int) Option
 ```
 
 WithWorkers sets the number of request workers (default 4) and the number of requests that may wait for one (default 64). A confirmed request that finds the queue full is answered with Abort (out-of-resources); an unconfirmed one is dropped.
+
+### type RecipientLimits
+
+```go
+type RecipientLimits struct {
+	// PendingPerDestination bounds the server's confirmed requests that
+	// wait for an answer from one destination (default 8). Beyond it a
+	// confirmed COV notification waits its turn and a confirmed event
+	// notification is dropped with an "event" diagnostic.
+	PendingPerDestination int
+	// Addresses bounds the device address cache (default 256): the event
+	// recipients whose I-Am the server keeps, and the Who-Is requests for
+	// unbound recipients that are outstanding at once. A full cache makes
+	// room by dropping the entry heard from longest ago.
+	Addresses int
+	// Routes bounds the router table (default 64), and the networks a
+	// router is being asked for at once. A full table makes room by
+	// dropping the route used or heard from longest ago.
+	Routes int
+	// RouteRecheck is the shortest time between two
+	// Who-Is-Router-To-Network the server sends for one network because
+	// another node than the router that answered shows up for it (default
+	// 5 minutes).
+	RouteRecheck time.Duration
+}
+```
+
+RecipientLimits bound what the server keeps and holds for the recipients of its notifications. A zero field keeps its default.
 
 ### type SegmentLimits
 

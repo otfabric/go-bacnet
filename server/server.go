@@ -113,7 +113,7 @@ func New(dev *object.Device, opts ...Option) (*Server, error) {
 	s.req = newRequester(s)
 	s.cov = newCOVEngine(s)
 	s.events = newEventEngine(s)
-	s.routes = newRouteTable()
+	s.routes = newRouteTable(cfg.recipLimits)
 	dev.Bind(runtimeInfo{s})
 	unCOV := dev.Observe(s.cov.changed)
 	unEvents := dev.Observe(s.events.changed)

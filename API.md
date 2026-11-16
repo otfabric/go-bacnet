@@ -318,8 +318,10 @@ func (c *Client) ReadPropertyMultiple(ctx context.Context, target Target, specs 
 log status, the list of logged values or a time change) for a Trend Log
 Multiple, and `EventLogRecords` (`service.EventLogRecord`,
 BACnetEventLogRecord: log status, the event notification or a time change)
-for an Event Log. `ItemData` remains the flat tag stream for generic
-ranges. Inspect `FirstItem` / `LastItem` /
+for an Event Log. `ItemData` holds one value per item of itemData, for
+every property: an application-tagged item as that value, a context-tagged
+item as a `bacnet.ValueConstructed` value whose one element is the item
+with its tag, so the ACK re-encodes to the octets it came from. Inspect `FirstItem` / `LastItem` /
 `MoreItems` for paging. Item values are cloned on decode (caller-owned).
 
 ## Who-Has / I-Have
@@ -508,6 +510,7 @@ _ = av.SetPresentValue(bacnet.RealValue(22)) // COV subscribers are notified
 | `WithCOVLimits(max, maxLifetime)` | 256, none | With a lifetime limit, indefinite subscriptions are refused |
 | `WithCOVReferenceLimit(n)` | 4096 | Monitored references across all COV subscriptions; beyond it a subscription is refused like one beyond `WithCOVLimits` |
 | `WithSegmentLimits(SegmentLimits{…})` | 64 / 16 / 4 MiB, 32 / 8 | Segmented requests being reassembled (total, per origin, octets) and segmented replies being sent (total, per origin); beyond them Abort out-of-resources. Zero fields keep the default |
+| `WithRecipientLimits(RecipientLimits{…})` | 8, 256, 64, 5 min | The server's confirmed requests waiting for an answer per destination, the device address cache of event recipients, the router table, and how often a network whose route was replaced is asked again. Zero fields keep the default |
 | `WithBBMD` | none | A `bbmd.BBMD` sharing the endpoint |
 | `WithHooks` | none | Application part of device-level services |
 | `WithDecodeLimits`, `WithLogger`, `WithDiagnosticFunc` | | As for the client |
@@ -596,7 +599,7 @@ methods of an application `object.Object` (and of `Poller`, `FileAccessor`,
 - Confirmed requests sent to a broadcast address and requests for another
   network are ignored: the server is not a router. It learns the router of
   a remote network from received SNET and I-Am-Router-To-Network (at most
-  64 networks; when the table is full the route heard from longest ago
+  64 networks by default, `WithRecipientLimits`; when the table is full the route heard from longest ago
   makes room) to send event notifications to remote stations. The router
   that answers the server's own Who-Is-Router-To-Network keeps the route
   against routes that are merely observed

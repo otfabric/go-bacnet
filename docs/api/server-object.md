@@ -900,11 +900,17 @@ type FileConfig struct {
 	ReadOnly bool
 	// MaxSize bounds the file in octets (stream) or records (record);
 	// zero means 1 MiB or 65536 records. Above math.MaxInt32 NewFile fails.
-	// A record file is bounded in octets too: its records hold at most
-	// 1 MiB together, or as much as Records holds when that is more.
+	// A record file is bounded in octets too (MaxRecordOctets).
 	MaxSize int
-	Data    []byte
-	Records [][]byte
+	// MaxRecordOctets bounds the octets the records of a record file hold
+	// together; a write beyond it is answered with object/file-full. Zero
+	// means 1 MiB, or as much as Records holds when that is more. Negative,
+	// or less than Records holds, NewFile fails. A stream file has no
+	// records and is bounded by MaxSize alone; NewFile refuses a negative
+	// value for it too.
+	MaxRecordOctets int
+	Data            []byte
+	Records         [][]byte
 }
 ```
 

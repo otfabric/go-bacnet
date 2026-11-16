@@ -259,8 +259,8 @@ func testGetEnrollmentSummaryEnrollmentFilterWithoutClass(t *testing.T) {
 // remoteHarness serves AI-9 reporting through NC-8 to a station on network
 // 5, once confirmed and once unconfirmed, and to the local broadcast,
 // confirmed (never sent: clause 5.4).
-func remoteHarness(t *testing.T) (*harness, *object.Point, []byte) {
-	h := newHarness(t)
+func remoteHarness(t *testing.T, opts ...Option) (*harness, *object.Point, []byte) {
+	h := newHarness(t, opts...)
 	station := []byte{10, 5, 0, 7, 0xBA, 0xC0}
 	nc, err := object.NewNotificationClass(object.NotificationClassConfig{
 		Instance: 8, Name: "NC-8",
@@ -407,7 +407,7 @@ func TestRouteTableInvalidRoutes(t *testing.T) {
 }
 
 func testRouteTableInvalidRoutes(t *testing.T) {
-	rt := newRouteTable()
+	rt := newRouteTable(defaultRecipientLimits())
 	router := bip.NewEndpoint(netip.MustParseAddrPort("10.0.0.9:47808"))
 	now := time.Date(2026, 3, 4, 10, 0, 0, 0, time.UTC)
 	rt.learn(0, router, now, false, time.Second)

@@ -37,7 +37,11 @@ func EncodeListElementRequest(req ListElementRequest) ([]byte, error) {
 	return bacnet.AppendContextTagged(dst, 3, req.Elements)
 }
 
-// DecodeListElementRequest decodes Add/RemoveListElement.
+// DecodeListElementRequest decodes Add/RemoveListElement. Clauses
+// 15.1.1.1.4 and 15.2.1.1.4 ask for one or more elements, and
+// EncodeListElementRequest refuses to write none; the decoder accepts an
+// empty list on purpose (Elements is then empty), pending a decision on
+// refusing it.
 func DecodeListElementRequest(payload []byte, limits bacnet.DecodeLimits) (ListElementRequest, error) {
 	els, n, err := bacnet.ParseSequence(payload, limits, -1)
 	if err != nil {

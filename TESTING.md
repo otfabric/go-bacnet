@@ -98,10 +98,10 @@ goroutine and has no Close: no row applies to it.
 | L6 Cancel a pending request | `TestReadPropertyCancelDuringWait`, `TestReadPropertyContextCancelWrapsOutcomeUnknown`, `TestSegmentedSendCancelOutcomeUnknown`, `TestTxCompleteQuarantine` | n/a | the server's own requests: `TestCOVRenewalReleasesPendingNotification` | n/a |
 | L7 Response after timeout, or not for this request | `TestTryAllocQuarantineAndExhausted`, `TestReadPropertyWrongSourceIgnoredThenTimeout` | n/a | `TestRequesterAnswers` (wrong source, unknown invoke ID), `TestRequesterAnswerForAnotherService` | n/a |
 | L8 Response after reconnect | n/a: connectionless; invoke-ID reuse is the quarantine of L7 | n/a | n/a | n/a |
-| L9 Callback calls a public method | not allowed (API.md, "Event delivery"); no test | not allowed; no test | `TestHookCallsServerMethods`; table changes under an object's lock: `TestDeviceTableChangeDuringEventEvaluation`, `TestDeviceRenameDuringTableRead` (`server/object`) | n/a: no callback |
-| L10 Callback calls Close | not allowed (`Client.Close`); no test | not allowed; no test | `TestCloseFromApplicationCode` (worker, receive loop, housekeeping, event and notification goroutines), `TestCloseFromTwoHooks` | n/a |
+| L9 Callback calls a public method | not allowed (API.md, "Event delivery"): `TestEventHandlerCallsTheClient` shows the outcome (the call ends at its APDU timeout with `ErrTimeout`; answered at once from `WithEventDispatcher`) | not allowed; no test | `TestHookCallsServerMethods`; table changes under an object's lock: `TestDeviceTableChangeDuringEventEvaluation`, `TestDeviceRenameDuringTableRead` (`server/object`) | n/a: no callback |
+| L10 Callback calls Close | not allowed (`Client.Close`): `TestCallbackCallsClose` shows the outcome (Close does not return while the event handler or diagnostic function that started it runs) | not allowed; no test | `TestCloseFromApplicationCode` (worker, receive loop, housekeeping, event and notification goroutines), `TestCloseFromTwoHooks` | n/a |
 | L11 Slow callback | `TestEventDispatcherOverflowDropNewest`, `TestCOVSendGapAndTerminalWithFullQueue` | the same | `TestSlowHookHoldsOnlyItsWorker`, `TestSegmentedReplyDoesNotHoldWorker`; a slow hook on the housekeeping goroutine delays it (API.md, "Hooks"; no test) | n/a |
-| L12 Queue at capacity | the tests of L11, `TestCOVTerminalClosedWithFullChannel` | the same | `TestSlowHookHoldsOnlyItsWorker` (worker queue), `TestReassemblyLimits`, `TestCOVReferenceBounds`, `TestActiveCOVSubscriptionsBounded`, `TestConfirmedNotificationsPerDestination`, `TestAddressCacheFullMakesRoom`, `TestRouteTableFullMakesRoom` | n/a |
+| L12 Queue at capacity | the tests of L11, `TestCOVTerminalClosedWithFullChannel` | the same | `TestSlowHookHoldsOnlyItsWorker` (worker queue), `TestReassemblyLimits`, `TestCOVReferenceBounds`, `TestActiveCOVSubscriptionsBounded`, `TestConfirmedNotificationsPerDestination`, `TestAddressCacheFullMakesRoom`, `TestRouteTableFullMakesRoom`, `TestRecipientLimits*` | n/a |
 | L13 Concurrent sessions | `TestConcurrentRequests` (e2e), `TestChaosConcurrentRequests` | the same | `TestChaosServer` | n/a |
 | L14 Failure during construction | `TestNewRejectsInvalidOptions` | n/a | `TestOptionsValidation`, `TestUDPServer` (address that cannot be bound) | `bip/udp_internal_test.go` |
 | L15 Shutdown(ctx) | n/a: no graceful shutdown | n/a | n/a: no graceful shutdown | n/a |
@@ -112,9 +112,8 @@ for the server: `TestApplicationCodeThatDoesNotReturnNormally`,
 `TestCOVNotificationGoesOnAfterObjectFailure`,
 `TestDiagnosticSinksThatDoNotReturnNormally`.
 
-Open rows: L9 and L10 for the
-client, where the documented answer is "not allowed" and no test shows what
-happens.
+Open rows: L9 and L10 for `client.Subscription`, where the documented
+answer is "not allowed" and no test shows what happens.
 
 ## Waiting in tests
 
@@ -181,9 +180,12 @@ Targets are discovered with `go test -list` in the packages of `FUZZ_PKGS`.
 (`service/codec_fuzz_test.go`) run every decoder of a whole service message
 through the same invariants: the result does not change when the input
 buffer does, the result encodes, and the encoding decodes and encodes to the
-same octets again. A decoder whose encoder is stricter than it, or whose
-round trip is not stable, is marked so in the table with the reason;
-`TestCodecTables` fails when an exported payload decoder has no line, and
+same octets again. Two exceptions are left, marked `stricter` in the table
+with the reason: a COV notification without values and an
+Add/RemoveListElement with an empty list decode, pending a decision on
+refusing them, and their encoders do not write them; for these two the
+check ends when a decoded value does not encode. `TestCodecTables` fails
+when an exported payload decoder has no line, and
 `TestDecodersAtElementLimit` runs each decoder at and one past the element
 limit with an allocation budget.
 

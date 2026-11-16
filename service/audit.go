@@ -80,6 +80,12 @@ type AuditNotification struct {
 	TargetValue  *bacnet.ApplicationValue
 	CurrentValue *bacnet.ApplicationValue
 	Result       *AuditResult
+	// SourceCommentEncoding and TargetCommentEncoding are the character
+	// sets of SourceComment and TargetComment, which hold the octets as
+	// sent (clause 20.2.9; zero is UTF-8); bacnet.CharacterString.Text
+	// converts them.
+	SourceCommentEncoding uint8
+	TargetCommentEncoding uint8
 }
 
 func appendAuditRecipient(dst []byte, tag uint8, r AuditRecipient, name string) ([]byte, error) {
@@ -135,12 +141,12 @@ func appendAuditNotification(dst []byte, n AuditNotification) ([]byte, error) {
 		return nil, err
 	}
 	if n.SourceComment != nil {
-		if dst, err = bacnet.AppendContextCharacterString(dst, 5, bacnet.CharacterString{Value: *n.SourceComment}); err != nil {
+		if dst, err = bacnet.AppendContextCharacterString(dst, 5, bacnet.CharacterString{Encoding: n.SourceCommentEncoding, Value: *n.SourceComment}); err != nil {
 			return nil, err
 		}
 	}
 	if n.TargetComment != nil {
-		if dst, err = bacnet.AppendContextCharacterString(dst, 6, bacnet.CharacterString{Value: *n.TargetComment}); err != nil {
+		if dst, err = bacnet.AppendContextCharacterString(dst, 6, bacnet.CharacterString{Encoding: n.TargetCommentEncoding, Value: *n.TargetComment}); err != nil {
 			return nil, err
 		}
 	}
@@ -395,9 +401,9 @@ func decodeAuditNotification(els []bacnet.Element) (AuditNotification, error) {
 			}
 			text := cs.Value
 			if el.TagNumber == 5 {
-				note.SourceComment = &text
+				note.SourceComment, note.SourceCommentEncoding = &text, cs.Encoding
 			} else {
-				note.TargetComment = &text
+				note.TargetComment, note.TargetCommentEncoding = &text, cs.Encoding
 			}
 		case 7, 9, 13:
 			u, err := auditSmallUnsigned(el, 0xFF)
@@ -818,10 +824,17 @@ func decodeAuditLogRecord(els []bacnet.Element) (AuditLogRecordResult, error) {
 //
 // Wire form matches ASHRAE 135 Who-Am-I-Request SEQUENCE without context tags
 // (application Unsigned16 + CharacterString + CharacterString), same as I-Am.
+// ModelName and SerialNumber hold the octets as sent, in the character sets
+// ModelNameEncoding and SerialNumberEncoding name (clause 20.2.9; zero is
+// UTF-8); bacnet.CharacterString.Text converts them.
 type WhoAmI struct {
 	VendorID     uint16
 	ModelName    string
 	SerialNumber string
+	// ModelNameEncoding and SerialNumberEncoding are the character sets of
+	// ModelName and SerialNumber.
+	ModelNameEncoding    uint8
+	SerialNumberEncoding uint8
 }
 
 // EncodeWhoAmI encodes Who-Am-I.
@@ -831,13 +844,13 @@ func EncodeWhoAmI(w WhoAmI) ([]byte, error) {
 		return nil, err
 	}
 	dst, err = bacnet.AppendApplicationValue(dst, bacnet.ApplicationValue{
-		Kind: bacnet.ValueCharacterString, Character: bacnet.CharacterString{Value: w.ModelName},
+		Kind: bacnet.ValueCharacterString, Character: bacnet.CharacterString{Encoding: w.ModelNameEncoding, Value: w.ModelName},
 	})
 	if err != nil {
 		return nil, err
 	}
 	return bacnet.AppendApplicationValue(dst, bacnet.ApplicationValue{
-		Kind: bacnet.ValueCharacterString, Character: bacnet.CharacterString{Value: w.SerialNumber},
+		Kind: bacnet.ValueCharacterString, Character: bacnet.CharacterString{Encoding: w.SerialNumberEncoding, Value: w.SerialNumber},
 	})
 }
 
@@ -869,9 +882,11 @@ func DecodeWhoAmI(payload []byte, limits bacnet.DecodeLimits) (WhoAmI, error) {
 		return WhoAmI{}, fmt.Errorf("%w: WhoAmI character strings", bacnet.ErrMalformed)
 	}
 	return WhoAmI{
-		VendorID:     uint16(vendor.Unsigned),
-		ModelName:    model.Character.Value,
-		SerialNumber: serial.Character.Value,
+		VendorID:             uint16(vendor.Unsigned),
+		ModelName:            model.Character.Value,
+		SerialNumber:         serial.Character.Value,
+		ModelNameEncoding:    model.Character.Encoding,
+		SerialNumberEncoding: serial.Character.Encoding,
 	}, nil
 }
 
@@ -880,11 +895,18 @@ func DecodeWhoAmI(payload []byte, limits bacnet.DecodeLimits) (WhoAmI, error) {
 // Wire form matches ASHRAE 135 You-Are-Request SEQUENCE without context tags:
 // application Unsigned16 + CharacterString + CharacterString, then the
 // optional device-identifier ObjectIdentifier and the optional
-// device-mac-address OctetString.
+// device-mac-address OctetString. ModelName and SerialNumber hold the octets
+// as sent, in the character sets ModelNameEncoding and SerialNumberEncoding
+// name (clause 20.2.9; zero is UTF-8); bacnet.CharacterString.Text converts
+// them.
 type YouAre struct {
 	VendorID     uint16
 	ModelName    string
 	SerialNumber string
+	// ModelNameEncoding and SerialNumberEncoding are the character sets of
+	// ModelName and SerialNumber.
+	ModelNameEncoding    uint8
+	SerialNumberEncoding uint8
 	// Device is the optional device-identifier. The zero value means absent:
 	// a device identifier always has object type Device, so the zero value
 	// (analog-input, 0) is never a valid one.
@@ -903,13 +925,13 @@ func EncodeYouAre(y YouAre) ([]byte, error) {
 		return nil, err
 	}
 	dst, err = bacnet.AppendApplicationValue(dst, bacnet.ApplicationValue{
-		Kind: bacnet.ValueCharacterString, Character: bacnet.CharacterString{Value: y.ModelName},
+		Kind: bacnet.ValueCharacterString, Character: bacnet.CharacterString{Encoding: y.ModelNameEncoding, Value: y.ModelName},
 	})
 	if err != nil {
 		return nil, err
 	}
 	dst, err = bacnet.AppendApplicationValue(dst, bacnet.ApplicationValue{
-		Kind: bacnet.ValueCharacterString, Character: bacnet.CharacterString{Value: y.SerialNumber},
+		Kind: bacnet.ValueCharacterString, Character: bacnet.CharacterString{Encoding: y.SerialNumberEncoding, Value: y.SerialNumber},
 	})
 	if err != nil {
 		return nil, err
@@ -954,9 +976,11 @@ func DecodeYouAre(payload []byte, limits bacnet.DecodeLimits) (YouAre, error) {
 		return YouAre{}, fmt.Errorf("%w: YouAre character strings", bacnet.ErrMalformed)
 	}
 	y := YouAre{
-		VendorID:     uint16(vendor.Unsigned),
-		ModelName:    model.Character.Value,
-		SerialNumber: serial.Character.Value,
+		VendorID:             uint16(vendor.Unsigned),
+		ModelName:            model.Character.Value,
+		SerialNumber:         serial.Character.Value,
+		ModelNameEncoding:    model.Character.Encoding,
+		SerialNumberEncoding: serial.Character.Encoding,
 	}
 	// Optional device-identifier, then optional device-mac-address.
 	var haveDevice, haveMAC bool
@@ -983,6 +1007,11 @@ func DecodeYouAre(payload []byte, limits bacnet.DecodeLimits) (YouAre, error) {
 }
 
 // AuthRequest is a confirmed AuthRequest (opaque parameters preserved).
+//
+// The service request is one constructed context tag [0]; Parameters are
+// the elements inside it. This is the outline of AuthRequest-Request
+// (clause 21) that Wireshark 4.6 dissects: it reads the [0] and calls a
+// request without it malformed. No peer stack implements the service.
 type AuthRequest struct {
 	Parameters []bacnet.Element
 }
@@ -995,7 +1024,10 @@ func EncodeAuthRequest(r AuthRequest) ([]byte, error) {
 	return bacnet.AppendContextTagged(nil, 0, r.Parameters)
 }
 
-// DecodeAuthRequest decodes AuthRequest.
+// DecodeAuthRequest decodes AuthRequest: the elements inside the
+// constructed context tag [0] that EncodeAuthRequest writes become
+// Parameters. A payload that is not one [0] is malformed; an empty payload
+// decodes to no parameters.
 func DecodeAuthRequest(payload []byte, limits bacnet.DecodeLimits) (AuthRequest, error) {
 	if len(payload) == 0 {
 		return AuthRequest{}, nil
@@ -1007,5 +1039,11 @@ func DecodeAuthRequest(payload []byte, limits bacnet.DecodeLimits) (AuthRequest,
 	if n != len(payload) {
 		return AuthRequest{}, fmt.Errorf("%w: AuthRequest trailing", bacnet.ErrTrailingData)
 	}
-	return AuthRequest{Parameters: cloneElements(els)}, nil
+	if !bacnet.IsContextConstructed(els[0]) || els[0].TagNumber != 0 {
+		return AuthRequest{}, fmt.Errorf("%w: AuthRequest parameters not in context tag [0]", bacnet.ErrMalformed)
+	}
+	if len(els) > 1 {
+		return AuthRequest{}, fmt.Errorf("%w: AuthRequest trailing", bacnet.ErrTrailingData)
+	}
+	return AuthRequest{Parameters: cloneElements(els[0].Value.Elements)}, nil
 }

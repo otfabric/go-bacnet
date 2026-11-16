@@ -320,7 +320,10 @@ type PropertyValue struct {
 	Priority *uint8
 }
 
-// DecodeCOVNotification decodes a COV notification payload.
+// DecodeCOVNotification decodes a COV notification payload. Clauses
+// 13.6.1.1.5 and 13.7 ask for one or more property values, and
+// EncodeCOVNotification refuses to write none; the decoder accepts an empty
+// list on purpose (Values is then empty), pending a decision on refusing it.
 func DecodeCOVNotification(payload []byte, limits bacnet.DecodeLimits) (COVNotification, error) {
 	elements, n, err := bacnet.ParseSequence(payload, limits, -1)
 	if err != nil {

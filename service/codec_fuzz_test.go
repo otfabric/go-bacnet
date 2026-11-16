@@ -37,18 +37,13 @@ type codec struct {
 	name   string
 	decode func([]byte, bacnet.DecodeLimits) (any, error)
 	encode func(any) ([]byte, error)
-	// stricter: the encoder refuses some values the decoder returns (the
-	// decoder accepts what peers send, the encoder writes the standard
-	// form). The round trip is still checked when the value encodes.
-	stricter bool
-	// oneWay, when set, says why the encoding of a decoded value is not
-	// compared with the value: only ownership is checked for this decoder.
-	oneWay string
+	// stricter, when set, says which decoded values the encoder refuses
+	// (the decoder accepts them on purpose). A value that does not encode
+	// ends the check; the round trip is still checked when it encodes.
+	stricter string
 }
 
-func stricter(c codec) codec { c.stricter = true; return c }
-
-func oneWay(why string, c codec) codec { c.oneWay = why; return c }
+func stricter(why string, c codec) codec { c.stricter = why; return c }
 
 func pair[T any](name string, dec func([]byte, bacnet.DecodeLimits) (T, error), enc func(T) ([]byte, error)) codec {
 	return codec{
@@ -61,8 +56,7 @@ func pair[T any](name string, dec func([]byte, bacnet.DecodeLimits) (T, error), 
 var acknowledgementCodecs = []codec{
 	pair("ReadPropertyACK", service.DecodeReadPropertyACK, service.EncodeReadPropertyACK),
 	pair("ReadPropertyMultipleACK", service.DecodeReadPropertyMultipleACK, service.EncodeReadPropertyMultipleACK),
-	oneWay("item data is kept as raw values, some of which the encoder does not write, and an Event Log notification is written in its standard form",
-		pair("ReadRangeACK", service.DecodeReadRangeACK, service.EncodeReadRangeACK)),
+	pair("ReadRangeACK", service.DecodeReadRangeACK, service.EncodeReadRangeACK),
 	pair("AtomicReadFileACK", service.DecodeAtomicReadFileACK, service.EncodeAtomicReadFileACK),
 	pair("AtomicWriteFileACK", service.DecodeAtomicWriteFileACK, service.EncodeAtomicWriteFileACK),
 	pair("CreateObjectACK", service.DecodeCreateObjectACK, service.EncodeCreateObjectACK),
@@ -75,8 +69,8 @@ var acknowledgementCodecs = []codec{
 	pair("WritePropertyMultipleError", service.DecodeWritePropertyMultipleError, func(e *service.WritePropertyMultipleError) ([]byte, error) {
 		return service.EncodeWritePropertyMultipleError(*e)
 	}),
-	// A notification without values decodes; the encoder asks for one.
-	stricter(pair("COVNotification", service.DecodeCOVNotification, service.EncodeCOVNotification)),
+	stricter("a notification without values decodes, pending a decision; the encoder asks for one",
+		pair("COVNotification", service.DecodeCOVNotification, service.EncodeCOVNotification)),
 	pair("COVNotificationMultiple", service.DecodeCOVNotificationMultiple, service.EncodeCOVNotificationMultiple),
 	pair("EventNotification", service.DecodeEventNotification, service.EncodeEventNotification),
 	pair("AuditNotificationRequest", service.DecodeAuditNotificationRequest, service.EncodeAuditNotificationRequest),
@@ -98,8 +92,8 @@ var requestCodecs = []codec{
 	pair("AtomicWriteFile", service.DecodeAtomicWriteFile, service.EncodeAtomicWriteFile),
 	pair("CreateObject", service.DecodeCreateObject, service.EncodeCreateObject),
 	pair("DeleteObject", service.DecodeDeleteObject, service.EncodeDeleteObject),
-	// An empty list of elements decodes; the encoder asks for an element.
-	stricter(pair("ListElementRequest", service.DecodeListElementRequest, service.EncodeListElementRequest)),
+	stricter("an empty list of elements decodes, pending a decision; the encoder asks for an element",
+		pair("ListElementRequest", service.DecodeListElementRequest, service.EncodeListElementRequest)),
 	pair("AcknowledgeAlarm", service.DecodeAcknowledgeAlarm, service.EncodeAcknowledgeAlarm),
 	pair("GetEnrollmentSummary", service.DecodeGetEnrollmentSummary, service.EncodeGetEnrollmentSummary),
 	pair("GetEventInformation", service.DecodeGetEventInformation, service.EncodeGetEventInformation),
@@ -112,8 +106,7 @@ var requestCodecs = []codec{
 	pair("AuditLogQuery", service.DecodeAuditLogQuery, service.EncodeAuditLogQuery),
 	pair("VTOpen", service.DecodeVTOpen, service.EncodeVTOpen),
 	pair("VTData", service.DecodeVTData, service.EncodeVTData),
-	oneWay("the decoder returns the elements as they are, the encoder wraps them in [0]",
-		pair("AuthRequest", service.DecodeAuthRequest, service.EncodeAuthRequest)),
+	pair("AuthRequest", service.DecodeAuthRequest, service.EncodeAuthRequest),
 	pair("PrivateTransfer", service.DecodePrivateTransfer, service.EncodePrivateTransfer),
 	pair("TextMessage", service.DecodeTextMessage, service.EncodeTextMessage),
 	pair("TimeSynchronization", service.DecodeTimeSynchronization, service.EncodeTimeSynchronization),
@@ -199,12 +192,9 @@ func checkCodec(t *testing.T, c codec, data []byte) {
 	if !same(reflect.ValueOf(v), reflect.ValueOf(want)) {
 		t.Fatalf("%s: the decoded value changed with the input buffer\ninput % x\nnow  %+v\nwant %+v", c.name, data, v, want)
 	}
-	if c.oneWay != "" {
-		return
-	}
 	first, err := c.encode(v)
 	if err != nil {
-		if !c.stricter {
+		if c.stricter == "" {
 			t.Fatalf("%s: decoded value does not encode: %v\ninput % x\nvalue %+v", c.name, err, data, v)
 		}
 		return

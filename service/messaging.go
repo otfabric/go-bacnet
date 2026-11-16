@@ -79,11 +79,18 @@ func DecodePrivateTransfer(payload []byte, limits bacnet.DecodeLimits) (PrivateT
 }
 
 // TextMessage is Confirmed/UnconfirmedTextMessage.
+//
+// Message holds the octets of the message text as sent, in the character
+// set MessageEncoding names (clause 20.2.9; bacnet.CharacterEncodingUTF8,
+// the zero value, and the others). bacnet.CharacterString{Encoding:
+// m.MessageEncoding, Value: m.Message}.Text() converts it to a Go string.
 type TextMessage struct {
 	TextMessageSourceDevice bacnet.ObjectIdentifier
 	MessageClass            *uint32 // optional numeric class
 	MessagePriority         uint8   // 0=normal, 1=urgent
 	Message                 string
+	// MessageEncoding is the character set of Message.
+	MessageEncoding uint8
 }
 
 // EncodeTextMessage encodes Confirmed/UnconfirmedTextMessage.
@@ -115,7 +122,7 @@ func EncodeTextMessage(m TextMessage) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return bacnet.AppendContextCharacterString(dst, 3, bacnet.CharacterString{Value: m.Message})
+	return bacnet.AppendContextCharacterString(dst, 3, bacnet.CharacterString{Encoding: m.MessageEncoding, Value: m.Message})
 }
 
 // DecodeTextMessage decodes Confirmed/UnconfirmedTextMessage.
@@ -166,13 +173,14 @@ func DecodeTextMessage(payload []byte, limits bacnet.DecodeLimits) (TextMessage,
 			cs, e := bacnet.ContextCharacterString(el)
 			err = e
 			if err == nil {
-				m.Message = cs.Value
+				m.Message, m.MessageEncoding = cs.Value, cs.Encoding
 				haveMsg = true
 			}
 		case el.TagNumber == 3 && bacnet.IsContextConstructed(el):
 			// Legacy constructed form (pre-fix encode); accept for decode.
 			if len(el.Value.Elements) == 1 && el.Value.Elements[0].Value.Kind == bacnet.ValueCharacterString {
-				m.Message = el.Value.Elements[0].Value.Character.Value
+				cs := el.Value.Elements[0].Value.Character
+				m.Message, m.MessageEncoding = cs.Value, cs.Encoding
 				haveMsg = true
 			} else {
 				err = fmt.Errorf("%w: messageText", bacnet.ErrMalformed)

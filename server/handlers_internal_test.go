@@ -514,3 +514,54 @@ func testDeleteObjectHandler(t *testing.T) {
 		t.Fatal("object not deleted")
 	}
 }
+
+// recordingList is a list object that accepts every change and records the
+// elements it was asked to add or remove.
+type recordingList struct {
+	*listObject
+	added, removed [][]bacnet.Element
+}
+
+func (o *recordingList) AddListElements(_ context.Context, _ bacnet.PropertyReference, els []bacnet.Element) error {
+	o.added = append(o.added, els)
+	return nil
+}
+
+func (o *recordingList) RemoveListElements(_ context.Context, _ bacnet.PropertyReference, els []bacnet.Element) error {
+	o.removed = append(o.removed, els)
+	return nil
+}
+
+// AddListElement and RemoveListElement with an empty list of elements:
+// clauses 15.1.1.1.4 and 15.2.1.1.4 ask for one or more, and the server
+// accepts an empty list on purpose, pending a decision on refusing it. The
+// request reaches Hooks.BeforeWrite and the object with no elements, and
+// the object's answer is sent. A change of this is deliberate.
+func TestListElementEmptyListAccepted(t *testing.T) {
+	inBubble(t, func(t *testing.T) {
+		var hooked []object.Write
+		h := newHarness(t, WithHooks(Hooks{BeforeWrite: func(_ context.Context, _ bacnet.ObjectIdentifier, w object.Write) error {
+			hooked = append(hooked, w)
+			return nil
+		}}))
+		o := &recordingList{listObject: newListObject(0)}
+		if err := h.dev.Add(o); err != nil {
+			t.Fatal(err)
+		}
+		empty := mustEncode(t)(bacnet.AppendContextObjectID(nil, 0, listObjectID))
+		empty = append(empty, mustEncode(t)(bacnet.AppendContextUnsigned(nil, 1, uint64(bacnet.PropertySubordinateList)))...)
+		empty = append(empty, 0x3e, 0x3f)
+		for i, svc := range []uint8{apdu.ServiceAddListElement, apdu.ServiceRemoveListElement} {
+			h.confirmed(uint8(i+1), svc, empty)
+			if got := h.expectType(apdu.TypeSimpleACK); got.pdu.SimpleACK.ServiceChoice != svc {
+				t.Fatalf("SimpleACK for service %d, want %d", got.pdu.SimpleACK.ServiceChoice, svc)
+			}
+		}
+		if len(hooked) != 2 || len(hooked[0].Value.Elements) != 0 || len(hooked[1].Value.Elements) != 0 {
+			t.Fatalf("hook calls %+v, want two with no elements", hooked)
+		}
+		if len(o.added) != 1 || len(o.added[0]) != 0 || len(o.removed) != 1 || len(o.removed[0]) != 0 {
+			t.Fatalf("object asked to add %v and remove %v, want one empty list each", o.added, o.removed)
+		}
+	})
+}

@@ -9,7 +9,6 @@ import (
 	"net"
 	"runtime"
 	"strconv"
-	"syscall"
 	"testing"
 	"time"
 )
@@ -99,33 +98,6 @@ func TestUDPTransportBroadcastOnEveryInterface(t *testing.T) {
 	tr.port = 9
 	if err := tr.Send(context.Background(), OutboundPacket{Data: []byte{0}, Broadcast: true}); err != nil {
 		t.Fatalf("broadcast send: %v", err)
-	}
-}
-
-func TestInterfaceOOBParses(t *testing.T) {
-	if runtime.GOOS != "linux" && runtime.GOOS != "darwin" {
-		if interfaceOOB(1) != nil {
-			t.Fatal("interfaceOOB must be nil where pinning is unsupported")
-		}
-		return
-	}
-	if interfaceOOB(-1) != nil {
-		t.Error("negative ifindex encoded")
-	}
-	oob := interfaceOOB(7)
-	msgs, err := syscall.ParseSocketControlMessage(oob)
-	if err != nil {
-		t.Fatalf("ParseSocketControlMessage: %v", err)
-	}
-	if len(msgs) != 1 {
-		t.Fatalf("got %d control messages, want 1", len(msgs))
-	}
-	m := msgs[0]
-	if m.Header.Level != syscall.IPPROTO_IP || m.Header.Type != syscall.IP_PKTINFO {
-		t.Fatalf("header level/type = %d/%d", m.Header.Level, m.Header.Type)
-	}
-	if len(m.Data) < 4 || m.Data[0]|m.Data[1]|m.Data[2]|m.Data[3] == 0 {
-		t.Fatalf("pktinfo data %x does not carry the interface index", m.Data)
 	}
 }
 

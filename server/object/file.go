@@ -48,11 +48,17 @@ type FileConfig struct {
 	ReadOnly bool
 	// MaxSize bounds the file in octets (stream) or records (record);
 	// zero means 1 MiB or 65536 records. Above math.MaxInt32 NewFile fails.
-	// A record file is bounded in octets too: its records hold at most
-	// 1 MiB together, or as much as Records holds when that is more.
+	// A record file is bounded in octets too (MaxRecordOctets).
 	MaxSize int
-	Data    []byte
-	Records [][]byte
+	// MaxRecordOctets bounds the octets the records of a record file hold
+	// together; a write beyond it is answered with object/file-full. Zero
+	// means 1 MiB, or as much as Records holds when that is more. Negative,
+	// or less than Records holds, NewFile fails. A stream file has no
+	// records and is bounded by MaxSize alone; NewFile refuses a negative
+	// value for it too.
+	MaxRecordOctets int
+	Data            []byte
+	Records         [][]byte
 }
 
 // File is an in-memory File object (clause 12.11). A start position of -1
@@ -77,10 +83,11 @@ type File struct {
 	now             func() time.Time
 }
 
-// recordFileOctets bounds the octets the records of a record file hold
-// together, as a stream file is bounded to 1 MiB by default: MaxSize counts
-// records, and one record is as long as the request that carries it. A file
-// that starts with more (FileConfig.Records) keeps that size as its bound.
+// recordFileOctets is the default of FileConfig.MaxRecordOctets: the
+// octets the records of a record file hold together, as a stream file is
+// bounded to 1 MiB by default. MaxSize counts records, and one record is as
+// long as the request that carries it. A file that starts with more
+// (FileConfig.Records) keeps that size as its bound.
 const recordFileOctets = 1 << 20
 
 // NewFile returns a File object.
@@ -102,14 +109,20 @@ func NewFile(cfg FileConfig) (*File, error) {
 			cfg.MaxSize = 1 << 16
 		}
 	}
+	if cfg.MaxRecordOctets < 0 {
+		return nil, errorf("maximum record octets %d is negative", cfg.MaxRecordOctets)
+	}
 	f := &File{Base: NewBase(bacnet.ObjectIdentifier{Type: bacnet.ObjectTypeFile, Instance: cfg.Instance}, cfg.Name), cfg: cfg, now: time.Now}
 	f.data = append([]byte(nil), cfg.Data...)
 	for _, r := range cfg.Records {
 		f.records = append(f.records, append([]byte(nil), r...))
 		f.recordOctets += len(r)
 	}
-	f.maxRecordOctets = max(recordFileOctets, f.recordOctets)
-	if (cfg.Record && len(f.records) > cfg.MaxSize) || (!cfg.Record && len(f.data) > cfg.MaxSize) {
+	f.maxRecordOctets = cfg.MaxRecordOctets
+	if f.maxRecordOctets == 0 {
+		f.maxRecordOctets = max(recordFileOctets, f.recordOctets)
+	}
+	if (cfg.Record && (len(f.records) > cfg.MaxSize || f.recordOctets > f.maxRecordOctets)) || (!cfg.Record && len(f.data) > cfg.MaxSize) {
 		return nil, errorf("initial content exceeds the maximum size")
 	}
 	f.modified = f.now()

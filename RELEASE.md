@@ -1,5 +1,37 @@
 # go-bacnet Releases
 
+## v0.10.0
+
+**Date:** 2026-11-16
+**Previous release:** v0.9.1
+
+Requires **Go 1.26+**. Interop pin unchanged: [`bacnet-interop` v0.14.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.14.0). A minor release from the policy 1.6 review of the library: the server bounds of v0.9.1 become options with the same defaults, the text fields of service messages carry their character set, and two codecs whose decoder and encoder disagreed become inverse. The items under Breaking change what a decoder returns or refuses, or what an encoder writes; read them before upgrading.
+
+### Breaking
+
+- `service.DecodeAuthRequest` returns as `Parameters` the elements inside the constructed context tag [0] that `EncodeAuthRequest` writes (the outline of AuthRequest-Request that Wireshark 4.6 dissects), and refuses a payload that is not one [0] with `ErrMalformed`, or `ErrTrailingData` for anything after it. Until v0.9.1 it returned the elements of the payload with the [0] itself, so a decoded request did not encode to its own octets. Who notices: code that calls `DecodeAuthRequest` itself; neither the client nor the server decodes the service, and no peer stack implements it. Restore: parse the payload with `bacnet.ParseSequence` to get its elements as sent.
+- `service.DecodeReadRangeACK`: a context-tagged item of itemData, primitive or constructed, is returned in `ItemData` as a `bacnet.ValueConstructed` value whose one element is the item with its tag, so the ACK encodes to the octets it came from (clause 15.8). Until v0.9.1 a primitive item was a `ValueContext` value holding that element, which did not encode, and a constructed item was a `ValueConstructed` value holding its content without its tag. Application-tagged items, the number of values and the typed records (`LogRecords`, `LogMultipleRecords`, `EventLogRecords`) are unchanged. Who notices: a caller of `Client.ReadRange` or the pager that reads `ItemData` of a property whose items are context-tagged, such as a Recipient_List; the pager's `MaxBytes` estimate counts a constructed item 8 octets more. Restore: read `v.Elements[0]` of such a value: its `TagNumber` is the item's tag, and for a constructed item `v.Elements[0].Value.Elements` is what `v.Elements` held before.
+- The encoders of the text fields listed under Added write the character set of their new field. A message decoded from a peer and encoded again keeps its character set; until v0.9.1 it was written as UTF-8 with the octets of the other set. A message built without the new fields encodes as before. Who notices: code that decodes and re-encodes such messages from a peer that sends another set than UTF-8. Restore: set the `…Encoding` field to zero (UTF-8) before encoding.
+
+### Added
+
+- `object.FileConfig.MaxRecordOctets`: the bound on the octets of a record file's records together. Zero keeps the v0.9.1 bound (1 MiB, or what `Records` holds when that is more); a negative value, or one below what `Records` holds, makes `NewFile` fail.
+- `server.WithRecipientLimits(server.RecipientLimits{…})`: the server's confirmed requests waiting per destination (default 8), the device address cache of event recipients (256), the router table (64), and the time before another node that shows up for a network with an answered route makes the server ask again (5 minutes). The defaults are the fixed values of v0.9.1; a zero field keeps its default, a negative one is `ErrInvalidConfig`.
+- `service`: the character set of each text field, in a field beside it: `TextMessage.MessageEncoding`, `LifeSafetyOperationRequest.RequestingSourceEncoding`, `AuditNotification.SourceCommentEncoding` and `TargetCommentEncoding`, and `ModelNameEncoding` and `SerialNumberEncoding` of `WhoAmI` and `YouAre`. The decoders fill them and the text keeps the octets as sent; `bacnet.CharacterString{Encoding: …, Value: …}.Text()` converts it. Zero is UTF-8.
+
+### Documentation
+
+- LIMITATIONS.md: the character sets of text fields and the AuthRequest parameters; a COV notification without values and an Add/RemoveListElement with an empty list are listed as still accepted; the section on fixed server bounds is gone. SECURITY.md, API.md, ARCHITECTURE.md, OBSERVABILITY.md and docs/SERVER_SUPPORT.md name the new options; API.md says what `ItemData` holds. TESTING.md: the client rows L9 and L10, and the two fuzzing exceptions left. PLAN.md and the support documents name v0.10.0; docs/api is regenerated.
+
+### Tests
+
+- `service`: `codec_inverse_test.go` (AuthRequest, ReadRange-ACK items of every tag form, and `TestEmptyListsAccepted`, which pins that a COV notification without values and an empty list of elements decode while their encoders refuse them) and `charset_test.go` (each text field in five character sets). `FuzzDecodeAcknowledgements`, `FuzzDecodeRequests` and `TestCodecTables` hold AuthRequest and ReadRange-ACK to a stable round trip; two exceptions are left, marked `stricter`: COVNotification and ListElementRequest.
+- `server`: `TestRecipientLimitsDefaults`, `TestRecipientLimitsPendingPerDestination`, `TestRecipientLimitsAddresses`, `TestRecipientLimitsRoutes`, `TestRecipientLimitsRouteRecheck`, `TestListElementEmptyListAccepted` (an empty Add/RemoveListElement reaches `BeforeWrite` and the object, as in v0.9.1). `server/object`: `TestFileMaxRecordOctets`, `TestFileMaxRecordOctetsConfig`.
+- `bip`: `TestInterfaceOOBParses` is split by platform (`pktinfo_test.go` for Linux and macOS, `pktinfo_other_test.go` elsewhere), as `pktinfo.go` and `pktinfo_other.go` are, so the package's tests also compile on Windows and the BSDs.
+- `client`: `callback_contract_test.go`, rows L9 and L10 of the lifecycle contract in a `testing/synctest` bubble: a synchronous event handler that calls a client method that waits for an answer gets `ErrTimeout` after the APDU timeout (from `WithEventDispatcher` it is answered), and a `Close` that a callback starts returns once the callback has returned.
+
+---
+
 ## v0.9.1
 
 **Date:** 2026-11-15

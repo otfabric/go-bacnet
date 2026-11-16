@@ -2,7 +2,7 @@
 
 ## Current release
 
-go-bacnet v0.9.1: the BACnet/IP client, tested against bacnet-stack,
+go-bacnet v0.10.0: the BACnet/IP client, tested against bacnet-stack,
 BACpypes3, legacy BACpypes, BACnet4J, Worldiety, System.IO.BACnet, cB-Sigma,
 ulbios and bacnet-js devices, and a server, tested against the bacnet-stack,
 BACnet4J, BACpypes3, legacy BACpypes, bacnet-js and ulbios clients

@@ -243,7 +243,9 @@ released.
 | Reply construction | The requester's reply budget; ReadPropertyMultiple, Active_COV_Subscriptions and GetEventInformation stop once it is exceeded |
 | COV subscriptions | `WithCOVLimits`, default 256 |
 | COV monitored references | `WithCOVReferenceLimit`, default 4096 in total; one SubscribeCOVPropertyMultiple at most what fits one notification |
-| Device bindings for event recipients (from I-Am) | 256 |
+| Device bindings for event recipients (from I-Am) | `WithRecipientLimits`, default 256 |
+| Router table (remote networks of event recipients) | `WithRecipientLimits`, default 64 |
+| The server's confirmed requests waiting per destination | `WithRecipientLimits`, default 8 |
 | Objects | `DeviceConfig.MaxObjects`, default 65535 |
 | BBMD foreign devices | `bbmd.Config.MaxForeignDevices`, default 128 |
 

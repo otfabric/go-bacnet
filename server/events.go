@@ -17,8 +17,9 @@ import (
 	"github.com/otfabric/go-bacnet/service"
 )
 
-// maxBindings bounds the device address cache filled from I-Am, and the
-// Who-Is requests for unbound recipients that are outstanding at once.
+// maxBindings is the default of RecipientLimits.Addresses: it bounds the
+// device address cache filled from I-Am, and the Who-Is requests for
+// unbound recipients that are outstanding at once.
 const maxBindings = 256
 
 // eventEngine runs intrinsic reporting: event detection on objects that
@@ -122,20 +123,22 @@ func (e *eventEngine) recipientDevices() map[uint32]struct{} {
 
 // askLocked reports whether a Who-Is for the unbound recipient is due, and
 // records it: one is sent per recipient and answer window, and at most
-// maxBindings recipients are waited for at once. The caller holds e.bmu.
+// RecipientLimits.Addresses recipients are waited for at once. The caller
+// holds e.bmu.
 func (e *eventEngine) askLocked(instance uint32, now time.Time) bool {
 	window := e.s.answerWindow()
+	limit := e.s.cfg.recipLimits.Addresses
 	at, pending := e.asked[instance]
 	if pending && now.Sub(at) < window {
 		return false
 	}
-	if !pending && len(e.asked) >= maxBindings {
+	if !pending && len(e.asked) >= limit {
 		for k, at := range e.asked {
 			if now.Sub(at) >= window {
 				delete(e.asked, k)
 			}
 		}
-		if len(e.asked) >= maxBindings {
+		if len(e.asked) >= limit {
 			return false
 		}
 	}
@@ -154,15 +157,16 @@ func (e *eventEngine) learn(instance uint32, p peer) {
 		return
 	}
 	evicted, full := uint32(0), false
+	limit := e.s.cfg.recipLimits.Addresses
 	e.bmu.Lock()
-	if _, known := e.bindings[instance]; !known && len(e.bindings) >= maxBindings {
+	if _, known := e.bindings[instance]; !known && len(e.bindings) >= limit {
 		evicted, full = e.evictLocked(), true
 	}
 	e.bindings[instance] = binding{to: p.immediate, addr: p.source, seen: e.s.clock.Now()}
 	delete(e.asked, instance)
 	e.bmu.Unlock()
 	if full {
-		e.s.report(diag.KindRegistryEviction, "event recipient address dropped for a newer one: cache full", map[string]any{"device": evicted, "limit": maxBindings})
+		e.s.report(diag.KindRegistryEviction, "event recipient address dropped for a newer one: cache full", map[string]any{"device": evicted, "limit": limit})
 	}
 }
 

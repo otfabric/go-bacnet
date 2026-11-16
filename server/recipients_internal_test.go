@@ -15,6 +15,7 @@ import (
 	"github.com/otfabric/go-bacnet/apdu"
 	"github.com/otfabric/go-bacnet/bip"
 	"github.com/otfabric/go-bacnet/bvlc"
+	"github.com/otfabric/go-bacnet/internal/virtual"
 	"github.com/otfabric/go-bacnet/npdu"
 	"github.com/otfabric/go-bacnet/server/object"
 	"github.com/otfabric/go-bacnet/service"
@@ -632,5 +633,163 @@ func TestSubscribeCOVPropertyMultipleIncrement(t *testing.T) {
 		if n := h.s.cov.count(); n != 2 {
 			t.Fatalf("%d subscriptions, want the two with a valid increment", n)
 		}
+	})
+}
+
+// WithRecipientLimits: a zero field keeps its default, a negative one is a
+// configuration error.
+func TestRecipientLimitsDefaults(t *testing.T) {
+	want := RecipientLimits{PendingPerDestination: 8, Addresses: 256, Routes: 64, RouteRecheck: 5 * time.Minute}
+	if got := defaultConfig().recipLimits; got != want {
+		t.Fatalf("defaults %+v, want %+v", got, want)
+	}
+	var c config
+	WithRecipientLimits(RecipientLimits{})(&c)
+	if c.recipLimits != want || len(c.errs) != 0 {
+		t.Fatalf("zero limits: %+v %v, want the defaults", c.recipLimits, c.errs)
+	}
+	c = config{}
+	WithRecipientLimits(RecipientLimits{Routes: 3})(&c)
+	if w := (RecipientLimits{PendingPerDestination: 8, Addresses: 256, Routes: 3, RouteRecheck: 5 * time.Minute}); c.recipLimits != w {
+		t.Fatalf("one field: %+v, want %+v", c.recipLimits, w)
+	}
+	dev, err := object.NewDevice(object.DeviceConfig{Instance: 1, Name: "d", VendorID: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for name, l := range map[string]RecipientLimits{
+		"pending":   {PendingPerDestination: -1},
+		"addresses": {Addresses: -1},
+		"routes":    {Routes: -1},
+		"recheck":   {RouteRecheck: -time.Second},
+	} {
+		s, err := New(dev, WithTransport(virtual.New(serverEP, nil, 8)), WithRecipientLimits(l))
+		if err == nil {
+			_ = s.Close()
+		}
+		if !errors.Is(err, ErrInvalidConfig) {
+			t.Errorf("%s: %v, want ErrInvalidConfig", name, err)
+		}
+	}
+}
+
+// RecipientLimits.PendingPerDestination sets how many of the server's
+// confirmed requests wait for an answer from one destination.
+func TestRecipientLimitsPendingPerDestination(t *testing.T) {
+	for _, limit := range []int{1, 2, maxPendingPerDestination + 4} {
+		t.Run(fmt.Sprint(limit), func(t *testing.T) {
+			inBubble(t, func(t *testing.T) {
+				h := newHarness(t, WithRecipientLimits(RecipientLimits{PendingPerDestination: limit}))
+				for i := range limit + 3 {
+					h.s.req.async(func() {
+						err := h.s.req.invoke(h.s.ctx, clientEP, bacnet.Address{}, apdu.ServiceConfirmedEventNotification, []byte{0x09, byte(i)}, false)
+						if errors.Is(err, errDestinationBusy) {
+							h.s.report("event", "confirmed event notification failed", map[string]any{"error": err.Error()})
+						}
+					})
+					idle()
+				}
+				sent := 0
+				for {
+					out := h.tr.Outbox()
+					h.mu.Lock()
+					more := h.seen < len(out)
+					h.mu.Unlock()
+					if !more {
+						break
+					}
+					h.next()
+					sent++
+				}
+				if sent != limit || len(h.diagnostics("event")) != 3 {
+					t.Fatalf("%d requests sent, %d dropped; want %d and 3", sent, len(h.diagnostics("event")), limit)
+				}
+			})
+		})
+	}
+}
+
+// RecipientLimits.Addresses sets the size of the device address cache: one
+// recipient more than it holds makes the entry heard from longest ago
+// leave, and the diagnostic names the limit.
+func TestRecipientLimitsAddresses(t *testing.T) {
+	inBubble(t, func(t *testing.T) {
+		const limit, first = 4, 1001
+		h := newHarness(t, WithRecipientLimits(RecipientLimits{Addresses: limit}))
+		deviceRecipients(t, h, 10, 0, first, first+1, first+2, first+3, first+4)
+		for i := range uint32(limit + 1) {
+			h.iAmFrom(endpointN(int(first+i)), first+i)
+			idle()
+			time.Sleep(time.Millisecond) // the bubble's clock: every I-Am has its own time
+		}
+		ev := h.diagnostics("registry_eviction")
+		if n := h.bindings(); n != limit || len(ev) != 1 || ev[0].Fields["device"] != uint32(first) || ev[0].Fields["limit"] != limit {
+			t.Fatalf("%d addresses, evictions %+v; want %d and one for device %d", n, ev, limit, first)
+		}
+		if _, ok := h.bound(first + limit); !ok {
+			t.Fatal("the recipient that announced itself last is not bound")
+		}
+	})
+}
+
+// RecipientLimits.Routes sets the size of the router table.
+func TestRecipientLimitsRoutes(t *testing.T) {
+	inBubble(t, func(t *testing.T) {
+		const limit = 3
+		h := newHarness(t, WithRecipientLimits(RecipientLimits{Routes: limit}))
+		router := endpointN(1)
+		for n := uint16(1); n <= limit+1; n++ {
+			h.fromNetwork(router, n)
+			idle()
+			time.Sleep(time.Millisecond)
+		}
+		if _, ok := h.s.routes.lookup(1); ok {
+			t.Fatal("the route heard from longest ago is still there")
+		}
+		for n := uint16(2); n <= limit+1; n++ {
+			if _, ok := h.s.routes.lookup(n); !ok {
+				t.Fatalf("network %d not learnt", n)
+			}
+		}
+		ev := h.diagnostics("registry_eviction")
+		if len(ev) != 1 || ev[0].Fields["network"] != uint16(1) || ev[0].Fields["limit"] != limit {
+			t.Fatalf("evictions %+v, want one for network 1 with limit %d", ev, limit)
+		}
+		h.silent(0)
+	})
+}
+
+// RecipientLimits.RouteRecheck sets how soon another node that shows up
+// for a network with an answered route makes the server ask again.
+func TestRecipientLimitsRouteRecheck(t *testing.T) {
+	inBubble(t, func(t *testing.T) {
+		const recheck = time.Minute
+		h, ai, _ := remoteHarness(t, WithRecipientLimits(RecipientLimits{RouteRecheck: recheck}))
+		r1, r2 := endpointN(1), endpointN(2)
+		isWhoIsRouter := func(s sent) bool {
+			return s.npdu.NetworkMessage && s.npdu.NetMsgType == npdu.NetMsgWhoIsRouterToNetwork
+		}
+		if err := ai.SetPresentValue(bacnet.RealValue(95)); err != nil {
+			t.Fatal(err)
+		}
+		for range 2 { // the Who-Is-Router-To-Network and the broadcast notification
+			h.next()
+		}
+		h.iAmRouter(r1, 5)
+		idle()
+		if ep, _ := h.s.routes.lookup(5); ep != r1 {
+			t.Fatalf("network 5 via %v, want %v", ep, r1)
+		}
+		// Within the recheck time another node shows up: no question.
+		time.Sleep(recheck - time.Second)
+		h.fromNetwork(r2, 5)
+		h.silent(0)
+		// After it, one question.
+		time.Sleep(time.Second)
+		h.fromNetwork(r2, 5)
+		if got := h.next(); !isWhoIsRouter(got) || !got.pkt.Broadcast {
+			t.Fatalf("after the recheck time: %+v", got.npdu)
+		}
+		h.silent(0)
 	})
 }

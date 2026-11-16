@@ -15,13 +15,13 @@ import (
 	"github.com/otfabric/go-bacnet/npdu"
 )
 
-// maxRoutes bounds the router table, and the networks a router is being
-// asked for at once.
+// maxRoutes is the default of RecipientLimits.Routes: it bounds the router
+// table, and the networks a router is being asked for at once.
 const maxRoutes = 64
 
-// routeRecheck is the shortest time between two Who-Is-Router-To-Network
-// that the server sends for one network because another router than the
-// one that answered it shows up.
+// routeRecheck is the default of RecipientLimits.RouteRecheck: the shortest
+// time between two Who-Is-Router-To-Network that the server sends for one
+// network because another router than the one that answered it shows up.
 const routeRecheck = 5 * time.Minute
 
 // routeTable maps a remote network number to the B/IP address of the
@@ -38,13 +38,16 @@ const routeRecheck = 5 * time.Minute
 // Network that followed the server's own Who-Is-Router-To-Network within
 // the answer window; anything else is an observed route. A newer
 // observation replaces an observed route. It does not replace an answered
-// one: the server then asks again (at most once per routeRecheck and
-// network), and the answer decides. When the table is full the route used
+// one: the server then asks again (at most once per recheck and network),
+// and the answer decides. When the table is full the route used
 // or heard from longest ago makes room, observed routes first.
 type routeTable struct {
 	mu     sync.Mutex
 	routes map[uint16]route
 	asked  map[uint16]time.Time // Who-Is-Router-To-Network sent, and when
+	// limit bounds routes and asked; recheck is RecipientLimits.RouteRecheck.
+	limit   int
+	recheck time.Duration
 }
 
 type route struct {
@@ -53,8 +56,8 @@ type route struct {
 	answered bool
 }
 
-func newRouteTable() *routeTable {
-	return &routeTable{routes: make(map[uint16]route), asked: make(map[uint16]time.Time)}
+func newRouteTable(l RecipientLimits) *routeTable {
+	return &routeTable{routes: make(map[uint16]route), asked: make(map[uint16]time.Time), limit: l.Routes, recheck: l.RouteRecheck}
 }
 
 // learnt is what learn did with a route.
@@ -88,7 +91,7 @@ func (t *routeTable) learn(network uint16, router bip.Endpoint, now time.Time, a
 		cur = route{router: router}
 	}
 	var out learnt
-	if !known && len(t.routes) >= maxRoutes {
+	if !known && len(t.routes) >= t.limit {
 		out = learnt{evicted: true, network: t.evictLocked()}
 	}
 	cur.seen = now
@@ -122,7 +125,7 @@ func (t *routeTable) lookup(network uint16) (bip.Endpoint, bool) {
 
 // ask reports whether a Who-Is-Router-To-Network for network is due at
 // now, and records it: at most one per network and every, and at most
-// maxRoutes networks are asked for at once.
+// t.limit networks are asked for at once.
 func (t *routeTable) ask(network uint16, now time.Time, every time.Duration) bool {
 	t.mu.Lock()
 	defer t.mu.Unlock()
@@ -130,13 +133,13 @@ func (t *routeTable) ask(network uint16, now time.Time, every time.Duration) boo
 	if pending && now.Sub(at) < every {
 		return false
 	}
-	if !pending && len(t.asked) >= maxRoutes {
+	if !pending && len(t.asked) >= t.limit {
 		for n, at := range t.asked {
-			if now.Sub(at) >= routeRecheck {
+			if now.Sub(at) >= t.recheck {
 				delete(t.asked, n)
 			}
 		}
-		if len(t.asked) >= maxRoutes {
+		if len(t.asked) >= t.limit {
 			return false
 		}
 	}
@@ -151,9 +154,9 @@ func (s *Server) learnRoutes(n npdu.NPDU, router bip.Endpoint) {
 	record := func(network uint16, announced bool) {
 		l := s.routes.learn(network, router, now, announced, s.answerWindow())
 		if l.evicted {
-			s.report(diag.KindRegistryEviction, "route dropped for a newer one: table full", map[string]any{"network": l.network, "limit": maxRoutes})
+			s.report(diag.KindRegistryEviction, "route dropped for a newer one: table full", map[string]any{"network": l.network, "limit": s.routes.limit})
 		}
-		if l.recheck && s.routes.ask(network, now, routeRecheck) {
+		if l.recheck && s.routes.ask(network, now, s.routes.recheck) {
 			s.whoIsRouter(network)
 		}
 	}

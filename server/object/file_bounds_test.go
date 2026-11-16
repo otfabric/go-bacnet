@@ -128,3 +128,70 @@ func TestFileRecordOctetBoundOfInitialContent(t *testing.T) {
 		t.Fatalf("append an empty record: %v", err)
 	}
 }
+
+// FileConfig.MaxRecordOctets sets the octet bound of a record file: a
+// write up to it is stored, one octet more is answered with file-full and
+// changes nothing. Zero keeps the default.
+func TestFileMaxRecordOctets(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		bound int // FileConfig.MaxRecordOctets
+		want  int // the bound in effect
+	}{
+		{name: "zero keeps the default", bound: 0, want: recordFileOctets},
+		{name: "one octet", bound: 1, want: 1},
+		{name: "small", bound: 100, want: 100},
+		{name: "default-1", bound: recordFileOctets - 1, want: recordFileOctets - 1},
+		{name: "default+1", bound: recordFileOctets + 1, want: recordFileOctets + 1},
+		{name: "larger than the default", bound: 4 * recordFileOctets, want: 4 * recordFileOctets},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			f := recordFile(t, FileConfig{MaxRecordOctets: tc.bound})
+			if _, err := f.WriteRecords(-1, [][]byte{make([]byte, tc.want-1)}); err != nil {
+				t.Fatalf("bound-1: %v", err)
+			}
+			if _, err := f.WriteRecords(-1, [][]byte{make([]byte, 2)}); !errors.Is(err, ErrFileFull) {
+				t.Fatalf("bound+1: %v, want file-full", err)
+			}
+			if _, err := f.WriteRecords(-1, [][]byte{make([]byte, 1)}); err != nil {
+				t.Fatalf("the bound: %v", err)
+			}
+			if n := recordOctetsOf(f); n != tc.want {
+				t.Fatalf("file holds %d octets, want %d", n, tc.want)
+			}
+			if _, err := f.WriteRecords(-1, [][]byte{{}}); err != nil {
+				t.Fatalf("an empty record at the bound: %v", err)
+			}
+			if _, err := f.WriteRecords(-1, [][]byte{{0}}); !errors.Is(err, ErrFileFull) {
+				t.Fatalf("one octet at the bound: %v, want file-full", err)
+			}
+		})
+	}
+}
+
+// A negative MaxRecordOctets, or one below what the initial records hold,
+// is a configuration error; one that equals it is not.
+func TestFileMaxRecordOctetsConfig(t *testing.T) {
+	initial := [][]byte{make([]byte, 60), make([]byte, 40)}
+	for _, tc := range []struct {
+		name  string
+		bound int
+		ok    bool
+	}{
+		{name: "negative", bound: -1},
+		{name: "below the initial content", bound: 99},
+		{name: "the initial content", bound: 100, ok: true},
+		{name: "above the initial content", bound: 101, ok: true},
+		{name: "zero", bound: 0, ok: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := NewFile(FileConfig{Instance: 1, Name: "records", Record: true, MaxRecordOctets: tc.bound, Records: initial})
+			if (err == nil) != tc.ok {
+				t.Fatalf("NewFile: %v, want ok=%v", err, tc.ok)
+			}
+		})
+	}
+	if _, err := NewFile(FileConfig{Instance: 1, Name: "stream", MaxRecordOctets: -1}); err == nil {
+		t.Fatal("a negative MaxRecordOctets accepted for a stream file")
+	}
+}
