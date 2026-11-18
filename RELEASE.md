@@ -1,6 +1,11 @@
 # go-bacnet Releases
 
-## Unreleased
+## v0.11.1
+
+**Date:** 2026-11-18
+**Previous release:** v0.11.0
+
+Requires **Go 1.26+**. Interop pin unchanged: [`bacnet-interop` v0.14.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.14.0). A patch release: a foreign device whose registration failed retries within seconds instead of after a full TTL, which matters since v0.11.0 refuses broadcasts until the registration is accepted. No API change.
 
 ### Fixed
 
