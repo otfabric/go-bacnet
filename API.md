@@ -233,8 +233,18 @@ send the BVLC frame to `Target.Endpoint` (the next hop).
   - each delay is drawn from [delay/2, delay] (equal jitter), and an accepted
     registration starts the sequence again. `Close` ends the wait at once.
   Each failure is a `foreign_device` diagnostic with the fields `error`,
-  `failure` (`timeout`, `nak` or `send`), `attempts` and `retry_in`.
-- `ForeignDeviceRegistered()` reports whether the last registration succeeded.
+  `failure` (`timeout`, `nak` or `send`), `attempts` and `retry_in`, and
+  `valid_for` when the registration is still valid.
+- `ForeignDeviceRegistered()` reports whether the registration is valid. It
+  starts with an accepted registration and lasts until TTL after that
+  Register-Foreign-Device was sent, which the BBMD's FDT entry outlives (TTL
+  plus 30 s from receipt, J.5.2.3); each accepted renewal extends it. A
+  renewal whose Result is lost does not end it (the BBMD may have the
+  renewal); a NAK ends it at once. Broadcasts are sent while it is valid.
+- A Distribute-Broadcast-To-Network-NAK from the BBMD (it could not forward
+  a broadcast, J.4.5) makes the client register again at once, no sooner
+  than 2 s after the last attempt; the registration holds until that
+  attempt decides.
 - `WaitForeignDeviceRegistered(ctx)` returns once the BBMD has accepted the
   registration: `ctx.Err()` when ctx ends first, `ErrClosed` after `Close`,
   `ErrInvalidConfig` when the client is not a foreign device.

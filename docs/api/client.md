@@ -441,7 +441,7 @@ DiscoverObjects broadcasts a Who-Has and collects the I-Have replies seen since 
 func (c *Client) ForeignDeviceRegistered() bool
 ```
 
-ForeignDeviceRegistered reports whether foreign-device registration with the configured BBMD currently succeeded. False when FD mode is not enabled.
+ForeignDeviceRegistered reports whether the client's foreign-device registration with the configured BBMD is valid: from an accepted registration until TTL after that request was sent, unless the BBMD refuses a renewal (NAK) first. A renewal whose Result is lost does not end it. False when FD mode is not enabled.
 
 #### func (Client) GetAlarmSummary
 

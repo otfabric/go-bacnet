@@ -59,6 +59,7 @@ func (l *diagLog) with(msg string) []Diagnostic {
 }
 
 const (
+	fdTestTTL         = 60 * time.Second
 	fdTestAPDUTimeout = 5 * time.Second
 	fdFailedMsg       = "foreign-device registration failed; broadcasts unavailable"
 )
@@ -88,7 +89,7 @@ func newFDRig(t *testing.T, jitter func(time.Duration) time.Duration) *fdRig {
 		withClock(clk),
 		withFDJitter(jitter),
 		WithDiagnosticFunc(dl.add),
-		WithForeignDevice(ForeignDeviceConfig{BBMD: bbmd, TTL: 60 * time.Second}),
+		WithForeignDevice(ForeignDeviceConfig{BBMD: bbmd, TTL: fdTestTTL}),
 		WithTransactionOptions(fdTestAPDUTimeout, 0, 0),
 	)
 	if err != nil {
@@ -107,6 +108,15 @@ func (r *fdRig) nextTimer(t *testing.T) time.Duration {
 	case <-time.After(2 * time.Second):
 		t.Fatal("the client created no timer")
 		return 0
+	}
+}
+
+// created waits for the next timer and checks its duration, without moving
+// the clock.
+func (r *fdRig) created(t *testing.T, want time.Duration, what string) {
+	t.Helper()
+	if d := r.nextTimer(t); d != want {
+		t.Fatalf("%s: timer of %v, want %v", what, d, want)
 	}
 }
 
@@ -199,6 +209,7 @@ func TestFDRetryRecoveryResetsBackoff(t *testing.T) {
 	if err := r.c.WaitForeignDeviceRegistered(ctx); err != nil {
 		t.Fatal(err)
 	}
+	r.created(t, fdTestTTL, "expiry") // attempt 3, sent and accepted at 16 s
 	r.expectTimer(t, 30*time.Second, "renewal")
 	if got := r.diag.with("foreign-device registration recovered"); len(got) != 1 || got[0].Fields["attempts"] != 3 {
 		t.Fatalf("recovery diagnostics %v", got)

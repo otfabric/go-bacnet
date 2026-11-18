@@ -1,5 +1,14 @@
 # go-bacnet Releases
 
+## Unreleased
+
+### Changed
+
+- A foreign device stays registered when a renewal's Result is lost. The registration now lasts from an accepted Register-Foreign-Device until TTL after that request was sent, which the BBMD's FDT entry outlives (TTL plus a 30 s grace period from receipt, J.5.2.3); each accepted renewal extends it, and a NAK ends it at once. Up to v0.11.1 a renewal without a Result ended the registration after the APDU timeout, and broadcasts failed with `ErrNotRegistered` until a retry was accepted, although the BBMD still forwarded for the device. Who notices: code that reads `ForeignDeviceRegistered()` or waits with `WaitForeignDeviceRegistered` right after a lost renewal; both now report the registration as valid until it expires. A `foreign_device` diagnostic "foreign-device registration expired; broadcasts unavailable" marks the end, and a renewal that fails while the registration holds reads "foreign-device renewal failed; registration still valid", with `valid_for` (#33).
+- A Distribute-Broadcast-To-Network-NAK from the BBMD (it could not forward a broadcast, J.4.5) makes a foreign device register again at once, no sooner than 2 s after its last attempt. Up to v0.11.1 the NAK was dropped with "BVLC-Result with no pending registration", went to a BVLC table operation pending with the BBMD, or, during a registration attempt, failed that attempt as if the registration had been refused.
+
+---
+
 ## v0.11.1
 
 **Date:** 2026-11-18
