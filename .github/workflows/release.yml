@@ -25,9 +25,8 @@ jobs:
       bump: ${{ inputs.bump }}
       release-name-prefix: go-bacnet
       update-major-tag: false
-      # Direct dependants, built, vetted and tested against the candidate
-      # before the tag is created.
-      consumers: |
-        otfabric/bacnetctl
-        otfabric/bacnet-interop:own/go-bacnet
+      # No consumers input: a downstream module does not block a release.
+      # Its dependants (audit/dependency-graph.md in otfabric/engineering)
+      # are bumped to the new version after it is cut, each in its own
+      # pull request (standards/release.md).
     secrets: inherit
