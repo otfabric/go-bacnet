@@ -205,7 +205,9 @@ Limits: it does not check the client's decoding of responses; Wireshark
 walks BACnet tags leniently, so a request without listed fields is only
 checked for well-formed tags and the right service; and agreement with
 Wireshark is not acceptance by a device. Verified with Wireshark 4.2, 4.4 and
-4.6.
+4.6. CI runs tshark 4.2 on ubuntu-24.04: Ubuntu 26.04's tshark 4.6.4 reports
+a You-Are without the optional device-mac-address as malformed (its dissector
+reads past the end of the frame); 4.6.9 accepts it.
 
 ## Independent clients against the server
 

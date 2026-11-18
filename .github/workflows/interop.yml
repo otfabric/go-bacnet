@@ -156,7 +156,12 @@ jobs:
   # Every request the client emits, dissected by Wireshark (no Docker, no peers).
   dissector:
     name: Wireshark dissector oracle
-    runs-on: ubuntu-latest
+    # ubuntu-24.04, not ubuntu-latest: Ubuntu 26.04 packages tshark 4.6.4,
+    # whose You-Are dissector (fYouAreRequest) reads the tag header of the
+    # optional device-mac-address past the end of a request without one and
+    # reports a valid frame as malformed. tshark 4.2.2 (24.04) and 4.6.9
+    # accept it. Move back to ubuntu-latest when its package is past 4.6.4.
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout go-bacnet
         uses: actions/checkout@v7
