@@ -1,6 +1,11 @@
 # go-bacnet Releases
 
-## Unreleased
+## v0.11.0
+
+**Date:** 2026-11-18
+**Previous release:** v0.10.0
+
+Requires **Go 1.26+**. Interop pin unchanged: [`bacnet-interop` v0.14.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.14.0). A minor release with two contributions from @MatthewReed303: a foreign device keeps to its BBMD for broadcasts in both directions, as Annex J.2.12 and interpretation IC 135-2024-8 require, and the object types and property identifiers assigned through 135-2024 have names that parse back to their values. The two items under Breaking change what a foreign device sends and receives; read them before upgrading.
 
 ### Breaking
 
