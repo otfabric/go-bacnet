@@ -1,6 +1,11 @@
 # go-bacnet Releases
 
-## Unreleased
+## v0.11.2
+
+**Date:** 2026-11-18
+**Previous release:** v0.11.1
+
+Requires **Go 1.26+**. Interop pin unchanged: [`bacnet-interop` v0.14.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.14.0). A patch release: a foreign device stays registered when a renewal's Result is lost, until TTL after its last accepted registration was sent, and it registers again when its BBMD answers a broadcast with a NAK. No API change; the items under Changed say who notices.
 
 ### Changed
 
