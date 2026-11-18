@@ -31,7 +31,7 @@ type Diagnostic struct {
 | Kind | Log level | Reported when |
 |---|---|---|
 | `transport` | Warn | The socket failed to receive; the client retries with backoff (5 ms doubling to 500 ms) |
-| `foreign_device` | Warn | Registration with the BBMD failed or was refused; a BVLC-Result or Forwarded-NPDU came from a peer that is not the BBMD; a local Original-Broadcast-NPDU was dropped (a foreign device does not execute one, IC 135-2024-8) |
+| `foreign_device` | Warn | Registration with the BBMD failed or was refused (with `failure`, `attempts` and `retry_in`), or recovered after failures; a BVLC-Result or Forwarded-NPDU came from a peer that is not the BBMD; a local Original-Broadcast-NPDU was dropped (a foreign device does not execute one, IC 135-2024-8) |
 | `queue_drop` | Warn | A COV notification was dropped because the subscription's event buffer was full |
 | `registry_eviction` | Warn | A device or object observation was evicted (TTL, per-instance path limit, global limit) |
 | `duplicate_device_instance` | Warn | The same device instance announced itself from a second address |

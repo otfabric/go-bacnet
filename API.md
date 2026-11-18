@@ -156,8 +156,10 @@ other requests are unaffected. For a write, cancellation or timeout after the
 send is reported as `OutcomeUnknownError`, and `errors.Is` still finds
 `context.Canceled`, `context.DeadlineExceeded` or `ErrTimeout` inside it.
 
-BVLC management calls (`ReadBroadcastDistributionTable` and the like) and the
-foreign-device registration use the APDU timeout once, without retries.
+BVLC management calls (`ReadBroadcastDistributionTable` and the like) use the
+APDU timeout once, without retries. Each foreign-device registration attempt
+also waits one APDU timeout; a failed one is retried on its own schedule
+([Foreign device](#foreign-device--forwarded-npdu)).
 
 ## Discovery
 
@@ -221,7 +223,17 @@ send the BVLC frame to `Target.Endpoint` (the next hop).
   for its ACK, and Register-Foreign-Device-NAK or
   Distribute-Broadcast-To-Network-NAK at any time. A success Result while a
   Write-BDT or Delete-FDT is pending is ambiguous on the wire and goes to
-  that call; the registration then times out and is retried after one TTL.
+  that call; the registration then times out and is retried.
+- The first registration is sent at once and an accepted one is renewed every
+  TTL/2. A failed one is retried for as long as the client runs, one attempt
+  at a time (Annex J sets no retry policy; this is the library's):
+  - after a timeout or a send error, in 2, 4, 8, 16, then every 30 s;
+  - after a NAK (BVLC-Result with a non-zero code), every 60 s, as the BBMD
+    may accept registrations later;
+  - each delay is drawn from [delay/2, delay] (equal jitter), and an accepted
+    registration starts the sequence again. `Close` ends the wait at once.
+  Each failure is a `foreign_device` diagnostic with the fields `error`,
+  `failure` (`timeout`, `nak` or `send`), `attempts` and `retry_in`.
 - `ForeignDeviceRegistered()` reports whether the last registration succeeded.
 - `WaitForeignDeviceRegistered(ctx)` returns once the BBMD has accepted the
   registration: `ctx.Err()` when ctx ends first, `ErrClosed` after `Close`,

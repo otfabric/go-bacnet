@@ -93,6 +93,9 @@ func New(opts ...Option) (*Client, error) {
 		if fd, err = newFDState(*cfg.fd, cfg.clock, cfg.diag); err != nil {
 			return fail(fmt.Errorf("%w: %w", bacnet.ErrInvalidConfig, err))
 		}
+		if cfg.fdJitter != nil {
+			fd.jitter = cfg.fdJitter
+		}
 	}
 
 	var tr Transport

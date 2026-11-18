@@ -4,8 +4,10 @@ package client
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
+	"math/rand/v2"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -35,6 +37,7 @@ type fdState struct {
 	ttlSec uint16
 	clock  clock.Clock
 	diag   diag.Sink
+	jitter func(time.Duration) time.Duration // retry delay -> jittered delay
 
 	reg    atomic.Bool
 	ready  chan struct{} // closed while registered; replaced when the registration lapses (mu)
@@ -77,6 +80,7 @@ func newFDState(cfg ForeignDeviceConfig, clk clock.Clock, d diag.Sink) (*fdState
 		ttlSec: uint16(sec),
 		clock:  clk,
 		diag:   d,
+		jitter: equalJitter,
 		ready:  make(chan struct{}),
 		stopCh: make(chan struct{}),
 	}, nil
@@ -198,10 +202,64 @@ func (f *fdState) handleResult(code uint16, from bip.Endpoint) {
 	}
 }
 
+// Retry delays after a failed foreign-device registration. Annex J sets the
+// TTL and its 30 s grace period (J.5.2.3) but no retry policy, so these are
+// the library's: a timeout or a send failure (the BBMD may not have received
+// the request, or its Result was lost) is retried after 2, 4, 8, 16, then
+// every 30 s; a NAK (BVLC-Result with a non-zero code: the BBMD refused) after
+// 60 s, as its administrator may enable registrations later. Each delay is
+// jittered (equalJitter) and a success resets the sequence. WithForeignDevice
+// opts into this lifecycle, which runs until Close.
+const (
+	fdRetryMin = 2 * time.Second
+	fdRetryMax = 30 * time.Second
+	fdRetryNAK = 60 * time.Second
+)
+
+// equalJitter returns a delay drawn uniformly from [d/2, d] ("equal jitter"):
+// clients that failed together spread out, and at least d/2 passes between
+// two attempts, so that a BVLC-Result for an earlier attempt, which carries
+// no attempt identifier, is less likely to arrive while the next is pending.
+func equalJitter(d time.Duration) time.Duration {
+	half := d / 2
+	return half + rand.N(d-half+1)
+}
+
+// fdRetryDelay is the nominal delay before the next attempt after failures
+// consecutive failed registrations ending in err.
+func fdRetryDelay(err error, failures int) time.Duration {
+	var nak *BVLCResultError
+	if errors.As(err, &nak) {
+		return fdRetryNAK
+	}
+	d := fdRetryMin
+	for i := 1; i < failures && d < fdRetryMax; i++ {
+		d *= 2
+	}
+	return min(d, fdRetryMax)
+}
+
+// fdFailureKind names the class of a registration failure for diagnostics.
+func fdFailureKind(err error) string {
+	var nak *BVLCResultError
+	switch {
+	case errors.As(err, &nak):
+		return "nak"
+	case errors.Is(err, bacnet.ErrTimeout):
+		return "timeout"
+	default:
+		return "send"
+	}
+}
+
+// fdLoop registers with the BBMD at once, renews an accepted registration
+// every TTL/2, and retries a failed one after fdRetryDelay. Exactly one
+// attempt is outstanding at a time; Close and stop end the loop at any wait.
 func (c *Client) fdLoop() {
 	defer c.wg.Done()
 	f := c.fd
 	renewEvery := max(f.ttl/2, time.Second)
+	failures := 0
 	for {
 		ctx, cancel := context.WithCancel(context.Background())
 		go func() {
@@ -217,13 +275,31 @@ func (c *Client) fdLoop() {
 		cancel()
 		wait := renewEvery
 		if err != nil {
+			if errors.Is(err, bacnet.ErrClosed) || errors.Is(err, context.Canceled) {
+				return
+			}
 			f.setRegistered(false)
+			failures++
+			wait = f.jitter(fdRetryDelay(err, failures))
 			f.diag.Report(diag.Event{
 				Kind:    diag.KindForeignDevice,
-				Message: "registration failed; cross-subnet broadcast degraded",
-				Fields:  map[string]any{"error": err.Error()},
+				Message: "foreign-device registration failed; broadcasts unavailable",
+				Fields: map[string]any{
+					"error":    err.Error(),
+					"failure":  fdFailureKind(err),
+					"attempts": failures,
+					"retry_in": wait.String(),
+				},
 			})
-			wait = f.ttl // single backoff, then retry (no stacked half-TTL wait)
+		} else {
+			if failures > 0 {
+				f.diag.Report(diag.Event{
+					Kind:    diag.KindForeignDevice,
+					Message: "foreign-device registration recovered",
+					Fields:  map[string]any{"attempts": failures + 1},
+				})
+			}
+			failures = 0
 		}
 		timer := c.clock.NewTimer(wait)
 		select {

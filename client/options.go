@@ -23,6 +23,7 @@ type config struct {
 	limits                   bacnet.DecodeLimits
 	advertisedMaxAPDU        uint16 // 0 = use limits.MaxAPDUSize
 	clock                    clock.Clock
+	fdJitter                 func(time.Duration) time.Duration // nil = equalJitter
 	diag                     diag.Sink
 	transport                Transport
 	apduTimeout              time.Duration
@@ -182,6 +183,12 @@ func WithAdvertisedMaxAPDU(size uint16) Option {
 // withClock injects a clock for deterministic in-package tests.
 func withClock(clk clock.Clock) Option {
 	return func(c *config) { c.clock = clk }
+}
+
+// withFDJitter replaces the jitter of the foreign-device retry delays, for
+// deterministic in-package tests.
+func withFDJitter(j func(time.Duration) time.Duration) Option {
+	return func(c *config) { c.fdJitter = j }
 }
 
 // WithDiagnosticFunc registers a callback for client diagnostics: malformed

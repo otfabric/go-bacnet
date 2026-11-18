@@ -1,5 +1,13 @@
 # go-bacnet Releases
 
+## Unreleased
+
+### Fixed
+
+- A foreign device retries a failed registration after 2, 4, 8, 16, then every 30 s (a timeout, a lost Result or a send error), or every 60 s after a NAK, each delay with equal jitter, and starts the sequence again once a registration is accepted. Up to v0.11.0 it waited one full TTL; with v0.11.0, which refuses a broadcast before the registration is accepted (`ErrNotRegistered`), one lost first registration meant up to a TTL (60 s by default) without discovery. Renewal of an accepted registration (TTL/2) is unchanged. The `foreign_device` diagnostic of a failure now reads "foreign-device registration failed; broadcasts unavailable", with the fields `failure` (`timeout`, `nak` or `send`), `attempts` and `retry_in`, and a recovery after failures is reported as "foreign-device registration recovered" (#31).
+
+---
+
 ## v0.11.0
 
 **Date:** 2026-11-18
