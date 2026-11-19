@@ -40,3 +40,17 @@ func (c *Client) InvokeConfirmed(ctx context.Context, target Target, serviceChoi
 	})
 	return pdu, err
 }
+
+// InvokeUnconfirmed sends an unconfirmed request to one device. The device's
+// station address goes in the NPDU (DNET/DADR) when it is behind a router, as
+// for a confirmed request; the typed unconfirmed helpers take a B/IP endpoint
+// and reach a device on the local network or a broadcast. payload is the
+// service request (service.EncodeTimeSynchronization, EncodeWriteGroup …).
+func (c *Client) InvokeUnconfirmed(ctx context.Context, target Target, serviceChoice uint8, payload []byte) error {
+	target, err := normalizeTarget(target)
+	if err != nil {
+		return err
+	}
+	apduBytes := apdu.AppendUnconfirmedRequest(nil, apdu.UnconfirmedRequest{ServiceChoice: serviceChoice, Payload: payload})
+	return c.sendAPDU(ctx, target.Endpoint, false, target.Address, false, apduBytes)
+}

@@ -66,6 +66,14 @@ Helpers: `NullValue`, `BoolValue`, `UnsignedValue`, `SignedValue`, `RealValue`,
 `DoubleValue`, `EnumValue`, `ObjectIDValue`, plus `AsReal` / `AsUnsigned` /
 `AsBool` / `AsObjectID`.
 
+Constructed types have codecs: `EncodeDateRange` / `DecodeDateRange`,
+`EncodeDateTime` / `DecodeDateTime`, `EncodeCalendarEntry` /
+`DecodeCalendarEntry`, `EncodeDailySchedule` / `DecodeDailySchedule`,
+`EncodeWeeklySchedule` / `DecodeWeeklySchedule`, `EncodeExceptionSchedule` /
+`DecodeExceptionSchedule` (a Schedule's Exception_Schedule, as ReadProperty
+returns it and WriteProperty takes it; the encoder refuses an eventPriority
+outside 1..16, the decoder returns the priority a peer sent) and `EncodeHostNPort` / `DecodeHostNPort`.
+
 Unknown enumerations, object types and property identifiers decode without
 hard failure when the wire encoding is valid.
 
@@ -135,6 +143,13 @@ the device announced in its I-Am, or 480 octets if it was never seen.
 Responses are accepted only from the path the target describes; anything else
 is dropped and the request times out. A `Target` without a valid endpoint
 fails with `ErrMalformed` before anything is sent.
+
+The typed unconfirmed helpers (`TimeSynchronization`, `WriteGroup`,
+`UnconfirmedTextMessage` …) take a B/IP endpoint and a broadcast flag: they
+reach a device on the local network, or every device. `InvokeUnconfirmed`
+sends one unconfirmed request to a `Target`, so a device behind a router gets
+it with its network and station address in the NPDU (DNET/DADR); the payload
+comes from the service's encoder (`service.EncodeTimeSynchronization` …).
 
 ### Timeouts and cancellation
 
@@ -424,6 +439,17 @@ they decode and rejected when they do not. Every other confirmed request is
 answered with Reject `unrecognized-service`, a segmented one with Abort
 `segmentation-not-supported`, so the sender's transaction ends instead of
 retrying. Requests in transit to another BACnet network are ignored.
+
+A Who-Am-I (an unconfirmed request from a device that has no identity yet)
+reaches the handler of `WithWhoAmIHandler` / `SetWhoAmIHandler` with the
+device's vendor, model name and serial number and the path it came on;
+without a handler it is ignored. The handler runs on the receive path, as the
+event notification handler does, and a panic in it is recovered and reported
+as an `unexpected_apdu` diagnostic. `WhoAmIDelivery.Target()` addresses the
+device over that path as `DeviceObservation.Target()` does: through the router
+for a device on another network, and at the device's own B/IP address for one
+whose Who-Am-I a BBMD forwarded. A You-Are for it goes to that Target with
+`InvokeUnconfirmed` (`service.EncodeYouAre`), or as a broadcast with `YouAre`.
 
 ## COV subscription
 

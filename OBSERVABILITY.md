@@ -40,7 +40,7 @@ type Diagnostic struct {
 | `unknown_invoke_id` | Debug | A response matched no pending transaction (late answer, or not for this client) |
 | `wrong_source` | Debug | A response carried a pending invoke ID but came from another address than the request went to |
 | `wrong_service` | Debug | A response carried a pending invoke ID with a different service choice |
-| `unexpected_apdu` | Debug | A PDU the client does not handle; a confirmed request it rejected or aborted; a failed SegmentACK/Abort/Reject send; an event handler panic; event-dispatcher overflow |
+| `unexpected_apdu` | Debug | A PDU the client does not handle; a confirmed request it rejected or aborted; a failed SegmentACK/Abort/Reject send; an event or Who-Am-I handler panic; event-dispatcher overflow |
 | `bvlc` | Debug | An ignored BVLC function, an unsolicited BVLC management response, a non-IPv4 endpoint |
 | `cov` | Debug | The SimpleACK for a confirmed COV notification could not be sent |
 | `event` | Debug | The SimpleACK for a confirmed event or audit notification could not be sent |

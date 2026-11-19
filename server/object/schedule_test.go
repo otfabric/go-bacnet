@@ -272,8 +272,12 @@ func TestScheduleWriteErrors(t *testing.T) {
 	boolDay := bacnet.EncodeDailySchedule(bacnet.DailySchedule{DaySchedule: []bacnet.ScheduledTimeValue{tv(1, 0, bacnet.BoolValue(true))}})
 	var boolWeek bacnet.WeeklySchedule
 	boolWeek[6] = bacnet.DailySchedule{DaySchedule: []bacnet.ScheduledTimeValue{tv(1, 0, bacnet.BoolValue(true))}}
-	event := func(prio uint8, v bacnet.ApplicationValue) bacnet.ApplicationValue {
-		return specialEventElement(bacnet.SpecialEvent{CalendarEntry: holidays()[0], ListOfTimeValues: []bacnet.ScheduledTimeValue{tv(1, 0, v)}, EventPriority: prio}).Value
+	// event is one special event with eventPriority prio as sent, also one
+	// the encoder refuses (outside 1..16).
+	event := func(prio uint64, v bacnet.ApplicationValue) bacnet.ApplicationValue {
+		ev := specialEventElement(bacnet.SpecialEvent{CalendarEntry: holidays()[0], ListOfTimeValues: []bacnet.ScheduledTimeValue{tv(1, 0, v)}, EventPriority: 1}).Value
+		ev.Elements[2] = bacnet.Element{Context: true, TagNumber: 3, Value: bacnet.UnsignedValue(prio)}
+		return ev
 	}
 	good := event(3, bacnet.RealValue(1))
 	cases := []struct {
@@ -291,6 +295,8 @@ func TestScheduleWriteErrors(t *testing.T) {
 		{"exceptions primitive", w(exc, bacnet.RealValue(1)), ErrInvalidDataType},
 		{"event priority 0", w(propAt(bacnet.PropertyExceptionSchedule, 1), onWire(t, event(0, bacnet.RealValue(1)))), ErrValueOutOfRange},
 		{"event priority 17", w(exc, onWire(t, event(17, bacnet.RealValue(1)))), ErrValueOutOfRange},
+		{"event priority 256", w(exc, onWire(t, event(256, bacnet.RealValue(1)))), ErrValueOutOfRange},
+		{"event priority 2^32", w(exc, onWire(t, event(1<<32, bacnet.RealValue(1)))), ErrValueOutOfRange},
 		{"event wrong datatype", w(exc, onWire(t, event(4, bacnet.UnsignedValue(1)))), ErrInvalidDataType},
 		{"event index 4", w(propAt(bacnet.PropertyExceptionSchedule, 4), onWire(t, good)), ErrInvalidArrayIndex},
 		{"event index 0", w(propAt(bacnet.PropertyExceptionSchedule, 0), onWire(t, good)), ErrWriteAccessDenied},
@@ -430,4 +436,14 @@ func TestCompareTime(t *testing.T) {
 	if _, ok := valueAt(nil, hm(1, 0)); ok {
 		t.Fatal("empty day")
 	}
+}
+
+// specialEventElement is one special event as an element of an exception
+// schedule.
+func specialEventElement(e bacnet.SpecialEvent) bacnet.Element {
+	v, err := bacnet.EncodeExceptionSchedule(bacnet.ExceptionSchedule{SpecialEvents: []bacnet.SpecialEvent{e}})
+	if err != nil {
+		panic(err)
+	}
+	return v.Elements[0]
 }
