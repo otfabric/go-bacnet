@@ -1,6 +1,9 @@
 # go-bacnet Releases
 
-## Unreleased
+## v0.12.0
+
+**Date:** 2026-11-19
+**Previous release:** v0.11.2
 
 ### Added
 
