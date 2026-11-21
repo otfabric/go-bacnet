@@ -44,8 +44,12 @@ import (
 
 const (
 	chaosAPDUTimeout = 40 * time.Millisecond
-	chaosPoison      = 0xDEADBEEF // carried by every reply that must not be accepted
-	chaosDevices     = 4
+	// chaosDelayedMax bounds the delay of a chaosDelayed reply. It stays
+	// inside the APDU timeout, so such a reply is on time unless the client
+	// is starved for a quarter of the timeout.
+	chaosDelayedMax = chaosAPDUTimeout * 3 / 4
+	chaosPoison     = 0xDEADBEEF // carried by every reply that must not be accepted
+	chaosDevices    = 4
 )
 
 func chaosScale() int {
@@ -153,7 +157,8 @@ func (n *chaosNet) Close() error {
 	return nil
 }
 
-// inject delivers a raw datagram from an endpoint after delay.
+// inject delivers a raw datagram from an endpoint after delay. The reply to
+// a request goes this way: the request bounds how many are under way.
 func (n *chaosNet) inject(from bip.Endpoint, frame []byte, delay time.Duration) {
 	time.AfterFunc(delay, func() {
 		select {
@@ -161,6 +166,20 @@ func (n *chaosNet) inject(from bip.Endpoint, frame []byte, delay time.Duration) 
 		case <-n.done:
 		}
 	})
+}
+
+// deliver hands a raw datagram from an endpoint to the client now, and
+// blocks while the inbound queue is full. Traffic nobody asked for (noise,
+// notifications) goes this way: a storm then saturates the client but cannot
+// queue more frames in front of a device's reply than the transport holds,
+// as a socket buffer drops the rest. Through inject, a storm on a loaded
+// machine parks thousands of frames ahead of the replies and requests time
+// out for want of CPU, not because of anything the frames say.
+func (n *chaosNet) deliver(from bip.Endpoint, frame []byte) {
+	select {
+	case n.in <- InboundPacket{Data: frame, ImmediatePeer: from, ReceivedAt: time.Now()}:
+	case <-n.done:
+	}
 }
 
 // injectInOrder delivers datagrams one after the other.
@@ -369,7 +388,7 @@ func (w *chaosWorld) onSend(pkt OutboundPacket) {
 	case chaosOK:
 		w.net.inject(from, reply(req.InvokeID, good), 0)
 	case chaosDelayed:
-		w.net.inject(from, reply(req.InvokeID, good), w.ms(30))
+		w.net.inject(from, reply(req.InvokeID, good), w.ms(int(chaosDelayedMax/time.Millisecond)))
 	case chaosLate:
 		// After the client has given up; the invoke ID may be in use again.
 		w.net.inject(from, reply(req.InvokeID, good), 2*chaosAPDUTimeout+w.ms(80))
@@ -503,12 +522,12 @@ func (w *chaosWorld) notify() {
 		payload = chaosCOVNotification(sub.processID, device, sub.object, value)
 	}
 	if w.rnd.Intn(2) == 0 {
-		w.net.inject(from, chaosFrame(apdu.AppendUnconfirmedRequest(nil, apdu.UnconfirmedRequest{ServiceChoice: unconfirmed, Payload: payload})), 0)
+		w.net.deliver(from, chaosFrame(apdu.AppendUnconfirmedRequest(nil, apdu.UnconfirmedRequest{ServiceChoice: unconfirmed, Payload: payload})))
 		return
 	}
-	w.net.inject(from, chaosFrame(apdu.AppendConfirmedRequest(nil, apdu.ConfirmedRequest{
+	w.net.deliver(from, chaosFrame(apdu.AppendConfirmedRequest(nil, apdu.ConfirmedRequest{
 		InvokeID: uint8(w.rnd.Intn(256)), ServiceChoice: confirmed, MaxAPDU: 5, Payload: payload,
-	})), 0)
+	})))
 }
 
 // chaosCOVNotification encodes a COVNotification with one Present_Value.
@@ -524,23 +543,23 @@ func chaosCOVNotification(processID uint32, device, object bacnet.ObjectIdentifi
 	return append(dst, 0x2F, 0x4F)
 }
 
-// noise injects one frame nobody asked for: random bytes at every layer, and
-// every APDU type with a random invoke ID.
+// noise delivers one frame nobody asked for: random bytes at every layer,
+// and every APDU type with a random invoke ID.
 func (w *chaosWorld) noise(from bip.Endpoint) {
 	id := uint8(w.rnd.Intn(256))
 	var a []byte
 	switch w.rnd.Intn(14) {
 	case 0:
-		w.net.inject(from, w.rnd.bytes(w.rnd.Intn(80)), 0)
+		w.net.deliver(from, w.rnd.bytes(w.rnd.Intn(80)))
 		return
 	case 1: // a BVLC header in front of anything
 		raw := append([]byte{0x81, byte(w.rnd.Intn(13)), 0, 0}, w.rnd.bytes(w.rnd.Intn(40))...)
 		raw[2], raw[3] = byte(len(raw)>>8), byte(len(raw))
-		w.net.inject(from, raw, 0)
+		w.net.deliver(from, raw)
 		return
 	case 2: // a well-formed frame around a random NPDU
 		frame, _ := bvlc.Append(nil, bvlc.Message{Function: bvlc.FunctionOriginalUnicastNPDU, Payload: append([]byte{1}, w.rnd.bytes(w.rnd.Intn(30))...)})
-		w.net.inject(from, frame, 0)
+		w.net.deliver(from, frame)
 		return
 	case 3:
 		a = w.rnd.bytes(1 + w.rnd.Intn(30))
@@ -576,7 +595,7 @@ func (w *chaosWorld) noise(from bip.Endpoint) {
 		w.notify()
 		return
 	}
-	w.net.inject(from, chaosFrame(a), 0)
+	w.net.deliver(from, chaosFrame(a))
 }
 
 // chaosGo runs fn in n goroutines and fails the test, with every goroutine's
@@ -1082,11 +1101,24 @@ func TestChaosInboundStorm(t *testing.T) {
 	})
 }
 
+// chaosStarvation is how long a loaded machine may keep the client's
+// receive loop away from a reply that has arrived. make check runs every
+// package's tests at once; with -race and the CPU oversubscribed six times,
+// replies were measured waiting up to 250ms.
+const chaosStarvation = time.Second
+
 // Only frames from strangers: no request may fail because of them.
+//
+// The test checks what the strangers' frames do, not how fast the client
+// gets through them. No device here drops a reply, so the APDU timeout only
+// catches a reply the strangers made the client lose or misplace; that read
+// still times out and fails. The timeout is the slowest on-time reply of the
+// mix plus chaosStarvation, so CPU load alone cannot fail a read, and two
+// transmissions stay inside the bound chaosRead enforces.
 func TestChaosStrangersCannotEndTransactions(t *testing.T) {
 	chaosSeeds(t, func(t *testing.T, seed int64) {
 		w := newChaosWorld(seed, chaosMix{chaosOK: 3, chaosDelayed: 1})
-		c := w.client(t)
+		c := w.client(t, WithTransactionOptions(chaosDelayedMax+chaosStarvation, 1, chaosAPDUTimeout))
 		stranger := bip.NewEndpoint(netip.MustParseAddrPort("10.9.0.200:47808"))
 		var instance atomic.Uint32
 		var tally chaosTally

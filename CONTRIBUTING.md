@@ -66,6 +66,13 @@ CI):
   times over; `BACNET_CHAOS_SEED=<n>` pins a seed and `BACNET_CHAOS_SCALE`
   sets the load. Scheduling is not reproducible from the seed: a failure
   that does not recur at once is still a finding.
+- The chaos timeouts are real time, 40 ms. Unsolicited floods go through
+  `chaosNet.deliver`, which blocks while the client's inbound queue is full;
+  through the timed `inject` a flood on a loaded machine queues thousands of
+  frames ahead of the replies and reads time out for want of CPU. A test that
+  allows no failed request takes its APDU timeout from the slowest on-time
+  reply of its mix plus `chaosStarvation`, as
+  `TestChaosStrangersCannotEndTransactions` does.
 
 When a handler gains state, add the invariant to `chaosIdle` or to the
 outcome checks instead of a new scripted test.
