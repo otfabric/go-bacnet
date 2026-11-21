@@ -45,6 +45,7 @@ type Client struct {
 
 	eventMu         sync.Mutex
 	eventHandler    EventNotificationHandler
+	whoAmIHandler   WhoAmIHandler
 	eventStream     *eventStream
 	eventDispatcher *eventDispatcher
 
@@ -110,19 +111,20 @@ func New(opts ...Option) (*Client, error) {
 	}
 
 	c := &Client{
-		cfg:          cfg,
-		tr:           tr,
-		reg:          newRegistry(cfg.diag, cfg.clock, cfg.registry),
-		tx:           newTxManager(cfg.maxTransactions, cfg.clock.Now),
-		clock:        cfg.clock,
-		diag:         cfg.diag,
-		limits:       cfg.limits,
-		closeCh:      make(chan struct{}),
-		routers:      newRouterCache(),
-		subs:         newSubscriptionManager(cfg.diag),
-		seg:          newSegmentReceiver(cfg.limits, cfg.diag, cfg.clock, cfg.segmentTimeout, cfg.segmentReceiveWindow),
-		objReg:       newObjectRegistry(cfg.diag, cfg.clock, cfg.registry),
-		eventHandler: cfg.eventHandler,
+		cfg:           cfg,
+		tr:            tr,
+		reg:           newRegistry(cfg.diag, cfg.clock, cfg.registry),
+		tx:            newTxManager(cfg.maxTransactions, cfg.clock.Now),
+		clock:         cfg.clock,
+		diag:          cfg.diag,
+		limits:        cfg.limits,
+		closeCh:       make(chan struct{}),
+		routers:       newRouterCache(),
+		subs:          newSubscriptionManager(cfg.diag),
+		seg:           newSegmentReceiver(cfg.limits, cfg.diag, cfg.clock, cfg.segmentTimeout, cfg.segmentReceiveWindow),
+		objReg:        newObjectRegistry(cfg.diag, cfg.clock, cfg.registry),
+		eventHandler:  cfg.eventHandler,
+		whoAmIHandler: cfg.whoAmIHandler,
 	}
 	if cfg.eventDispatcher != nil {
 		c.eventDispatcher = newEventDispatcher(*cfg.eventDispatcher, cfg.diag)

@@ -1665,6 +1665,14 @@ func (v *Value) SetPresentValue(x bacnet.ApplicationValue) error
 
 SetPresentValue sets Present\_Value from the application; for a commandable object it sets Relinquish\_Default.
 
+#### func (Value) SetReliability
+
+```go
+func (v *Value) SetReliability(r uint32)
+```
+
+SetReliability sets Reliability, as for a point (Point.SetReliability): anything but no-fault-detected sets the fault flag of Status\_Flags, so a value the application can no longer vouch for is marked as such.
+
 ### type ValueConfig
 
 ```go

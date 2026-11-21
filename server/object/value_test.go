@@ -131,3 +131,37 @@ func TestValueCommandable(t *testing.T) {
 		}
 	}
 }
+
+func TestValueReliability(t *testing.T) {
+	ctx := context.Background()
+	v, err := NewIntegerValue(ValueConfig{Instance: 1, Name: "iv"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var changes []Change
+	v.SetNotifier(func(c Change) { changes = append(changes, c) })
+	v.SetReliability(ReliabilityNoFaultDetected)
+	if len(changes) != 0 {
+		t.Fatalf("unchanged reliability notified")
+	}
+	const communicationFailure = 12 // BACnetReliability communication-failure
+	v.SetReliability(communicationFailure)
+	v.SetReliability(communicationFailure)
+	if len(changes) != 1 || len(changes[0].Properties) != 2 {
+		t.Fatalf("changes %+v", changes)
+	}
+	if r, err := v.ReadProperty(ctx, prop(bacnet.PropertyReliability)); err != nil || r.Enumerated != communicationFailure {
+		t.Fatalf("Reliability %+v %v", r, err)
+	}
+	if sf, err := v.ReadProperty(ctx, prop(bacnet.PropertyStatusFlags)); err != nil || !bit(sf, 1) || bit(sf, 0) || bit(sf, 3) {
+		t.Fatalf("Status_Flags %+v %v", sf, err)
+	}
+	cov := v.COVValues(ctx)
+	if len(cov) != 2 || !bit(cov[1].Value, 1) {
+		t.Fatalf("COV %+v", cov)
+	}
+	v.SetReliability(ReliabilityNoFaultDetected)
+	if sf, err := v.ReadProperty(ctx, prop(bacnet.PropertyStatusFlags)); err != nil || bit(sf, 1) {
+		t.Fatalf("Status_Flags after recovery %+v %v", sf, err)
+	}
+}

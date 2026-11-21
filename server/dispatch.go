@@ -221,7 +221,7 @@ func (s *Server) dispatch(pdu apdu.PDU, p peer) {
 		}
 		r := *req
 		r.Payload = append([]byte(nil), req.Payload...)
-		if !s.submit(func(ctx context.Context) { h.h(s, ctx, &r, p) }) {
+		if !s.submit(func(ctx context.Context) { h.h(s, withRequester(ctx, p), &r, p) }) {
 			s.report(diag.KindQueueDrop, "unconfirmed request dropped: workers busy", map[string]any{"service": req.ServiceChoice})
 		}
 	case apdu.TypeSegmentACK:
@@ -243,7 +243,7 @@ func (s *Server) handleConfirmed(ctx context.Context, req *apdu.ConfirmedRequest
 	if !ok || !s.serviceEnabled(true, req.ServiceChoice) {
 		return fail(&rejectError{bacnet.RejectReasonUnrecognizedService})
 	}
-	ctx, cancel := context.WithTimeout(ctx, s.cfg.apduTimeout)
+	ctx, cancel := context.WithTimeout(withRequester(ctx, p), s.cfg.apduTimeout)
 	defer cancel()
 	return h.h(s, ctx, req, p)
 }

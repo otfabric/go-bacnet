@@ -1,5 +1,34 @@
 # go-bacnet Releases
 
+## v0.12.0
+
+**Date:** 2026-11-19
+**Previous release:** v0.11.2
+
+### Added
+
+- `(*client.Client).InvokeUnconfirmed(ctx, target, serviceChoice, payload)` sends one unconfirmed request to a `client.Target`, with the device's network and station address in the NPDU (DNET/DADR) when it is behind a router, as a confirmed request has. The typed unconfirmed helpers (`TimeSynchronization`, `UTCTimeSynchronization`, `WriteGroup`, `UnconfirmedTextMessage`, `UnconfirmedPrivateTransfer`) take a B/IP endpoint and reach only a device on the local network or a broadcast; a gateway synchronising the clock of an MS/TP device behind a router could not address it.
+- `client.WithWhoAmIHandler` / `(*client.Client).SetWhoAmIHandler`: a Who-Am-I a device sends reaches a handler with its vendor, model name, serial number and source address (`WhoAmIDelivery`), so a commissioning tool can answer it with a You-Are: `WhoAmIDelivery.Target()` addresses the device through its router, or at its own address when a BBMD forwarded the Who-Am-I. The client sent Who-Am-I and You-Are but dropped a received Who-Am-I.
+- `bacnet.EncodeExceptionSchedule` and `bacnet.DecodeExceptionSchedule`: the codec of a Schedule's Exception_Schedule (SEQUENCE OF BACnetSpecialEvent, clause 12.24.8), in the wire form ReadProperty returns and in grouped form. The encoder refuses an eventPriority outside 1..16 (ErrMalformed); the decoder returns the priority as sent. The server's Schedule object uses it and still answers an out-of-range priority, also one above 255, with value-out-of-range; until now it lived unexported in `server/object`, and a client had no exported way to read or write an exception schedule as typed values.
+- `server.RequesterOf(ctx)`: a hook (`BeforeWrite`, `BeforeDelete`, `Reinitialize`, `PrivateTransfer`, `TextMessage`, `WriteGroup`) and an object learn who sent the request they are called for: its originating B/IP endpoint, the endpoint the datagram came from (a router or BBMD) and the NPDU source of a remote station. Up to v0.11.2 an application could not tell which client wrote a property.
+- `object.Value.SetReliability`: the CharacterString, Integer and Positive Integer Value objects take a Reliability from the application, as `Point.SetReliability` does, and set the fault flag of Status_Flags (in COV notifications too) while it is not no-fault-detected. Up to v0.11.2 their Reliability was always no-fault-detected, so an application could not mark such a value as unreliable.
+
+---
+
+## v0.11.2
+
+**Date:** 2026-11-18
+**Previous release:** v0.11.1
+
+Requires **Go 1.26+**. Interop pin unchanged: [`bacnet-interop` v0.14.0](https://github.com/otfabric/bacnet-interop/releases/tag/v0.14.0). A patch release: a foreign device stays registered when a renewal's Result is lost, until TTL after its last accepted registration was sent, and it registers again when its BBMD answers a broadcast with a NAK. No API change; the items under Changed say who notices.
+
+### Changed
+
+- A foreign device stays registered when a renewal's Result is lost. The registration now lasts from an accepted Register-Foreign-Device until TTL after that request was sent, which the BBMD's FDT entry outlives (TTL plus a 30 s grace period from receipt, J.5.2.3); each accepted renewal extends it, and a NAK ends it at once. Up to v0.11.1 a renewal without a Result ended the registration after the APDU timeout, and broadcasts failed with `ErrNotRegistered` until a retry was accepted, although the BBMD still forwarded for the device. Who notices: code that reads `ForeignDeviceRegistered()` or waits with `WaitForeignDeviceRegistered` right after a lost renewal; both now report the registration as valid until it expires. A `foreign_device` diagnostic "foreign-device registration expired; broadcasts unavailable" marks the end, and a renewal that fails while the registration holds reads "foreign-device renewal failed; registration still valid", with `valid_for` (#33).
+- A Distribute-Broadcast-To-Network-NAK from the BBMD (it could not forward a broadcast, J.4.5) makes a foreign device register again at once, no sooner than 2 s after its last attempt. Up to v0.11.1 the NAK was dropped with "BVLC-Result with no pending registration", went to a BVLC table operation pending with the BBMD, or, during a registration attempt, failed that attempt as if the registration had been refused.
+
+---
+
 ## v0.11.1
 
 **Date:** 2026-11-18

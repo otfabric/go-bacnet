@@ -441,7 +441,7 @@ DiscoverObjects broadcasts a Who-Has and collects the I-Have replies seen since 
 func (c *Client) ForeignDeviceRegistered() bool
 ```
 
-ForeignDeviceRegistered reports whether foreign-device registration with the configured BBMD currently succeeded. False when FD mode is not enabled.
+ForeignDeviceRegistered reports whether the client's foreign-device registration with the configured BBMD is valid: from an accepted registration until TTL after that request was sent, unless the BBMD refuses a renewal (NAK) first. A renewal whose Result is lost does not end it. False when FD mode is not enabled.
 
 #### func (Client) GetAlarmSummary
 
@@ -482,6 +482,14 @@ func (c *Client) InvokeConfirmed(ctx context.Context, target Target, serviceChoi
 InvokeConfirmed is a raw confirmed-request escape hatch.
 
 Prefer typed helpers for production traffic. Default policy is non-retransmitting and outcome-unknown after send when SideEffecting is true.
+
+#### func (Client) InvokeUnconfirmed
+
+```go
+func (c *Client) InvokeUnconfirmed(ctx context.Context, target Target, serviceChoice uint8, payload []byte) error
+```
+
+InvokeUnconfirmed sends an unconfirmed request to one device. The device's station address goes in the NPDU (DNET/DADR) when it is behind a router, as for a confirmed request; the typed unconfirmed helpers take a B/IP endpoint and reach a device on the local network or a broadcast. payload is the service request (service.EncodeTimeSynchronization, EncodeWriteGroup …).
 
 #### func (Client) LifeSafetyOperation
 
@@ -696,6 +704,14 @@ func (c *Client) SetEventNotificationHandler(h EventNotificationHandler)
 ```
 
 SetEventNotificationHandler installs or clears the inbound EventNotification handler. It may be called concurrently with reception.
+
+#### func (Client) SetWhoAmIHandler
+
+```go
+func (c *Client) SetWhoAmIHandler(h WhoAmIHandler)
+```
+
+SetWhoAmIHandler installs or clears the inbound Who-Am-I handler. It may be called concurrently with reception.
 
 #### func (Client) SubscribeCOV
 
@@ -1404,6 +1420,14 @@ func WithTransport(t Transport) Option
 
 WithTransport runs the client on t instead of opening a UDP socket. The client takes ownership: Close closes t, and New closes it when construction fails.
 
+#### func WithWhoAmIHandler
+
+```go
+func WithWhoAmIHandler(h WhoAmIHandler) Option
+```
+
+WithWhoAmIHandler registers a handler for inbound Who-Am-I requests, the requests a device without a configured identity sends to be given one with You-Are. Nil disables the handler; without one a Who-Am-I is ignored.
+
 ### type OutboundPacket
 
 ```go
@@ -1721,6 +1745,42 @@ type WPMBatchOptions struct {
 ```
 
 WPMBatchOptions controls explicit WritePropertyMultiple batching.
+
+### type WhoAmIDelivery
+
+```go
+type WhoAmIDelivery struct {
+	Request service.WhoAmI
+	// Address is the sender's BACnet address: its network and station
+	// address behind a router, else its B/IP address on the local network.
+	Address bacnet.Address
+	// Origin is the B/IP node that sent the request (the Forwarded-NPDU's
+	// origin when a BBMD forwarded it); Immediate is the node the datagram
+	// came from (a router or a BBMD, else Origin).
+	Origin    bip.Endpoint
+	Immediate bip.Endpoint
+}
+```
+
+WhoAmIDelivery is a Who-Am-I a device sent: its vendor, model name and serial number, and where it came from. A You-Are for it goes to Target() with InvokeUnconfirmed, or as a broadcast with YouAre.
+
+#### func (WhoAmIDelivery) Target
+
+```go
+func (d WhoAmIDelivery) Target() Target
+```
+
+Target addresses the sender over the path its request came on, as DeviceObservation.Target does: through the router for a station on another network, at its own B/IP address for one a BBMD forwarded.
+
+### type WhoAmIHandler
+
+```go
+type WhoAmIHandler func(WhoAmIDelivery)
+```
+
+WhoAmIHandler receives decoded Who-Am-I requests.
+
+The handler runs synchronously on the receive path: it must not block and must not call Client methods that wait for a response. Handler panics are recovered so a faulty callback cannot stop reception.
 
 ### type WhoHasOptions
 

@@ -38,6 +38,7 @@ type config struct {
 	deviceManagementEnabled  bool
 	networkManagementEnabled bool
 	eventHandler             EventNotificationHandler
+	whoAmIHandler            WhoAmIHandler
 	eventDispatcher          *EventDispatcherConfig
 	logger                   *slog.Logger
 	diagFn                   func(Diagnostic)

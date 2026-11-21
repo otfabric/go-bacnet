@@ -31,7 +31,7 @@ type Diagnostic struct {
 | Kind | Log level | Reported when |
 |---|---|---|
 | `transport` | Warn | The socket failed to receive; the client retries with backoff (5 ms doubling to 500 ms) |
-| `foreign_device` | Warn | Registration with the BBMD failed or was refused (with `failure`, `attempts` and `retry_in`), or recovered after failures; a BVLC-Result or Forwarded-NPDU came from a peer that is not the BBMD; a local Original-Broadcast-NPDU was dropped (a foreign device does not execute one, IC 135-2024-8) |
+| `foreign_device` | Warn | Registration with the BBMD failed or was refused (with `failure`, `attempts`, `retry_in`, and `valid_for` while the registration still holds), expired, or recovered after failures; a Distribute-Broadcast-To-Network-NAK made the client register again; a BVLC-Result or Forwarded-NPDU came from a peer that is not the BBMD; a local Original-Broadcast-NPDU was dropped (a foreign device does not execute one, IC 135-2024-8) |
 | `queue_drop` | Warn | A COV notification was dropped because the subscription's event buffer was full |
 | `registry_eviction` | Warn | A device or object observation was evicted (TTL, per-instance path limit, global limit) |
 | `duplicate_device_instance` | Warn | The same device instance announced itself from a second address |
@@ -40,7 +40,7 @@ type Diagnostic struct {
 | `unknown_invoke_id` | Debug | A response matched no pending transaction (late answer, or not for this client) |
 | `wrong_source` | Debug | A response carried a pending invoke ID but came from another address than the request went to |
 | `wrong_service` | Debug | A response carried a pending invoke ID with a different service choice |
-| `unexpected_apdu` | Debug | A PDU the client does not handle; a confirmed request it rejected or aborted; a failed SegmentACK/Abort/Reject send; an event handler panic; event-dispatcher overflow |
+| `unexpected_apdu` | Debug | A PDU the client does not handle; a confirmed request it rejected or aborted; a failed SegmentACK/Abort/Reject send; an event or Who-Am-I handler panic; event-dispatcher overflow |
 | `bvlc` | Debug | An ignored BVLC function, an unsolicited BVLC management response, a non-IPv4 endpoint |
 | `cov` | Debug | The SimpleACK for a confirmed COV notification could not be sent |
 | `event` | Debug | The SimpleACK for a confirmed event or audit notification could not be sent |

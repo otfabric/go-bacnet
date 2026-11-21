@@ -192,6 +192,13 @@ func (c *Client) handleUnconfirmed(req *apdu.UnconfirmedRequest, src packetSourc
 			return
 		}
 		c.deliverEventNotification(note, false, src)
+	case apdu.ServiceWhoAmI:
+		w, err := service.DecodeWhoAmI(req.Payload, c.limits)
+		if err != nil {
+			c.diag.Report(diag.Event{Kind: diag.KindMalformed, Message: err.Error()})
+			return
+		}
+		c.deliverWhoAmI(w, src)
 	case apdu.ServiceUnconfirmedAuditNotification:
 		notes, err := service.DecodeAuditNotificationRequest(req.Payload, c.limits)
 		if err != nil {

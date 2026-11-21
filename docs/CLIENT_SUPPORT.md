@@ -96,7 +96,7 @@ transport the client uses lives in package `bip` from v0.6.0
 |---|---|---|---|
 | Who-Is / I-Am | Implemented | Multi-peer | |
 | Who-Has / I-Have | Implemented | Multi-peer | |
-| Who-Am-I / You-Are | Implemented | Codec evidence | bacnet-stack decodes both |
+| Who-Am-I / You-Are | Implemented | Codec evidence | bacnet-stack decodes both. A received Who-Am-I reaches `WithWhoAmIHandler` with its source address; `WhoAmIDelivery.Target()` answers through the router or, after a BBMD forwarded it, at the device (unit-tested: local, routed, BBMD-forwarded) |
 
 ## COV and event / alarm
 
@@ -131,7 +131,7 @@ transport the client uses lives in package `bip` from v0.6.0
 | ReinitializeDevice | Implemented | Multi-peer | Explicit opt-in |
 | PrivateTransfer | Implemented | Multi-peer | Confirmed path peer-dependent |
 | TextMessage | Implemented | Multi-peer | |
-| TimeSynchronization / UTCTimeSynchronization | Implemented | Multi-peer | |
+| TimeSynchronization / UTCTimeSynchronization | Implemented | Multi-peer | To a device behind a router: `InvokeUnconfirmed` with the encoded request (unit-tested DNET/DADR; Wireshark decodes the DNET; internal e2e to the go-bacnet server) |
 | WriteGroup | Implemented | Multi-peer | Not on BACnet4J at pin |
 | AuditLogQuery | Implemented | Codec evidence | BACpypes3 decodes the query; records from bacnet-stack and BACpypes3 encoders decoded |
 | Audit notifications (receive) | Implemented | Codec evidence | bacnet-stack and BACpypes3 encoders |
@@ -146,7 +146,7 @@ transport the client uses lives in package `bip` from v0.6.0
 |---|---|---|
 | Native MS/TP | Not implemented | |
 | Full BACnet server / device model | Not implemented | |
-| Full schedule object database | Not implemented | Weekly/Exception/Calendar/HostNPort codecs + property decode helpers exist |
+| Full schedule object database | Not implemented | Weekly/Exception/Calendar/HostNPort codecs + property decode helpers exist (`EncodeExceptionSchedule` / `DecodeExceptionSchedule` exported) |
 | BTL certification | Not implemented | Descriptive profile only |
 
 See also [CLIENT_PROFILE.md](CLIENT_PROFILE.md) and [STANDARD_BASELINE.md](STANDARD_BASELINE.md).

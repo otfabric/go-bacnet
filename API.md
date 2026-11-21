@@ -66,6 +66,14 @@ Helpers: `NullValue`, `BoolValue`, `UnsignedValue`, `SignedValue`, `RealValue`,
 `DoubleValue`, `EnumValue`, `ObjectIDValue`, plus `AsReal` / `AsUnsigned` /
 `AsBool` / `AsObjectID`.
 
+Constructed types have codecs: `EncodeDateRange` / `DecodeDateRange`,
+`EncodeDateTime` / `DecodeDateTime`, `EncodeCalendarEntry` /
+`DecodeCalendarEntry`, `EncodeDailySchedule` / `DecodeDailySchedule`,
+`EncodeWeeklySchedule` / `DecodeWeeklySchedule`, `EncodeExceptionSchedule` /
+`DecodeExceptionSchedule` (a Schedule's Exception_Schedule, as ReadProperty
+returns it and WriteProperty takes it; the encoder refuses an eventPriority
+outside 1..16, the decoder returns the priority a peer sent) and `EncodeHostNPort` / `DecodeHostNPort`.
+
 Unknown enumerations, object types and property identifiers decode without
 hard failure when the wire encoding is valid.
 
@@ -135,6 +143,13 @@ the device announced in its I-Am, or 480 octets if it was never seen.
 Responses are accepted only from the path the target describes; anything else
 is dropped and the request times out. A `Target` without a valid endpoint
 fails with `ErrMalformed` before anything is sent.
+
+The typed unconfirmed helpers (`TimeSynchronization`, `WriteGroup`,
+`UnconfirmedTextMessage` …) take a B/IP endpoint and a broadcast flag: they
+reach a device on the local network, or every device. `InvokeUnconfirmed`
+sends one unconfirmed request to a `Target`, so a device behind a router gets
+it with its network and station address in the NPDU (DNET/DADR); the payload
+comes from the service's encoder (`service.EncodeTimeSynchronization` …).
 
 ### Timeouts and cancellation
 
@@ -233,8 +248,18 @@ send the BVLC frame to `Target.Endpoint` (the next hop).
   - each delay is drawn from [delay/2, delay] (equal jitter), and an accepted
     registration starts the sequence again. `Close` ends the wait at once.
   Each failure is a `foreign_device` diagnostic with the fields `error`,
-  `failure` (`timeout`, `nak` or `send`), `attempts` and `retry_in`.
-- `ForeignDeviceRegistered()` reports whether the last registration succeeded.
+  `failure` (`timeout`, `nak` or `send`), `attempts` and `retry_in`, and
+  `valid_for` when the registration is still valid.
+- `ForeignDeviceRegistered()` reports whether the registration is valid. It
+  starts with an accepted registration and lasts until TTL after that
+  Register-Foreign-Device was sent, which the BBMD's FDT entry outlives (TTL
+  plus 30 s from receipt, J.5.2.3); each accepted renewal extends it. A
+  renewal whose Result is lost does not end it (the BBMD may have the
+  renewal); a NAK ends it at once. Broadcasts are sent while it is valid.
+- A Distribute-Broadcast-To-Network-NAK from the BBMD (it could not forward
+  a broadcast, J.4.5) makes the client register again at once, no sooner
+  than 2 s after the last attempt; the registration holds until that
+  attempt decides.
 - `WaitForeignDeviceRegistered(ctx)` returns once the BBMD has accepted the
   registration: `ctx.Err()` when ctx ends first, `ErrClosed` after `Close`,
   `ErrInvalidConfig` when the client is not a foreign device.
@@ -414,6 +439,17 @@ they decode and rejected when they do not. Every other confirmed request is
 answered with Reject `unrecognized-service`, a segmented one with Abort
 `segmentation-not-supported`, so the sender's transaction ends instead of
 retrying. Requests in transit to another BACnet network are ignored.
+
+A Who-Am-I (an unconfirmed request from a device that has no identity yet)
+reaches the handler of `WithWhoAmIHandler` / `SetWhoAmIHandler` with the
+device's vendor, model name and serial number and the path it came on;
+without a handler it is ignored. The handler runs on the receive path, as the
+event notification handler does, and a panic in it is recovered and reported
+as an `unexpected_apdu` diagnostic. `WhoAmIDelivery.Target()` addresses the
+device over that path as `DeviceObservation.Target()` does: through the router
+for a device on another network, and at the device's own B/IP address for one
+whose Who-Am-I a BBMD forwarded. A You-Are for it goes to that Target with
+`InvokeUnconfirmed` (`service.EncodeYouAre`), or as a broadcast with `YouAre`.
 
 ## COV subscription
 
@@ -598,7 +634,10 @@ special events may name a `Calendar` (`bacnet.SpecialEvent.PeriodObject`).
 
 Objects are safe for concurrent use: the application may change values
 (for example `Point.SetPresentValue`, `TrendLog.Log`) while the server reads
-them. Errors are BACnet errors made with `object.Err`; anything else is sent
+them. `Point.SetReliability` and `Value.SetReliability` mark a value the
+application can no longer vouch for (a lost sensor, a link down): anything
+but no-fault-detected sets the fault flag of Status_Flags, which COV
+subscribers receive. Errors are BACnet errors made with `object.Err`; anything else is sent
 as device/operational-problem.
 
 ### Hooks
@@ -612,6 +651,14 @@ states START_BACKUP to ABORT_RESTORE get services/service-request-denied);
 `TextMessage` and `WriteGroup` are the whole service, so without them the
 service is not advertised and a confirmed request gets Reject
 unrecognized-service.
+
+`server.RequesterOf(ctx)` names who sent the request a hook or an object
+is called for: the originating B/IP node (the Forwarded-NPDU's origin for a
+broadcast a BBMD forwarded; the router for a station on another network),
+the node the datagram came from, and the NPDU source of a station behind a
+router. An application that audits writes records it; a context of no
+request (a Schedule's write from the housekeeping goroutine) has none.
+`TimeSync` takes no context and has no requester.
 
 The contract of the application's code that the server calls: `Hooks`, the
 methods of an application `object.Object` (and of `Poller`, `FileAccessor`,

@@ -286,12 +286,10 @@ func TestClientTakesLocalOriginalBroadcast(t *testing.T) {
 	waitFor(t, "the broadcast I-Am", func() bool { return hasDevice(env.Client, 42) })
 }
 
-// Today's behaviour when the Result of a renewal is lost: the client stays
-// registered while the renewal waits for its Result, and counts as not
-// registered once it times out, although the BBMD keeps the entry for TTL +
-// 30 s (J.5.2.3). Broadcasts then fail with ErrNotRegistered until a
-// registration is accepted again. This pins the behaviour; changing it is a
-// separate decision.
+// A renewal whose Result is lost leaves the client registered: the BBMD may
+// have the renewal, and keeps the entry of the accepted registration for TTL
+// plus a grace period (J.5.2.3). TestFDLostRenewalValidUntilExpiry follows
+// the registration to its expiry.
 func TestForeignDeviceLostRenewalResult(t *testing.T) {
 	c, tr, bbmd, clk := fdClient(t)
 	accept(t, tr, bbmd, clk)
@@ -312,18 +310,23 @@ func TestForeignDeviceLostRenewalResult(t *testing.T) {
 		case <-time.After(10 * time.Millisecond):
 		}
 	}
-	if !c.ForeignDeviceRegistered() {
-		t.Fatal("not registered while the renewal waits for its Result")
-	}
-	// No Result: the renewal times out after the APDU timeout (5 s).
-	for i := 0; c.ForeignDeviceRegistered(); i++ {
+	// No Result: the renewal times out after the APDU timeout (5 s), and the
+	// first retry follows 2 s later. The registration holds throughout.
+	for i := 0; count(functions(tr), bvlc.FunctionRegisterForeignDevice) < 3; i++ {
 		if i > 120 {
-			t.Fatal("still registered after the renewal timed out")
+			t.Fatal("no retry after the lost renewal")
 		}
+		if !c.ForeignDeviceRegistered() {
+			t.Fatal("a lost renewal Result ended the registration")
+		}
+		sent := tr.Sent()
 		clk.Advance(time.Second)
-		time.Sleep(time.Millisecond)
+		select {
+		case <-sent:
+		case <-time.After(10 * time.Millisecond):
+		}
 	}
-	if err := c.SendWhoIs(context.Background(), c.broadcastEndpoint(), true, DiscoveryOptions{}); !errors.Is(err, bacnet.ErrNotRegistered) {
-		t.Fatalf("broadcast after the lost renewal: %v, want ErrNotRegistered", err)
+	if err := c.SendWhoIs(context.Background(), c.broadcastEndpoint(), true, DiscoveryOptions{}); err != nil {
+		t.Fatalf("broadcast after the lost renewal: %v", err)
 	}
 }

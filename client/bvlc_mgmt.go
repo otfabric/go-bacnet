@@ -221,8 +221,11 @@ func (c *Client) handleBVLCManagement(msg bvlc.Message, from bip.Endpoint) bool 
 		bvlc.FunctionReadForeignDeviceTableAck:
 		// While a registration with this BBMD is pending, a Result the
 		// pending table operation cannot own is the registration's.
+		// A Distribute-Broadcast-To-Network-NAK from the BBMD is always the
+		// foreign device's: it never answers a table operation (J.2.1.1).
 		if msg.Function == bvlc.FunctionResult && c.fd != nil &&
-			c.fd.attemptPendingFrom(from) && !c.bvlcOps.claimsResult(msg.ResultCode, from) {
+			(c.fd.attemptPendingFrom(from) || dbtnNAKFrom(c.fd, msg.ResultCode, from)) &&
+			!c.bvlcOps.claimsResult(msg.ResultCode, from) {
 			c.fd.handleResult(msg.ResultCode, from)
 			return true
 		}
@@ -242,4 +245,8 @@ func (c *Client) handleBVLCManagement(msg bvlc.Message, from bip.Endpoint) bool 
 	default:
 		return false
 	}
+}
+
+func dbtnNAKFrom(f *fdState, code uint16, from bip.Endpoint) bool {
+	return code == bvlc.ResultDistributeBroadcastToNetworkNAK && from.Equal(f.bbmd)
 }

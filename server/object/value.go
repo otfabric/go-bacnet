@@ -20,6 +20,7 @@ type Value struct {
 	pv           bacnet.ApplicationValue // when not commandable
 	pa           *priorityArray          // when commandable
 	outOfService bool
+	reliability  uint32
 }
 
 // ValueConfig configures a value object. Fields that do not apply to the
@@ -78,7 +79,7 @@ func newValue(t bacnet.ObjectType, kind bacnet.ValueKind, initial bacnet.Applica
 	}
 	v.Define(bacnet.PropertyStatusFlags, &Property{Required: true, Get: v.statusFlags})
 	v.Define(bacnet.PropertyEventState, &Property{Value: bacnet.EnumValue(EventStateNormal)})
-	v.Define(bacnet.PropertyReliability, &Property{Value: bacnet.EnumValue(ReliabilityNoFaultDetected)})
+	v.Define(bacnet.PropertyReliability, &Property{Get: func() bacnet.ApplicationValue { return bacnet.EnumValue(v.reliability) }})
 	v.Define(bacnet.PropertyOutOfService, &Property{Writable: true,
 		Get: func() bacnet.ApplicationValue { return bacnet.BoolValue(v.outOfService) },
 		Set: func(w Write) ([]bacnet.PropertyIdentifier, error) {
@@ -134,7 +135,20 @@ func (v *Value) writePresentValue(w Write) ([]bacnet.PropertyIdentifier, error) 
 }
 
 func (v *Value) statusFlags() bacnet.ApplicationValue {
-	return statusFlags(false, false, false, v.outOfService)
+	return statusFlags(false, v.reliability != ReliabilityNoFaultDetected, false, v.outOfService)
+}
+
+// SetReliability sets Reliability, as for a point (Point.SetReliability):
+// anything but no-fault-detected sets the fault flag of Status_Flags, so a
+// value the application can no longer vouch for is marked as such.
+func (v *Value) SetReliability(r uint32) {
+	v.Update(func() []bacnet.PropertyIdentifier {
+		if v.reliability == r {
+			return nil
+		}
+		v.reliability = r
+		return []bacnet.PropertyIdentifier{bacnet.PropertyReliability, bacnet.PropertyStatusFlags}
+	})
 }
 
 func (v *Value) present() bacnet.ApplicationValue {

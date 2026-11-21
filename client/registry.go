@@ -59,17 +59,25 @@ type DeviceObservation struct {
 // it was seen on, with the Max APDU it announced. For a device seen through a
 // BBMD (Forwarded-NPDU) requests go straight to the device's own address.
 func (o DeviceObservation) Target() Target {
-	t := Target{Address: o.Address, Endpoint: o.ImmediatePeer}
-	if o.Origin.IsValid() && !o.Origin.Equal(o.ImmediatePeer) {
-		switch o.Address.Scope() {
+	t := pathTarget(o.Address, o.Origin, o.ImmediatePeer)
+	if o.Capabilities.MaxAPDULengthAccepted.Known {
+		t.MaxAPDU = o.Capabilities.MaxAPDULengthAccepted.Value
+	}
+	return t
+}
+
+// pathTarget addresses a node at address over the path its frame came on:
+// the immediate peer, except for a local station whose frame a BBMD
+// forwarded, which is reached at its own B/IP address (origin).
+func pathTarget(address bacnet.Address, origin, immediate bip.Endpoint) Target {
+	t := Target{Address: address, Endpoint: immediate}
+	if origin.IsValid() && !origin.Equal(immediate) {
+		switch address.Scope() {
 		case bacnet.AddressRemoteStation, bacnet.AddressRemoteBroadcast:
 			// Routed: the immediate peer is the router and stays the next hop.
 		default:
-			t.Endpoint = o.Origin
+			t.Endpoint = origin
 		}
-	}
-	if o.Capabilities.MaxAPDULengthAccepted.Known {
-		t.MaxAPDU = o.Capabilities.MaxAPDULengthAccepted.Value
 	}
 	return t
 }

@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/otfabric/go-bacnet"
+	"github.com/otfabric/go-bacnet/apdu"
 	"github.com/otfabric/go-bacnet/bip"
 	"github.com/otfabric/go-bacnet/client"
 	"github.com/otfabric/go-bacnet/service"
@@ -364,6 +365,15 @@ func dissectorCases() []dissectorCase {
 		{"You-Are", "", func(ctx context.Context, c *client.Client, t client.Target) error {
 			return c.YouAre(ctx, t.Endpoint, false, service.YouAre{VendorID: 260, ModelName: "model", SerialNumber: "sn-1", Device: dev})
 		}, []string{"Vendor ID: (Unsigned) 260", "Serial number: UTF-8 'sn-1'"}},
+		{"InvokeUnconfirmed to a routed device", "timeSynchronization", func(ctx context.Context, c *client.Client, t client.Target) error {
+			payload, err := service.EncodeTimeSynchronization(service.TimeSynchronization{
+				Date: bacnet.Date{Year: 126, Month: 10, Day: 10, Weekday: 6}, Time: bacnet.Time{Hour: 12, Minute: 30}})
+			if err != nil {
+				return err
+			}
+			routed := client.Target{Address: bacnet.RemoteStation(7, bacnet.MustMAC([]byte{0x0a})), Endpoint: t.Endpoint}
+			return c.InvokeUnconfirmed(ctx, routed, apdu.ServiceTimeSynchronization, payload)
+		}, []string{"Destination Network Address: 7"}},
 		{"Who-Is-Router-To-Network", "Who-Is-Router-To-Network", func(ctx context.Context, c *client.Client, _ client.Target) error {
 			net := uint16(7)
 			return c.WhoIsRouterToNetwork(ctx, &net)

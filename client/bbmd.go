@@ -42,6 +42,7 @@ type fdState struct {
 	reg    atomic.Bool
 	ready  chan struct{} // closed while registered; replaced when the registration lapses (mu)
 	stopCh chan struct{}
+	kick   chan struct{} // a Distribute-Broadcast-To-Network-NAK asks fdLoop to register again
 
 	mu      sync.Mutex
 	gen     uint64
@@ -83,6 +84,7 @@ func newFDState(cfg ForeignDeviceConfig, clk clock.Clock, d diag.Sink) (*fdState
 		jitter: equalJitter,
 		ready:  make(chan struct{}),
 		stopCh: make(chan struct{}),
+		kick:   make(chan struct{}, 1),
 	}, nil
 }
 
@@ -129,8 +131,11 @@ func (c *Client) WaitForeignDeviceRegistered(ctx context.Context) error {
 	}
 }
 
-// ForeignDeviceRegistered reports whether foreign-device registration with the
-// configured BBMD currently succeeded. False when FD mode is not enabled.
+// ForeignDeviceRegistered reports whether the client's foreign-device
+// registration with the configured BBMD is valid: from an accepted
+// registration until TTL after that request was sent, unless the BBMD
+// refuses a renewal (NAK) first. A renewal whose Result is lost does not end
+// it. False when FD mode is not enabled.
 func (c *Client) ForeignDeviceRegistered() bool {
 	if c == nil || c.fd == nil {
 		return false
@@ -176,6 +181,23 @@ func (f *fdState) attemptPendingFrom(from bip.Endpoint) bool {
 }
 
 func (f *fdState) handleResult(code uint16, from bip.Endpoint) {
+	if code == bvlc.ResultDistributeBroadcastToNetworkNAK && from.Equal(f.bbmd) {
+		// The BBMD could not forward a Distribute-Broadcast-To-Network (J.4.5),
+		// for example because it no longer has this device in its FDT. The
+		// NAK answers a broadcast, not a registration: it does not end the
+		// registration, but fdLoop registers again (no sooner than fdRetryMin
+		// after the last attempt) and the outcome of that attempt decides.
+		f.diag.Report(diag.Event{
+			Kind:    diag.KindForeignDevice,
+			Message: "Distribute-Broadcast-To-Network-NAK from the BBMD; registering again",
+			Fields:  map[string]any{"code": code},
+		})
+		select {
+		case f.kick <- struct{}{}:
+		default:
+		}
+		return
+	}
 	f.mu.Lock()
 	a := f.pending
 	f.mu.Unlock()
@@ -252,13 +274,61 @@ func fdFailureKind(err error) string {
 	}
 }
 
+// fdExpiry fires when an accepted registration is no longer known to be
+// valid: TTL after the Register-Foreign-Device that the BBMD accepted was
+// sent. The BBMD received it after that, and keeps the entry for TTL plus a
+// 30 s grace period from receipt (J.5.2.3), so the entry outlives the timer
+// without counting on the grace period. Only fdLoop uses it.
+type fdExpiry struct {
+	clk clock.Clock
+	t   clock.Timer
+	at  time.Time
+}
+
+func (e *fdExpiry) C() <-chan time.Time {
+	if e.t == nil {
+		return nil
+	}
+	return e.t.C()
+}
+
+func (e *fdExpiry) reset(at time.Time) {
+	e.stop()
+	e.at = at
+	e.t = e.clk.NewTimer(at.Sub(e.clk.Now()))
+}
+
+func (e *fdExpiry) stop() {
+	if e.t != nil {
+		e.t.Stop()
+		e.t = nil
+	}
+}
+
+// expired ends a registration whose validity ran out without a renewal.
+func (c *Client) fdExpired(e *fdExpiry) {
+	e.stop()
+	c.fd.setRegistered(false)
+	c.fd.diag.Report(diag.Event{
+		Kind:    diag.KindForeignDevice,
+		Message: "foreign-device registration expired; broadcasts unavailable",
+	})
+}
+
 // fdLoop registers with the BBMD at once, renews an accepted registration
-// every TTL/2, and retries a failed one after fdRetryDelay. Exactly one
+// every TTL/2, and retries a failed attempt after fdRetryDelay. Exactly one
 // attempt is outstanding at a time; Close and stop end the loop at any wait.
+//
+// The client is registered from an accepted attempt until fdExpiry fires or
+// the BBMD refuses an attempt (NAK). A renewal whose Result is lost does not
+// end the registration: the BBMD may have the renewal, and has the entry of
+// the last accepted one in any case.
 func (c *Client) fdLoop() {
 	defer c.wg.Done()
 	f := c.fd
 	renewEvery := max(f.ttl/2, time.Second)
+	expiry := &fdExpiry{clk: c.clock}
+	defer expiry.stop()
 	failures := 0
 	for {
 		ctx, cancel := context.WithCancel(context.Background())
@@ -271,27 +341,20 @@ func (c *Client) fdLoop() {
 			case <-ctx.Done():
 			}
 		}()
-		err := c.registerFD(ctx)
+		sent, err := c.registerFD(ctx, expiry)
 		cancel()
+		ended := c.clock.Now()
+		// A NAK that arrived during the attempt is answered by it.
+		select {
+		case <-f.kick:
+		default:
+		}
 		wait := renewEvery
-		if err != nil {
-			if errors.Is(err, bacnet.ErrClosed) || errors.Is(err, context.Canceled) {
-				return
-			}
-			f.setRegistered(false)
-			failures++
-			wait = f.jitter(fdRetryDelay(err, failures))
-			f.diag.Report(diag.Event{
-				Kind:    diag.KindForeignDevice,
-				Message: "foreign-device registration failed; broadcasts unavailable",
-				Fields: map[string]any{
-					"error":    err.Error(),
-					"failure":  fdFailureKind(err),
-					"attempts": failures,
-					"retry_in": wait.String(),
-				},
-			})
-		} else {
+		var nak *BVLCResultError
+		switch {
+		case err == nil:
+			expiry.reset(sent.Add(f.ttl))
+			f.setRegistered(true)
 			if failures > 0 {
 				f.diag.Report(diag.Event{
 					Kind:    diag.KindForeignDevice,
@@ -300,21 +363,70 @@ func (c *Client) fdLoop() {
 				})
 			}
 			failures = 0
+		case errors.Is(err, bacnet.ErrClosed) || errors.Is(err, context.Canceled):
+			return
+		default:
+			failures++
+			wait = f.jitter(fdRetryDelay(err, failures))
+			if errors.As(err, &nak) {
+				expiry.stop()
+				f.setRegistered(false)
+			}
+			fields := map[string]any{
+				"error":    err.Error(),
+				"failure":  fdFailureKind(err),
+				"attempts": failures,
+				"retry_in": wait.String(),
+			}
+			msg := "foreign-device registration failed; broadcasts unavailable"
+			if f.registered() {
+				msg = "foreign-device renewal failed; registration still valid"
+				fields["valid_for"] = expiry.at.Sub(ended).String()
+			}
+			f.diag.Report(diag.Event{Kind: diag.KindForeignDevice, Message: msg, Fields: fields})
 		}
-		timer := c.clock.NewTimer(wait)
-		select {
-		case <-c.closeCh:
-			timer.Stop()
+		if !c.fdWait(wait, ended, expiry) {
 			return
-		case <-f.stopCh:
-			timer.Stop()
-			return
-		case <-timer.C():
 		}
 	}
 }
 
-func (c *Client) registerFD(ctx context.Context) error {
+// fdWait waits wait before the next attempt, ending registrations that
+// expire meanwhile. A Distribute-Broadcast-To-Network-NAK shortens the wait
+// to fdRetryMin after the last attempt ended. It reports false once the
+// client is closed or the foreign device stopped.
+func (c *Client) fdWait(wait time.Duration, ended time.Time, expiry *fdExpiry) bool {
+	f := c.fd
+	timer := c.clock.NewTimer(wait)
+	defer func() { timer.Stop() }()
+	deadline := ended.Add(wait)
+	for {
+		select {
+		case <-c.closeCh:
+			return false
+		case <-f.stopCh:
+			return false
+		case <-timer.C():
+			return true
+		case <-expiry.C():
+			c.fdExpired(expiry)
+		case <-f.kick:
+			soonest := ended.Add(fdRetryMin)
+			if !soonest.Before(deadline) {
+				continue
+			}
+			deadline = soonest
+			timer.Stop()
+			timer = c.clock.NewTimer(max(soonest.Sub(c.clock.Now()), 0))
+		}
+	}
+}
+
+// registerFD sends one Register-Foreign-Device and waits one APDU timeout
+// for its Result. It reports when the request was sent, which bounds the
+// BBMD's FDT entry (fdExpiry). It does not change the registration state;
+// an expiry that falls into the wait is handled here.
+func (c *Client) registerFD(ctx context.Context, expiry *fdExpiry) (time.Time, error) {
 	f := c.fd
 	a := f.beginAttempt()
 	defer f.clearAttempt(a)
@@ -324,36 +436,37 @@ func (c *Client) registerFD(ctx context.Context) error {
 		TTL:      f.ttlSec,
 	})
 	if err != nil {
-		return err
+		return time.Time{}, err
 	}
+	sent := c.clock.Now()
 	if err := c.send(ctx, OutboundPacket{Data: frame, Destination: f.bbmd}); err != nil {
-		return err
+		return sent, err
 	}
 	timer := c.clock.NewTimer(c.cfg.apduTimeout)
 	defer timer.Stop()
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case <-c.closeCh:
-		return bacnet.ErrClosed
-	case <-timer.C():
-		// BACnet BVLC-Result has no attempt identifier. A delayed Result for an
-		// earlier registration to the same BBMD is indistinguishable from a
-		// Result for the current attempt once a later attempt is pending.
-		f.setRegistered(false)
-		return bacnet.ErrTimeout
-	case code := <-a.ch:
-		if code != 0 {
-			f.setRegistered(false)
-			err := &BVLCResultError{Code: code}
-			f.diag.Report(diag.Event{
-				Kind:    diag.KindForeignDevice,
-				Message: "BVLC-Result rejected registration",
-				Fields:  map[string]any{"code": code},
-			})
-			return err
+	for {
+		select {
+		case <-ctx.Done():
+			return sent, ctx.Err()
+		case <-c.closeCh:
+			return sent, bacnet.ErrClosed
+		case <-expiry.C():
+			c.fdExpired(expiry)
+		case <-timer.C():
+			// BACnet BVLC-Result has no attempt identifier. A delayed Result for an
+			// earlier registration to the same BBMD is indistinguishable from a
+			// Result for the current attempt once a later attempt is pending.
+			return sent, bacnet.ErrTimeout
+		case code := <-a.ch:
+			if code != 0 {
+				f.diag.Report(diag.Event{
+					Kind:    diag.KindForeignDevice,
+					Message: "BVLC-Result rejected registration",
+					Fields:  map[string]any{"code": code},
+				})
+				return sent, &BVLCResultError{Code: code}
+			}
+			return sent, nil
 		}
-		f.setRegistered(true)
-		return nil
 	}
 }
